@@ -1,0 +1,75 @@
+pkgname=libpng-noname
+pkgver=1.6.37
+pkgrel=3
+pkgdesc="A collection of routines used to create PNG format graphics files"
+arch=('x86_64')
+url="http://www.libpng.org/pub/png/libpng.html"
+license=('custom')
+depends=('zlib' 'sh')
+provides=('libpng' "libpng=${pkgver}")
+conflicts=('libpng')
+validpgpkeys=('8048643BA2C840F4F92A195FF54984BFA16C640F') # Glenn Randers-Pehrson (mozilla) <glennrp@gmail.com>
+
+source=(
+  "https://downloads.sourceforge.net/sourceforge/libpng/libpng-$pkgver.tar.xz"
+  "72fa126446460347a504f3d9b90f24aed1365595.patch"
+)
+sha256sums=('505e70834d35383537b6491e7ae8641f1a4bed1876dbfe361201fc80868d88ca'
+            '84298548e43976265f414c53dfda1b035882f2bdcacb96ed1bc0a795e430e6a8')
+
+prepare() {
+
+  cd "${srcdir:?}/libpng-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libpng-${pkgver} build directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  patch --forward --strip=1 --input="${srcdir:?}/72fa126446460347a504f3d9b90f24aed1365595.patch"
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libpng-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libpng-${pkgver} build directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./configure \
+    --prefix=/usr \
+    --disable-static
+
+  make
+
+}
+
+check() {
+
+  cd "${srcdir:?}/libpng-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libpng-${pkgver} build directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make check
+}
+
+package() {
+
+  cd "${srcdir:?}/libpng-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libpng-${pkgver} build directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -D -m0644 LICENSE "${pkgdir:?}/usr/share/licenses/$pkgname/LICENSE"
+
+  cd contrib/pngminus || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libpng-${pkgver}/contrib/pngminus directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make PNGLIB_SHARED="-L${pkgdir:?}/usr/lib -lpng" CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}" png2pnm pnm2png
+  install -m0755 png2pnm pnm2png "${pkgdir:?}/usr/bin/"
+
+}

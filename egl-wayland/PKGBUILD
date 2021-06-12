@@ -1,0 +1,60 @@
+pkgname=egl-wayland-noname
+pkgver=1.1.7
+pkgrel=1
+pkgdesc="EGLStream-based Wayland external platform"
+arch=(x86_64)
+url=https://github.com/NVIDIA/egl-wayland
+license=(MIT)
+provides=('egl-wayland' libnvidia-egl-wayland.so)
+conflicts=('egl-wayland')
+depends=(wayland eglexternalplatform)
+makedepends=(meson git)
+_commit=db7f6d80aa4221d51088b0b70a730ce95ca42d6c # tags/1.1.7
+source=("git+$url#commit=$_commit"
+  10_nvidia_wayland.json)
+sha256sums=('SKIP'
+  '5cccf1905a266e8e34d5ad4aad4be85390e60b1a0850a29dd9d64adc641de412')
+
+pkgver() {
+
+  cd "${srcdir:?}/egl-wayland" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/egl-wayland directory! PkgVer Failed! \E[0m"
+    exit 1
+  )
+
+  git describe --tags | sed 's/-/+/g'
+
+}
+
+build() {
+
+  meson setup egl-wayland build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true \
+    -D b_lto_mode=thin \
+    -D b_pie=true
+
+  meson compile -C build
+
+}
+
+check() {
+
+  meson test -C build --print-errorlogs
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" meson install -C build
+  install -Dt "${pkgdir:?}/usr/share/egl/egl_external_platform.d" -m644 10_nvidia_wayland.json
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname}" -m644 egl-wayland/COPYING
+
+}

@@ -1,0 +1,96 @@
+pkgname=fontconfig-noname
+pkgver=2.13.93
+pkgrel=4
+epoch=2
+pkgdesc="Library for configuring and customizing font access"
+url=https://www.freedesktop.org/wiki/Software/fontconfig/
+arch=(x86_64)
+license=(custom)
+depends=(libexpat.so libfreetype.so)
+makedepends=(git meson gperf expat freetype2
+  docbook-utils docbook-sgml perl-sgmls)
+provides=(fontconfig libfontconfig.so fontconfig-docs)
+conflicts=(fontconfig fontconfig-docs)
+replaces=('fontconfig-docs<2:2.13.93-1')
+install=fontconfig.install
+backup=(etc/fonts/fonts.conf)
+_commit=d06103e3e764bd43758e213414a1716858ab384c # tags/2.13.93^0
+source=("git+https://gitlab.freedesktop.org/fontconfig/fontconfig.git#commit=$_commit"
+  40-fontconfig-config.script
+  40-fontconfig-config.hook
+  fontconfig.hook)
+
+sha256sums=('SKIP'
+  '7a9d50bccc709eb15db6ba8e13f69bc9d79b0bf354f1d17c1a5b2748edff3c33'
+  '44f12491c9fd7eff825853846a2b3b8df2b96fc6520be5cb31ce7f37a160ff02'
+  'fd7b6ce8ce178107f2e0b52462ebf186b6051c6eec945770107fda57048c9f34')
+
+prepare() {
+
+  cd "${srcdir:?}/fontconfig" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/fontconfig directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  git cherry-pick -n 4e42925096e9 # Fix meson install
+  git cherry-pick -n 10c7390e358c # Fix default font dirs
+  git cherry-pick -n df29933e1a06 # https://bugs.archlinux.org/task/70141
+
+}
+
+pkgver() {
+
+  cd "${srcdir:?}/fontconfig" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/fontconfig directory! PkgVer Failed! \E[0m"
+    exit 1
+  )
+
+  git describe --tags | sed 's/-/+/g'
+
+}
+
+build() {
+
+  meson setup fontconfig build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true \
+    -D b_lto_mode=thin \
+    -D b_pie=true \
+    -D doc-txt=disabled \
+    -D doc-pdf=disabled \
+    -D doc-html=disabled
+
+  meson compile -C build
+
+}
+
+check() {
+
+  meson test -C build --print-errorlogs
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" meson install -C build
+
+  # Handle conf.d using the hook to avoid overwriting the symlinks on upgrade
+  mkdir -p "${pkgdir:?}/usr/share/fontconfig/conf.default"
+  for _f in "${pkgdir:?}"/etc/fonts/conf.d/*.conf; do
+    ln -sr "${pkgdir:?}"/usr/share/fontconfig/conf.{avail,default}/"${_f##*/}"
+    rm "$_f"
+  done
+
+  install -Dt "${pkgdir:?}/usr/share/libalpm/hooks" -m644 *.hook
+  install -D 40-fontconfig-config.script \
+    "${pkgdir:?}/usr/share/libalpm/scripts/40-fontconfig-config"
+  install -Dt "${pkgdir:?}/usr/share/licenses/$pkgname" -m644 fontconfig/COPYING
+
+}

@@ -1,0 +1,53 @@
+pkgname=zlib-ng
+pkgver=2.0.3
+pkgrel=3
+pkgdesc="zlib replacement with optimizations for \"next generation\" systems"
+arch=('i686' 'x86_64' 'arm' 'armv6h' 'armv7h' 'aarch64')
+url="https://github.com/zlib-ng/zlib-ng"
+license=('zlib')
+depends=('glibc')
+makedepends=('cmake')
+provides=('zlib=1.2.11')
+conflicts=('zlib')
+source=("https://github.com/zlib-ng/zlib-ng/archive/${pkgver//_/-}.zip")
+sha256sums=('235232f622d17cb4070f67ebeb06b0df8cf0894f9045ea6c51782479318841d2')
+
+build() {
+
+  cd "${srcdir:?}/zlib-ng-${pkgver//_/-}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/zlib-ng-${pkgver//_/-} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  cmake -B build \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DZLIB_COMPAT=ON \
+    -Wno-dev
+
+  make -C build
+
+}
+
+check() {
+
+  cd "${srcdir:?}/zlib-ng-${pkgver//_/-}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/zlib-ng-${pkgver//_/-} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make -C build test
+
+}
+
+package() {
+
+  cd "${srcdir:?}/zlib-ng-${pkgver//_/-}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/zlib-ng-${pkgver//_/-} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  DESTDIR="${pkgdir:?}" make -C build install
+  install -D -m644 "LICENSE.md" "${pkgdir:?}/usr/share/licenses/${pkgname}/LICENSE"
+
+}

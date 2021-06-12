@@ -1,0 +1,117 @@
+pkgname=mesa-noname
+pkgdesc="Mesa open-source implementation of the OpenGL specification"
+pkgver=21.1.2
+_pkgver=21.1.2
+pkgrel=1
+arch=('x86_64')
+makedepends=('git' 'python-mako' 'xorgproto'
+  'libxml2' 'libx11' 'libvdpau' 'libva' 'elfutils' 'libxrandr'
+  'ocl-icd' 'wayland-protocols' 'meson' 'ninja' 'glslang' 'valgrind')
+depends=('libdrm' 'libxxf86vm' 'libxdamage' 'libxshmfence' 'libelf'
+  'libomxil-bellagio' 'libunwind' 'libglvnd' 'wayland' 'lm_sensors' 'libclc' 'vulkan-icd-loader' 'zstd' 'expat')
+optdepends=('opengl-man-pages: for the OpenGL API man pages')
+provides=('mesa' 'mesa-libgl' 'opengl-driver' 'opencl-driver' 'opencl-mesa' 'vulkan-driver' 'vulkan-intel' 'vulkan-radeon' 'vulkan-mesa-layer' 'libva-mesa-driver' 'mesa-vdpau')
+conflicts=('mesa' 'mesa-libgl' 'opengl-driver' 'opencl-mesa' 'vulkan-intel' 'vulkan-radeon' 'vulkan-mesa-layer' 'libva-mesa-driver' 'mesa-vdpau')
+url="https://www.mesa3d.org"
+license=('custom')
+source=("mesa-${_pkgver}.tar.xz::https://archive.mesa3d.org/mesa-${_pkgver}.tar.xz"
+  'LICENSE'
+  'mesa.conf'
+)
+
+md5sums=(
+  'b6eecb58b0cef493c3a0802191456012'
+  '5c65a0fe315dd347e09b1f2826a1df5a'
+  'SKIP'
+)
+sha512sums=(
+  'a7907fa29fdb4e137015ee5405b9c8c0769ef9354bbe963c1af80318b398c05c79db6129b583106d620c42a5e9b625611b648fd5207334eb9b588d7963defc70'
+  '25da77914dded10c1f432ebcbf29941124138824ceecaf1367b3deedafaecabc082d463abcfa3d15abff59f177491472b505bcb5ba0c4a51bb6b93b4721a23c2'
+  'SKIP'
+)
+
+# NINJAFLAGS is an env var used to pass commandline options to ninja
+# NOTE: It's your responbility to validate the value of $NINJAFLAGS. If unsure, don't set it.
+
+DRI_DRIVERS=""
+GALLIUM_DRIVERS="radeonsi,swrast,svga,zink"
+VULKAN_DRIVERS="amd,swrast"
+
+prepare() {
+
+  if [[ -d _build ]]; then
+    rm -rf _build
+  fi
+
+  #cd "${srcdir:?}/mesa-${_pkgver}"
+  #patch --forward --strip=1 --input="${srcdir}/0001-amd-common-Add-missing-line-from-backport-for-cohere.patch"
+
+  if [[ -f "${srcdir:?}/mesa.conf" ]]; then
+    # shellcheck disable=SC1091
+    source "${srcdir:?}/mesa.conf"
+  fi
+
+}
+
+build() {
+
+  meson setup mesa-${_pkgver} _build \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true \
+    -D b_lto_mode=thin \
+    -D b_pie=true \
+    -D prefix=/usr \
+    -D sysconfdir=/etc \
+    -D platforms=x11,wayland \
+    -D dri-drivers="${DRI_DRIVERS}" \
+    -D gallium-drivers="${GALLIUM_DRIVERS}" \
+    -D vulkan-drivers="${VULKAN_DRIVERS}" \
+    -D swr-arches=avx,avx2 \
+    -D gallium-extra-hud=true \
+    -D gallium-omx=bellagio \
+    -D gallium-nine=true \
+    -D gallium-va=enabled \
+    -D gallium-vdpau=enabled \
+    -D gallium-xa=enabled \
+    -D gallium-xvmc=disabled \
+    -D llvm=enabled \
+    -D dri3=enabled \
+    -D egl=enabled \
+    -D gbm=enabled \
+    -D gles1=disabled \
+    -D gles2=enabled \
+    -D glvnd=true \
+    -D glx=dri \
+    -D libunwind=enabled \
+    -D lmsensors=enabled \
+    -D osmesa=false \
+    -D shared-glapi=enabled \
+    -D gallium-opencl=disabled \
+    -D vulkan-layers=device-select,overlay \
+    -D zstd=enabled \
+    -D tools=[] \
+    -D microsoft-clc=disabled \
+    -D valgrind=disabled
+
+  meson configure _build
+
+  ninja $NINJAFLAGS -C _build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" ninja $NINJAFLAGS -C _build install
+
+  rm -f "${pkgdir}/usr/bin/mesa-overlay-control.py"
+  rm -rf "${pkgdir:?}/usr/bin"
+
+  ln -s /usr/lib/libGLX_mesa.so.0 "${pkgdir:?}/usr/lib/libGLX_indirect.so.0"
+
+  install -Dm644 "${srcdir:?}/LICENSE" "${pkgdir:?}/usr/share/licenses/${pkgbase:?}/LICENSE"
+
+}

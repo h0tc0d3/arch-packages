@@ -1,0 +1,67 @@
+pkgname=xorgproto-noname
+pkgver=2021.4
+pkgrel=1
+pkgdesc="combined X.Org X11 Protocol headers"
+arch=('any')
+url="https://xorg.freedesktop.org/"
+license=('custom')
+makedepends=('xorg-util-macros' 'meson')
+checkdepends=('python-libevdev')
+provides=('xorgproto')
+conflicts=('xorgproto')
+source=(https://xorg.freedesktop.org/archive/individual/proto/xorgproto-${pkgver}.tar.bz2{,.sig})
+sha512sums=('0d905e5f135daf7005e23371cbdc41a62d99567e0a20784e71ead0092ffd1e7582733819f7198add1d97edcc9aa80012ae01d2be8367280d69b41d0c25349367'
+  'SKIP')
+validpgpkeys=('3C2C43D9447D5938EF4551EBE23B7E70B467F0BF') # "Peter Hutterer (Who-T) <office@who-t.net>"
+
+prepare() {
+
+  if [ -d build ]; then
+    rm -rf build
+  fi
+
+}
+
+build() {
+
+  meson setup "xorgproto-${pkgver}" build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true \
+    -D b_lto_mode=thin \
+    -D b_pie=true
+
+  ninja -C build
+
+}
+
+check() {
+  meson test -C build
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" ninja -C build install
+
+  # missing docs
+  install -m755 -d "${pkgdir:?}/usr/share/doc/${pkgname}"
+  install -m644 "xorgproto-${pkgver}/PM_spec" "${pkgdir:?}/usr/share/doc/${pkgname}/"
+
+  # licenses
+  install -m755 -d "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -m644 "xorgproto-${pkgver}/COPYING"* "${pkgdir:?}/usr/share/licenses/${pkgname}/"
+  # remove licences of legacy stuff we don't ship anymore
+  rm -f "${pkgdir:?}"/usr/share/licenses/${pkgname}/COPYING-{evieproto,fontcacheproto,lg3dproto,printproto,xcalibrateproto,xf86rushproto}
+
+  # cleanup
+  rm -f "${pkgdir:?}"/usr/include/X11/extensions/apple*
+  rm -f "${pkgdir:?}"/usr/share/licenses/${pkgname}/COPYING-{apple,windows}wmproto
+  rm -f "${pkgdir:?}"/usr/share/pkgconfig/applewmproto.pc
+
+}

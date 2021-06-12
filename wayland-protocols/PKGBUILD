@@ -1,0 +1,51 @@
+pkgname=wayland-protocols-noname
+pkgver=1.21
+pkgrel=1
+pkgdesc='Specifications of extended Wayland protocols'
+arch=('any')
+url='https://wayland.freedesktop.org/'
+license=('MIT')
+provides=('wayland-protocols')
+conflicts=('wayland-protocols')
+makedepends=('wayland')
+validpgpkeys=('8307C0A224BABDA1BABD0EB9A6EEEC9E0136164A' # Jonas Ådahl
+  'A66D805F7C9329B4C5D82767CCC4F07FAC641EFF')            # Daniel Stone
+source=("https://wayland.freedesktop.org/releases/wayland-protocols-${pkgver}.tar.xz"{,.sig})
+sha256sums=('b99945842d8be18817c26ee77dafa157883af89268e15f4a5a1a1ff3ffa4cde5'
+  'SKIP')
+
+build() {
+
+  cd "${srcdir:?}/wayland-protocols-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/wayland-protocols-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./configure --prefix=/usr
+
+  make
+
+}
+
+check() {
+
+  cd "${srcdir:?}/wayland-protocols-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/wayland-protocols-${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make check
+
+}
+
+package() {
+
+  cd "${srcdir:?}/wayland-protocols-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/wayland-protocols-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname}" -m 644 COPYING
+
+}

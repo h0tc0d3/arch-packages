@@ -1,0 +1,5 @@
+*.tar.gz
+*.tar.xz
+*.tar.bz
+*.pkg.tar.zst
+mesa/mesa.conf

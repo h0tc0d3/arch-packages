@@ -1,0 +1,116 @@
+pkgbase=glib2-noname
+pkgname=(glib2-noname glib2-docs-noname)
+pkgver=2.68.3
+pkgrel=1
+pkgdesc="Low level core library"
+url="https://wiki.gnome.org/Projects/GLib"
+license=(LGPL)
+arch=(x86_64)
+depends=(pcre libffi util-linux-libs zlib)
+makedepends=(gettext gtk-doc shared-mime-info python libelf git util-linux
+  meson dbus)
+checkdepends=(desktop-file-utils)
+source=("git+https://gitlab.gnome.org/GNOME/glib.git?signed#tag=$pkgver"
+  noisy-glib-compile-schemas.diff
+  glib-compile-schemas.hook gio-querymodules.{hook,script})
+sha256sums=('SKIP'
+  'b1cb539389aaabd13671424452f2805112a359b96c9e0e7f80fad804a77f9c7e'
+  '64ae5597dda3cc160fc74be038dbe6267d41b525c0c35da9125fbf0de27f9b25'
+  '2a9f9b8235f48e3b7d0f6cfcbc76cd2116c45f28692cac4bd61074c495bd5eb7'
+  '92d08db5aa30bda276bc3d718e7ff9dd01dc40dcab45b359182dcc290054e24e')
+validpgpkeys=('923B7025EE03C1C59F42684CF0942E894B2EAFA0') # Philip Withnall (https://endlessos.org/) <pwithnall@endlessos.org>
+
+pkgver() {
+
+  cd "${srcdir:?}/glib" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/glib directory! PkgVer Failed! \E[0m"
+    exit 1
+  )
+
+  git describe --tags | sed 's/-/+/g'
+
+}
+
+prepare() {
+
+  cd "${srcdir:?}/glib" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/glib directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # Suppress noise from glib-compile-schemas.hook
+  git apply -3 ../noisy-glib-compile-schemas.diff
+
+  if [[ "${CC}" == "clang" && "${LD}" == "ld.lld" ]]; then
+    sed -i "s/'objcopy'/'llvm-objcopy'/;s/and\scc.get_id()\s==\s'gcc'//" gio/tests/meson.build
+  fi
+
+}
+
+build() {
+
+  CFLAGS+=" -DG_DISABLE_CAST_CHECKS"
+  meson setup glib build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true \
+    -D b_lto_mode=thin \
+    -D b_pie=true \
+    -D glib_debug=disabled \
+    -D selinux=disabled \
+    -D man=true \
+    -D gtk_doc=true
+
+  meson compile -C build
+
+}
+
+check() {
+
+  meson test -C build --no-suite flaky --no-suite slow --print-errorlogs
+
+}
+
+package_glib2-noname() {
+
+  depends+=(libmount.so)
+  provides+=(glib2 libgio-2.0.so libglib-2.0.so libgmodule-2.0.so libgobject-2.0.so
+    libgthread-2.0.so)
+  conflicts=(glib2)
+  optdepends=('python: gdbus-codegen, glib-genmarshal, glib-mkenums, gtester-report'
+    'libelf: gresource inspection tool')
+
+  meson install -C build --destdir "${pkgdir:?}"
+
+  install -Dt "${pkgdir:?}/usr/share/libalpm/hooks" -m644 *.hook
+  install -D gio-querymodules.script "${pkgdir:?}/usr/share/libalpm/scripts/gio-querymodules"
+
+  export PYTHONHASHSEED=0
+  python -m compileall -d /usr/share/glib-2.0/codegen \
+    "${pkgdir:?}/usr/share/glib-2.0/codegen"
+  python -O -m compileall -d /usr/share/glib-2.0/codegen \
+    "${pkgdir:?}/usr/share/glib-2.0/codegen"
+
+  # Split docs
+  mkdir -p docs/usr/share
+  mv {"${pkgdir:?}",docs}/usr/share/gtk-doc
+
+}
+
+package_glib2-docs-noname() {
+
+  pkgdesc="Documentation for GLib"
+  license+=(custom)
+  provides=('glib2-docs')
+  conflicts=('glib2-docs')
+
+  mv -t "${pkgdir:?}" docs/*
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 glib/docs/reference/COPYING
+
+}
