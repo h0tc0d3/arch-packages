@@ -73,6 +73,8 @@ install-keys() {
   gpg --recv-keys 'D07BD8662C56CB291B316EB2F5675605C74E02CF' # kwin David Edmundson <davidedmundson@kde.org>
   gpg --recv-keys '1FA881591C26B276D7A5518EEAAF29B42A678C20' # kwin Marco Martin <notmart@gmail.com>
 
+  gpg --recv-keys '53E6B47B45CEA3E0D5B7457758D0EE648A48B3BB' # plasma-framework
+
 }
 
 check() {

@@ -33,7 +33,8 @@ prepare(){
 
   # Fix error https://github.com/harfbuzz/harfbuzz/issues/3019
   git cherry-pick -n 13c6ad980fcff52567955d268f33d698ff78379e
-  sed -i "s/'check-static-inits',//" src/meson.build
+  git cherry-pick -n 4e72d5e35d68b1772985ddafc522dcd4b0aceec2
+  #sed -i "s/'check-static-inits',//" src/meson.build
 
 }
 
