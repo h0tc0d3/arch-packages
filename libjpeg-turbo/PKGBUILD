@@ -9,15 +9,16 @@ depends=('glibc')
 makedepends=('cmake' 'nasm')
 provides=('libjpeg' 'libjpeg-turbo' 'libjpeg.so' 'libturbojpeg.so')
 conflicts=('libjpeg-turbo')
-source=("https://sourceforge.net/projects/libjpeg-turbo/files/${pkgver}/libjpeg-turbo-${pkgver}.tar.gz"{,.sig})
-sha512sums=(
-  '6632a2a71cb3a350fe4f850fe84e51e361755c373babf2b47fb164c3a9fc3fd66705639bebedd8c1b40cf6c15fd702e814425b0be5919048987bbec357828605'
-  'SKIP'
+source=(
+  "https://sourceforge.net/projects/libjpeg-turbo/files/${pkgver}/libjpeg-turbo-${pkgver}.tar.gz"{,.sig}
+  'lto.cmake'
 )
-b2sums=(
-  '693eccd00e8e1574e60ceb7464552ce9c4fd370c5ec4fc0dc3696ead7b4cd031228aaaf0eef3ceba194bb96bac6134b9c951162c0b81e88637edd6e71f4577f7'
-  'SKIP'
-)
+sha256sums=('bef89803e506f27715c5627b1e3219c95b80fc31465d4452de2a909d382e4444'
+            'SKIP'
+            '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
+sha512sums=('6632a2a71cb3a350fe4f850fe84e51e361755c373babf2b47fb164c3a9fc3fd66705639bebedd8c1b40cf6c15fd702e814425b0be5919048987bbec357828605'
+            'SKIP'
+            '03b3d99735a3a95098dd8e69468ab95b0f039f6c61aa4dcc2e12cee60d1ececf6e7d5d15d3f0687f3b5c6dd4118195c8365353df028bdde31a6b499dd80148ed')
 validpgpkeys=('0338C8D8D9FDA62CF9C421BD7EC2DBB6F4DBF434') # The libjpeg-turbo Project (Signing key for official binaries) <information@libjpeg-turbo.org>
 
 build() {
@@ -30,6 +31,7 @@ build() {
   cmake -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_INSTALL_LIBDIR=/usr/lib \
     -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_TOOLCHAIN_FILE=../lto.cmake \
     -DWITH_JPEG8=ON \
     -W no-dev \
     -B build \

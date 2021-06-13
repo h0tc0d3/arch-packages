@@ -9,8 +9,12 @@ depends=('glibc')
 makedepends=('cmake')
 provides=('zlib=1.2.11')
 conflicts=('zlib')
-source=("https://github.com/zlib-ng/zlib-ng/archive/${pkgver//_/-}.zip")
-sha256sums=('235232f622d17cb4070f67ebeb06b0df8cf0894f9045ea6c51782479318841d2')
+source=(
+  "https://github.com/zlib-ng/zlib-ng/archive/${pkgver//_/-}.zip"
+  'lto.cmake'
+)
+sha256sums=('235232f622d17cb4070f67ebeb06b0df8cf0894f9045ea6c51782479318841d2'
+            '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
 
 build() {
 
@@ -21,6 +25,7 @@ build() {
 
   cmake -B build \
     -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_TOOLCHAIN_FILE=../lto.cmake \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DZLIB_COMPAT=ON \
     -Wno-dev

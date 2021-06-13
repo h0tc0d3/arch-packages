@@ -26,7 +26,14 @@ pkgver() {
 
 prepare(){
 
-  sed -i "s/'check-static-inits',//" harfbuzz/src/meson.build
+  cd "${srcdir:?}/harfbuzz" || (
+    echo -e "\E[1;31mCan't cd to {srcdir:?}/harfbuzz directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # Fix error https://github.com/harfbuzz/harfbuzz/issues/3019
+  git cherry-pick -n 13c6ad980fcff52567955d268f33d698ff78379e
+  sed -i "s/'check-static-inits',//" src/meson.build
 
 }
 
