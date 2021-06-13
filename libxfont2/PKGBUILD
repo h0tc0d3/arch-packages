@@ -1,0 +1,62 @@
+pkgname=libxfont2-noname
+pkgver=2.0.4
+pkgrel=3
+pkgdesc="X11 font rasterisation library"
+arch=(x86_64)
+url="https://xorg.freedesktop.org/"
+license=('custom')
+provides=("libxfont2" "libxfont2=${pkgver}")
+conflicts=("libxfont2")
+depends=('freetype2' 'libfontenc')
+makedepends=('xorg-util-macros' 'xtrans' 'xorgproto')
+_gittag='libXfont2-2.0.4'
+source=("libxfont::git+https://gitlab.freedesktop.org/xorg/lib/libxfont.git#tag=${_gittag}")
+sha512sums=('SKIP')
+validpgpkeys=('C383B778255613DFDB409D91DB221A6900000011')  # Keith Packard <keithp@keithp.com>
+validpgpkeys+=('995ED5C8A6138EB0961F18474C09DD83CAAA50B2') # "Adam Jackson <ajax@nwnk.net>"
+validpgpkeys+=('C41C985FDCF1E5364576638B687393EE37D128F8') # "Matthieu Herrb <matthieu.herrb@laas.fr>"
+validpgpkeys+=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E') #  "Alan Coopersmith <alan.coopersmith@oracle.com>"
+
+prepare() {
+
+  cd "${srcdir:?}/libxfont" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir}/libxfont directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  git cherry-pick -n ce7a3265019e4d66198c1581d9e8c859c34e8ef1
+
+  NOCONFIGURE=1 ./autogen.sh
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libxfont" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir}/libxfont directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+
+  ./configure --prefix=/usr --sysconfdir=/etc \
+    --enable-bzip2 \
+    --enable-truetype \
+    --enable-freetype \
+    --without-fop
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libxfont" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir}/libxfont directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  install -m755 -d "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -m644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/"
+
+}

@@ -1,0 +1,50 @@
+pkgname=xcb-util-image-noname
+pkgver=0.4.0
+pkgrel=3
+pkgdesc="Utility libraries for XC Binding - Port of Xlib's XImage and XShmImage functions"
+arch=('x86_64')
+url="https://xcb.freedesktop.org"
+license=('custom')
+provides=("xcb-util-image" "xcb-util-image=${pkgver}")
+conflicts=("xcb-util-image")
+depends=('libxcb>=1.7' 'xcb-util>=0.3.9')
+makedepends=('xorg-util-macros' 'xorgproto')
+source=("https://xcb.freedesktop.org/dist/xcb-util-image-${pkgver}.tar.bz2")
+sha512sums=('9b7202c054e1160f9ca97a86be1210d9fb47f2119f89ca85f15f20909cca884bfe0cb88e3e71c75b65e1a0a72b980066ccac810e41a91db895c74dde77440d4f')
+
+build() {
+
+  cd "${srcdir:?}/xcb-util-image-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xcb-util-image-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./configure --prefix=/usr --disable-static
+  make
+
+}
+
+check() {
+
+  cd "${srcdir:?}/xcb-util-image-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xcb-util-image-${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make check
+
+}
+
+package() {
+
+  cd "${srcdir:?}/xcb-util-image-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xcb-util-image-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -D -m644 COPYING \
+    "${pkgdir:?}/usr/share/licenses/${pkgname}/COPYING"
+
+}

@@ -1,0 +1,52 @@
+pkgname=xcb-proto-noname
+pkgver=1.14.1
+pkgrel=3
+pkgdesc="XML-XCB protocol descriptions"
+arch=(any)
+url="https://xcb.freedesktop.org/"
+license=('custom')
+provides=(xcb-proto)
+conflicts=(xcb-proto)
+makedepends=('python' 'libxml2')
+source=(https://xorg.freedesktop.org/archive/individual/proto/xcb-proto-${pkgver}.tar.xz{,.sig})
+sha512sums=('140fbf48483bacc7f6b70fdcf76f9e4ff0e87df9cb3a071cea47d8fe4574407cdefcfbd674099014d297e5fc010748e71d8609fca4cc32e8b25c634f928b727d'
+  'SKIP')
+validpgpkeys=('A66D805F7C9329B4C5D82767CCC4F07FAC641EFF')  # "Daniel Stone <daniels@collabora.com>"
+validpgpkeys+=('3BB639E56F861FA2E86505690FDD682D974CA72A') # "Matt Turner <mattst88@gmail.com>"
+validpgpkeys+=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E') # "Alan Coopersmith <alan.coopersmith@oracle.com>"
+
+build() {
+
+  cd "${srcdir:?}/xcb-proto-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xcb-proto-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./configure --prefix=/usr
+  make
+
+}
+
+check() {
+
+  cd "${srcdir:?}/xcb-proto-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xcb-proto-${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make check
+
+}
+
+package() {
+
+  cd "${srcdir:?}/xcb-proto-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xcb-proto-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  install -m755 -d "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -m644 COPYING "${pkgdir:?}/usr/share/licenses/$pkgname}"
+  
+}

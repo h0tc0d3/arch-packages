@@ -1,0 +1,51 @@
+pkgname=xcb-util-noname
+pkgver=0.4.0
+pkgrel=3
+pkgdesc="Utility libraries for XC Binding"
+arch=('x86_64')
+url="https://xcb.freedesktop.org"
+license=('custom')
+depends=('libxcb>=1.7')
+provides=("xcb-util" "xcb-util=${pkgver}")
+conflicts=("xcb-util")
+makedepends=('gperf' 'xorg-util-macros' 'xorgproto')
+source=("https://xcb.freedesktop.org/dist/xcb-util-${pkgver}.tar.bz2")
+sha512sums=('e60aaa6f582eacd05896c5fd7c8417938318a1288146f3a5b339f77eed24e211c6099963f8813daa621c94173d2934228936b491c0ed79b09a8a67d835867d0e')
+
+build() {
+
+  cd "${srcdir:?}/xcb-util-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xcb-util-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./configure --prefix=/usr --disable-static
+
+  make
+
+}
+
+check() {
+
+  cd "${srcdir:?}/xcb-util-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xcb-util-${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make check
+
+}
+
+package() {
+
+  cd "${srcdir:?}/xcb-util-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xcb-util-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -D -m644 COPYING \
+    "${pkgdir:?}/usr/share/licenses/${pkgname}/COPYING"
+
+}

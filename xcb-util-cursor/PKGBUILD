@@ -1,0 +1,38 @@
+pkgname=xcb-util-cursor
+pkgver=0.1.3
+pkgrel=3
+pkgdesc='XCB cursor library'
+arch=('x86_64')
+url='https://cgit.freedesktop.org/xcb/util-cursor'
+license=('custom:MIT')
+provides=("xcb-util-cursor" "xcb-util-cursor=${pkgver}")
+conflicts=("xcb-util-cursor")
+depends=('libxcb' 'xcb-util-renderutil' 'xcb-util-image')
+makedepends=('xorgproto')
+#makedepends=('doxygen' 'xorg-util-macros' 'graphviz') # no docs yet to build
+source=("https://xcb.freedesktop.org/dist/xcb-util-cursor-$pkgver.tar.bz2")
+sha1sums=('26562eb6d4151307f7b6a53453d360ecfc0563ac')
+
+build() {
+
+    cd "${srcdir:?}/xcb-util-cursor-${pkgver}" || (
+        echo -e "\E[1;31mCan't cd to ${srcdir:?}/xcb-util-cursor-${pkgver} directory! Build Failed! \E[0m"
+        exit 1
+    )
+
+    ./configure --prefix=/usr
+    make
+
+}
+
+package() {
+
+    cd "${srcdir:?}/xcb-util-cursor-${pkgver}" || (
+        echo -e "\E[1;31mCan't cd to ${srcdir:?}/xcb-util-cursor-${pkgver} directory! Package Failed! \E[0m"
+        exit 1
+    )
+
+    make DESTDIR="${pkgdir:?}" install
+    install -Dm644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/LICENSE"
+
+}

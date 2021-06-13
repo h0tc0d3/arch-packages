@@ -1,0 +1,55 @@
+pkgname=libxcb-noname
+pkgver=1.14
+pkgrel=1
+pkgdesc="X11 client-side library"
+arch=('x86_64')
+url="https://xcb.freedesktop.org/"
+provides=("libxcb" "libxcb=${pkgver}")
+conflicts=("libxcb")
+depends=('xcb-proto' 'libxdmcp' 'libxau')
+makedepends=('libxslt' 'python' 'xorg-util-macros' 'xorgproto')
+license=('custom')
+source=("https://xorg.freedesktop.org/archive/individual/lib/libxcb-${pkgver}.tar.xz")
+sha512sums=('b90a23204b0d2c29d8b115577edb01df0465e02d6a8876550fecd62375d24a5d5f872ddd5946772ddba077cadce75b12c7a6d218469dc30b5b92bc82188e8bc6')
+validpgpkeys=('A66D805F7C9329B4C5D82767CCC4F07FAC641EFF')  # "Daniel Stone <daniels@collabora.com>"
+validpgpkeys+=('3BB639E56F861FA2E86505690FDD682D974CA72A') # "Matt Turner <mattst88@gmail.com>"
+
+build() {
+
+  cd "${srcdir:?}/libxcb-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxcb-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./configure --prefix=/usr \
+    --enable-xinput \
+    --enable-xkb \
+    --disable-static
+
+  make
+
+}
+
+check() {
+
+  cd "${srcdir:?}/libxcb-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxcb-${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make -k check
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libxcb-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxcb-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  install -m755 -d "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -m644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}"
+
+}
