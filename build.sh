@@ -13,7 +13,7 @@ set -euo pipefail
 IFS=$' '
 
 PACKAGES=(
-  zstd libpng libjpeg-turbo mesa pixman glib2 gtk2 gtk3 gtk4
+  zstd libpng libxml2 libjpeg-turbo mesa pixman glib2 gtk2 gtk3 gtk4
   qt5-base icu freetype2 pango fontconfig harfbuzz cairo
   wayland-protocols egl-wayland xorg-server xorgproto
   xorg-xauth xorg-util-macros xorg-xkbcomp xorg-setxkbmap
@@ -21,7 +21,7 @@ PACKAGES=(
 )
 
 IPACKAGES=(
-  zlib-ng zstd libjpeg-turbo libpng mesa qt5-base icu
+  zlib-ng zstd libxml2 libjpeg-turbo libpng mesa qt5-base icu
   freetype2 fontconfig pango harfbuzz xorg-util-macros
   xorg-xkbcomp xorg-setxkbmap xorg-xauth wayland-protocols
   egl-wayland xorgproto pixman cairo xorg-server kwin
