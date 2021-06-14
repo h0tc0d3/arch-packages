@@ -41,9 +41,11 @@ prepare() {
   # Suppress noise from glib-compile-schemas.hook
   git apply -3 ../noisy-glib-compile-schemas.diff
 
-  if [[ "${CC}" == "clang" && "${LD}" == "ld.lld" ]]; then
-    sed -i "s/'objcopy'/'llvm-objcopy'/;s/and\scc.get_id()\s==\s'gcc'//" gio/tests/meson.build
-  fi
+  # Fix test fail https://gitlab.gnome.org/GNOME/glib/-/issues/2423
+  git cherry-pick -n e522768ef46de78a9ac11cbd81b7f92560228743
+  #if [[ "${CC}" == "clang" && "${LD}" == "ld.lld" ]]; then
+  #  sed -i "s/'objcopy'/'llvm-objcopy'/;s/and\scc.get_id()\s==\s'gcc'//" gio/tests/meson.build
+  #fi
 
 }
 
