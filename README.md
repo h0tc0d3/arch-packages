@@ -102,8 +102,8 @@ CXXFLAGS="-fdiagnostics-color=always -pipe -O2 -march=native -fstack-protector-s
 LDFLAGS="-Wl,-O1,--sort-common,--as-needed,-z,relro,-z,now"
 RUSTFLAGS="-C opt-level=2"
 #-- Make Flags: change this for DistCC/SMP systems
-MAKEFLAGS="-j20"
-NINJAFLAGS="-j20"
+MAKEFLAGS="-j$(nproc)"
+NINJAFLAGS="-j$(nproc)"
 #-- Debugging flags
 DEBUG_CFLAGS="-g"
 DEBUG_CXXFLAGS="-g"
