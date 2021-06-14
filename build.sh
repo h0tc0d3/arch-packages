@@ -17,7 +17,7 @@ PACKAGES=(
   qt5-base icu freetype2 pango fontconfig harfbuzz cairo
   wayland-protocols egl-wayland libx11 libxrender xorg-server xorgproto
   xorg-xauth xorg-util-macros xorg-font-util libxfont2 xorg-xkbcomp
-  xorg-setxkbmap kwin plasma-workspace glibc
+  xorg-setxkbmap kwin plasma-workspace plasma-framework glibc
   xcb-proto libxcb xcb-util xcb-util-renderutil xcb-util-image
   xcb-util-cursor xcb-util-keysyms xcb-util-wm
 )
@@ -27,7 +27,7 @@ IPACKAGES=(
   freetype2 fontconfig pango harfbuzz xorg-util-macros xorg-font-util
   libxfont2 xorg-xkbcomp xorg-setxkbmap xorg-xauth wayland-protocols
   egl-wayland xorgproto pixman cairo libx11 libxrender xorg-server kwin
-  plasma-workspace glib2 gtk2 gtk3 gtk4
+  plasma-workspace plasma-framework glib2 gtk2 gtk3 gtk4
   xcb-proto libxcb xcb-util xcb-util-renderutil xcb-util-image
   xcb-util-cursor xcb-util-keysyms xcb-util-wm
 )
