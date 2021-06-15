@@ -51,7 +51,7 @@ On right side this repo package version and on left side arch linux package vers
 [+] glibc 2.33-5
 ```
 
-Before build packages install `pacman -Syu llvm llvm-libs clang lld` and edit yours **/etc/makepkg.conf** and remove debug flags **-fvar-tracking-assignments**, add strings:
+Before build packages install `pacman -Syu llvm llvm-libs clang lld libclc` and edit yours **/etc/makepkg.conf** and remove debug flags **-fvar-tracking-assignments**, add strings:
 
 ```bash
 export CC=clang
