@@ -7,7 +7,7 @@ arch=('x86_64')
 license=('BSD')
 depends=('glibc')
 makedepends=('cmake' 'nasm')
-provides=('libjpeg' 'libjpeg-turbo' 'libjpeg.so' 'libturbojpeg.so')
+provides=('libjpeg' 'libjpeg-turbo' "libjpeg-turbo=${pkgver}" 'libjpeg.so' 'libturbojpeg.so')
 conflicts=('libjpeg-turbo')
 source=(
   "https://sourceforge.net/projects/libjpeg-turbo/files/${pkgver}/libjpeg-turbo-${pkgver}.tar.gz"{,.sig}
