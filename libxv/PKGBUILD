@@ -1,0 +1,69 @@
+pkgname=libxv-noname
+pkgver=1.0.11
+pkgrel=4
+pkgdesc="X11 Video extension library"
+arch=('x86_64')
+license=('custom')
+url="https://xorg.freedesktop.org/"
+provides=(libxv)
+conflicts=(libxv)
+depends=('libxext')
+makedepends=('xorgproto')
+source=("${url}/releases/individual/lib/libXv-${pkgver}.tar.bz2"{,.sig})
+sha256sums=(
+  'd26c13eac99ac4504c532e8e76a1c8e4bd526471eb8a0a4ff2a88db60cb0b088'
+  'SKIP'
+)
+validpgpkeys=('C41C985FDCF1E5364576638B687393EE37D128F8') # Matthieu Herrb <matthieu.herrb@laas.fr>
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libXv-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libXv-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure \
+      --prefix=/usr \
+      --disable-static
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./configure \
+      --prefix=/usr \
+      --disable-static
+
+    make
+
+  fi
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libXv-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libXv-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -m755 -d "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -m644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/"
+
+}

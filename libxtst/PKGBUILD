@@ -1,0 +1,67 @@
+pkgname=libxtst-noname
+pkgver=1.2.3
+pkgrel=4
+pkgdesc="X11 Testing -- Resource extension library"
+arch=('x86_64')
+url="https://xorg.freedesktop.org/"
+license=('custom')
+provides=(libxtst)
+conflicts=(libxtst)
+depends=('libxext' 'libxi' 'libxfixes')
+makedepends=('xorg-util-macros' 'xorgproto')
+source=("${url}/releases/individual/lib/libXtst-${pkgver}.tar.bz2"{,.sig})
+sha256sums=('4655498a1b8e844e3d6f21f3b2c4e2b571effb5fd83199d428a6ba7ea4bf5204'
+  'SKIP')
+validpgpkeys=('C41C985FDCF1E5364576638B687393EE37D128F8') # Matthieu Herrb <matthieu.herrb@laas.fr>
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libXtst-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libXtst-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure \
+      --prefix=/usr \
+      --disable-static
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./configure \
+      --prefix=/usr \
+      --disable-static
+
+    make
+
+  fi
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libXtst-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libXtst-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -m755 -d "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -m644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/"
+
+}

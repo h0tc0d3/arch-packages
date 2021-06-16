@@ -1,0 +1,66 @@
+pkgname=libice-noname
+pkgver=1.0.10
+pkgrel=3
+pkgdesc="X11 Inter-Client Exchange library"
+arch=('x86_64')
+url="https://xorg.freedesktop.org/"
+depends=('glibc')
+provides=(libice)
+conflicts=(libice)
+makedepends=('xtrans>=1.2.5' 'xorg-util-macros' 'xorgproto')
+source=("${url}/releases/individual/lib/libICE-${pkgver}.tar.bz2"{,.sig})
+license=('custom')
+sha512sums=('2f1ef2c32c833c71894a08fa7e7ed53f301f6c7bd22485d71c12884d8e8b36b99f362ec886349dcc84d08edc81c8b2cea035320831d64974edeba021b433c468'
+  'SKIP')
+validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E') # "Alan Coopersmith <alan.coopersmith@oracle.com>"
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libICE-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libICE-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure \
+      --prefix=/usr \
+      --sysconfdir=/etc
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./configure \
+      --prefix=/usr \
+      --sysconfdir=/etc
+
+    make
+
+  fi
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libICE-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libICE-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -Dm644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/COPYING"
+
+}

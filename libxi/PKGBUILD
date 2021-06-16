@@ -1,0 +1,70 @@
+pkgname=libxi-noname
+pkgver=1.7.10
+pkgrel=3
+pkgdesc="X11 Input extension library"
+arch=('x86_64')
+url="https://xorg.freedesktop.org"
+provides=(libxi "libxi=${pkgver}")
+conflicts=(libxi)
+depends=('libxext')
+makedepends=('xorg-util-macros' 'libxfixes' 'xorgproto')
+license=('custom')
+source=("${url}/releases/individual/lib/libXi-${pkgver}.tar.bz2")
+sha256sums=('36a30d8f6383a72e7ce060298b4b181fd298bc3a135c8e201b7ca847f5f81061')
+validpgpkeys=('3C2C43D9447D5938EF4551EBE23B7E70B467F0BF')  # Peter Hutterer
+validpgpkeys+=('C41C985FDCF1E5364576638B687393EE37D128F8') # Matthieu Herrb <matthieu.herrb@laas.fr>
+validpgpkeys+=('3BB639E56F861FA2E86505690FDD682D974CA72A') # "Matt Turner <mattst88@gmail.com>"
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libXi-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libXi-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure \
+      --prefix=/usr \
+      --sysconfdir=/etc \
+      --disable-static
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./configure \
+      --prefix=/usr \
+      --sysconfdir=/etc \
+      --disable-static
+
+    make
+
+  fi
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libXi-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libXi-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -m755 -d "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -m644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/"
+
+}

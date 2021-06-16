@@ -1,0 +1,70 @@
+pkgname=libxt-noname
+pkgver=1.2.1
+pkgrel=1
+pkgdesc="X11 toolkit intrinsics library"
+arch=('x86_64')
+url="https://xorg.freedesktop.org/"
+provides=(libxt)
+conflicts=(libxt)
+license=('custom')
+depends=('libsm' 'libx11')
+makedepends=('xorg-util-macros')
+source=("${url}/releases/individual/lib/libXt-${pkgver}.tar.bz2")
+sha256sums=('679cc08f1646dbd27f5e48ffe8dd49406102937109130caab02ca32c083a3d60')
+validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E')  #Alan Coopersmith <alan.coopersmith@oracle.com>
+validpgpkeys+=('C52048C0C0748FEE227D47A2702353E0F7E48EDB') # "Thomas Dickey <dickey@invisible-island.net>"
+validpgpkeys+=('3BB639E56F861FA2E86505690FDD682D974CA72A') #"Matt Turner <mattst88@gmail.com>"
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libXt-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libXt-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure \
+      --prefix=/usr \
+      --sysconfdir=/etc \
+      --disable-static
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./configure \
+      --prefix=/usr \
+      --sysconfdir=/etc \
+      --disable-static
+
+    make
+
+  fi
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libXt-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libXt-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -m755 -d "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -m644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/"
+
+}

@@ -1,0 +1,64 @@
+pkgname=libsm-noname
+pkgver=1.2.3
+pkgrel=2
+pkgdesc="X11 Session Management library"
+arch=('x86_64')
+license=('custom')
+url="https://xorg.freedesktop.org/"
+provides=(libsm)
+conflicts=(libsm)
+depends=('libice' 'util-linux-libs')
+makedepends=('xorg-util-macros' 'xtrans' 'xorgproto')
+source=("${url}/releases/individual/lib/libSM-${pkgver}.tar.bz2")
+sha256sums=('2d264499dcb05f56438dee12a1b4b71d76736ce7ba7aa6efbf15ebb113769cbb')
+
+_llvm=0
+
+prepare() {
+
+    if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+        _llvm=1
+    fi
+
+}
+
+build() {
+
+    cd "${srcdir:?}/libSM-${pkgver}" || (
+        echo -e "\E[1;31mCan't cd to ${srcdir:?}/libSM-${pkgver} directory! Build Failed! \E[0m"
+        exit 1
+    )
+
+    if [[ ${_llvm} -eq 1 ]]; then
+
+        CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+            ./configure \
+            --prefix=/usr \
+            --sysconfdir=/etc
+
+        CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+    else
+
+        ./configure \
+            --prefix=/usr \
+            --sysconfdir=/etc
+
+        make
+
+    fi
+
+}
+
+package() {
+
+    cd "${srcdir:?}/libSM-${pkgver}" || (
+        echo -e "\E[1;31mCan't cd to ${srcdir:?}/libSM-${pkgver} directory! Package Failed! \E[0m"
+        exit 1
+    )
+
+    make DESTDIR="${pkgdir:?}" install
+
+    install -Dm644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/COPYING"
+
+}

@@ -1,0 +1,69 @@
+pkgname=libxaw-noname
+pkgver=1.0.14
+pkgrel=1
+pkgdesc="X11 Athena Widget library"
+arch=('x86_64')
+license=('custom')
+url="https://xorg.freedesktop.org/"
+provides=(libxaw)
+conflicts=(libxaw)
+depends=('libxmu' 'libxpm')
+makedepends=('xorg-util-macros')
+source=("${url}/releases/individual/lib/libXaw-${pkgver}.tar.bz2"{,.sig})
+sha512sums=('29d1c151369523ae6cb418e636b0b7b39ccccc35462a0b394dbeb46d5b6d780badd2eb872a55d9fbba1ee1af034e76c0463f40f8d8a7be2c336d08b3b1bf81d4'
+  'SKIP')
+validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E')  #Alan Coopersmith <alan.coopersmith@oracle.com>
+validpgpkeys+=('3BB639E56F861FA2E86505690FDD682D974CA72A') # "Matt Turner <mattst88@gmail.com>"
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libXaw-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libXaw-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure \
+      --prefix=/usr \
+      --sysconfdir=/etc \
+      --disable-static
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./configure \
+      --prefix=/usr \
+      --sysconfdir=/etc \
+      --disable-static
+
+    make
+
+  fi
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libXaw-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libXaw-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -Dm644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/COPYING"
+
+}
