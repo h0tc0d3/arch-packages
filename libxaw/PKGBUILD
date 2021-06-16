@@ -12,8 +12,10 @@ makedepends=('xorg-util-macros')
 source=("${url}/releases/individual/lib/libXaw-${pkgver}.tar.bz2"{,.sig})
 sha512sums=('29d1c151369523ae6cb418e636b0b7b39ccccc35462a0b394dbeb46d5b6d780badd2eb872a55d9fbba1ee1af034e76c0463f40f8d8a7be2c336d08b3b1bf81d4'
   'SKIP')
-validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E')  #Alan Coopersmith <alan.coopersmith@oracle.com>
-validpgpkeys+=('3BB639E56F861FA2E86505690FDD682D974CA72A') # "Matt Turner <mattst88@gmail.com>"
+validpgpkeys=(
+  '4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E' # Alan Coopersmith <alan.coopersmith@oracle.com>
+  '3BB639E56F861FA2E86505690FDD682D974CA72A' # "Matt Turner <mattst88@gmail.com>"
+)
 
 _llvm=0
 

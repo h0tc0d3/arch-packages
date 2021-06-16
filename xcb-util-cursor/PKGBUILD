@@ -10,7 +10,7 @@ conflicts=("xcb-util-cursor")
 depends=('libxcb' 'xcb-util-renderutil' 'xcb-util-image')
 makedepends=('xorgproto')
 #makedepends=('doxygen' 'xorg-util-macros' 'graphviz') # no docs yet to build
-source=("https://xcb.freedesktop.org/dist/xcb-util-cursor-$pkgver.tar.bz2")
+source=("https://xcb.freedesktop.org/dist/xcb-util-cursor-${pkgver}.tar.bz2")
 sha1sums=('26562eb6d4151307f7b6a53453d360ecfc0563ac')
 
 _llvm=0

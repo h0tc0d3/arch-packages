@@ -10,7 +10,7 @@ depends=(pcre libffi util-linux-libs zlib)
 makedepends=(gettext gtk-doc shared-mime-info python libelf git util-linux
   meson dbus)
 checkdepends=(desktop-file-utils)
-source=("git+https://gitlab.gnome.org/GNOME/glib.git?signed#tag=$pkgver"
+source=("git+https://gitlab.gnome.org/GNOME/glib.git?signed#tag=${pkgver}"
   noisy-glib-compile-schemas.diff
   glib-compile-schemas.hook gio-querymodules.{hook,script})
 sha256sums=('SKIP'

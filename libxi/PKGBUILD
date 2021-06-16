@@ -11,9 +11,11 @@ makedepends=('xorg-util-macros' 'libxfixes' 'xorgproto')
 license=('custom')
 source=("${url}/releases/individual/lib/libXi-${pkgver}.tar.bz2")
 sha256sums=('36a30d8f6383a72e7ce060298b4b181fd298bc3a135c8e201b7ca847f5f81061')
-validpgpkeys=('3C2C43D9447D5938EF4551EBE23B7E70B467F0BF')  # Peter Hutterer
-validpgpkeys+=('C41C985FDCF1E5364576638B687393EE37D128F8') # Matthieu Herrb <matthieu.herrb@laas.fr>
-validpgpkeys+=('3BB639E56F861FA2E86505690FDD682D974CA72A') # "Matt Turner <mattst88@gmail.com>"
+validpgpkeys=(
+  '3C2C43D9447D5938EF4551EBE23B7E70B467F0BF' # Peter Hutterer
+  'C41C985FDCF1E5364576638B687393EE37D128F8' # Matthieu Herrb <matthieu.herrb@laas.fr>
+  '3BB639E56F861FA2E86505690FDD682D974CA72A' # "Matt Turner <mattst88@gmail.com>"
+)
 
 _llvm=0
 

@@ -11,9 +11,11 @@ depends=('libsm' 'libx11')
 makedepends=('xorg-util-macros')
 source=("${url}/releases/individual/lib/libXt-${pkgver}.tar.bz2")
 sha256sums=('679cc08f1646dbd27f5e48ffe8dd49406102937109130caab02ca32c083a3d60')
-validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E')  #Alan Coopersmith <alan.coopersmith@oracle.com>
-validpgpkeys+=('C52048C0C0748FEE227D47A2702353E0F7E48EDB') # "Thomas Dickey <dickey@invisible-island.net>"
-validpgpkeys+=('3BB639E56F861FA2E86505690FDD682D974CA72A') #"Matt Turner <mattst88@gmail.com>"
+validpgpkeys=(
+  '4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E' # Alan Coopersmith <alan.coopersmith@oracle.com>
+  'C52048C0C0748FEE227D47A2702353E0F7E48EDB' # "Thomas Dickey <dickey@invisible-island.net>"
+  '3BB639E56F861FA2E86505690FDD682D974CA72A' # "Matt Turner <mattst88@gmail.com>"
+)
 
 _llvm=0
 

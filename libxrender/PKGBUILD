@@ -12,8 +12,10 @@ makedepends=('xorgproto')
 source=("https://xorg.freedesktop.org/releases/individual/lib/libXrender-${pkgver}.tar.bz2"{,.sig})
 sha256sums=('c06d5979f86e64cabbde57c223938db0b939dff49fdb5a793a1d3d0396650949'
   'SKIP')
-validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E')  #Alan Coopersmith <alan.coopersmith@oracle.com>
-validpgpkeys+=('C41C985FDCF1E5364576638B687393EE37D128F8') # Matthieu Herrb <matthieu.herrb@laas.fr>
+validpgpkeys=(
+  '4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E' #Alan Coopersmith <alan.coopersmith@oracle.com>
+  'C41C985FDCF1E5364576638B687393EE37D128F8' # Matthieu Herrb <matthieu.herrb@laas.fr>
+)
 
 _llvm=0
 

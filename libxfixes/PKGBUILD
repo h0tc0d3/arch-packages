@@ -13,8 +13,10 @@ source=("${url}/releases/individual/lib/libXfixes-${pkgver}.tar.bz2"{,.sig})
 sha512sums=('1985ef156f382e9a7e1cc7e044e0f626de1e4c82557a511cbcf6431994c0ac25b1f8b3a0293bd3089331593db8ce01d3a71ddec68f19b5fe6029d5082fb6885d'
   'SKIP')
 
-validpgpkeys=('C41C985FDCF1E5364576638B687393EE37D128F8')  # Matthieu Herrb <matthieu.herrb@laas.fr>
-validpgpkeys+=('3C2C43D9447D5938EF4551EBE23B7E70B467F0BF') # Peter Hutterer (Who-T) <office@who-t.net>
+validpgpkeys=(
+  'C41C985FDCF1E5364576638B687393EE37D128F8' # Matthieu Herrb <matthieu.herrb@laas.fr>
+  '3C2C43D9447D5938EF4551EBE23B7E70B467F0BF' # Peter Hutterer (Who-T) <office@who-t.net>
+)
 
 _llvm=0
 

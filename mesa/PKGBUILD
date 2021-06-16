@@ -14,20 +14,23 @@ provides=('mesa' 'mesa-libgl' 'opengl-driver' 'opencl-driver' 'opencl-mesa' 'vul
 conflicts=('mesa' 'mesa-libgl' 'opengl-driver' 'opencl-mesa' 'vulkan-intel' 'vulkan-radeon' 'vulkan-mesa-layer' 'libva-mesa-driver' 'mesa-vdpau')
 url="https://www.mesa3d.org"
 license=('custom')
-source=("mesa-${_pkgver}.tar.xz::https://archive.mesa3d.org/mesa-${_pkgver}.tar.xz"
+source=(
+  "https://archive.mesa3d.org/mesa-${_pkgver}.tar.xz"{,.sig}
   'LICENSE'
   'mesa.conf'
 )
 
-md5sums=(
-  'b6eecb58b0cef493c3a0802191456012'
+md5sums=('b6eecb58b0cef493c3a0802191456012'
+  'SKIP'
   '5c65a0fe315dd347e09b1f2826a1df5a'
+  'ed54f419125396c98f181cb2234348c4')
+sha512sums=('a7907fa29fdb4e137015ee5405b9c8c0769ef9354bbe963c1af80318b398c05c79db6129b583106d620c42a5e9b625611b648fd5207334eb9b588d7963defc70'
   'SKIP'
-)
-sha512sums=(
-  'a7907fa29fdb4e137015ee5405b9c8c0769ef9354bbe963c1af80318b398c05c79db6129b583106d620c42a5e9b625611b648fd5207334eb9b588d7963defc70'
   '25da77914dded10c1f432ebcbf29941124138824ceecaf1367b3deedafaecabc082d463abcfa3d15abff59f177491472b505bcb5ba0c4a51bb6b93b4721a23c2'
-  'SKIP'
+  '2d6916195e11f737a8f6b1acf403a6a714dd9b482db62466b76c21d56df751205d247634ea4d5bec8873d5d7643726dde49feaf93d7754c3c66c75a0addcafb9')
+
+validpgpkeys=(
+  '57551DE15B968F6341C248F68D8E31AFC32428A6' # Keith Packard <keithp@keithp.com>
 )
 
 # NINJAFLAGS is an env var used to pass commandline options to ninja

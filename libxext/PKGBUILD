@@ -12,8 +12,10 @@ makedepends=('xorg-util-macros' 'xorgproto')
 source=("${url}/releases/individual/lib/libXext-${pkgver}.tar.bz2"{,.sig})
 sha512sums=('09146397d95f80c04701be1cc0a9c580ab5a085842ac31d17dfb6d4c2e42b4253b89cba695e54444e520be359883a76ffd02f42484c9e2ba2c33a5a40c29df4a'
   'SKIP')
-validpgpkeys=('3C2C43D9447D5938EF4551EBE23B7E70B467F0BF')  # "Peter Hutterer (Who-T) <office@who-t.net>"
-validpgpkeys+=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E') # Alan Coopersmith <alan.coopersmith@oracle.com>
+validpgpkeys=(
+  '3C2C43D9447D5938EF4551EBE23B7E70B467F0BF' # "Peter Hutterer (Who-T) <office@who-t.net>"
+  '4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E' # Alan Coopersmith <alan.coopersmith@oracle.com>
+)
 
 _llvm=0
 
