@@ -37,7 +37,13 @@ DRI_DRIVERS=""
 GALLIUM_DRIVERS="radeonsi,swrast,svga,zink"
 VULKAN_DRIVERS="amd,swrast"
 
+_extra_lto_flag=""
+
 prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
 
   if [[ -d _build ]]; then
     rm -rf _build
@@ -61,8 +67,7 @@ build() {
     -D debug=false \
     -D optimization=2 \
     -D b_ndebug=true \
-    -D b_lto=true \
-    -D b_lto_mode=thin \
+    -D b_lto=true ${_extra_lto_flag} \
     -D b_pie=true \
     -D prefix=/usr \
     -D sysconfdir=/etc \
@@ -99,13 +104,13 @@ build() {
 
   meson configure _build
 
-  ninja $NINJAFLAGS -C _build
+  ninja ${NINJAFLAGS} -C _build
 
 }
 
 package() {
 
-  DESTDIR="${pkgdir:?}" ninja $NINJAFLAGS -C _build install
+  DESTDIR="${pkgdir:?}" ninja ${NINJAFLAGS} -C _build install
 
   rm -f "${pkgdir}/usr/bin/mesa-overlay-control.py"
   rm -rf "${pkgdir:?}/usr/bin"

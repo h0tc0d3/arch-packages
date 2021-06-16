@@ -13,6 +13,8 @@ _commit=b37f03f16b39d397a626f097858e9ae550234ca0 # tags/2.8.1^0
 source=("git+https://github.com/harfbuzz/harfbuzz#commit=$_commit")
 sha256sums=('SKIP')
 
+_extra_lto_flag=""
+
 pkgver() {
 
   cd "${srcdir:?}/harfbuzz" || (
@@ -24,7 +26,11 @@ pkgver() {
 
 }
 
-prepare(){
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
 
   cd "${srcdir:?}/harfbuzz" || (
     echo -e "\E[1;31mCan't cd to {srcdir:?}/harfbuzz directory! Prepare Failed! \E[0m"
@@ -38,7 +44,6 @@ prepare(){
 
 }
 
-
 build() {
 
   meson harfbuzz build \
@@ -50,8 +55,7 @@ build() {
     -D debug=false \
     -D optimization=2 \
     -D b_ndebug=true \
-    -D b_lto=true \
-    -D b_lto_mode=thin \
+    -D b_lto=true ${_extra_lto_flag} \
     -D b_pie=true \
     -D glib=enabled \
     -D gobject=enabled \

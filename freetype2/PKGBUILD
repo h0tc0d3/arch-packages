@@ -1,5 +1,5 @@
 pkgbase=freetype2-noname
-pkgname=(freetype2-noname freetype2-demos-noname freetype2-docs-noname)
+pkgname=(freetype2-noname freetype2-docs-noname)
 pkgver=2.10.4
 pkgrel=1
 pkgdesc="Font rasterization library"
@@ -9,10 +9,9 @@ license=(GPL)
 # adding harfbuzz for improved OpenType features auto-hinting
 # introduces a cycle dep to harfbuzz depending on freetype wanted by upstream
 depends=(zlib bzip2 sh libpng harfbuzz)
-makedepends=(libx11)
+makedepends=(libx11 meson)
 source=("https://download.savannah.gnu.org/releases/freetype/freetype-${pkgver}.tar.xz"{,.sig}
     "https://download.savannah.gnu.org/releases/freetype/freetype-doc-${pkgver}.tar.xz"{,.sig}
-    "https://download.savannah.gnu.org/releases/freetype/ft2demos-${pkgver}.tar.xz"{,.sig}
     '0001-Enable-table-validation-modules.patch'
     '0002-Enable-subpixel-rendering.patch'
     '0003-Enable-infinality-subpixel-hinting.patch'
@@ -22,8 +21,6 @@ sha256sums=('86a854d8905b19698bbc8f23b860bc104246ce4854dcea8e3b0fb21284f75784'
     'SKIP'
     'cca1c19d1efa911bb685d919b5b0fe1279b0699bf8eb6a3d3bf9f02784758212'
     'SKIP'
-    '3f873ebe4fb387da3859149459f9be95320ce1fd56b50f8fdb9d2a8492887083'
-    'SKIP'
     'f41df4f336d5e82e58733c7a4594476c9216cfc85c096327745a7e1b559e17e1'
     'dc77c1cfee4bf8e7e0690628c95d211df09e0d0750e4c8f075b78b5f105514f7'
     '21a62bc12b848320c686d602d8d4e3bcd51294a9def4dc9c301736e077b59f3f'
@@ -31,14 +28,16 @@ sha256sums=('86a854d8905b19698bbc8f23b860bc104246ce4854dcea8e3b0fb21284f75784'
     'f7f8e09c44f7552c883846e9a6a1efc50377c4932234e74adc4a8ff750606467')
 validpgpkeys=(58E0C111E39F5408C5D3EC76C1A60EACE707FDA5) # Werner Lemberg <wl@gnu.org>
 
+_extra_lto_flag=""
+
 prepare() {
 
-    # Rename source dir to allow building the demos
-    mv freetype-${pkgver} freetype2
-    mv ft2demos-${pkgver} freetype2-demos
+    if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+        _extra_lto_flag='-D b_lto_mode=thin'
+    fi
 
-    cd "${srcdir:?}/freetype2" || (
-        echo -e "\E[1;31mCan't cd to ${srcdir:?}/freetype2! Prepare Failed! \E[0m"
+    cd "${srcdir:?}/freetype-${pkgver}" || (
+        echo -e "\E[1;31mCan't cd to ${srcdir:?}/freetype-${pkgver}! Prepare Failed! \E[0m"
         exit 1
     )
 
@@ -47,43 +46,30 @@ prepare() {
     patch -Np1 -i ../0003-Enable-infinality-subpixel-hinting.patch
     patch -Np1 -i ../0004-Enable-long-PCF-family-names.patch
 
-    cd "${srcdir:?}/freetype2-demos" || (
-        echo -e "\E[1;31mCan't cd to ${srcdir:?}/freetype2-demos! Prepare Failed! \E[0m"
-        exit 1
-    )
-
-    # Suppress RPATH
-    sed -i '/X11_LIB:%=-R%/d' graph/x11/rules.mk
-
 }
 
 build() {
 
-    cd "${srcdir:?}/freetype2" || (
-        echo -e "\E[1;31mCan't cd to ${srcdir:?}/freetype2! Build Failed! \E[0m"
-        exit 1
-    )
+    meson setup "freetype-${pkgver}" build \
+        --prefix /usr \
+        --libexecdir lib \
+        --sbindir bin \
+        --auto-features enabled \
+        --wrap-mode nodownload \
+        -D default_library=shared \
+        -D debug=false \
+        -D optimization=2 \
+        -D b_ndebug=true \
+        -D b_lto=true ${_extra_lto_flag} \
+        -D b_pie=true
 
-    ./configure --prefix=/usr --disable-static
-    make
-
-    cd "${srcdir:?}/freetype2-demos" || (
-        echo -e "\E[1;31mCan't cd to ${srcdir:?}/freetype2-demos! Build Failed! \E[0m"
-        exit 1
-    )
-
-    make
+    ninja -C build
 
 }
 
 check() {
 
-    cd "${srcdir:?}/freetype2" || (
-        echo -e "\E[1;31mCan't cd to ${srcdir:?}/freetype2! Check Failed! \E[0m"
-        exit 1
-    )
-
-    make -k check
+    meson test -C build
 
 }
 
@@ -94,32 +80,9 @@ package_freetype2-noname() {
     install=freetype2.install
     backup=(etc/profile.d/freetype2.sh)
 
-    cd "${srcdir:?}/freetype2" || (
-        echo -e "\E[1;31mCan't cd to ${srcdir:?}/freetype2! Package Failed! \E[0m"
-        exit 1
-    )
-
-    make DESTDIR="${pkgdir:?}" install
-    install -Dt "${pkgdir:?}/etc/profile.d" -m644 ../freetype2.sh
-
-}
-
-package_freetype2-demos-noname() {
-
-    pkgdesc="Freetype tools and demos"
-    depends=(freetype2-noname libx11)
-    provides=(freetype2-demos)
-    conflicts=(freetype2-demos)
-
-    cd "${srcdir:?}/freetype2-demos" || (
-        echo -e "\E[1;31mCan't cd to ${srcdir:?}/freetype2-demos! Package Failed! \E[0m"
-        exit 1
-    )
-
-    install -d "${pkgdir:?}/usr/bin"
-    for _i in bin/{f,t}t*; do
-        libtool --mode=install install $_i "${pkgdir:?}/usr/bin"
-    done
+    DESTDIR="${pkgdir:?}" ninja -C build install
+    sed -i 's/Version:\s6\./Version: 23./' "${pkgdir:?}/usr/lib/pkgconfig/freetype2.pc"
+    install -Dt "${pkgdir:?}/etc/profile.d" -m644 freetype2.sh
 
 }
 
@@ -130,8 +93,8 @@ package_freetype2-docs-noname() {
     provides=(freetype2-docs)
     conflicts=(freetype2-docs)
 
-    cd "${srcdir:?}/freetype2" || (
-        echo -e "\E[1;31mCan't cd to ${srcdir:?}/freetype2! Package Failed! \E[0m"
+    cd "${srcdir:?}/freetype-${pkgver}" || (
+        echo -e "\E[1;31mCan't cd to ${srcdir:?}/freetype-${pkgver}! Package Failed! \E[0m"
         exit 1
     )
 

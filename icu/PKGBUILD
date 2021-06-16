@@ -9,6 +9,7 @@ depends=('gcc-libs' 'sh')
 makedepends=('python')
 provides=(icu libicu{data,i18n,io,test,tu,uc}.so)
 conflicts=(icu)
+replaces=(icu)
 source=("https://github.com/unicode-org/icu/releases/download/release-${pkgver//./-}/icu4c-${pkgver//./_}-src.tgz"{,.asc})
 # https://github.com/unicode-org/icu/releases/download/release-69-1/SHASUM512.txt
 sha512sums=('d4aeb781715144ea6e3c6b98df5bbe0490bfa3175221a1d667f3e6851b7bd4a638fa4a37d4a921ccb31f02b5d15a6dded9464d98051964a86f7b1cde0ff0aab7'
@@ -20,6 +21,16 @@ validpgpkeys+=('E4098B78AFC94394F3F49AA903996C7C83F12F11') # "keybase.io/srl295 
 validpgpkeys+=('4569BBC09DA846FC91CBD21CE1BBA44593CF2AE0') # "Steven R. Loomis (codesign-qormi) <srloomis@us.ibm.com>"
 validpgpkeys+=('0E51E7F06EF719FBD072782A5F56E5AFA63CCD33') #"Craig Cornelius (For use with ICU releases) <ccornelius@google.com>"
 
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
 build() {
 
   cd "${srcdir:?}/icu/source" || (
@@ -27,12 +38,26 @@ build() {
     exit 1
   )
 
-  ./configure --prefix=/usr \
-    --sysconfdir=/etc \
-    --mandir=/usr/share/man \
-    --sbindir=/usr/bin
+  if [[ ${_llvm} -eq 1 ]]; then
 
-  make
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure --prefix=/usr \
+      --sysconfdir=/etc \
+      --mandir=/usr/share/man \
+      --sbindir=/usr/bin
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./configure --prefix=/usr \
+      --sysconfdir=/etc \
+      --mandir=/usr/share/man \
+      --sbindir=/usr/bin
+
+    make
+
+  fi
 
 }
 

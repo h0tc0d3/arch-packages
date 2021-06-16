@@ -12,6 +12,16 @@ makedepends=('gperf' 'xorg-util-macros' 'xorgproto')
 source=("https://xcb.freedesktop.org/dist/xcb-util-${pkgver}.tar.bz2")
 sha512sums=('e60aaa6f582eacd05896c5fd7c8417938318a1288146f3a5b339f77eed24e211c6099963f8813daa621c94173d2934228936b491c0ed79b09a8a67d835867d0e')
 
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
 build() {
 
   cd "${srcdir:?}/xcb-util-${pkgver}" || (
@@ -19,9 +29,24 @@ build() {
     exit 1
   )
 
-  ./configure --prefix=/usr --disable-static
+  if [[ ${_llvm} -eq 1 ]]; then
 
-  make
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure \
+      --prefix=/usr \
+      --disable-static
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./configure \
+      --prefix=/usr \
+      --disable-static
+
+    make
+
+  fi
 
 }
 

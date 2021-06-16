@@ -13,8 +13,20 @@ source=(
   "https://github.com/zlib-ng/zlib-ng/archive/${pkgver//_/-}.zip"
   'lto.cmake'
 )
-sha256sums=('65618f2c7ea48e0a104e8270e5373b758a64c9c6e3623e2bb0f756af9e9ea4a0'
-            '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
+sha256sums=(
+  '65618f2c7ea48e0a104e8270e5373b758a64c9c6e3623e2bb0f756af9e9ea4a0'
+  '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e'
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
 
 build() {
 
@@ -23,12 +35,20 @@ build() {
     exit 1
   )
 
-  cmake -B build \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_TOOLCHAIN_FILE=../lto.cmake \
-    -DCMAKE_INSTALL_PREFIX=/usr \
-    -DZLIB_COMPAT=ON \
-    -Wno-dev
+  if [[ ${_llvm} -eq 1 ]]; then
+    cmake -B build \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_TOOLCHAIN_FILE=../lto.cmake \
+      -DCMAKE_INSTALL_PREFIX=/usr \
+      -DZLIB_COMPAT=ON \
+      -Wno-dev
+  else
+    cmake -B build \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX=/usr \
+      -DZLIB_COMPAT=ON \
+      -Wno-dev
+  fi
 
   make -C build
 

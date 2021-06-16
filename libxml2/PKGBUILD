@@ -27,6 +27,8 @@ sha256sums=('SKIP'
   '5b64aa7f2411eb7650491bf42e4a3531fc3158257b4745956975b9b9bc605f7d'
   'a0bb996bc73a13f3c3758f74d0a4198757e703710c5e3e462fd7a8e58a561563')
 
+_llvm=0
+
 pkgver() {
 
   cd "${srcdir:?}/libxml2" || (
@@ -39,6 +41,10 @@ pkgver() {
 }
 
 prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
 
   mkdir build-py{2,3}
 
@@ -64,15 +70,34 @@ _build() (
     exit 1
   )
 
-  ../libxml2/configure \
-    --prefix=/usr \
-    --with-threads \
-    --with-history \
-    --with-python="/usr/bin/python${1:?}" \
-    --with-icu
+  if [[ ${_llvm} -eq 1 ]]; then
 
-  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0 /g' libtool
-  PYTHONHASHSEED=0 make
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ../libxml2/configure \
+      --prefix=/usr \
+      --with-threads \
+      --with-history \
+      --with-python="/usr/bin/python${1:?}" \
+      --with-icu
+
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0 /g' libtool
+
+    PYTHONHASHSEED=0 CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ../libxml2/configure \
+      --prefix=/usr \
+      --with-threads \
+      --with-history \
+      --with-python="/usr/bin/python${1:?}" \
+      --with-icu
+
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0 /g' libtool
+    PYTHONHASHSEED=0 make
+
+  fi
+
   find doc -type f -exec chmod 0644 {} +
 
 )

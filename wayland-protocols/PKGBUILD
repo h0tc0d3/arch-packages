@@ -8,11 +8,24 @@ license=('MIT')
 provides=('wayland-protocols')
 conflicts=('wayland-protocols')
 makedepends=('wayland')
-validpgpkeys=('8307C0A224BABDA1BABD0EB9A6EEEC9E0136164A' # Jonas Ådahl
-  'A66D805F7C9329B4C5D82767CCC4F07FAC641EFF')            # Daniel Stone
+validpgpkeys=(
+  '8307C0A224BABDA1BABD0EB9A6EEEC9E0136164A'  # Jonas Ådahl
+  'A66D805F7C9329B4C5D82767CCC4F07FAC641EFF') # Daniel Stone
 source=("https://wayland.freedesktop.org/releases/wayland-protocols-${pkgver}.tar.xz"{,.sig})
-sha256sums=('b99945842d8be18817c26ee77dafa157883af89268e15f4a5a1a1ff3ffa4cde5'
-  'SKIP')
+sha256sums=(
+  'b99945842d8be18817c26ee77dafa157883af89268e15f4a5a1a1ff3ffa4cde5'
+  'SKIP'
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
 
 build() {
 
@@ -21,9 +34,22 @@ build() {
     exit 1
   )
 
-  ./configure --prefix=/usr
+  if [[ ${_llvm} -eq 1 ]]; then
 
-  make
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure \
+      --prefix=/usr
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./configure \
+      --prefix=/usr
+
+    make
+
+  fi
 
 }
 

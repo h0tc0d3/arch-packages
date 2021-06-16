@@ -14,6 +14,16 @@ source=("https://xcb.freedesktop.org/dist/xcb-util-keysyms-${pkgver}.tar.bz2"
 sha512sums=('b14b3100c3ae2379f9df799c0780a1ee39267101e58e4c1c6f390f039348ca2b370bb1df203b9bc68a170d664188d9c73e3553a7ba24d98abea3ed353e8dc0c4'
   '62f83468f9d9503a5a8c1ebaac78cbaefe3c485f8bfd7192817ec59254872fe2914ed66ae8b9e7f7a6ef5af283048c11390f44eb8f0f70b1c136ef5c75282e8c')
 
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
 build() {
 
   cd "${srcdir:?}/xcb-util-keysyms-${pkgver}" || (
@@ -21,8 +31,24 @@ build() {
     exit 1
   )
 
-  ./configure --prefix=/usr --disable-static
-  make
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure \
+      --prefix=/usr \
+      --disable-static
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./configure \
+      --prefix=/usr \
+      --disable-static
+
+    make
+
+  fi
 
 }
 
@@ -43,7 +69,7 @@ package() {
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/xcb-util-keysyms-${pkgver} directory! Package Failed! \E[0m"
     exit 1
   )
-  
+
   make DESTDIR="${pkgdir:?}" install
 
   install -D -m644 "${srcdir:?}/LICENSE" \

@@ -12,11 +12,21 @@ conflicts=('zstd')
 source=("https://github.com/facebook/zstd/releases/download/v${pkgver}/zstd-${pkgver}.tar.zst"{,.sig})
 
 sha256sums=('9aa8dfc1ca17f358b28988ca1f6e00ffe1c6f3198853f8d2022799e6f0669180'
-            'SKIP')
+  'SKIP')
 b2sums=('cfea18b2347bf893d9bd461e57113d0a141040a1f7a42db6221ed9662f84023f45b058df3382cc06d82596f8eb98e0806f3abe1e79155fafd46da2a8b746bfbe'
-        'SKIP')
+  'SKIP')
 
 validpgpkeys=(4EF4AC63455FC9F4545D9B7DEF8FE99528B52FFD)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
 
 build() {
 
@@ -25,9 +35,13 @@ build() {
     exit 1
   )
 
-  make
-
-  make -C contrib/pzstd
+  if [[ ${_llvm} -eq 1 ]]; then
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make -C contrib/pzstd
+  else
+    make
+    make -C contrib/pzstd
+  fi
 
 }
 

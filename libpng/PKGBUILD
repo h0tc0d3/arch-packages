@@ -15,9 +15,15 @@ source=(
   "72fa126446460347a504f3d9b90f24aed1365595.patch"
 )
 sha256sums=('505e70834d35383537b6491e7ae8641f1a4bed1876dbfe361201fc80868d88ca'
-            '84298548e43976265f414c53dfda1b035882f2bdcacb96ed1bc0a795e430e6a8')
+  '84298548e43976265f414c53dfda1b035882f2bdcacb96ed1bc0a795e430e6a8')
+
+_llvm=0
 
 prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
 
   cd "${srcdir:?}/libpng-${pkgver}" || (
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/libpng-${pkgver} build directory! Prepare Failed! \E[0m"
@@ -35,11 +41,24 @@ build() {
     exit 1
   )
 
-  ./configure \
-    --prefix=/usr \
-    --disable-static
+  if [[ ${_llvm} -eq 1 ]]; then
 
-  make
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure \
+      --prefix=/usr \
+      --disable-static
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./configure \
+      --prefix=/usr \
+      --disable-static
+
+    make
+
+  fi
 
 }
 

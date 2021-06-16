@@ -18,20 +18,40 @@ source=(
 )
 install=kwin.install
 sha256sums=('5506ee878e151734893bbcc0a70d6499c894b8986488c9c57285de1deb422850'
-            'SKIP'
-            '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
+  'SKIP'
+  '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
 validpgpkeys=(
   '2D1D5B0588357787DE9EE225EC94D18F7F05997E'  # Jonathan Riddell <jr@jriddell.org>
   '0AAC775BB6437A8D9AF7A3ACFE0784117FBCE11D'  # Bhushan Shah <bshah@kde.org>
   'D07BD8662C56CB291B316EB2F5675605C74E02CF'  # David Edmundson <davidedmundson@kde.org>
   '1FA881591C26B276D7A5518EEAAF29B42A678C20') # Marco Martin <notmart@gmail.com>
 
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
 build() {
 
-  cmake -B build -S kwin-${pkgver} \
-    -DCMAKE_TOOLCHAIN_FILE=../lto.cmake \
-    -DCMAKE_INSTALL_LIBEXECDIR=lib \
-    -DBUILD_TESTING=OFF
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    cmake -B build -S kwin-${pkgver} \
+      -DCMAKE_TOOLCHAIN_FILE=../lto.cmake \
+      -DCMAKE_INSTALL_LIBEXECDIR=lib \
+      -DBUILD_TESTING=OFF
+
+  else
+
+    cmake -B build -S kwin-${pkgver} \
+      -DCMAKE_INSTALL_LIBEXECDIR=lib \
+      -DBUILD_TESTING=OFF
+
+  fi
 
   cmake --build build
 

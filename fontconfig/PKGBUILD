@@ -25,7 +25,13 @@ sha256sums=('SKIP'
   '44f12491c9fd7eff825853846a2b3b8df2b96fc6520be5cb31ce7f37a160ff02'
   'fd7b6ce8ce178107f2e0b52462ebf186b6051c6eec945770107fda57048c9f34')
 
+_extra_lto_flag=""
+
 prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
 
   cd "${srcdir:?}/fontconfig" || (
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/fontconfig directory! Prepare Failed! \E[0m"
@@ -60,8 +66,7 @@ build() {
     -D debug=false \
     -D optimization=2 \
     -D b_ndebug=true \
-    -D b_lto=true \
-    -D b_lto_mode=thin \
+    -D b_lto=true ${_extra_lto_flag} \
     -D b_pie=true \
     -D doc-txt=disabled \
     -D doc-pdf=disabled \

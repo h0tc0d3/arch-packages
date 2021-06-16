@@ -14,7 +14,13 @@ sha512sums=('0d905e5f135daf7005e23371cbdc41a62d99567e0a20784e71ead0092ffd1e75827
   'SKIP')
 validpgpkeys=('3C2C43D9447D5938EF4551EBE23B7E70B467F0BF') # "Peter Hutterer (Who-T) <office@who-t.net>"
 
+_extra_lto_flag=""
+
 prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
 
   if [ -d build ]; then
     rm -rf build
@@ -33,8 +39,7 @@ build() {
     -D debug=false \
     -D optimization=2 \
     -D b_ndebug=true \
-    -D b_lto=true \
-    -D b_lto_mode=thin \
+    -D b_lto=true ${_extra_lto_flag} \
     -D b_pie=true
 
   ninja -C build
@@ -42,7 +47,9 @@ build() {
 }
 
 check() {
+
   meson test -C build
+
 }
 
 package() {

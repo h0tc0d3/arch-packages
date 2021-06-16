@@ -18,6 +18,16 @@ validpgpkeys+=('A66D805F7C9329B4C5D82767CCC4F07FAC641EFF') # "Daniel Stone <dani
 validpgpkeys+=('DD38563A8A8224537D1F90E45B8A2D50A0ECD0D3') # "Adam Jackson <ajax@benzedrine.nwnk.net>"
 validpgpkeys+=('3BB639E56F861FA2E86505690FDD682D974CA72A') # "Matt Turner <mattst88@gmail.com>"
 
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
 build() {
 
   cd "${srcdir:?}/xkbcomp-${pkgver}" || (
@@ -25,9 +35,22 @@ build() {
     exit 1
   )
 
-  ./configure --prefix=/usr
+  if [[ ${_llvm} -eq 1 ]]; then
 
-  make
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure \
+      --prefix=/usr
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./configure \
+      --prefix=/usr
+
+    make
+
+  fi
 
 }
 

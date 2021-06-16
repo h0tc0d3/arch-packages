@@ -15,6 +15,16 @@ sha512sums=('bfa8015dee0d8d3fdbbd89afbd71c8606ce168d6edca8521d5ed05a00fecbea39bc
 validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E') # Alan Coopersmith <alan.coopersmith@oracle.com>
 groups=('xorg-apps' 'xorg')
 
+_llvm=0
+
+prepare() {
+
+    if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+        _llvm=1
+    fi
+
+}
+
 build() {
 
     cd "${srcdir:?}/setxkbmap-${pkgver}" || (
@@ -22,9 +32,22 @@ build() {
         exit 1
     )
 
-    ./configure --prefix=/usr
+    if [[ ${_llvm} -eq 1 ]]; then
 
-    make
+        CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+            ./configure \
+            --prefix=/usr
+
+        CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+    else
+
+        ./configure \
+            --prefix=/usr
+
+        make
+
+    fi
 
 }
 

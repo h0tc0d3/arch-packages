@@ -14,6 +14,8 @@ _commit=156cd3eaaebfd8635517c2baf61fcf3627ff7ec2 # tags/1.17.4^0
 source=("git+https://gitlab.freedesktop.org/cairo/cairo.git#commit=$_commit")
 sha256sums=('SKIP')
 
+_extra_lto_flag=""
+
 pkgver() {
 
   cd "${srcdir:?}/cairo" || (
@@ -25,6 +27,10 @@ pkgver() {
 }
 
 prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
 
   cd "${srcdir:?}/cairo" || (
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/cairo! Prepare Failed! \E[0m"
@@ -58,8 +64,7 @@ build() {
     -D debug=false \
     -D optimization=2 \
     -D b_ndebug=true \
-    -D b_lto=true \
-    -D b_lto_mode=thin \
+    -D b_lto=true ${_extra_lto_flag} \
     -D b_pie=true \
     -D spectre=disabled \
     -D tee=enabled \

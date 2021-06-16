@@ -17,6 +17,15 @@ sha512sums=(
 
 groups=('xorg-fonts' 'xorg')
 
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+}
+
 build() {
 
   cd "${srcdir:?}/font-util-${pkgver}" || (
@@ -24,13 +33,28 @@ build() {
     exit 1
   )
 
-  ./configure \
-    --prefix=/usr \
-    --mandir=/usr/share/man \
-    --with-mapdir=/usr/share/fonts/util \
-    --with-fontrootdir=/usr/share/fonts
+  if [[ ${_llvm} -eq 1 ]]; then
 
-  make
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure \
+      --prefix=/usr \
+      --mandir=/usr/share/man \
+      --with-mapdir=/usr/share/fonts/util \
+      --with-fontrootdir=/usr/share/fonts
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./configure \
+      --prefix=/usr \
+      --mandir=/usr/share/man \
+      --with-mapdir=/usr/share/fonts/util \
+      --with-fontrootdir=/usr/share/fonts
+
+    make
+
+  fi
 
 }
 

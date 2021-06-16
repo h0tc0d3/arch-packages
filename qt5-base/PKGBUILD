@@ -32,6 +32,8 @@ sha256sums=('SKIP'
   'cf707cd970650f8b60f8897692b36708ded9ba116723ec8fcd885576783fe85c'
   '4b93f6a79039e676a56f9d6990a324a64a36f143916065973ded89adc621e094')
 
+_llvm=0
+
 pkgver() {
 
   cd "${srcdir:?}/qtbase" || (
@@ -45,14 +47,17 @@ pkgver() {
 
 prepare() {
 
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
   cd "${srcdir:?}/qtbase" || (
     echo -e "\E[1;31mCan't cd to {srcdir:?}/qtbase directory! Prepare Failed! \E[0m"
     exit 1
   )
 
   git revert -n 6344955d17e17e2398720fe60c34cfc2a4a95208 # Revert version bump
-  patch -p1 <../qt5-base-cflags.patch                    # Use system CFLAGS in qmake
-  patch -p1 <../qt5-base-nostrip.patch                   # Don't strip binaries with qmake
+
 }
 
 build() {
@@ -62,27 +67,65 @@ build() {
     exit 1
   )
 
-  ./configure -confirm-license -opensource -v \
-    -prefix /usr \
-    -docdir /usr/share/doc/qt \
-    -headerdir /usr/include/qt \
-    -archdatadir /usr/lib/qt \
-    -datadir /usr/share/qt \
-    -sysconfdir /etc/xdg \
-    -examplesdir /usr/share/doc/qt/examples \
-    -plugin-sql-{psql,mysql,sqlite,odbc,ibase} \
-    -system-sqlite \
-    -openssl-linked \
-    -nomake examples \
-    -no-rpath \
-    -dbus-linked \
-    -system-harfbuzz \
-    -journald \
-    -no-mimetype-database \
-    -no-use-gold-linker \
-    -reduce-relocations \
-    -no-strip
-  make
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure -platform linux-clang -confirm-license -opensource -v \
+      -prefix /usr \
+      -docdir /usr/share/doc/qt \
+      -headerdir /usr/include/qt \
+      -archdatadir /usr/lib/qt \
+      -datadir /usr/share/qt \
+      -sysconfdir /etc/xdg \
+      -examplesdir /usr/share/doc/qt/examples \
+      -plugin-sql-{psql,mysql,sqlite,odbc,ibase} \
+      -system-zlib \
+      -system-libjpeg \
+      -system-libpng \
+      -system-sqlite \
+      -system-harfbuzz \
+      -openssl-linked \
+      -nomake examples \
+      -no-rpath \
+      -dbus-linked \
+      -journald \
+      -no-mimetype-database \
+      -reduce-relocations
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    patch -p1 <../qt5-base-cflags.patch  # Use system CFLAGS in qmake
+    patch -p1 <../qt5-base-nostrip.patch # Don't strip binaries with qmake
+
+    ./configure -confirm-license -opensource -v \
+      -prefix /usr \
+      -docdir /usr/share/doc/qt \
+      -headerdir /usr/include/qt \
+      -archdatadir /usr/lib/qt \
+      -datadir /usr/share/qt \
+      -sysconfdir /etc/xdg \
+      -examplesdir /usr/share/doc/qt/examples \
+      -plugin-sql-{psql,mysql,sqlite,odbc,ibase} \
+      -system-zlib \
+      -system-libjpeg \
+      -system-libpng \
+      -system-sqlite \
+      -system-harfbuzz \
+      -openssl-linked \
+      -nomake examples \
+      -no-rpath \
+      -dbus-linked \
+      -journald \
+      -no-mimetype-database \
+      -no-use-gold-linker \
+      -reduce-relocations
+
+    make
+
+  fi
+
 }
 
 package_qt5-base-noname() {

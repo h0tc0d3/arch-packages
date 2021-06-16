@@ -10,10 +10,24 @@ conflicts=('egl-wayland')
 depends=(wayland eglexternalplatform)
 makedepends=(meson git)
 _commit=db7f6d80aa4221d51088b0b70a730ce95ca42d6c # tags/1.1.7
-source=("git+$url#commit=$_commit"
-  10_nvidia_wayland.json)
-sha256sums=('SKIP'
-  '5cccf1905a266e8e34d5ad4aad4be85390e60b1a0850a29dd9d64adc641de412')
+source=(
+  "git+$url#commit=$_commit"
+  10_nvidia_wayland.json
+)
+sha256sums=(
+  'SKIP'
+  '5cccf1905a266e8e34d5ad4aad4be85390e60b1a0850a29dd9d64adc641de412'
+)
+
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+}
 
 pkgver() {
 
@@ -37,8 +51,7 @@ build() {
     -D debug=false \
     -D optimization=2 \
     -D b_ndebug=true \
-    -D b_lto=true \
-    -D b_lto_mode=thin \
+    -D b_lto=true ${_extra_lto_flag} \
     -D b_pie=true
 
   meson compile -C build

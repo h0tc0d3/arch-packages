@@ -24,6 +24,8 @@ sha256sums=('SKIP'
   '427e7ed2626465ea7a8986189b6c8340a0520b9f7b8e2a56cd1169d375da7425'
   '7724a55c4916318ed81b22f21c37c0a66e78adce017563fed6d84d813a4b80bc')
 
+_llvm=0
+
 pkgver() {
 
   cd "${srcdir:?}/gtk" || (
@@ -36,6 +38,10 @@ pkgver() {
 }
 
 prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
 
   cd "${srcdir:?}/gtk" || (
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/gtk directory! Prepare Failed! \E[0m"
@@ -54,17 +60,36 @@ build() {
     exit 1
   )
 
-  ./configure \
-    --prefix=/usr \
-    --sysconfdir=/etc \
-    --localstatedir=/var \
-    --with-xinput=yes \
-    --disable-gtk-doc
+  if [[ ${_llvm} -eq 1 ]]; then
 
-  # https://bugzilla.gnome.org/show_bug.cgi?id=655517
-  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure \
+      --prefix=/usr \
+      --sysconfdir=/etc \
+      --localstatedir=/var \
+      --with-xinput=yes \
+      --disable-gtk-doc
 
-  make
+    # https://bugzilla.gnome.org/show_bug.cgi?id=655517
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./configure \
+      --prefix=/usr \
+      --sysconfdir=/etc \
+      --localstatedir=/var \
+      --with-xinput=yes \
+      --disable-gtk-doc
+
+    # https://bugzilla.gnome.org/show_bug.cgi?id=655517
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+
+    make
+
+  fi
 
 }
 
