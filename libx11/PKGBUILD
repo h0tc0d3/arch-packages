@@ -43,7 +43,6 @@ build() {
       ./configure --prefix=/usr \
       --disable-static \
       --disable-xf86bigfont
-    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
 
     CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
 
