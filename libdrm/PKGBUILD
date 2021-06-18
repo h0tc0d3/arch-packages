@@ -1,0 +1,66 @@
+pkgname=libdrm-noname
+pkgver=2.4.106
+pkgrel=1
+pkgdesc="Userspace interface to kernel DRM services"
+url="https://dri.freedesktop.org/"
+arch=(x86_64)
+license=('custom')
+provides=(libdrm)
+conflicts=(libdrm)
+depends=('libpciaccess')
+makedepends=('valgrind' 'python-docutils' 'meson')
+checkdepends=('cairo')
+replaces=(libdrm 'libdrm-new' 'libdrm-nouveau')
+source=("https://dri.freedesktop.org/libdrm/libdrm-${pkgver}.tar.xz"{,.sig}
+  COPYING)
+sha512sums=('33140e579906ab54b716149056af500c628ce41cd9ae3b0c33496693d2f5903fbcfccee8a942dd1560e1591111ed240da42612d5af5e75558db6f6a85d14617d'
+  'SKIP'
+  'b0ca349b882a4326b19f81f22804fabdb6fb7aef31cdc7b16b0a7ae191bfbb50c7daddb2fc4e6c33f1136af06d060a273de36f6f3412ea326f16fa4309fda660')
+validpgpkeys=(
+  '10A6D91DA1B05BD29F6DEBAC0C74F35979C486BE' # David Airlie <airlied@redhat.com>
+  '34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48' # emersion <contact@emersion.fr>
+  'E9E246A89E65374EB8355796B8B5FA0EFC1EC2FE' # "Leo Liu <leo.liu@amd.com>"
+)
+
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+}
+
+build() {
+
+  meson setup libdrm-${pkgver} build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true \
+    -Dudev=false \
+    -Dvalgrind=false
+
+  ninja -C build
+
+}
+
+check() {
+
+  meson test -C build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" meson install -C build
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname}" -m644 COPYING
+
+}
