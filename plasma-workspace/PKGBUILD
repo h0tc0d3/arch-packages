@@ -1,6 +1,6 @@
 pkgbase=plasma-workspace-noname
 pkgname=(plasma-workspace-noname plasma-wayland-session-noname)
-pkgver=5.22.1
+pkgver=5.22.2.1
 pkgrel=1
 pkgdesc='KDE Plasma Workspace'
 arch=(x86_64)
@@ -16,7 +16,7 @@ source=(
   kde.pam
   lto.cmake
 )
-sha256sums=('61ad5adab412c935ae156c4de3f38d1e2640752c95100ad6996b9e51e8539725'
+sha256sums=('3c802d06cbe33480b348b945ace5b3ee1cc3559976bb98eb2fd5d763a0ee4360'
   'SKIP'
   '00090291204baabe9d6857d3b1419832376dd2e279087d718b64792691e86739'
   '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')

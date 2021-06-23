@@ -1,5 +1,5 @@
 pkgname=kwin-noname
-pkgver=5.22.1
+pkgver=5.22.2.1
 pkgrel=1
 pkgdesc='An easy to use, but flexible, composited Window Manager'
 arch=(x86_64)
@@ -17,7 +17,7 @@ source=(
   'lto.cmake'
 )
 install=kwin.install
-sha256sums=('5506ee878e151734893bbcc0a70d6499c894b8986488c9c57285de1deb422850'
+sha256sums=('c87470ecf314c83943ed38d733cea9994321992a9c949bef0b55495989f60166'
   'SKIP'
   '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
 validpgpkeys=(
