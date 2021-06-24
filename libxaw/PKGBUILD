@@ -1,4 +1,4 @@
-pkgname=libxaw-noname
+pkgname=libxaw+clang
 pkgver=1.0.14
 pkgrel=1
 pkgdesc="X11 Athena Widget library"

@@ -1,4 +1,4 @@
-pkgname=icu-noname
+pkgname=icu+clang
 pkgver=69.1
 pkgrel=1
 pkgdesc="International Components for Unicode library"

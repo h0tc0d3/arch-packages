@@ -1,4 +1,4 @@
-pkgname=libxv-noname
+pkgname=libxv+clang
 pkgver=1.0.11
 pkgrel=4
 pkgdesc="X11 Video extension library"

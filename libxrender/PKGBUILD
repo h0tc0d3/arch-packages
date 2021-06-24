@@ -1,4 +1,4 @@
-pkgname=libxrender-noname
+pkgname=libxrender+clang
 pkgver=0.9.10
 pkgrel=4
 pkgdesc="X Rendering Extension client library"

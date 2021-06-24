@@ -1,5 +1,5 @@
-pkgbase=freetype2-noname
-pkgname=(freetype2-noname freetype2-docs-noname)
+pkgbase=freetype2+clang
+pkgname=(freetype2+clang freetype2-docs+clang)
 pkgver=2.10.4
 pkgrel=1
 pkgdesc="Font rasterization library"
@@ -73,7 +73,7 @@ check() {
 
 }
 
-package_freetype2-noname() {
+package_freetype2+clang() {
 
     provides=(freetype2 libfreetype.so)
     conflicts=(freetype2)
@@ -86,10 +86,10 @@ package_freetype2-noname() {
 
 }
 
-package_freetype2-docs-noname() {
+package_freetype2-docs+clang() {
 
     pkgdesc="Freetype documentation"
-    depends=(freetype2-noname)
+    depends=(freetype2+clang)
     provides=(freetype2-docs)
     conflicts=(freetype2-docs)
 

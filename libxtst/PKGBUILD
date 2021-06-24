@@ -1,4 +1,4 @@
-pkgname=libxtst-noname
+pkgname=libxtst+clang
 pkgver=1.2.3
 pkgrel=4
 pkgdesc="X11 Testing -- Resource extension library"

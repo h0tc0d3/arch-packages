@@ -1,4 +1,4 @@
-pkgname=xcb-proto-noname
+pkgname=xcb-proto+clang
 pkgver=1.14.1
 pkgrel=3
 pkgdesc="XML-XCB protocol descriptions"

@@ -1,4 +1,4 @@
-pkgname=lm_sensors-noname
+pkgname=lm_sensors+clang
 pkgver=3.6.0.r41.g31d1f125
 _commit=31d1f125d8076f1c8c8f3224b31d240e6e6a1763
 #_pkgver=${pkgver//./-}

@@ -1,4 +1,4 @@
-pkgname=xorg-xauth-noname
+pkgname=xorg-xauth+clang
 pkgver=1.1
 pkgrel=2
 pkgdesc="X.Org authorization settings program"

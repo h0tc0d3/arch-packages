@@ -1,4 +1,4 @@
-pkgname=fontconfig-noname
+pkgname=fontconfig+clang
 pkgver=2.13.93
 pkgrel=4
 epoch=2

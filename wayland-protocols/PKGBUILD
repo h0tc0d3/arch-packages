@@ -1,4 +1,4 @@
-pkgname=wayland-protocols-noname
+pkgname=wayland-protocols+clang
 pkgver=1.21
 pkgrel=1
 pkgdesc='Specifications of extended Wayland protocols'

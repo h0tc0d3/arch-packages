@@ -1,4 +1,4 @@
-pkgname=libxfixes-noname
+pkgname=libxfixes+clang
 pkgver=6.0.0
 pkgrel=1
 pkgdesc="X11 miscellaneous 'fixes' extension library"

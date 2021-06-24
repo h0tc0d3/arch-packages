@@ -1,5 +1,5 @@
-pkgbase=plasma-workspace-noname
-pkgname=(plasma-workspace-noname plasma-wayland-session-noname)
+pkgbase=plasma-workspace+clang
+pkgname=(plasma-workspace+clang plasma-wayland-session+clang)
 pkgver=5.22.2.1
 pkgrel=1
 pkgdesc='KDE Plasma Workspace'
@@ -58,7 +58,7 @@ build() {
 
 }
 
-package_plasma-workspace-noname() {
+package_plasma-workspace+clang() {
   optdepends=('plasma-workspace-wallpapers: additional wallpapers'
     'gpsd: GPS based geolocation' 'networkmanager-qt: IP based geolocation'
     'kdepim-addons: displaying PIM events in the calendar'
@@ -77,10 +77,10 @@ package_plasma-workspace-noname() {
 
 }
 
-package_plasma-wayland-session-noname() {
+package_plasma-wayland-session+clang() {
 
   pkgdesc='Plasma Wayland session'
-  depends=(plasma-workspace-noname qt5-wayland kwayland-integration xorg-xwayland)
+  depends=(plasma-workspace+clang qt5-wayland kwayland-integration xorg-xwayland)
   provides=(plasma-wayland-session)
   conflicts=(plasma-wayland-session)
 

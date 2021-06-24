@@ -1,4 +1,4 @@
-pkgname=xtrans-noname
+pkgname=xtrans+clang
 pkgver=1.4.0
 pkgrel=2
 pkgdesc="X transport library"

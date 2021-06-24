@@ -1,4 +1,4 @@
-pkgname=libxpm-noname
+pkgname=libxpm+clang
 pkgver=3.5.13
 pkgrel=2
 pkgdesc="X11 pixmap library"

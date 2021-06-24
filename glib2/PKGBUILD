@@ -1,5 +1,5 @@
-pkgbase=glib2-noname
-pkgname=(glib2-noname glib2-docs-noname)
+pkgbase=glib2+clang
+pkgname=(glib2+clang glib2-docs+clang)
 pkgver=2.68.3
 pkgrel=1
 pkgdesc="Low level core library"
@@ -84,7 +84,7 @@ check() {
 
 }
 
-package_glib2-noname() {
+package_glib2+clang() {
 
   depends+=(libmount.so)
   provides+=(glib2 libgio-2.0.so libglib-2.0.so libgmodule-2.0.so libgobject-2.0.so
@@ -110,7 +110,7 @@ package_glib2-noname() {
 
 }
 
-package_glib2-docs-noname() {
+package_glib2-docs+clang() {
 
   pkgdesc="Documentation for GLib"
   license+=(custom)

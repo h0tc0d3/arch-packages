@@ -1,4 +1,4 @@
-pkgname=libx11-noname
+pkgname=libx11+clang
 pkgver=1.7.2
 pkgrel=1
 pkgdesc="X11 client-side library"

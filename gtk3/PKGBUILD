@@ -1,5 +1,5 @@
-pkgbase=gtk3-noname
-pkgname=(gtk3-noname gtk3-docs-noname gtk3-demos-noname)
+pkgbase=gtk3+clang
+pkgname=(gtk3+clang gtk3-docs+clang gtk3-demos+clang)
 pkgver=3.24.29
 pkgrel=2
 epoch=1
@@ -80,7 +80,7 @@ _pick() {
 
 }
 
-package_gtk3-noname() {
+package_gtk3+clang() {
 
   provides=(gtk3 gtk3-print-backends libgtk-3.so libgdk-3.so libgailutil-3.so)
   conflicts=(gtk3 gtk3-print-backends)
@@ -115,10 +115,10 @@ END
 
 }
 
-package_gtk3-docs-noname() {
+package_gtk3-docs+clang() {
 
   pkgdesc+=" (documentation)"
-  depends=('gtk3-noname')
+  depends=('gtk3+clang')
   provides=('gtk3-docs')
   conflicts=('gtk3-docs')
 
@@ -126,10 +126,10 @@ package_gtk3-docs-noname() {
 
 }
 
-package_gtk3-demos-noname() {
+package_gtk3-demos+clang() {
 
   pkgdesc+=" (demo applications)"
-  depends=('gtk3-noname')
+  depends=('gtk3+clang')
   provides=('gtk3-demos')
   conflicts=('gtk3-demos')
 

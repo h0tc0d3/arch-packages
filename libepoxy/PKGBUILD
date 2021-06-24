@@ -1,4 +1,4 @@
-pkgname=libepoxy-noname
+pkgname=libepoxy+clang
 pkgver=1.5.8
 pkgrel=1
 pkgdesc="Library handling OpenGL function pointer management"

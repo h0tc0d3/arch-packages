@@ -1,4 +1,4 @@
-pkgname=libice-noname
+pkgname=libice+clang
 pkgver=1.0.10
 pkgrel=3
 pkgdesc="X11 Inter-Client Exchange library"

@@ -1,4 +1,4 @@
-pkgname=zstd-noname
+pkgname=zstd+clang
 pkgver=1.5.0
 pkgrel=1
 pkgdesc='Zstandard - Fast real-time compression algorithm'

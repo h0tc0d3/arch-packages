@@ -1,5 +1,5 @@
-pkgbase=pango-noname
-pkgname=(pango-noname pango-docs-noname)
+pkgbase=pango+clang
+pkgname=(pango+clang pango-docs+clang)
 pkgver=1.48.5+24+g07f64620
 pkgrel=1
 epoch=1
@@ -58,7 +58,7 @@ check() {
 
 }
 
-package_pango-noname() {
+package_pango+clang() {
 
   provides=(pango libpango{,cairo,ft2,xft}-1.0.so)
   conflicts=('pango')
@@ -70,10 +70,10 @@ package_pango-noname() {
 
 }
 
-package_pango-docs-noname() {
+package_pango-docs+clang() {
 
   pkgdesc+=" (documentation)"
-  depends=('pango-noname')
+  depends=('pango+clang')
   provides=('pango-docs')
   conflicts=('pango-docs')
 

@@ -1,4 +1,4 @@
-pkgname=libxml2-noname
+pkgname=libxml2+clang
 pkgver=2.9.12
 pkgrel=1
 pkgdesc='XML parsing library, version 2'

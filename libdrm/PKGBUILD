@@ -1,4 +1,4 @@
-pkgname=libdrm-noname
+pkgname=libdrm+clang
 pkgver=2.4.106
 pkgrel=1
 pkgdesc="Userspace interface to kernel DRM services"

@@ -1,4 +1,4 @@
-pkgname=libxi-noname
+pkgname=libxi+clang
 pkgver=1.7.10
 pkgrel=3
 pkgdesc="X11 Input extension library"

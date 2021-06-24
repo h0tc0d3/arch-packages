@@ -1,4 +1,4 @@
-pkgname=libxkbfile-noname
+pkgname=libxkbfile+clang
 pkgver=1.1.0
 pkgrel=2
 pkgdesc="X11 keyboard file manipulation library"

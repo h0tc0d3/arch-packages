@@ -1,4 +1,4 @@
-pkgname=gtk2-noname
+pkgname=gtk2+clang
 pkgver=2.24.33
 pkgrel=2
 pkgdesc="GObject-based multi-platform GUI toolkit (legacy)"

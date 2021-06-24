@@ -1,4 +1,4 @@
-pkgname=xorg-xkbcomp-noname
+pkgname=xorg-xkbcomp+clang
 pkgver=1.4.5
 pkgrel=1
 pkgdesc="X Keyboard description compiler"

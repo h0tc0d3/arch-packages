@@ -1,4 +1,4 @@
-pkgname=xorg-setxkbmap-noname
+pkgname=xorg-setxkbmap+clang
 pkgver=1.3.2
 pkgrel=2
 pkgdesc='Set the keyboard using the X Keyboard Extension'

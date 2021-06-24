@@ -1,4 +1,4 @@
-pkgname=libxt-noname
+pkgname=libxt+clang
 pkgver=1.2.1
 pkgrel=1
 pkgdesc="X11 toolkit intrinsics library"

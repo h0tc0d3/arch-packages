@@ -1,4 +1,4 @@
-pkgname=libffi-noname
+pkgname=libffi+clang
 pkgver=3.3
 pkgrel=4
 pkgdesc='Portable foreign function interface library'

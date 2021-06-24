@@ -1,4 +1,4 @@
-pkgname=xcb-util-wm-noname
+pkgname=xcb-util-wm+clang
 pkgver=0.4.1
 pkgrel=3
 pkgdesc="Utility libraries for XC Binding - client and window-manager helpers for ICCCM"

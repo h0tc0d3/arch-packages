@@ -1,4 +1,4 @@
-pkgname=libxfont2-noname
+pkgname=libxfont2+clang
 pkgver=2.0.4
 pkgrel=3
 pkgdesc="X11 font rasterisation library"

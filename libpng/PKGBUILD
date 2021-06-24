@@ -1,4 +1,4 @@
-pkgname=libpng-noname
+pkgname=libpng+clang
 pkgver=1.6.37
 pkgrel=3
 pkgdesc="A collection of routines used to create PNG format graphics files"

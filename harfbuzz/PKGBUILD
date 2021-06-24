@@ -1,5 +1,5 @@
-pkgbase=harfbuzz-noname
-pkgname=(harfbuzz-noname harfbuzz-icu-noname)
+pkgbase=harfbuzz+clang
+pkgname=(harfbuzz+clang harfbuzz-icu+clang)
 pkgver=2.8.1
 pkgrel=1
 pkgdesc="OpenType text shaping engine"
@@ -76,7 +76,7 @@ check() {
 
 }
 
-package_harfbuzz-noname() {
+package_harfbuzz+clang() {
   depends=('glib2' 'freetype2' 'graphite' 'libglib-2.0.so' 'libfreetype.so'
     'libgobject-2.0.so')
   provides=('harfbuzz' 'libharfbuzz.so' 'libharfbuzz-subset.so' 'libharfbuzz-gobject.so')
@@ -96,10 +96,10 @@ package_harfbuzz-noname() {
 
 }
 
-package_harfbuzz-icu-noname() {
+package_harfbuzz-icu+clang() {
 
   pkgdesc="${pkgdesc} (ICU integration)"
-  depends=("harfbuzz-noname=${pkgver}-${pkgrel}" 'icu' 'libharfbuzz.so')
+  depends=("harfbuzz+clang=${pkgver}-${pkgrel}" 'icu' 'libharfbuzz.so')
   provides=('harfbuzz-icu' 'libharfbuzz-icu.so')
   conflicts=('harfbuzz-icu')
 

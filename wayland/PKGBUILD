@@ -1,5 +1,5 @@
-pkgbase=wayland-noname
-pkgname=(wayland-noname wayland-docs-noname)
+pkgbase=wayland+clang
+pkgname=(wayland+clang wayland-docs+clang)
 pkgver=1.19.0
 pkgrel=1
 pkgdesc='A computer display server protocol'
@@ -50,7 +50,7 @@ check() {
 
 }
 
-package_wayland-noname() {
+package_wayland+clang() {
 
   provides=(wayland)
   conflicts=(wayland)
@@ -62,7 +62,7 @@ package_wayland-noname() {
 
 }
 
-package_wayland-docs-noname() {
+package_wayland-docs+clang() {
 
   pkgdesc+=" (documentation)"
   provides=(wayland-docs)

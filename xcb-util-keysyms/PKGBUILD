@@ -1,4 +1,4 @@
-pkgname=xcb-util-keysyms-noname
+pkgname=xcb-util-keysyms+clang
 pkgver=0.4.0
 pkgrel=3
 pkgdesc="Utility libraries for XC Binding - Standard X key constants and conversion to/from keycodes"

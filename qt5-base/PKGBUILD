@@ -1,5 +1,5 @@
-pkgbase=qt5-base-noname
-pkgname=(qt5-base-noname qt5-xcb-private-headers-noname)
+pkgbase=qt5-base+clang
+pkgname=(qt5-base+clang qt5-xcb-private-headers+clang)
 pkgver=5.15.2+kde+r200
 pkgrel=1
 _commit=b8841b34c5b90bf32394568102888ddc559f3ddc
@@ -128,7 +128,7 @@ build() {
 
 }
 
-package_qt5-base-noname() {
+package_qt5-base+clang() {
 
   pkgdesc='A cross-platform application and UI framework'
   conflicts=('qt5-base')
@@ -157,10 +157,10 @@ package_qt5-base-noname() {
   done
 }
 
-package_qt5-xcb-private-headers-noname() {
+package_qt5-xcb-private-headers+clang() {
 
   pkgdesc='Private headers for Qt5 Xcb'
-  depends=("qt5-base-noname=${pkgver}")
+  depends=("qt5-base+clang=${pkgver}")
 
   conflicts=('qt5-xcb-private-headers')
   provides=('qt5-xcb-private-headers')

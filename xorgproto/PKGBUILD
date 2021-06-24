@@ -1,4 +1,4 @@
-pkgname=xorgproto-noname
+pkgname=xorgproto+clang
 pkgver=2021.4
 pkgrel=1
 pkgdesc="combined X.Org X11 Protocol headers"

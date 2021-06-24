@@ -1,11 +1,11 @@
-pkgbase=xorg-server-noname
+pkgbase=xorg-server+clang
 pkgname=(
-  'xorg-server-noname'
-  'xorg-server-xephyr-noname'
-  'xorg-server-xvfb-noname'
-  'xorg-server-xnest-noname'
-  'xorg-server-common-noname'
-  'xorg-server-devel-noname'
+  'xorg-server+clang'
+  'xorg-server-xephyr+clang'
+  'xorg-server-xvfb+clang'
+  'xorg-server-xnest+clang'
+  'xorg-server-common+clang'
+  'xorg-server-devel+clang'
 )
 pkgver=1.20.11
 pkgrel=1
@@ -118,7 +118,7 @@ _install() {
   done
 }
 
-package_xorg-server-common-noname() {
+package_xorg-server-common+clang() {
 
   pkgdesc="Xorg server common files"
   depends=(xkeyboard-config xorg-xkbcomp xorg-setxkbmap)
@@ -134,10 +134,10 @@ package_xorg-server-common-noname() {
 
 }
 
-package_xorg-server-noname() {
+package_xorg-server+clang() {
 
   pkgdesc="Xorg X server"
-  depends=(libepoxy libxfont2 pixman xorg-server-common-noname libunwind
+  depends=(libepoxy libxfont2 pixman xorg-server-common+clang libunwind
     dbus libgl xf86-input-libinput nettle
     libpciaccess libdrm libxshmfence) # FS#52949
   # see xorg-server-*/hw/xfree86/common/xf86Module.h for ABI versions - we provide major numbers that drivers can depend on
@@ -164,10 +164,10 @@ package_xorg-server-noname() {
 
 }
 
-package_xorg-server-xephyr-noname() {
+package_xorg-server-xephyr+clang() {
 
   pkgdesc="A nested X server that runs as an X application"
-  depends=(libxfont2 libgl libepoxy libunwind systemd-libs libxv pixman xorg-server-common-noname
+  depends=(libxfont2 libgl libepoxy libunwind systemd-libs libxv pixman xorg-server-common+clang
     xcb-util-image xcb-util-renderutil xcb-util-wm xcb-util-keysyms
     nettle libtirpc)
   provides=('xorg-server-xephyr')
@@ -181,10 +181,10 @@ package_xorg-server-xephyr-noname() {
 
 }
 
-package_xorg-server-xvfb-noname() {
+package_xorg-server-xvfb+clang() {
 
   pkgdesc="Virtual framebuffer X server"
-  depends=(libxfont2 libunwind pixman xorg-server-common-noname xorg-xauth
+  depends=(libxfont2 libunwind pixman xorg-server-common+clang xorg-xauth
     libgl nettle libtirpc)
   provides=('xorg-server-xvfb')
   conflicts=('xorg-server-xvfb')
@@ -200,10 +200,10 @@ package_xorg-server-xvfb-noname() {
 
 }
 
-package_xorg-server-xnest-noname() {
+package_xorg-server-xnest+clang() {
 
   pkgdesc="A nested X server that runs as an X application"
-  depends=(libxfont2 libxext pixman xorg-server-common-noname nettle libtirpc)
+  depends=(libxfont2 libxext pixman xorg-server-common+clang nettle libtirpc)
   provides=('xorg-server-xnest')
   conflicts=('xorg-server-xnest')
 
@@ -215,7 +215,7 @@ package_xorg-server-xnest-noname() {
 
 }
 
-package_xorg-server-devel-noname() {
+package_xorg-server-devel+clang() {
 
   pkgdesc="Development files for the X.Org X server"
   depends=('xorgproto' 'mesa' 'libpciaccess'

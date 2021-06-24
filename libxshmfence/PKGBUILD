@@ -1,4 +1,4 @@
-pkgname=libxshmfence-noname
+pkgname=libxshmfence+clang
 pkgver=1.3
 pkgrel=2
 pkgdesc="a library that exposes a event API on top of Linux futexes"

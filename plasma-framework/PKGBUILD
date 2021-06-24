@@ -1,4 +1,4 @@
-pkgname=plasma-framework-noname
+pkgname=plasma-framework+clang
 pkgver=5.83.0
 pkgrel=1
 pkgdesc='Plasma library and runtime components based upon KF5 and Qt5'

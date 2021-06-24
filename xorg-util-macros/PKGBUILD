@@ -1,4 +1,4 @@
-pkgname=xorg-util-macros-noname
+pkgname=xorg-util-macros+clang
 pkgver=1.19.3
 pkgrel=1
 pkgdesc="X.Org Autotools macros"

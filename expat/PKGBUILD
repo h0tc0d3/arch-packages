@@ -1,4 +1,4 @@
-pkgname=expat-noname
+pkgname=expat+clang
 pkgver=2.4.1
 pkgrel=1
 pkgdesc='An XML parser library'

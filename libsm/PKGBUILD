@@ -1,4 +1,4 @@
-pkgname=libsm-noname
+pkgname=libsm+clang
 pkgver=1.2.3
 pkgrel=2
 pkgdesc="X11 Session Management library"

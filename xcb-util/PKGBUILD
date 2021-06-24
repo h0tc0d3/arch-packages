@@ -1,4 +1,4 @@
-pkgname=xcb-util-noname
+pkgname=xcb-util+clang
 pkgver=0.4.0
 pkgrel=3
 pkgdesc="Utility libraries for XC Binding"

@@ -1,4 +1,4 @@
-pkgname=xcb-util-renderutil-noname
+pkgname=xcb-util-renderutil+clang
 pkgver=0.3.9
 pkgrel=3
 pkgdesc="Utility libraries for XC Binding - Convenience functions for the Render extension"

@@ -1,5 +1,5 @@
-pkgbase=gtk4-noname
-pkgname=(gtk4-noname gtk-update-icon-cache-noname gtk4-docs-noname gtk4-demos-noname)
+pkgbase=gtk4+clang
+pkgname=(gtk4+clang gtk-update-icon-cache+clang gtk4-docs+clang gtk4-demos+clang)
 pkgver=4.2.1
 pkgrel=2
 epoch=1
@@ -83,7 +83,7 @@ _pick() {
 
 }
 
-package_gtk4-noname() {
+package_gtk4+clang() {
 
   depends+=(gtk-update-icon-cache)
   provides=(gtk4 libgtk-4.so)
@@ -119,10 +119,10 @@ END
 
 }
 
-package_gtk-update-icon-cache-noname() {
+package_gtk-update-icon-cache+clang() {
 
   pkgdesc="GTK icon cache updater"
-  depends=(gtk4-noname gdk-pixbuf2 librsvg hicolor-icon-theme)
+  depends=(gtk4+clang gdk-pixbuf2 librsvg hicolor-icon-theme)
   provides=(gtk-update-icon-cache)
   conflicts=(gtk-update-icon-cache)
 
@@ -135,10 +135,10 @@ package_gtk-update-icon-cache-noname() {
 
 }
 
-package_gtk4-docs-noname() {
+package_gtk4-docs+clang() {
 
   pkgdesc+=" (documentation)"
-  depends=(gtk4-noname)
+  depends=(gtk4+clang)
   provides=(gtk4-docs)
   conflicts=(gtk4-docs)
 
@@ -146,10 +146,10 @@ package_gtk4-docs-noname() {
 
 }
 
-package_gtk4-demos-noname() {
+package_gtk4-demos+clang() {
 
   pkgdesc+=" (demo applications)"
-  depends=(gtk4-noname)
+  depends=(gtk4+clang)
   provides=(gtk4-demos)
   conflicts=(gtk4-demos)
 

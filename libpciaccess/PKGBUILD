@@ -1,4 +1,4 @@
-pkgname=libpciaccess-noname
+pkgname=libpciaccess+clang
 pkgver=0.16
 pkgrel=2
 pkgdesc="X11 PCI access library"

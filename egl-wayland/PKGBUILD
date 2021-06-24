@@ -1,4 +1,4 @@
-pkgname=egl-wayland-noname
+pkgname=egl-wayland+clang
 pkgver=1.1.7
 pkgrel=1
 pkgdesc="EGLStream-based Wayland external platform"

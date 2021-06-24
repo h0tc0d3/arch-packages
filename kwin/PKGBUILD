@@ -1,4 +1,4 @@
-pkgname=kwin-noname
+pkgname=kwin+clang
 pkgver=5.22.2.1
 pkgrel=1
 pkgdesc='An easy to use, but flexible, composited Window Manager'

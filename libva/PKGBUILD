@@ -1,4 +1,4 @@
-pkgname=libva-noname
+pkgname=libva+clang
 pkgver=2.12.0
 pkgrel=1
 pkgdesc='Video Acceleration (VA) API for Linux'
