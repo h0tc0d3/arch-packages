@@ -17,12 +17,12 @@ PACKAGES=(
   qt5-base icu freetype2 pango fontconfig harfbuzz cairo libepoxy
   wayland-protocols egl-wayland libx11 xtrans libice libsm libxt
   libxrender xorg-server xorgproto libxv libxpm libxfixes libxtst
-  xorg-xauth xorg-util-macros libxext libxres libxi libxmu libxkbfile
+  xorg-xauth xorg-util-macros libxext libxres libxi libxmu libxaw libxkbfile
   libpciaccess xorg-font-util libxfont2 xorg-xkbcomp libxshmfence
   xorg-setxkbmap kwin plasma-workspace plasma-framework glibc libva
   xcb-proto libxcb xcb-util xcb-util-renderutil xcb-util-image libxdamage
   xcb-util-cursor xcb-util-keysyms xcb-util-wm libunwind libdrm libxxf86vm
-  libffi libvdpau expat wayland lm_sensors
+  libffi libvdpau expat wayland lm_sensors libinput xf86-input-libinput
 )
 
 IPACKAGES=(
@@ -31,9 +31,9 @@ IPACKAGES=(
   libxres libxi libpciaccess libdrm xorg-font-util libunwind
   libxfont2 xorg-xkbcomp xorg-setxkbmap xorg-xauth wayland-protocols
   egl-wayland xorgproto libxxf86vm libxfixes libxdamage libxv pixman cairo
-  libx11 xtrans libice libsm libxt libxtst libxpm libxmu libxrender
+  libx11 xtrans libice libsm libxt libxtst libxpm libxmu libxaw libxrender
   libepoxy libxshmfence libva libvdpau xorg-server kwin libffi expat wayland
-  plasma-workspace plasma-framework glib2 gtk2 gtk3 gtk4
+  plasma-workspace plasma-framework glib2 gtk2 gtk3 libinput xf86-input-libinput  gtk4
   xcb-proto libxcb xcb-util xcb-util-renderutil xcb-util-image
   xcb-util-cursor xcb-util-keysyms xcb-util-wm lm_sensors
 )
