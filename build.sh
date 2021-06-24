@@ -7,7 +7,7 @@ if [[ "${SOURCE_DIR}" == "." ]]; then
   SOURCE_DIR=${PWD}
 fi
 
-MAKEPKG_FLAGS="-ci"
+MAKEPKG_FLAGS="-sci"
 set -euo pipefail
 
 IFS=$' '
@@ -205,7 +205,7 @@ for arg in "$@"; do
     ;;
   -f | --force)
     shift
-    MAKEPKG_FLAGS="-cfi"
+    MAKEPKG_FLAGS="-scfi"
     ;;
   -h | --help)
     echo -e "\nUSAGE: $(basename "$0") [options]...\n\n" \

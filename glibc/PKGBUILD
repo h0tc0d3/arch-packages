@@ -1,7 +1,7 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
 pkgver=2.33
-pkgrel=5
+pkgrel=6
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
@@ -10,7 +10,7 @@ optdepends=('perl: for mtrace')
 options=(!strip staticlibs)
 #_commit=3de512be7ea6053255afed6154db9ee31d4e557a
 #source=(git+https://sourceware.org/git/glibc.git#commit=$_commit
-source=(https://ftp.gnu.org/gnu/glibc/glibc-$pkgver.tar.xz{,.sig}
+source=(https://ftp.gnu.org/gnu/glibc/glibc-$pkgver.tar.xz
         locale.gen.txt
         locale-gen
         lib32-glibc.conf
@@ -22,7 +22,6 @@ source=(https://ftp.gnu.org/gnu/glibc/glibc-$pkgver.tar.xz{,.sig}
 validpgpkeys=(7273542B39962DF7B299931416792B4EA25340F8 # Carlos O'Donell
               BC7C7372637EC10C57D7AA6579C43DFBF1CF2187) # Siddhesh Poyarekar
 md5sums=('390bbd889c7e8e8a7041564cb6b27cca'
-         'SKIP'
          '07ac979b6ab5eeb778d55f041529d623'
          '476e9113489f93b348b21e144b6a8fcf'
          '6e052f1cb693d5d3203f50f9d4e8c33b'
@@ -60,7 +59,7 @@ build() {
       --enable-add-ons
       --enable-bind-now
       --enable-cet
-      --enable-kernel=4.4
+      --enable-kernel=5.10
       --enable-lock-elision
       --enable-multi-arch
       --enable-stack-protector=strong
