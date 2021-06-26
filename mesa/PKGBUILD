@@ -36,9 +36,9 @@ validpgpkeys=(
 # NINJAFLAGS is an env var used to pass commandline options to ninja
 # NOTE: It's your responbility to validate the value of $NINJAFLAGS. If unsure, don't set it.
 
-DRI_DRIVERS=""
-GALLIUM_DRIVERS="radeonsi,swrast,svga,zink"
-VULKAN_DRIVERS="amd,swrast"
+DRI_DRIVERS="i915,i965,r200,r100,nouveau"
+GALLIUM_DRIVERS="r300,r600,radeonsi,nouveau,svga,swrast,virgl,iris,zink,crocus"
+VULKAN_DRIVERS="amd,intel,swrast,virtio-experimenta"
 
 _extra_lto_flag=""
 
@@ -78,7 +78,6 @@ build() {
     -D dri-drivers="${DRI_DRIVERS}" \
     -D gallium-drivers="${GALLIUM_DRIVERS}" \
     -D vulkan-drivers="${VULKAN_DRIVERS}" \
-    -D swr-arches=avx,avx2 \
     -D gallium-extra-hud=true \
     -D gallium-omx=bellagio \
     -D gallium-nine=true \
@@ -96,9 +95,9 @@ build() {
     -D glx=dri \
     -D libunwind=enabled \
     -D lmsensors=enabled \
-    -D osmesa=false \
+    -D osmesa=true \
     -D shared-glapi=enabled \
-    -D gallium-opencl=disabled \
+    -D gallium-opencl=icd \
     -D vulkan-layers=device-select,overlay \
     -D zstd=enabled \
     -D tools=[] \
