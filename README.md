@@ -13,7 +13,7 @@ USAGE: build.sh [options]...
   --install-deps, -d            Install build dependencies
   --force, -f                   Force rebuild packages
   --check, -c                   Check packages versions
-  --all, -a                     Build all packages(if not set only not installed)
+  --all, -a                     Build all packages(if not set only updates & not installed)
   --yes, -y                     Answer yes for build all packages
 ```
 

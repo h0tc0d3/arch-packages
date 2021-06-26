@@ -190,6 +190,10 @@ build() {
 
   local yn=0
   local pkgname=""
+  local pkginfo=""
+  local iepoch=""
+  local ipkgver=""
+  local ipkgrel=""
 
   for package in "${IPACKAGES[@]}"; do
 
@@ -205,11 +209,39 @@ build() {
 
       # shellcheck disable=SC1090 disable=SC1091
       source "${SOURCE_DIR:?}/${package}/PKGBUILD"
+
       if pacman -Qs "${pkgname[0]}" >/dev/null; then
-        continue
+
+        pkginfo="$(pacman -Qi "${pkgname[0]}" | grep -oE "[0-9]*:*[0-9a-zA-Z\._\+]+-[0-9]+" | head -n 1)"
+
+        if [[ "${pkginfo}" == *":"* ]]; then
+
+          iepoch="${pkginfo%:*}"
+          ipkgver="$(echo "${pkginfo##*:}" | cut -f1 -d-)"
+          ipkgrel="${pkginfo##*-}"
+
+          if [[ "${iepoch}" == "${epoch:?}" && "${ipkgver}" == "${pkgver:?}" && "${ipkgrel}" == "${pkgrel:?}" ]]; then
+            continue
+          fi
+
+        else
+
+          ipkgver="${pkginfo%%-*}"
+          ipkgrel="${pkginfo##*-}"
+
+          if [[ "${ipkgver}" == "${pkgver:?}" && "${ipkgrel}" == "${pkgrel:?}" ]]; then
+            continue
+          fi
+
+        fi
+
       fi
 
-      build_question "${package}"
+      if [[ ${ALL_YES} -eq 1 ]]; then
+        build_package "${package}"
+      else
+        build_question "${package}"
+      fi
 
     fi
 
@@ -272,7 +304,7 @@ for arg in "$@"; do
       " --install-deps, -d\t\tInstall build dependencies\n" \
       " --force, -f\t\t\tForce rebuild packages\n" \
       " --check, -c\t\t\tCheck packages versions\n" \
-      " --all, -a\t\t\tBuild all packages(if not set only not installed)\n" \
+      " --all, -a\t\t\tBuild all packages(if not set only updates & not installed)\n" \
       " --yes, -y\t\t\tAnswer yes for build all packages\n"
 
     exit 0
