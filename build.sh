@@ -7,7 +7,10 @@ if [[ "${SOURCE_DIR}" == "." ]]; then
   SOURCE_DIR=${PWD}
 fi
 
-MAKEPKG_FLAGS="-sci"
+FORCE=0
+ALL=0
+ALL_YES=0
+
 set -euo pipefail
 
 IFS=$' '
@@ -33,7 +36,7 @@ IPACKAGES=(
   egl-wayland xorgproto libxxf86vm libxfixes libxdamage libxv pixman cairo
   libx11 xtrans libice libsm libxt libxtst libxpm libxmu libxaw libxrender
   libepoxy libxshmfence libva libvdpau xorg-server kwin libffi expat wayland
-  plasma-workspace plasma-framework glib2 gtk2 gtk3 libinput xf86-input-libinput  gtk4
+  plasma-workspace plasma-framework glib2 gtk2 gtk3 libinput xf86-input-libinput gtk4
   xcb-proto libxcb xcb-util xcb-util-renderutil xcb-util-image
   xcb-util-cursor xcb-util-keysyms xcb-util-wm lm_sensors
 )
@@ -60,6 +63,7 @@ install-keys() {
   done
 
   if [[ ${count} -gt 1 ]]; then
+    echo "Import keys: gpg --recv-keys ${keys[*]}"
     # shellcheck disable=2086
     gpg --recv-keys ${keys[*]}
   fi
@@ -110,7 +114,7 @@ check() {
 
 install-deps() {
 
-  local IDEPENDENCIES=('cmake')
+  local IDEPENDENCIES=('cmake' 'git')
   local count=1
   for package in "${PACKAGES[@]}"; do
     # shellcheck disable=SC1090 disable=SC1091
@@ -141,29 +145,74 @@ install-deps() {
 
 }
 
+build_package() {
+
+  local package=${1}
+  local MAKEPKG_FLAGS="-sci"
+  if [[ ${FORCE} -eq 1 ]]; then
+    MAKEPKG_FLAGS="-scfi"
+  fi
+
+  cd "${SOURCE_DIR}/${package}" || (
+    echo -e "\E[1;31m[-] Can't cd to ${SOURCE_DIR}/${package} directory! \E[0m"
+    exit 1
+  )
+  echo -e "\E[1;33m[+] Build ${package} package\E[0m"
+  makepkg "${MAKEPKG_FLAGS}"
+
+}
+
+build_question() {
+
+  local package=${1}
+
+  while true; do
+
+    echo -ne "\n\E[1;33mBuild ${package}? [Y/n] \E[0m"
+    read -r yn
+
+    case ${yn} in
+    [Yy])
+      build_package "${package}"
+      break
+      ;;
+    [Nn])
+      break
+      ;;
+    *) echo -e "\E[1;31mPlease answer Y or N! \E[0m" ;;
+    esac
+
+  done
+
+}
+
 build() {
 
   local yn=0
+  local pkgname=""
+
   for package in "${IPACKAGES[@]}"; do
-    while true; do
-      echo -ne "\n\E[1;33mBuild ${package}? [Y/n] \E[0m"
-      read -r yn
-      case ${yn} in
-      [Yy])
-        cd "${SOURCE_DIR}/${package}" || (
-          echo -e "\E[1;31m[-] Can't cd to ${SOURCE_DIR}/${package} directory! \E[0m"
-          exit 1
-        )
-        echo -e "\E[1;33m[+] Build ${package} package\E[0m"
-        makepkg "${MAKEPKG_FLAGS}"
-        break
-        ;;
-      [Nn])
-        break
-        ;;
-      *) echo -e "\E[1;31mPlease answer Y or N! \E[0m" ;;
-      esac
-    done
+
+    if [[ ${ALL} -eq 1 ]]; then
+
+      if [[ ${ALL_YES} -eq 1 ]]; then
+        build_package "${package}"
+      else
+        build_question "${package}"
+      fi
+
+    else
+
+      # shellcheck disable=SC1090 disable=SC1091
+      source "${SOURCE_DIR:?}/${package}/PKGBUILD"
+      if pacman -Qs "${pkgname[0]}" >/dev/null; then
+        continue
+      fi
+
+      build_question "${package}"
+
+    fi
+
   done
 
 }
@@ -205,7 +254,15 @@ for arg in "$@"; do
     ;;
   -f | --force)
     shift
-    MAKEPKG_FLAGS="-scfi"
+    FORCE=1
+    ;;
+  -a | --all)
+    shift
+    ALL=1
+    ;;
+  -y | --yes)
+    shift
+    ALL_YES=1
     ;;
   -h | --help)
     echo -e "\nUSAGE: $(basename "$0") [options]...\n\n" \
@@ -215,7 +272,10 @@ for arg in "$@"; do
       " --install-deps, -d\t\tInstall build dependencies\n" \
       " --force, -f\t\t\tForce rebuild packages\n" \
       " --check, -c\t\t\tCheck packages versions\n" \
-      exit 0
+      " --all, -a\t\t\tBuild all packages(if not set only not installed)\n" \
+      " --yes, -y\t\t\tAnswer yes for build all packages\n"
+
+    exit 0
     ;;
   *) shift ;;
   esac

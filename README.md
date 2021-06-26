@@ -13,6 +13,8 @@ USAGE: build.sh [options]...
   --install-deps, -d            Install build dependencies
   --force, -f                   Force rebuild packages
   --check, -c                   Check packages versions
+  --all, -a                     Build all packages(if not set only not installed)
+  --yes, -y                     Answer yes for build all packages
 ```
 
 Before build packages please run `./build.sh --install-keys` and then `./build.sh --install-deps`!
@@ -118,7 +120,7 @@ Before build Mesa edit `mesa/mesa.conf` file and set dri, gallium, vulkan driver
 More info you can find here [Mesa OpenGL](https://wiki.archlinux.org/title/OpenGL), [mesa-git package](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=mesa-git), [Mesa Documentation](https://docs.mesa3d.org/systems.html)
 
 ```bash
-DRI_DRIVERS=""
-GALLIUM_DRIVERS="radeonsi,swrast,svga,zink"
-VULKAN_DRIVERS="amd,swrast"
+DRI_DRIVERS="i915,i965,r200,r100,nouveau"
+GALLIUM_DRIVERS="r300,r600,radeonsi,nouveau,svga,swrast,virgl,iris,zink,crocus"
+VULKAN_DRIVERS="amd,intel,swrast,virtio-experimenta"
 ```
