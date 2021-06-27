@@ -1,0 +1,68 @@
+pkgname=jemalloc+clang
+epoch=1
+pkgver=5.2.1
+pkgrel=3
+pkgdesc='General-purpose scalable concurrent malloc implementation'
+arch=('x86_64')
+license=('BSD')
+url='http://www.canonware.com/jemalloc/'
+depends=('glibc')
+provides=('jemalloc' 'libjemalloc.so')
+conflicts=('jemalloc')
+optdepends=('perl: for jeprof')
+source=("https://github.com/jemalloc/jemalloc/releases/download/${pkgver}/jemalloc-${pkgver}.tar.bz2")
+sha256sums=('34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=0
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/jemalloc-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/jemalloc-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure \
+      --prefix=/usr \
+      --enable-autogen \
+      --disable-initial-exec-tls
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./configure \
+      --prefix=/usr \
+      --enable-autogen \
+      --disable-initial-exec-tls
+
+    make
+
+  fi
+
+}
+
+package() {
+
+  cd "${srcdir:?}/jemalloc-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/jemalloc-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -Dm644 COPYING "${pkgdir:?}/usr/share/licenses/$pkgname/COPYING"
+  chmod 644 "${pkgdir:?}/usr/lib/libjemalloc_pic.a"
+
+}

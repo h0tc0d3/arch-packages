@@ -121,6 +121,6 @@ More info you can find here [Mesa OpenGL](https://wiki.archlinux.org/title/OpenG
 
 ```bash
 DRI_DRIVERS="i915,i965,r200,r100,nouveau"
-GALLIUM_DRIVERS="r300,r600,radeonsi,nouveau,svga,swrast,virgl,iris,zink,crocus"
-VULKAN_DRIVERS="amd,intel,swrast,virtio-experimenta"
+GALLIUM_DRIVERS="r300,r600,radeonsi,nouveau,svga,swrast,virgl,iris,zink"
+VULKAN_DRIVERS="amd,intel,swrast"
 ```

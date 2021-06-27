@@ -1,0 +1,69 @@
+pkgname=gperftools+clang
+pkgver=2.9.1
+pkgrel=1
+pkgdesc="Fast, multi-threaded malloc and nifty performance analysis tools"
+arch=('x86_64')
+url="https://github.com/gperftools/gperftools"
+license=('BSD')
+depends=('perl')
+provides=('gperftools' 'libtcmalloc.so'
+  'libprofiler.so'
+  'libtcmalloc_debug.so'
+  'libtcmalloc_and_profiler.so'
+  'libtcmalloc_minimal.so'
+  'libtcmalloc_minimal_debug.so')
+conflicts=('gperftools')
+optdepends=('graphviz: pprof graph generation'
+  'gv: pprof postscript generation')
+source=(https://github.com/gperftools/gperftools/releases/download/gperftools-${pkgver}/gperftools-${pkgver}.tar.gz)
+sha256sums=('ea566e528605befb830671e359118c2da718f721c27225cbbc93858c7520fee3')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/gperftools-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gperftools-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure \
+      --prefix=/usr \
+      --enable-frame-pointers
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./configure \
+      --prefix=/usr \
+      --enable-frame-pointers
+
+    make
+
+  fi
+
+}
+
+package() {
+
+  cd "${srcdir:?}/gperftools-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gperftools-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  install -Dm644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/COPYING"
+
+}

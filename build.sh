@@ -16,7 +16,7 @@ set -euo pipefail
 IFS=$' '
 
 PACKAGES=(
-  zstd libpng libxml2 libjpeg-turbo mesa pixman glib2 gtk2 gtk3 gtk4
+  zstd libpng libxml2 libjpeg-turbo libclc mesa pixman glib2 gtk2 gtk3 gtk4
   qt5-base icu freetype2 pango fontconfig harfbuzz cairo libepoxy
   wayland-protocols egl-wayland libx11 xtrans libice libsm libxt
   libxrender xorg-server xorgproto libxv libxpm libxfixes libxtst
@@ -26,10 +26,11 @@ PACKAGES=(
   xcb-proto libxcb xcb-util xcb-util-renderutil xcb-util-image libxdamage
   xcb-util-cursor xcb-util-keysyms xcb-util-wm libunwind libdrm libxxf86vm
   libffi libvdpau expat wayland lm_sensors libinput xf86-input-libinput
+  jemalloc gperftools
 )
 
 IPACKAGES=(
-  zlib-ng zstd libxml2 libjpeg-turbo libpng mesa qt5-base icu
+  zlib-ng zstd libxml2 libjpeg-turbo libpng libclc mesa qt5-base icu
   freetype2 fontconfig pango harfbuzz xorg-util-macros libxkbfile libxext
   libxres libxi libpciaccess libdrm xorg-font-util libunwind
   libxfont2 xorg-xkbcomp xorg-setxkbmap xorg-xauth wayland-protocols
@@ -38,7 +39,7 @@ IPACKAGES=(
   libepoxy libxshmfence libva libvdpau xorg-server kwin libffi expat wayland
   plasma-workspace plasma-framework glib2 gtk2 gtk3 libinput xf86-input-libinput gtk4
   xcb-proto libxcb xcb-util xcb-util-renderutil xcb-util-image
-  xcb-util-cursor xcb-util-keysyms xcb-util-wm lm_sensors
+  xcb-util-cursor xcb-util-keysyms xcb-util-wm lm_sensors jemalloc gperftools
 )
 
 install-keys() {
