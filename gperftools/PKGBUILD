@@ -37,12 +37,14 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+    CFLAGS="${CFLAGS} -fsized-deallocation -flto=thin" \
+      CXXFLAGS="${CXXFLAGS} -std=c++17 -fsized-deallocation -flto=thin" \
       ./configure \
       --prefix=/usr \
       --enable-frame-pointers
 
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+    CFLAGS="${CFLAGS} -fsized-deallocation -flto=thin" \
+      CXXFLAGS="${CXXFLAGS} -std=c++17 -fsized-deallocation -flto=thin" make
 
   else
 

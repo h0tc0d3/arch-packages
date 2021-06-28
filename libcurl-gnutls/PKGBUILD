@@ -1,0 +1,99 @@
+pkgname=libcurl-gnutls+clang
+pkgver=7.77.0
+pkgrel=1
+pkgdesc='An URL retrieval library (linked against gnutls)'
+arch=('x86_64')
+url='https://curl.haxx.se'
+license=('MIT')
+provides=('libcurl-gnutls')
+conflicts=('libcurl-gnutls')
+depends=('curl' 'glibc' 'gnutls' 'libidn2' 'libidn2.so' 'libnghttp2'
+  'libpsl' 'libpsl.so' 'nettle' 'libnettle.so' 'libssh2' 'libssh2.so'
+  'zlib' 'zstd')
+options=('strip')
+source=("https://curl.haxx.se/download/curl-${pkgver}.tar.gz"{,.asc})
+sha512sums=('cacd85eb9b2ad90f59595b497035f4660b6c5cff2d653da939c9ceac6dd8dd4bc7bdcb2dfd251862af0c29b9299312bf7271ed0249734fca979c9588799635d6'
+  'SKIP')
+validpgpkeys=('27EDEAF22F3ABCEB50DB9A125CC908FDB71E12C2') # Daniel Stenberg
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/curl-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/curl-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" ./configure \
+      --prefix=/usr \
+      --disable-ldap \
+      --disable-ldaps \
+      --disable-manual \
+      --disable-versioned-symbols \
+      --enable-ipv6 \
+      --enable-threaded-resolver \
+      --without-gssapi \
+      --with-libssh2 \
+      --without-libidn \
+      --without-ssl \
+      --with-gnutls='/usr' \
+      --with-random='/dev/urandom' \
+      --with-ca-bundle='/etc/ssl/certs/ca-certificates.crt'
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make -C lib
+
+  else
+
+    ./configure \
+      --prefix=/usr \
+      --disable-ldap \
+      --disable-ldaps \
+      --disable-manual \
+      --disable-versioned-symbols \
+      --enable-ipv6 \
+      --enable-threaded-resolver \
+      --without-gssapi \
+      --with-libssh2 \
+      --without-libidn \
+      --without-ssl \
+      --with-gnutls='/usr' \
+      --with-random='/dev/urandom' \
+      --with-ca-bundle='/etc/ssl/certs/ca-certificates.crt'
+
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make -C lib
+
+  fi
+
+}
+
+package() {
+
+  cd "${srcdir:?}/curl-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/curl-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make -C lib DESTDIR="${pkgdir:?}" install
+
+  mv "${pkgdir:?}/usr/lib/libcurl"{,-gnutls}.so.4.7.0
+  rm "${pkgdir:?}/usr/lib/libcurl."{a,so}*
+  for version in 3 4 4.0.0 4.1.0 4.2.0 4.3.0 4.4.0 4.5.0 4.6.0; do
+    ln -s libcurl-gnutls.so.4.7.0 "${pkgdir:?}/usr/lib/libcurl-gnutls.so.${version}"
+  done
+
+  install -dm 755 "${pkgdir:?}/usr/share/licenses"
+  ln -s curl "${pkgdir:?}/usr/share/licenses/libcurl-gnutls"
+
+}

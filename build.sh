@@ -26,7 +26,7 @@ PACKAGES=(
   xcb-proto libxcb xcb-util xcb-util-renderutil xcb-util-image libxdamage
   xcb-util-cursor xcb-util-keysyms xcb-util-wm libunwind libdrm libxxf86vm
   libffi libvdpau expat wayland lm_sensors libinput xf86-input-libinput
-  jemalloc gperftools
+  jemalloc gperftools openssl gnutls libcurl-gnutls
 )
 
 IPACKAGES=(
@@ -40,6 +40,7 @@ IPACKAGES=(
   plasma-workspace plasma-framework glib2 gtk2 gtk3 libinput xf86-input-libinput gtk4
   xcb-proto libxcb xcb-util xcb-util-renderutil xcb-util-image
   xcb-util-cursor xcb-util-keysyms xcb-util-wm lm_sensors jemalloc gperftools
+  openssl gnutls libcurl-gnutls
 )
 
 install-keys() {

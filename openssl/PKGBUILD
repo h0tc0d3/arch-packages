@@ -1,0 +1,110 @@
+pkgname=openssl+clang
+_ver=1.1.1k
+# use a pacman compatible version scheme
+pkgver=${_ver/[a-z]/.${_ver//[0-9.]/}}
+pkgrel=1
+pkgdesc='The Open Source toolkit for Secure Sockets Layer and Transport Layer Security'
+arch=('x86_64')
+url='https://www.openssl.org'
+license=('custom:BSD')
+depends=('glibc')
+makedepends=('perl')
+optdepends=('ca-certificates' 'perl')
+provides=('openssl' "openssl=${pkgver}")
+conflicts=('openssl')
+replaces=('openssl-perl' 'openssl-doc')
+backup=('etc/ssl/openssl.cnf')
+source=("https://www.openssl.org/source/openssl-${_ver}.tar.gz"{,.asc}
+  'ca-dir.patch')
+sha256sums=('892a0875b9872acd04a9fde79b1f943075d5ea162415de3047c327df33fbaee5'
+  'SKIP'
+  '75aa8c2c638c8a3ebfd9fa146fc61c7ff878fc997dc6aa10d39e4b2415d669b2')
+validpgpkeys=(
+  '8657ABB260F056B1E5190839D9C4D26D0E604491'
+  '7953AC1FBC3DC8B3B292393ED5E9E43F7DF9EE8C'
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/openssl-${_ver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/openssl-${_ver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # set ca dir to /etc/ssl by default
+  patch -p0 -i "${srcdir:?}/ca-dir.patch"
+
+}
+
+build() {
+
+  cd "${srcdir:?}/openssl-${_ver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/openssl-${_ver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" ./Configure \
+      --prefix=/usr \
+      --openssldir=/etc/ssl \
+      --libdir=lib \
+      shared no-ssl3-method enable-ec_nistp_64_gcc_128 linux-x86_64 \
+      "-Wa,--noexecstack"
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make depend
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./Configure \
+      --prefix=/usr \
+      --openssldir=/etc/ssl \
+      --libdir=lib \
+      shared no-ssl3-method enable-ec_nistp_64_gcc_128 linux-x86_64 \
+      "-Wa,--noexecstack ${CPPFLAGS} ${CFLAGS} ${LDFLAGS}"
+
+    make depend
+    make
+
+  fi
+
+}
+
+check() {
+
+  cd "${srcdir:?}/openssl-${_ver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/openssl-${_ver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  # the test fails due to missing write permissions in /etc/ssl
+  # revert this patch for make test
+  patch -p0 -R -i "${srcdir:?}/ca-dir.patch"
+
+  make test
+
+  patch -p0 -i "${srcdir:?}/ca-dir.patch"
+  # re-run make to re-generate CA.pl from th patched .in file.
+  make apps/CA.pl
+
+}
+
+package() {
+
+  cd "${srcdir:?}/openssl-${_ver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/openssl-${_ver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" MANDIR=/usr/share/man MANSUFFIX=ssl install_sw install_ssldirs install_man_docs
+
+  install -D -m644 LICENSE "${pkgdir:?}/usr/share/licenses/${pkgname}/LICENSE"
+
+}
