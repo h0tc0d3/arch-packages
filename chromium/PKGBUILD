@@ -156,7 +156,7 @@ build() {
     'use_gnome_keyring=false'
     'use_sysroot=false'
     'use_custom_libcxx=false'
-    'use_allocator="none"'
+    'use_allocator="tcmalloc"'
     'enable_hangout_services_extension=true'
     'enable_widevine=true'
     'enable_nacl=false'
