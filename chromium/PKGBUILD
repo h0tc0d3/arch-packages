@@ -80,6 +80,7 @@ depends+=(${_system_libs[@]})
 _google_api_key=AIzaSyDwr302FpOSkGRpLlUpPThNTDPbXcIn_FM
 
 prepare() {
+
   cd "${srcdir:?}/chromium-${pkgver}"
 
   # Allow building against system libraries in official builds
@@ -132,13 +133,14 @@ prepare() {
 
   ./build/linux/unbundle/replace_gn_files.py \
     --system-libraries "${!_system_libs[@]}"
+
 }
 
 build() {
 
-  make -C chromium-launcher-$_launcher_ver
+  make -C "chromium-launcher-${_launcher_ver}" "-j$(nproc)"
 
-  cd "${srcdir:?}/chromium-${pkgver}"
+  cd "${srcdir:?}/chromium-${pkgver}" || exit 1
 
   local _flags=(
     'custom_toolchain="//build/toolchain/linux/unbundle:default"'
@@ -181,18 +183,19 @@ build() {
   CXXFLAGS+=' -Wno-unknown-warning-option'
 
   gn gen out/Release --args="${_flags[*]}"
-  ninja -C out/Release chrome chrome_sandbox chromedriver
+  ninja ${NINJAFLAGS} -C out/Release chrome chrome_sandbox chromedriver
+
 }
 
 package() {
 
-  cd chromium-launcher-$_launcher_ver
+  cd "chromium-launcher-${_launcher_ver}" || exit 1
 
   make PREFIX=/usr DESTDIR="${pkgdir:?}" install
   install -Dm644 LICENSE \
     "${pkgdir:?}/usr/share/licenses/chromium/LICENSE.launcher"
 
-  cd "${srcdir:?}/chromium-${pkgver}"
+  cd "${srcdir:?}/chromium-${pkgver}" || exit 1
 
   install -D out/Release/chrome "${pkgdir:?}/usr/lib/chromium/chromium"
   install -Dm4755 out/Release/chrome_sandbox "${pkgdir:?}/usr/lib/chromium/chrome-sandbox"
