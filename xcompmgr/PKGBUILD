@@ -1,0 +1,63 @@
+pkgname=xcompmgr+clang
+pkgver=1.1.8
+pkgrel=2
+pkgdesc="Composite Window-effects manager for X.org"
+arch=('x86_64')
+url="https://xorg.freedesktop.org/"
+license=('custom')
+provides=('xcompmgr')
+conflicts=('xcompmgr')
+depends=('libxcomposite' 'libxdamage' 'libxrender' 'libxext')
+source=("https://xorg.freedesktop.org/releases/individual/app/xcompmgr-${pkgver}.tar.bz2"{,.sig})
+sha512sums=('ccf29426ffb0797a53653d1ce152de5eee0cec284811fed4b8e634ea0d948180531e4619d96f47e4f9594432c57322624fe0fdaee2c9200efac427fc0904953d'
+  'SKIP')
+validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E') # Alan Coopersmith <alan.coopersmith@oracle.com>
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/xcompmgr-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xcompmgr-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure \
+      --prefix=/usr
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./configure \
+      --prefix=/usr
+
+    make
+
+  fi
+
+}
+
+package() {
+
+  cd "${srcdir:?}/xcompmgr-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xcompmgr-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  install -m755 -d "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -m644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/"
+
+}

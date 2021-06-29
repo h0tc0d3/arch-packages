@@ -1,0 +1,69 @@
+pkgname=libxcomposite+clang
+pkgver=0.4.5
+pkgrel=3
+pkgdesc="X11 Composite extension library"
+arch=('x86_64')
+url="https://xorg.freedesktop.org/"
+license=('custom')
+provides=('libxcomposite')
+conflicts=('libxcomposite')
+depends=('libxfixes')
+makedepends=('xorg-util-macros' 'xorgproto')
+source=("${url}/releases/individual/lib/libXcomposite-${pkgver}.tar.bz2"{,.sig})
+sha512sums=('502fd51fd9097bb3ca72174ac5b25b9d3b1ff240d32c4765199df03d89337d94b4ddea49e90b177b370862430089d966ce9c38988337156352cfeae911c2d3d5'
+  'SKIP')
+validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E') # "Alan Coopersmith <alan.coopersmith@oracle.com>"
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libXcomposite-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libXcomposite-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure \
+      --prefix=/usr \
+      --sysconfdir=/etc \
+      --disable-static
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./configure \
+      --prefix=/usr \
+      --sysconfdir=/etc \
+      --disable-static
+
+    make
+
+  fi
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libXcomposite-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libXcomposite-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -m755 -d "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -m644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/"
+
+}
