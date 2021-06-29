@@ -1,6 +1,6 @@
 pkgname=fontconfig+clang
-pkgver=2.13.93
-pkgrel=4
+pkgver=2.13.94
+pkgrel=1
 epoch=2
 pkgdesc="Library for configuring and customizing font access"
 url=https://www.freedesktop.org/wiki/Software/fontconfig/
@@ -14,7 +14,7 @@ conflicts=(fontconfig fontconfig-docs)
 replaces=('fontconfig-docs<2:2.13.93-1')
 install=fontconfig.install
 backup=(etc/fonts/fonts.conf)
-_commit=d06103e3e764bd43758e213414a1716858ab384c # tags/2.13.93^0
+_commit=e291fda7d42e5d64379555097a066d9c2c4efce3 # tags/2.13.94^0
 source=("git+https://gitlab.freedesktop.org/fontconfig/fontconfig.git#commit=$_commit"
   40-fontconfig-config.script
   40-fontconfig-config.hook
@@ -32,15 +32,6 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _extra_lto_flag='-D b_lto_mode=thin'
   fi
-
-  cd "${srcdir:?}/fontconfig" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/fontconfig directory! Prepare Failed! \E[0m"
-    exit 1
-  )
-
-  git cherry-pick -n 4e42925096e9 # Fix meson install
-  git cherry-pick -n 10c7390e358c # Fix default font dirs
-  git cherry-pick -n df29933e1a06 # https://bugs.archlinux.org/task/70141
 
 }
 
@@ -84,7 +75,7 @@ check() {
 
 package() {
 
-  DESTDIR="${pkgdir:?}" meson install -C build
+  meson install -C build --destdir "${pkgdir:?}"
 
   # Handle conf.d using the hook to avoid overwriting the symlinks on upgrade
   mkdir -p "${pkgdir:?}/usr/share/fontconfig/conf.default"
