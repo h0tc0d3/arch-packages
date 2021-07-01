@@ -87,6 +87,6 @@ package() {
   install -Dt "${pkgdir:?}/usr/share/libalpm/hooks" -m644 *.hook
   install -D 40-fontconfig-config.script \
     "${pkgdir:?}/usr/share/libalpm/scripts/40-fontconfig-config"
-  install -Dt "${pkgdir:?}/usr/share/licenses/$pkgname" -m644 fontconfig/COPYING
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname}" -m644 fontconfig/COPYING
 
 }

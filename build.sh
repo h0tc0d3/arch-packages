@@ -15,41 +15,20 @@ set -euo pipefail
 
 IFS=$' '
 
-PACKAGES=(
-  zstd libpng libxml2 libjpeg-turbo libclc mesa pixman glib2 gtk2 gtk3 gtk4
-  qt5-base icu freetype2 pango fontconfig harfbuzz cairo libepoxy
-  wayland-protocols egl-wayland libx11 xtrans libice libsm libxt
-  libxrender xorg-server xorgproto libxv libxpm libxfixes libxcomposite xcompmgr
-  libxtst xorg-xauth xorg-util-macros libxext libxres libxi libxmu libxaw libxkbfile
-  libpciaccess xorg-font-util libxfont2 xorg-xkbcomp libxshmfence
-  xorg-setxkbmap kwin plasma-workspace plasma-framework glibc libva
-  xcb-proto libxcb xcb-util xcb-util-renderutil xcb-util-image libxdamage
-  xcb-util-cursor xcb-util-keysyms xcb-util-wm libunwind libdrm libxxf86vm
-  libffi libvdpau expat wayland lm_sensors libinput xf86-input-libinput
-  jemalloc gperftools openssl gnutls libcurl-gnutls
-)
-
-IPACKAGES=(
-  zlib-ng zstd libxml2 libjpeg-turbo libpng libclc mesa qt5-base icu
-  freetype2 fontconfig pango harfbuzz xorg-util-macros libxkbfile libxext
-  libxres libxi libpciaccess libdrm xorg-font-util libunwind
-  libxfont2 xorg-xkbcomp xorg-setxkbmap xorg-xauth wayland-protocols
-  egl-wayland xorgproto libxxf86vm libxfixes libxcomposite xcompmgr libxdamage
-  libxv pixman cairo libx11 xtrans libice libsm libxt libxtst libxpm libxmu libxaw
-  libxrender libepoxy libxshmfence libva libvdpau xorg-server kwin libffi expat wayland
-  plasma-workspace plasma-framework glib2 gtk2 gtk3 libinput xf86-input-libinput gtk4
-  xcb-proto libxcb xcb-util xcb-util-renderutil xcb-util-image
-  xcb-util-cursor xcb-util-keysyms xcb-util-wm lm_sensors jemalloc gperftools
-  openssl gnutls libcurl-gnutls
-)
+PACKAGES=()
+while IFS=$'\n' read -r line; do PACKAGES+=("${line}"); done <"${SOURCE_DIR:?}/packages.txt"
 
 install-keys() {
 
   local keys=()
   local count=1
   local validpgpkeys=()
-  for package in "${IPACKAGES[@]}"; do
+  local package=""
 
+  for package in "${PACKAGES[@]}"; do
+    if [[ "${package}" =~ ^\-.* || "${package}" =~ ^\+.* ]]; then
+      package=${package:1:${#package}}
+    fi
     # shellcheck disable=SC1090 disable=SC1091
     source "${SOURCE_DIR:?}/${package}/PKGBUILD"
 
@@ -80,7 +59,12 @@ check() {
   local ipkgrel=""
 
   for package in "${PACKAGES[@]}"; do
-
+    if [[ "${package}" =~ ^\+.* ]]; then
+      continue
+    fi
+    if [[ "${package}" =~ ^\-.* ]]; then
+      package=${package:1:${#package}}
+    fi
     pkginfo="$(pacman -Si "${package}" | grep -oE "[0-9]*:*[0-9a-zA-Z\._\+]+-[0-9]+" | head -n 1)"
     # shellcheck disable=SC1090 disable=SC1091
     source "${SOURCE_DIR:?}/${package}/PKGBUILD"
@@ -119,6 +103,9 @@ install-deps() {
   local IDEPENDENCIES=('cmake' 'git')
   local count=1
   for package in "${PACKAGES[@]}"; do
+    if [[ "${package}" =~ ^\-.* || "${package}" =~ ^\+.* ]]; then
+      package=${package:1:${#package}}
+    fi
     # shellcheck disable=SC1090 disable=SC1091
     source "${SOURCE_DIR:?}/${package}/PKGBUILD"
     IDEPENDENCIES+=("${makedepends[@]}")
@@ -197,7 +184,14 @@ build() {
   local ipkgver=""
   local ipkgrel=""
 
-  for package in "${IPACKAGES[@]}"; do
+  for package in "${PACKAGES[@]}"; do
+
+    if [[ "${package}" =~ ^\+.* ]]; then
+      package=${package:1:${#package}}
+    fi
+    if [[ "${package}" =~ ^\-.* ]]; then
+      continue
+    fi
 
     if [[ ${ALL} -eq 1 ]]; then
 
@@ -254,11 +248,8 @@ build() {
 revert() {
 
   echo -e "\E[1;33m[+] Revert packages! \E[0m"
-  echo -e "zlib ${PACKAGES[*]} xorg-server-xephyr xorg-server-xvfb xorg-server-xnest xorg-server-common xorg-server-devel"
-  # shellcheck disable=SC2086
-  sudo pacman -Syu zlib ${PACKAGES[*]} gtk3-docs gtk3-demos freetype2-docs freetype2-demos \
-    qt5-xcb-private-headers pango-docs harfbuzz-icu xorg-server-xephyr xorg-server-xvfb xorg-server-xnest \
-    xorg-server-common xorg-server-devel gtk4-docs gtk4-demos gtk-update-icon-cache plasma-wayland-session
+  # shellcheck disable=SC2046
+  yes | sudo pacman -S zlib llvm llvm-libs clang compiler-rt libclc $(pacman -Qqs "\+clang" | sed -e 's/\+clang//')
   echo -e "\E[1;32mPlease open https://wiki.archlinux.org/title/Xorg and install your graphic driver! \E[0m"
 
 }
