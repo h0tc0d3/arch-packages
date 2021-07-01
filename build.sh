@@ -13,10 +13,12 @@ ALL_YES=0
 
 set -euo pipefail
 
-IFS=$' '
-
 PACKAGES=()
-while IFS=$'\n' read -r line; do PACKAGES+=("${line}"); done <"${SOURCE_DIR:?}/packages.txt"
+while IFS=$'\n' read -r line; do
+  PACKAGES+=("${line}")
+done <"${SOURCE_DIR:?}/packages.txt"
+
+IFS=$' '
 
 install-keys() {
 
@@ -57,6 +59,9 @@ check() {
   local iepoch=""
   local ipkgver=""
   local ipkgrel=""
+  local package=""
+
+  sudo pacman -Sy
 
   for package in "${PACKAGES[@]}"; do
     if [[ "${package}" =~ ^\+.* ]]; then
@@ -65,7 +70,7 @@ check() {
     if [[ "${package}" =~ ^\-.* ]]; then
       package=${package:1:${#package}}
     fi
-    pkginfo="$(pacman -Si "${package}" | grep -oE "[0-9]*:*[0-9a-zA-Z\._\+]+-[0-9]+" | head -n 1)"
+    pkginfo="$(LC_ALL=C pacman -Si "${package}" | sed -nE '/Repository.*(core|extra|community)/I{:a;N;/Version/Ta;N;p}' |grep -oE "[0-9]*:*[0-9a-zA-Z\._\+]+-[0-9]+" | head -n 1)"
     # shellcheck disable=SC1090 disable=SC1091
     source "${SOURCE_DIR:?}/${package}/PKGBUILD"
 
@@ -102,6 +107,8 @@ install-deps() {
 
   local IDEPENDENCIES=('cmake' 'git')
   local count=1
+  local package=""
+
   for package in "${PACKAGES[@]}"; do
     if [[ "${package}" =~ ^\-.* || "${package}" =~ ^\+.* ]]; then
       package=${package:1:${#package}}
@@ -114,7 +121,9 @@ install-deps() {
 
   local DEPENDENCIES=("${IDEPENDENCIES[@]}")
   IDEPENDENCIES=()
-  while IFS=$'\n' read -r line; do IDEPENDENCIES+=("${line}"); done < <(echo "${DEPENDENCIES[*]}" | tr ' ' '\n' | sort -u)
+  while IFS=$'\n' read -r line; do
+    IDEPENDENCIES+=("${line}")
+  done < <(echo "${DEPENDENCIES[*]}" | tr ' ' '\n' | sort -u)
   IFS=$' '
 
   DEPENDENCIES=()
@@ -183,6 +192,7 @@ build() {
   local iepoch=""
   local ipkgver=""
   local ipkgrel=""
+  local package=""
 
   for package in "${PACKAGES[@]}"; do
 
