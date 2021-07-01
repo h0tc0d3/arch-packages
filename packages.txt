@@ -79,3 +79,4 @@ gperftools
 openssl
 gnutls
 libcurl-gnutls
+telegram-desktop

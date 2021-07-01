@@ -1,0 +1,84 @@
+pkgname=telegram-desktop+clang
+pkgver=2.8.3
+pkgrel=1
+pkgdesc='Official Telegram Desktop client'
+arch=('x86_64')
+url="https://desktop.telegram.org/"
+license=('GPL3')
+provides=('telegram-desktop')
+conflicts=('telegram-desktop')
+depends=('hunspell' 'ffmpeg' 'hicolor-icon-theme' 'lz4' 'minizip' 'openal' 'ttf-opensans'
+  'qt5-imageformats' 'xxhash' 'libdbusmenu-qt5' 'kwayland' 'gtk3' 'glibmm'
+  'webkit2gtk' 'rnnoise' 'pipewire' 'libxtst' 'libxrandr')
+makedepends=('cmake' 'git' 'ninja' 'python' 'range-v3' 'tl-expected' 'microsoft-gsl'
+  'libtg_owt' 'extra-cmake-modules')
+source=(
+  "https://github.com/telegramdesktop/tdesktop/releases/download/v${pkgver}/tdesktop-${pkgver}-full.tar.gz"
+  "lto.cmake"
+  "fix-gcc11-assert.patch"
+  "mallocng.patch"
+)
+sha512sums=('75ef88440aa3337594d16b8517c5604ee627ade91cdde5de357132a8a827c909c392e30f4f2ac5b9facc3968bdfeb32d7f5370fea9cec2b341325aa979962356'
+  '03b3d99735a3a95098dd8e69468ab95b0f039f6c61aa4dcc2e12cee60d1ececf6e7d5d15d3f0687f3b5c6dd4118195c8365353df028bdde31a6b499dd80148ed'
+  'd94c21f45a14eea009f4dc099a0be7774aa9c64d6bdb2745eb866a505ad4d95e4e75e53e110bcdc2db553809d8aea485e3fa321feccc7660120c0f418f4d5e3f'
+  'd640bdef30d24b2a28eb69e210e7acf557c125ef6754897b4ff2c425fa57c3067d53f2e968f15cefb08caeaf9e9d6afc41ca5e4a18a10cf3f18321bdeabb6270')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/tdesktop-${pkgver}-full" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/tdesktop-${pkgver}-full/cmake directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  # force webrtc link to libjpeg and X11 libs
+  echo "target_link_libraries(external_webrtc INTERFACE jpeg)" | tee -a cmake/external/webrtc/CMakeLists.txt
+  echo "find_package(X11 REQUIRED COMPONENTS Xcomposite Xdamage Xext Xfixes Xrender Xrandr Xtst)" | tee -a cmake/external/webrtc/CMakeLists.txt
+  echo "target_link_libraries(external_webrtc INTERFACE Xcomposite Xdamage Xext Xfixes Xrandr Xrender Xtst)" | tee -a cmake/external/webrtc/CMakeLists.txt
+
+  patch -Np1 -i "${srcdir:?}/mallocng.patch"
+  patch -d Telegram/lib_webview/ -Np1 -i "${srcdir:?}/fix-gcc11-assert.patch"
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    cmake -B build -S tdesktop-${pkgver}-full \
+      -G Ninja \
+      -DCMAKE_TOOLCHAIN_FILE=../lto.cmake \
+      -DCMAKE_INSTALL_PREFIX="/usr" \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DTDESKTOP_API_ID=611335 \
+      -DTDESKTOP_API_HASH=d524b414d21f4d37f08684c1df41ac9c \
+      -DTDESKTOP_LAUNCHER_BASENAME="telegramdesktop" \
+      -DDESKTOP_APP_SPECIAL_TARGET=""
+
+  else
+
+    cmake -B build -S tdesktop-${pkgver}-full \
+      -G Ninja \
+      -DCMAKE_INSTALL_PREFIX="/usr" \
+      -DCMAKE_BUILD_TYPE=Debug \
+      -DTDESKTOP_API_ID=611335 \
+      -DTDESKTOP_API_HASH=d524b414d21f4d37f08684c1df41ac9c \
+      -DTDESKTOP_LAUNCHER_BASENAME="telegramdesktop" \
+      -DDESKTOP_APP_SPECIAL_TARGET=""
+
+  fi
+
+  ninja ${NINJAFLAGS} -C build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" ninja ${NINJAFLAGS} -C build install
+
+}

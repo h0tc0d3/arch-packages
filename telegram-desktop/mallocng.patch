@@ -1,0 +1,10 @@
+--- a/cmake/external/mallocng/CMakeLists.txt
++++ b/cmake/external/mallocng/CMakeLists.txt
+@@ -31,6 +31,7 @@
+ target_compile_options(external_mallocng_bundled
+ PRIVATE
+     -Wno-unused-value
++    -ffreestanding
+ )
+ 
+ target_include_directories(external_mallocng_bundled 
