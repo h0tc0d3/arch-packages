@@ -70,7 +70,11 @@ check() {
     if [[ "${package}" =~ ^\-.* ]]; then
       package=${package:1:${#package}}
     fi
-    pkginfo="$(LC_ALL=C pacman -Si "${package}" | sed -nE '/Repository.*(core|extra|community)/I{:a;N;/Version/Ta;N;p}' |grep -oE "[0-9]*:*[0-9a-zA-Z\._\+]+-[0-9]+" | head -n 1)"
+
+    pkginfo="$(LC_ALL=C pacman -Si "${package}" |
+      sed -nE '/Repository.*(core|extra|community)/I{:a;N;/Version/Ta;N;p}' |
+      grep -oE "[0-9]*:*[0-9a-zA-Z\._\+]+-[0-9]+" | head -n 1)"
+
     # shellcheck disable=SC1090 disable=SC1091
     source "${SOURCE_DIR:?}/${package}/PKGBUILD"
 
@@ -216,7 +220,7 @@ build() {
       # shellcheck disable=SC1090 disable=SC1091
       source "${SOURCE_DIR:?}/${package}/PKGBUILD"
 
-      if pacman -Qs "${pkgname[0]}" >/dev/null; then
+      if pacman -Q "${pkgname[0]}" >/dev/null; then
 
         pkginfo="$(pacman -Qi "${pkgname[0]}" | grep -oE "[0-9]*:*[0-9a-zA-Z\._\+]+-[0-9]+" | head -n 1)"
 
