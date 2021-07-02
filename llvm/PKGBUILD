@@ -16,7 +16,7 @@ conflicts=('llvm' 'llvm-libs' 'llvm-ocaml' 'clang' 'clang-analyzer' 'clang-tools
 
 _ocaml_ver=4.11.1
 makedepends=('git' 'ninja' 'cmake' 'libffi' 'libedit' 'ncurses' 'libxml2'
-  "ocaml>=$_ocaml_ver" 'ocaml-ctypes' 'ocaml-findlib'
+  "ocaml>=$_ocaml_ver" 'ocaml-ctypes' 'ocaml-findlib' 'python2'
   'python-setuptools' 'python-psutil' 'python-sphinx'
   'python-recommonmark')
 
