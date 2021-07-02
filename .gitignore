@@ -3,3 +3,4 @@
 *.tar.bz
 *.pkg.tar.zst
 mesa/mesa.conf
+*.log
