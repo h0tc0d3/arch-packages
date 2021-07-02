@@ -132,7 +132,7 @@ build() {
 package_qt5-base+clang() {
 
   pkgdesc='A cross-platform application and UI framework'
-  conflicts=('qt5-base' "qt5-base=${pkgver}")
+  conflicts=('qt5-base')
   provides=('qt5-base' "qt5-base=${pkgver}")
 
   cd "${srcdir:?}/qtbase" || (
