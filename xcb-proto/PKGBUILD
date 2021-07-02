@@ -5,7 +5,7 @@ pkgdesc="XML-XCB protocol descriptions"
 arch=(any)
 url="https://xcb.freedesktop.org/"
 license=('custom')
-provides=(xcb-proto)
+provides=(xcb-proto "xcb-proto=${pkgver}")
 conflicts=(xcb-proto)
 makedepends=('python' 'libxml2')
 source=(https://xorg.freedesktop.org/archive/individual/proto/xcb-proto-${pkgver}.tar.xz{,.sig})

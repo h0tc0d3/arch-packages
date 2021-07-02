@@ -52,7 +52,7 @@ check() {
 
 package_wayland+clang() {
 
-  provides=(wayland)
+  provides=(wayland "wayland=${pkgver}")
   conflicts=(wayland)
 
   DESTDIR="${pkgdir:?}" ninja -C build install
@@ -65,7 +65,7 @@ package_wayland+clang() {
 package_wayland-docs+clang() {
 
   pkgdesc+=" (documentation)"
-  provides=(wayland-docs)
+  provides=(wayland-docs "wayland-docs=${pkgver}")
   conflicts=(wayland-docs)
 
   mv docs "${pkgdir:?}/usr"

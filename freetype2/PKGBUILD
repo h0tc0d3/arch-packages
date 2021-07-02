@@ -75,7 +75,7 @@ check() {
 
 package_freetype2+clang() {
 
-    provides=(freetype2 libfreetype.so)
+    provides=(freetype2 "freetype2=${pkgver}" libfreetype.so)
     conflicts=(freetype2)
     install=freetype2.install
     backup=(etc/profile.d/freetype2.sh)
@@ -90,7 +90,7 @@ package_freetype2-docs+clang() {
 
     pkgdesc="Freetype documentation"
     depends=(freetype2+clang)
-    provides=(freetype2-docs)
+    provides=(freetype2-docs "freetype2-docs=${pkgver}")
     conflicts=(freetype2-docs)
 
     cd "${srcdir:?}/freetype-${pkgver}" || (

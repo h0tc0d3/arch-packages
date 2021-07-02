@@ -7,7 +7,7 @@ arch=(x86_64)
 license=(BSD GPL2)
 depends=(glibc gcc-libs zlib xz lz4)
 makedepends=(gtest)
-provides=('zstd' 'libzstd.so')
+provides=('zstd' "zstd=${pkgver}" 'libzstd.so')
 conflicts=('zstd')
 source=("https://github.com/facebook/zstd/releases/download/v${pkgver}/zstd-${pkgver}.tar.zst"{,.sig})
 

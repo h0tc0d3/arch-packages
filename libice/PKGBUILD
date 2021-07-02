@@ -5,7 +5,7 @@ pkgdesc="X11 Inter-Client Exchange library"
 arch=('x86_64')
 url="https://xorg.freedesktop.org/"
 depends=('glibc')
-provides=(libice)
+provides=(libice "libice=${pkgver}")
 conflicts=(libice)
 makedepends=('xtrans>=1.2.5' 'xorg-util-macros' 'xorgproto')
 source=("${url}/releases/individual/lib/libICE-${pkgver}.tar.bz2"{,.sig})

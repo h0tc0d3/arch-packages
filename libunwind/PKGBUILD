@@ -4,7 +4,7 @@ pkgrel=1
 pkgdesc='Portable and efficient C programming interface (API) to determine the call-chain of a program'
 arch=('x86_64')
 url='https://www.nongnu.org/libunwind/'
-provides=(libunwind)
+provides=(libunwind "libunwind=${pkgver}")
 conflicts=(libunwind)
 license=('GPL')
 depends=('xz' 'zlib')

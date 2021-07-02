@@ -10,7 +10,7 @@ optdepends=('perl: for mtrace')
 options=(staticlibs)
 #_commit=3de512be7ea6053255afed6154db9ee31d4e557a
 #source=(git+https://sourceware.org/git/glibc.git#commit=$_commit
-source=(https://ftp.gnu.org/gnu/glibc/glibc-$pkgver.tar.xz
+source=("https://ftp.gnu.org/gnu/glibc/glibc-${pkgver}.tar.xz"
   locale.gen.txt
   locale-gen
   lib32-glibc.conf
@@ -21,16 +21,16 @@ source=(https://ftp.gnu.org/gnu/glibc/glibc-$pkgver.tar.xz
   0003-nptl-Do-not-build-nptl-tst-pthread-gdb-attach-as-PIE.patch)
 validpgpkeys=(7273542B39962DF7B299931416792B4EA25340F8 # Carlos O'Donell
   BC7C7372637EC10C57D7AA6579C43DFBF1CF2187)            # Siddhesh Poyarekar
-md5sums=('390bbd889c7e8e8a7041564cb6b27cca'
-  '07ac979b6ab5eeb778d55f041529d623'
-  '476e9113489f93b348b21e144b6a8fcf'
-  '6e052f1cb693d5d3203f50f9d4e8c33b'
-  '91fec3b7e75510ae2ac42533aa2e695e'
-  '680df504c683640b02ed4a805797c0b2'
-  'cfe57018d06bf748b8ca1779980fef33'
-  '78f041fc66fee4ee372f13b00a99ff72'
-  '9e418efa189c20053e887398df2253cf'
-  '7a09f1693613897add1791e7aead19c9')
+sha256sums=('2e2556000e105dbd57f0b6b2a32ff2cf173bde4f0d85dffccfd8b7e51a0677ff'
+            'd42648cea552ba5353a32e264686e992263289d5cc86207314dffc54ab514981'
+            '83f108f915863c7ed0338e2d3e8f2e071a531a090ef8f8b2eb3a956a3c4f04d7'
+            'c27424154a6096ae32c0824b785e05de6acef33d9224fd6147d1936be9b4962b'
+            '774061aff612a377714a509918a9e0e0aafce708b87d2d7e06b1bd1f6542fe70'
+            'cdc234959c6fdb43f000d3bb7d1080b0103f4080f5e67bcfe8ae1aaf477812f0'
+            '1caa9946bb15f6a84193a7a6ed4e4a77006085ef6728de7ede8cc9694534c24e'
+            '353b4c5eae6982b4bb16803a583567ae37b7907ce19c2b40ff79f380ea3956a8'
+            '093d3fd3211456172028cdf58f83c73669b99da2e1170a5113a6272e8debfc43'
+            '73603e9b9ad24c8336ce651f0da6a3d1ffa94f6e8388c2bac25fabcaa206805f')
 
 prepare() {
 

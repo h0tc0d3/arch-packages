@@ -11,7 +11,7 @@ license=('GPL' 'LGPL')
 optdepends=('rrdtool: for logging with sensord'
   'perl: for sensor detection and configuration convert')
 makedepends=('rrdtool' 'perl' 'git')
-provides=('lm_sensors' 'libsensors.so')
+provides=('lm_sensors' "lm_sensors=${pkgver}" 'libsensors.so')
 conflicts=('lm_sensors')
 backup=('etc/sensors3.conf' 'etc/healthd.conf' 'etc/conf.d/sensord')
 #source=(lm_sensors-${pkgver}.tar.gz::https://github.com/lm-sensors/lm-sensors/archive/V${_pkgver}.tar.gz

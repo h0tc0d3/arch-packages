@@ -64,7 +64,7 @@ package_plasma-workspace+clang() {
     'kdepim-addons: displaying PIM events in the calendar'
     'appmenu-gtk-module: global menu support for GTK2 and some GTK3 applications'
     'baloo: Baloo search runner' 'discover: manage applications installation from the launcher')
-  provides=(plasma-workspace)
+  provides=(plasma-workspace "plasma-workspace=${pkgver}")
   conflicts=(plasma-workspace)
   backup=('etc/pam.d/kde')
 
@@ -81,7 +81,7 @@ package_plasma-wayland-session+clang() {
 
   pkgdesc='Plasma Wayland session'
   depends=(plasma-workspace+clang qt5-wayland kwayland-integration xorg-xwayland)
-  provides=(plasma-wayland-session)
+  provides=(plasma-wayland-session "plasma-wayland-session=${pkgver}")
   conflicts=(plasma-wayland-session)
 
   install -Dm644 build/login-sessions/plasmawayland.desktop "${pkgdir:?}/usr/share/wayland-sessions/plasmawayland.desktop"

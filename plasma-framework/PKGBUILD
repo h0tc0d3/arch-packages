@@ -5,7 +5,7 @@ pkgdesc='Plasma library and runtime components based upon KF5 and Qt5'
 arch=(x86_64)
 url='https://community.kde.org/Frameworks'
 license=(LGPL)
-provides=(plasma-framework)
+provides=(plasma-framework "plasma-framework=${pkgver}")
 conflicts=(plasma-framework)
 depends=(kactivities kdeclarative kwayland kirigami2)
 makedepends=(extra-cmake-modules qt5-tools qt5-doc kdoctools doxygen)

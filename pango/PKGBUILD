@@ -78,7 +78,7 @@ check() {
 package_pango+clang() {
 
   provides=(pango libpango{,cairo,ft2,xft}-1.0.so)
-  conflicts=('pango')
+  conflicts=('pango' "pango=${pkgver}")
 
   meson install -C build --destdir "${pkgdir:?}"
 
@@ -91,7 +91,7 @@ package_pango-docs+clang() {
 
   pkgdesc+=" (documentation)"
   depends=('pango+clang')
-  provides=('pango-docs')
+  provides=('pango-docs' "pango-docs=${pkgver}")
   conflicts=('pango-docs')
 
   mv doc/* "${pkgdir:?}"

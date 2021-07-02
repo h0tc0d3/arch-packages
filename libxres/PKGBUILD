@@ -5,7 +5,7 @@ pkgdesc="X11 Resource extension library"
 arch=('x86_64')
 url="https://xorg.freedesktop.org"
 license=('custom')
-provides=(libxres)
+provides=(libxres "libxres=${pkgver}")
 conflicts=(libxres)
 depends=('libxext')
 makedepends=('xorgproto' 'xorg-util-macros')

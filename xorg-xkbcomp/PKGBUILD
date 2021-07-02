@@ -5,7 +5,7 @@ pkgdesc="X Keyboard description compiler"
 arch=(x86_64)
 url="https://xorg.freedesktop.org/"
 license=('custom')
-provides=('xorg-xkbcomp')
+provides=('xorg-xkbcomp' "xorg-xkbcomp=${pkgver}")
 conflicts=('xorg-xkbcomp')
 depends=('libxkbfile')
 makedepends=('xorg-util-macros')

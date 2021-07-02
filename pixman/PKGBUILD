@@ -7,7 +7,7 @@ url="https://cgit.freedesktop.org/pixman/"
 license=('custom')
 depends=('glibc' 'openmp')
 makedepends=('meson' 'libpng')
-provides=('pixman' 'libpixman-1.so')
+provides=('pixman' "pixman=${pkgver}" 'libpixman-1.so')
 conflicts=('pixman')
 source=(
   "https://xorg.freedesktop.org/releases/individual/lib/pixman-${pkgver}.tar.xz"

@@ -5,7 +5,7 @@ pkgdesc="X11 Composite extension library"
 arch=('x86_64')
 url="https://xorg.freedesktop.org/"
 license=('custom')
-provides=('libxcomposite')
+provides=('libxcomposite' "libxcomposite=${pkgver}")
 conflicts=('libxcomposite')
 depends=('libxfixes')
 makedepends=('xorg-util-macros' 'xorgproto')

@@ -9,7 +9,7 @@ license=(custom)
 depends=(libexpat.so libfreetype.so)
 makedepends=(git meson gperf expat freetype2
   docbook-utils docbook-sgml perl-sgmls)
-provides=(fontconfig libfontconfig.so fontconfig-docs)
+provides=(fontconfig "fontconfig=${pkgver}" libfontconfig.so fontconfig-docs)
 conflicts=(fontconfig fontconfig-docs)
 replaces=('fontconfig-docs<2:2.13.93-1')
 install=fontconfig.install

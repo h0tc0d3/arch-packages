@@ -5,7 +5,7 @@ pkgdesc='Specifications of extended Wayland protocols'
 arch=('any')
 url='https://wayland.freedesktop.org/'
 license=('MIT')
-provides=('wayland-protocols')
+provides=('wayland-protocols' "wayland-protocols=${pkgver}")
 conflicts=('wayland-protocols')
 makedepends=('wayland')
 validpgpkeys=(

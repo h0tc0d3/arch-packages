@@ -5,7 +5,7 @@ pkgdesc="X11 XFree86 video mode extension library"
 arch=('x86_64')
 license=('custom')
 url="https://xorg.freedesktop.org/"
-provides=(libxxf86vm)
+provides=(libxxf86vm "libxxf86vm=${pkgver}")
 conflicts=(libxxf86vm)
 depends=('libxext')
 makedepends=('xorg-util-macros' 'xorgproto')

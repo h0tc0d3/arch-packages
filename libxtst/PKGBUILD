@@ -5,7 +5,7 @@ pkgdesc="X11 Testing -- Resource extension library"
 arch=('x86_64')
 url="https://xorg.freedesktop.org/"
 license=('custom')
-provides=(libxtst)
+provides=(libxtst "libxtst=${pkgver}")
 conflicts=(libxtst)
 depends=('libxext' 'libxi' 'libxfixes')
 makedepends=('xorg-util-macros' 'xorgproto')

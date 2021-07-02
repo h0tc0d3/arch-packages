@@ -4,7 +4,7 @@ pkgrel=1
 pkgdesc="X11 toolkit intrinsics library"
 arch=('x86_64')
 url="https://xorg.freedesktop.org/"
-provides=(libxt)
+provides=(libxt "libxt=${pkgver}")
 conflicts=(libxt)
 license=('custom')
 depends=('libsm' 'libx11')

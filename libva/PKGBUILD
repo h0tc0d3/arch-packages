@@ -5,7 +5,7 @@ pkgdesc='Video Acceleration (VA) API for Linux'
 arch=(x86_64)
 url=https://01.org/linuxmedia/vaapi
 license=(MIT)
-provides=(libva libva-drm.so libva-glx.so libva-wayland.so libva-x11.so libva.so)
+provides=(libva "libva=${pkgver}" libva-drm.so libva-glx.so libva-wayland.so libva-x11.so libva.so)
 conflicts=(libva)
 depends=(libdrm libgl libx11 libxext libxfixes wayland)
 makedepends=(git libglvnd mesa meson)

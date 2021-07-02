@@ -4,7 +4,7 @@ pkgrel=1
 pkgdesc="X.Org Autotools macros"
 arch=(any)
 license=('custom')
-provides=('xorg-util-macros')
+provides=('xorg-util-macros' "xorg-util-macros=${pkgver}")
 conflicts=('xorg-util-macros')
 
 url="https://xorg.freedesktop.org/"

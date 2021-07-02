@@ -87,7 +87,7 @@ check() {
 package_glib2+clang() {
 
   depends+=(libmount.so)
-  provides+=(glib2 libgio-2.0.so libglib-2.0.so libgmodule-2.0.so libgobject-2.0.so
+  provides+=(glib2 "glib2=${pkgver}" libgio-2.0.so libglib-2.0.so libgmodule-2.0.so libgobject-2.0.so
     libgthread-2.0.so)
   conflicts=(glib2)
   optdepends=('python: gdbus-codegen, glib-genmarshal, glib-mkenums, gtester-report'
@@ -114,7 +114,7 @@ package_glib2-docs+clang() {
 
   pkgdesc="Documentation for GLib"
   license+=(custom)
-  provides=('glib2-docs')
+  provides=('glib2-docs' "glib2-docs=${pkgver}")
   conflicts=('glib2-docs')
 
   mv -t "${pkgdir:?}" docs/*

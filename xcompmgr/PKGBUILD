@@ -5,7 +5,7 @@ pkgdesc="Composite Window-effects manager for X.org"
 arch=('x86_64')
 url="https://xorg.freedesktop.org/"
 license=('custom')
-provides=('xcompmgr')
+provides=('xcompmgr' "xcompmgr=${pkgver}")
 conflicts=('xcompmgr')
 depends=('libxcomposite' 'libxdamage' 'libxrender' 'libxext')
 source=("https://xorg.freedesktop.org/releases/individual/app/xcompmgr-${pkgver}.tar.bz2"{,.sig})

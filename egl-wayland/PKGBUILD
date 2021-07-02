@@ -5,7 +5,7 @@ pkgdesc="EGLStream-based Wayland external platform"
 arch=(x86_64)
 url=https://github.com/NVIDIA/egl-wayland
 license=(MIT)
-provides=('egl-wayland' libnvidia-egl-wayland.so)
+provides=('egl-wayland' "egl-wayland=${pkgver}" libnvidia-egl-wayland.so)
 conflicts=('egl-wayland')
 depends=(wayland eglexternalplatform)
 makedepends=(meson git)

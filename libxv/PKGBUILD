@@ -5,7 +5,7 @@ pkgdesc="X11 Video extension library"
 arch=('x86_64')
 license=('custom')
 url="https://xorg.freedesktop.org/"
-provides=(libxv)
+provides=(libxv "libxv=${pkgver}")
 conflicts=(libxv)
 depends=('libxext')
 makedepends=('xorgproto')

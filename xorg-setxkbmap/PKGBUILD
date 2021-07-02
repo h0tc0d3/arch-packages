@@ -4,7 +4,7 @@ pkgrel=2
 pkgdesc='Set the keyboard using the X Keyboard Extension'
 url='https://xorg.freedesktop.org/'
 license=('custom')
-provides=('xorg-setxkbmap')
+provides=('xorg-setxkbmap' "xorg-setxkbmap=${pkgver}")
 conflicts=('xorg-setxkbmap')
 arch=('x86_64')
 depends=('libxkbfile')

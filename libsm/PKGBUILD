@@ -5,7 +5,7 @@ pkgdesc="X11 Session Management library"
 arch=('x86_64')
 license=('custom')
 url="https://xorg.freedesktop.org/"
-provides=(libsm)
+provides=(libsm "libsm=${pkgver}")
 conflicts=(libsm)
 depends=('libice' 'util-linux-libs')
 makedepends=('xorg-util-macros' 'xtrans' 'xorgproto')

@@ -6,7 +6,7 @@ arch=('x86_64')
 license=('custom:MIT')
 url="http://xorg.freedesktop.org/"
 depends=('libinput>=1.2.0')
-provides=('xf86-input-libinput')
+provides=('xf86-input-libinput' "xf86-input-libinput=${pkgver}")
 makedepends=('xorg-server-devel' 'X-ABI-XINPUT_VERSION=24.1' 'libxi' 'libx11' 'xorgproto')
 conflicts=('xf86-input-libinput' 'xorg-server<1.19.0' 'X-ABI-XINPUT_VERSION<24' 'X-ABI-XINPUT_VERSION>=25')
 groups=('xorg-drivers')

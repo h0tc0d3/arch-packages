@@ -4,7 +4,7 @@ pkgrel=2
 pkgdesc="X.Org authorization settings program"
 arch=(x86_64)
 license=('custom')
-provides=('xorg-xauth')
+provides=('xorg-xauth' "xorg-xauth=${pkgver}")
 conflicts=('xorg-xauth')
 url="https://xorg.freedesktop.org/"
 depends=('libxmu')

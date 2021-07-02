@@ -7,7 +7,7 @@ url="https://xorg.freedesktop.org/"
 license=('custom')
 makedepends=('xorg-util-macros' 'meson')
 checkdepends=('python-libevdev')
-provides=('xorgproto')
+provides=('xorgproto' "xorgproto=${pkgver}")
 conflicts=('xorgproto')
 source=(https://xorg.freedesktop.org/archive/individual/proto/xorgproto-${pkgver}.tar.bz2{,.sig})
 sha512sums=('0d905e5f135daf7005e23371cbdc41a62d99567e0a20784e71ead0092ffd1e7582733819f7198add1d97edcc9aa80012ae01d2be8367280d69b41d0c25349367'

@@ -86,7 +86,7 @@ _pick() {
 package_gtk4+clang() {
 
   depends+=(gtk-update-icon-cache)
-  provides=(gtk4 libgtk-4.so)
+  provides=(gtk4 "gtk4=${pkgver}" libgtk-4.so)
   conflicts=(gtk4)
 
   DESTDIR="${pkgdir:?}" meson install -C build
@@ -123,7 +123,7 @@ package_gtk-update-icon-cache+clang() {
 
   pkgdesc="GTK icon cache updater"
   depends=(gtk4+clang gdk-pixbuf2 librsvg hicolor-icon-theme)
-  provides=(gtk-update-icon-cache)
+  provides=(gtk-update-icon-cache "gtk-update-icon-cache=${pkgver}")
   conflicts=(gtk-update-icon-cache)
 
   mv guic/* "${pkgdir:?}"
@@ -139,7 +139,7 @@ package_gtk4-docs+clang() {
 
   pkgdesc+=" (documentation)"
   depends=(gtk4+clang)
-  provides=(gtk4-docs)
+  provides=(gtk4-docs "gtk4-docs=${pkgver}")
   conflicts=(gtk4-docs)
 
   mv docs/* "${pkgdir:?}"
@@ -150,7 +150,7 @@ package_gtk4-demos+clang() {
 
   pkgdesc+=" (demo applications)"
   depends=(gtk4+clang)
-  provides=(gtk4-demos)
+  provides=(gtk4-demos "gtk4-demos=${pkgver}")
   conflicts=(gtk4-demos)
 
   mv demo/* "${pkgdir:?}"

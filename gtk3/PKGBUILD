@@ -82,7 +82,7 @@ _pick() {
 
 package_gtk3+clang() {
 
-  provides=(gtk3 gtk3-print-backends libgtk-3.so libgdk-3.so libgailutil-3.so)
+  provides=(gtk3 "gtk3=${pkgver}" gtk3-print-backends libgtk-3.so libgdk-3.so libgailutil-3.so)
   conflicts=(gtk3 gtk3-print-backends)
   replaces=("gtk3-print-backends<=3.22.26-1")
 
@@ -119,7 +119,7 @@ package_gtk3-docs+clang() {
 
   pkgdesc+=" (documentation)"
   depends=('gtk3+clang')
-  provides=('gtk3-docs')
+  provides=('gtk3-docs' "gtk3-docs=${pkgver}")
   conflicts=('gtk3-docs')
 
   mv docs/* "${pkgdir:?}"
@@ -130,7 +130,7 @@ package_gtk3-demos+clang() {
 
   pkgdesc+=" (demo applications)"
   depends=('gtk3+clang')
-  provides=('gtk3-demos')
+  provides=('gtk3-demos' "gtk3-demos=${pkgver}")
   conflicts=('gtk3-demos')
 
   mv demo/* "${pkgdir:?}"

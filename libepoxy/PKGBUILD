@@ -5,7 +5,7 @@ pkgdesc="Library handling OpenGL function pointer management"
 url="https://github.com/anholt/libepoxy"
 arch=(x86_64)
 license=(MIT)
-provides=(libepoxy)
+provides=(libepoxy "libepoxy=${pkgver}")
 conflicts=(libepoxy)
 depends=(glibc)
 makedepends=(python mesa-libgl git meson doxygen graphviz)

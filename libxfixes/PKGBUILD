@@ -5,7 +5,7 @@ pkgdesc="X11 miscellaneous 'fixes' extension library"
 arch=('x86_64')
 url="https://xorg.freedesktop.org/"
 license=('custom')
-provides=(libxfixes)
+provides=(libxfixes "libxfixes=${pkgver}")
 conflicts=(libxfixes)
 depends=('libx11')
 makedepends=('xorg-util-macros' 'xorgproto')

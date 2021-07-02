@@ -5,7 +5,7 @@ pkgdesc="a library that exposes a event API on top of Linux futexes"
 arch=('x86_64')
 url="https://xorg.freedesktop.org/"
 license=('GPL')
-provides=(libxshmfence)
+provides=(libxshmfence "libxshmfence=${pkgver}")
 conflicts=(libxshmfence)
 depends=('glibc')
 makedepends=('xorg-util-macros' 'xorgproto')

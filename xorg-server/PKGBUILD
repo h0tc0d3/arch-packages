@@ -126,7 +126,7 @@ package_xorg-server-common+clang() {
 
   pkgdesc="Xorg server common files"
   depends=(xkeyboard-config xorg-xkbcomp xorg-setxkbmap)
-  provides=('xorg-server-common')
+  provides=('xorg-server-common' "xorg-server-common=${pkgver}")
   conflicts=('xorg-server-common')
 
   _install fakeinstall/usr/lib/xorg/protocol.txt
@@ -146,7 +146,7 @@ package_xorg-server+clang() {
     libpciaccess libdrm libxshmfence) # FS#52949
   # see xorg-server-*/hw/xfree86/common/xf86Module.h for ABI versions - we provide major numbers that drivers can depend on
   # and /usr/lib/pkgconfig/xorg-server.pc in xorg-server-devel pkg
-  provides=('xorg-server' 'X-ABI-VIDEODRV_VERSION=24.0' 'X-ABI-XINPUT_VERSION=24.1' 'X-ABI-EXTENSION_VERSION=10.0' 'x-server')
+  provides=('xorg-server' "xorg-server=${pkgver}" 'X-ABI-VIDEODRV_VERSION=24.0' 'X-ABI-XINPUT_VERSION=24.1' 'X-ABI-EXTENSION_VERSION=10.0' 'x-server')
   conflicts=('xorg-server' 'nvidia-utils<=331.20' 'glamor-egl' 'xf86-video-modesetting')
   replaces=('xorg-server' 'glamor-egl' 'xf86-video-modesetting')
   install=xorg-server.install
@@ -174,7 +174,7 @@ package_xorg-server-xephyr+clang() {
   depends=(libxfont2 libgl libepoxy libunwind systemd-libs libxv pixman xorg-server-common+clang
     xcb-util-image xcb-util-renderutil xcb-util-wm xcb-util-keysyms
     nettle libtirpc)
-  provides=('xorg-server-xephyr')
+  provides=('xorg-server-xephyr' "xorg-server-xephyr=${pkgver}")
   conflicts=('xorg-server-xephyr')
 
   _install fakeinstall/usr/bin/Xephyr
@@ -190,7 +190,7 @@ package_xorg-server-xvfb+clang() {
   pkgdesc="Virtual framebuffer X server"
   depends=(libxfont2 libunwind pixman xorg-server-common+clang xorg-xauth
     libgl nettle libtirpc)
-  provides=('xorg-server-xvfb')
+  provides=('xorg-server-xvfb' "xorg-server-xvfb=${pkgver}")
   conflicts=('xorg-server-xvfb')
 
   _install fakeinstall/usr/bin/Xvfb
@@ -208,7 +208,7 @@ package_xorg-server-xnest+clang() {
 
   pkgdesc="A nested X server that runs as an X application"
   depends=(libxfont2 libxext pixman xorg-server-common+clang nettle libtirpc)
-  provides=('xorg-server-xnest')
+  provides=('xorg-server-xnest' "xorg-server-xnest=${pkgver}")
   conflicts=('xorg-server-xnest')
 
   _install fakeinstall/usr/bin/Xnest

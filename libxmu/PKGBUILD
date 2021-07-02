@@ -4,7 +4,7 @@ pkgrel=2
 pkgdesc="X11 miscellaneous micro-utility library"
 arch=('x86_64')
 url="https://xorg.freedesktop.org/"
-provides=(libxmu)
+provides=(libxmu "libxmu=${pkgver}")
 conflicts=(libxmu)
 depends=('libxext' 'libxt')
 makedepends=('xorg-util-macros')

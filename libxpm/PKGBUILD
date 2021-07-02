@@ -5,7 +5,7 @@ pkgdesc="X11 pixmap library"
 arch=('x86_64')
 license=('custom')
 url="https://xorg.freedesktop.org/"
-provides=(libxpm)
+provides=(libxpm "libxpm=${pkgver}")
 conflicts=(libxpm)
 depends=('libxt' 'libxext')
 makedepends=('xorg-util-macros')
