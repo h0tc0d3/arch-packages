@@ -1,8 +1,8 @@
 -glibc
 -llvm
+libclc
 -chromium
 +zlib-ng
-libclc
 zstd
 libxml2
 libjpeg-turbo

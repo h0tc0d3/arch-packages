@@ -1,5 +1,5 @@
 pkgname=libclc12+clang
-pkgver=12.0.1_rc4+0+gfed41342a82f
+pkgver=12.0.1_rc4+r0
 pkgrel=1
 pkgdesc="Library requirements of the OpenCL C programming language"
 arch=('any')
@@ -10,8 +10,11 @@ license=('MIT')
 makedepends=('clang' 'llvm' 'cmake' 'ninja' 'python' 'git'
   'spirv-llvm-translator')
 
-_gitbranch="release/12.x"
-source=("llvm-project::git+https://github.com/llvm/llvm-project.git#branch=${_gitbranch}")
+_gitcommit="fed41342a82f5a3a9201819a82bf7a48313e296b"
+source=(
+  "llvm-project::git+https://github.com/llvm/llvm-project.git#commit=${_gitcommit}"
+)
+
 sha256sums=('SKIP')
 
 pkgver() {
@@ -23,9 +26,9 @@ pkgver() {
 
   _gitdesc=$(git describe --long --tags)
   if [[ "${_gitdesc}" =~ "rc" ]]; then
-    _gitdesc="_$(echo "${_gitdesc}" | cut -f3-5 -d- | tr '-' '+')"
+    _gitdesc="_$(echo "${_gitdesc}" | cut -f3-4 -d- | sed -e 's/\-/+r/')"
   else
-    _gitdesc="+$(echo "${_gitdesc}" | cut -f3-4 -d- | tr '-' '+')"
+    _gitdesc="+r$(echo "${_gitdesc}" | cut -f3 -d-)"
   fi
 
   echo "$(
