@@ -22,10 +22,15 @@ libpciaccess
 libdrm
 xorg-font-util
 libunwind
+xorg-mkfontscale
+xorg-fonts-encodings
+libfontenc
 libxfont2
 xorg-xkbcomp
 xorg-setxkbmap
 xorg-xauth
+libgcrypt
+libxslt
 wayland-protocols
 egl-wayland
 xorgproto
