@@ -1,7 +1,6 @@
 -glibc
 -llvm
 libclc
--chromium
 +zlib-ng
 zstd
 libxml2
@@ -80,3 +79,4 @@ openssl
 gnutls
 libcurl-gnutls
 telegram-desktop
+-chromium
