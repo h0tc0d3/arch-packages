@@ -11,13 +11,13 @@ license=('custom:Apache 2.0 with LLVM Exception')
 provides=('llvm' "llvm=${pkgver}" 'llvm-libs' 'llvm-ocaml' 'clang' 'clang=12.0.0' 'clang-analyzer' 'clang-tools-extra' 'openmp' 'polly' 'compiler-rt' 'lld' 'lldb')
 replaces=('llvm' 'llvm-libs' 'llvm-ocaml' 'clang' 'clang-analyzer' 'clang-tools-extra' 'openmp' 'polly' 'compiler-rt' 'lld' 'lldb')
 conflicts=('llvm' 'llvm-libs' 'llvm-ocaml' 'clang' 'clang-analyzer' 'clang-tools-extra' 'openmp' 'polly' 'compiler-rt' 'lld' 'lldb' 'llvm-git' 'llvm-libs-git' 'llvm-ocaml-git')
-
+depends=('gcc' 'gcc-libs' 'libelf' 'libffi' 'libedit')
 _ocaml_ver=4.11.1
-makedepends=('git' 'ninja' 'cmake' 'libffi' 'libedit' 'ncurses' 'libxml2'
+makedepends=('git' 'ninja' 'cmake' 'ncurses' 'libxml2'
   "ocaml>=$_ocaml_ver" 'ocaml-ctypes' 'ocaml-findlib' 'python2'
   'python-setuptools' 'python-psutil' 'python-sphinx'
   'python-recommonmark')
-
+makedepends_x86_64=('lib32-gcc-libs')
 _gitcommit="fed41342a82f5a3a9201819a82bf7a48313e296b"
 source=(
   "llvm-project::git+https://github.com/llvm/llvm-project.git#commit=${_gitcommit}"
