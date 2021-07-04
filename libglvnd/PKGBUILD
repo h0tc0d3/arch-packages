@@ -1,0 +1,48 @@
+pkgname=libglvnd+clang
+pkgver=1.3.3
+pkgrel=1
+pkgdesc="The GL Vendor-Neutral Dispatch library"
+arch=('x86_64')
+url="https://github.com/NVIDIA/libglvnd"
+license=('custom:BSD-like')
+depends=('libxext' 'mesa' 'opengl-driver')
+makedepends=('libxext' 'libx11' 'xorgproto' 'python' 'meson')
+provides=('libglvnd' "libglvnd=${pkgver}" 'libgl' 'libegl' 'libgles')
+conflicts=('libglvnd')
+source=("https://gitlab.freedesktop.org/glvnd/libglvnd/-/archive/v$pkgver/libglvnd-v$pkgver.tar.gz"
+  LICENSE)
+sha512sums=('8da13d560ab058c9c81f8d721e55ca9399f3bac9f71599d1c5fbcc0a4b87262476d04c5e84696cc9917cb4317080499cec01445b4b836dc74fe1f57bf6eca89a'
+  'bf0f4a7e04220a407400f89226ecc1f798cc43035f2538cc8860e5088e1f84140baf0d4b0b28f66e4b802d4d6925769a1297c24e1ba39c1c093902b2931781a5')
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    sed -ie "s/'nm'/'llvm-nm'/" "libglvnd-v$pkgver/meson.build"
+  fi
+
+}
+
+build() {
+
+  LLVM_IAS=1 meson setup libglvnd-v$pkgver build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_pie=true \
+    -D gles1=false
+
+  ninja -C build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" ninja -C build install
+  install -Dm644 LICENSE "${pkgdir:?}/usr/share/licenses/${pkgname}/LICENSE"
+
+}

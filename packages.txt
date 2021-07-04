@@ -53,6 +53,9 @@ libxmu
 libxaw
 libxrender
 libepoxy
+shaderc
+libglvnd
+libplacebo
 libxshmfence
 libva
 libvdpau
