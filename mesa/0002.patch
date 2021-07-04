@@ -1,0 +1,15 @@
+diff --git a/src/mesa/main/arbprogram.c b/src/mesa/main/arbprogram.c
+index 9635bfca1fb8c9b9f99674e0eac34e18a20d0d13..9b440ab75d46b340bc28bf4332994986c16fc7db 100644
+--- a/src/mesa/main/arbprogram.c
++++ b/src/mesa/main/arbprogram.c
+@@ -389,6 +389,10 @@ set_program_string(struct gl_program *prog, GLenum target, GLenum format, GLsize
+       string = replacement;
+ #endif /* ENABLE_SHADER_CACHE */
+ 
++   /* Clear info to not reuse any stale data, but keep name, label, stage and next_stage */
++   memset(&prog->info.num_textures, 0, sizeof(prog->info) -
++                                       offsetof(struct shader_info, num_textures));
++
+    if (target == GL_VERTEX_PROGRAM_ARB && ctx->Extensions.ARB_vertex_program) {
+       _mesa_parse_arb_vertex_program(ctx, target, string, len, prog);
+    }

@@ -1,0 +1,12 @@
+diff --git a/src/mesa/program/arbprogparse.c b/src/mesa/program/arbprogparse.c
+index 42f84944a1e..2d4c0b1724f 100644
+--- a/src/mesa/program/arbprogparse.c
++++ b/src/mesa/program/arbprogparse.c
+@@ -199,6 +199,7 @@ _mesa_parse_arb_vertex_program(struct gl_context *ctx, GLenum target,
+    program->arb.NumNativeAddressRegs = prog.arb.NumNativeAddressRegs;
+    program->info.inputs_read     = prog.info.inputs_read;
+    program->info.outputs_written = prog.info.outputs_written;
++   program->info.io_lowered = prog.info.io_lowered;
+    program->arb.IndirectRegisterFiles = prog.arb.IndirectRegisterFiles;
+    program->arb.IsPositionInvariant = (state.option.PositionInvariant)
+       ? GL_TRUE : GL_FALSE;
