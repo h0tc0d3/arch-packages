@@ -1,0 +1,277 @@
+diff -up libgcrypt-1.8.5/random/rand-internal.h.getrandom libgcrypt-1.8.5/random/rand-internal.h
+--- libgcrypt-1.8.5/random/rand-internal.h.getrandom	2017-11-23 19:16:58.000000000 +0100
++++ libgcrypt-1.8.5/random/rand-internal.h	2020-04-20 14:55:34.875949624 +0200
+@@ -47,6 +47,7 @@ void _gcry_random_progress (const char *
+ 
+ /*-- random-csprng.c --*/
+ void _gcry_rngcsprng_initialize (int full);
++void _gcry_rngcsprng_deinit (void);
+ void _gcry_rngcsprng_close_fds (void);
+ void _gcry_rngcsprng_dump_stats (void);
+ void _gcry_rngcsprng_secure_alloc (void);
+@@ -68,6 +69,7 @@ void _gcry_rngcsprng_fast_poll (void);
+ 
+ /*-- random-drbg.c --*/
+ void _gcry_rngdrbg_inititialize (int full);
++void _gcry_rngdrbg_deinit (void);
+ void _gcry_rngdrbg_close_fds (void);
+ void _gcry_rngdrbg_dump_stats (void);
+ int  _gcry_rngdrbg_is_faked (void);
+diff -up libgcrypt-1.8.5/random/random.c.getrandom libgcrypt-1.8.5/random/random.c
+--- libgcrypt-1.8.5/random/random.c.getrandom	2017-11-23 19:16:58.000000000 +0100
++++ libgcrypt-1.8.5/random/random.c	2020-04-20 14:55:34.876949605 +0200
+@@ -110,8 +110,8 @@ _gcry_random_read_conf (void)
+   unsigned int result = 0;
+ 
+   fp = fopen (fname, "r");
+-  if (!fp)
+-    return result;
++  if (!fp) /* We make only_urandom the default. */
++    return RANDOM_CONF_ONLY_URANDOM;
+ 
+   for (;;)
+     {
+@@ -228,6 +228,22 @@ _gcry_random_initialize (int full)
+ }
+ 
+ 
++/* Deinitialize this random subsystem. */
++void
++_gcry_random_deinit (void)
++{
++  if (fips_mode ())
++    _gcry_rngdrbg_deinit ();
++  else if (rng_types.standard)
++    _gcry_rngcsprng_deinit ();
++  else if (rng_types.fips)
++    _gcry_rngdrbg_deinit ();
++  else
++    _gcry_rngcsprng_deinit ();
++  /* not needed for system */
++}
++
++
+ /* If possible close file descriptors used by the RNG. */
+ void
+ _gcry_random_close_fds (void)
+diff -up libgcrypt-1.8.5/random/random-csprng.c.getrandom libgcrypt-1.8.5/random/random-csprng.c
+--- libgcrypt-1.8.5/random/random-csprng.c.getrandom	2017-11-23 19:16:58.000000000 +0100
++++ libgcrypt-1.8.5/random/random-csprng.c	2020-04-20 15:04:27.182877975 +0200
+@@ -55,6 +55,10 @@
+ #ifdef __MINGW32__
+ #include <process.h>
+ #endif
++#if defined(__linux__) && defined(HAVE_SYSCALL)
++# include <sys/syscall.h>
++# include <linux/random.h>
++#endif
+ #include "g10lib.h"
+ #include "random.h"
+ #include "rand-internal.h"
+@@ -343,6 +347,21 @@ _gcry_rngcsprng_initialize (int full)
+ }
+ 
+ 
++void
++_gcry_rngcsprng_deinit (void)
++{
++  lock_pool();
++  pool_writepos = 0;
++  pool_readpos = 0;
++  pool_filled = 0;
++  pool_filled_counter = 0;
++  did_initial_extra_seeding = 0;
++  pool_balance = 0;
++  just_mixed = 0;
++  unlock_pool();
++}
++
++
+ /* Try to close the FDs of the random gather module.  This is
+    currently only implemented for rndlinux. */
+ void
+@@ -1116,6 +1135,22 @@ getfnc_gather_random (void))(void (*)(co
+              enum random_origins, size_t, int);
+ 
+ #if USE_RNDLINUX
++#if defined(__linux__) && defined(HAVE_SYSCALL) && defined(__NR_getrandom)
++  long ret;
++  char buffer[1];
++
++  _gcry_pre_syscall ();
++  ret = syscall (__NR_getrandom,
++                 (void*)buffer, (size_t)1, (unsigned int)GRND_NONBLOCK);
++  _gcry_post_syscall ();
++  if (ret != -1 || errno != ENOSYS)
++    {
++      fnc = _gcry_rndlinux_gather_random;
++      return fnc;
++    }
++  else
++          /* The syscall is not supported - fallback to /dev/urandom. */
++#endif
+   if ( !access (NAME_OF_DEV_RANDOM, R_OK)
+        && !access (NAME_OF_DEV_URANDOM, R_OK))
+     {
+diff -up libgcrypt-1.8.5/random/random-drbg.c.getrandom libgcrypt-1.8.5/random/random-drbg.c
+--- libgcrypt-1.8.5/random/random-drbg.c.getrandom	2017-11-23 19:16:58.000000000 +0100
++++ libgcrypt-1.8.5/random/random-drbg.c	2020-04-20 15:02:37.782947902 +0200
+@@ -1811,6 +1811,22 @@ _gcry_rngdrbg_inititialize (int full)
+ }
+ 
+ /*
++ * Deinitialize the DRBG invoked by the libgcrypt API
++ * It will be automatically re-initialized on next call
++ */
++void
++_gcry_rngdrbg_deinit (void)
++{
++  drbg_lock ();
++  if (drbg_state)
++    {
++      drbg_uninstantiate (drbg_state);
++      drbg_state = NULL;
++    }
++  drbg_unlock ();
++}
++
++/*
+  * Backend handler function for GCRYCTL_DRBG_REINIT
+  *
+  * Select a different DRBG type and initialize it.
+diff -up libgcrypt-1.8.5/random/random.h.getrandom libgcrypt-1.8.5/random/random.h
+--- libgcrypt-1.8.5/random/random.h.getrandom	2017-11-23 19:16:58.000000000 +0100
++++ libgcrypt-1.8.5/random/random.h	2020-04-20 14:55:34.877949586 +0200
+@@ -29,6 +29,7 @@ void _gcry_register_random_progress (voi
+ 
+ void _gcry_set_preferred_rng_type (int type);
+ void _gcry_random_initialize (int full);
++void _gcry_random_deinit (void);
+ void _gcry_random_close_fds (void);
+ int  _gcry_get_rng_type (int ignore_fips_mode);
+ void _gcry_random_dump_stats(void);
+diff -up libgcrypt-1.8.5/random/rndlinux.c.getrandom libgcrypt-1.8.5/random/rndlinux.c
+--- libgcrypt-1.8.5/random/rndlinux.c.getrandom	2020-04-20 15:01:50.159848963 +0200
++++ libgcrypt-1.8.5/random/rndlinux.c	2020-04-20 16:14:21.901610921 +0200
+@@ -35,6 +35,7 @@
+ #if defined(__linux__) || !defined(HAVE_GETENTROPY)
+ #ifdef HAVE_SYSCALL
+ # include <sys/syscall.h>
++# include <linux/random.h>
+ # ifdef __NR_getrandom
+ # define getentropy(buf,buflen) syscall (__NR_getrandom, buf, buflen, 0)
+ # endif
+@@ -147,12 +148,12 @@ _gcry_rndlinux_gather_random (void (*add
+   if (!add)
+     {
+       /* Special mode to close the descriptors.  */
+-      if (fd_random != -1)
++      if (fd_random >= 0)
+         {
+           close (fd_random);
+           fd_random = -1;
+         }
+-      if (fd_urandom != -1)
++      if (fd_urandom >= 0)
+         {
+           close (fd_urandom);
+           fd_urandom = -1;
+@@ -166,12 +167,12 @@ _gcry_rndlinux_gather_random (void (*add
+   apid = getpid ();
+   if (my_pid != apid)
+     {
+-      if (fd_random != -1)
++      if (fd_random >= 0)
+         {
+           close (fd_random);
+           fd_random = -1;
+         }
+-      if (fd_urandom != -1)
++      if (fd_urandom >= 0)
+         {
+           close (fd_urandom);
+           fd_urandom = -1;
+@@ -216,7 +217,23 @@ _gcry_rndlinux_gather_random (void (*add
+      that we always require the device to be existent but want a more
+      graceful behaviour if the rarely needed close operation has been
+      used and the device needs to be re-opened later. */
+-  if (level >= GCRY_VERY_STRONG_RANDOM && !only_urandom)
++#if defined(__linux__) && defined(HAVE_SYSCALL) && defined(__NR_getrandom)
++   if (fd_urandom != -2 && !_gcry_in_constructor ())
++     {
++       long ret;
++
++       _gcry_pre_syscall ();
++       ret = syscall (__NR_getrandom,
++                      (void*)buffer, (size_t)1, (unsigned int)GRND_NONBLOCK);
++       _gcry_post_syscall ();
++       if (ret > -1 || errno == EAGAIN || errno == EINTR)
++         {
++           fd_urandom = -2;
++           fd_random = -2;
++         }
++     }
++#endif
++  if (level >= GCRY_VERY_STRONG_RANDOM && !only_urandom && !_gcry_in_constructor ())
+     {
+       if (fd_random == -1)
+         {
+@@ -270,9 +288,7 @@ _gcry_rndlinux_gather_random (void (*add
+               _gcry_post_syscall ();
+             }
+           while (ret == -1 && errno == EINTR);
+-          if (ret == -1 && errno == ENOSYS)
+-            ; /* getentropy is not supported - fallback to pulling from fd.  */
+-          else
++          if (1)
+             { /* getentropy is supported.  Some sanity checks.  */
+               if (ret == -1)
+                 log_fatal ("unexpected error from getentropy: %s\n",
+diff -up libgcrypt-1.8.5/src/g10lib.h.getrandom libgcrypt-1.8.5/src/g10lib.h
+--- libgcrypt-1.8.5/src/g10lib.h.getrandom	2020-04-20 15:08:16.528538580 +0200
++++ libgcrypt-1.8.5/src/g10lib.h	2020-04-20 15:08:28.641309399 +0200
+@@ -464,6 +464,6 @@ gpg_err_code_t _gcry_fips_run_selftests
+ void _gcry_fips_noreturn (void);
+ #define fips_noreturn()  (_gcry_fips_noreturn ())
+ 
+-
++int _gcry_in_constructor (void);
+ 
+ #endif /* G10LIB_H */
+diff -up libgcrypt-1.8.5/src/global.c.getrandom libgcrypt-1.8.5/src/global.c
+--- libgcrypt-1.8.5/src/global.c.getrandom	2020-04-20 15:06:21.891707597 +0200
++++ libgcrypt-1.8.5/src/global.c	2020-04-20 15:07:29.018437509 +0200
+@@ -145,10 +145,18 @@ global_init (void)
+ #define FIPS_MODULE_PATH "/etc/system-fips"
+ #endif
+ 
++static int in_constructor = 0;
++
++int _gcry_in_constructor(void)
++{
++  return in_constructor;
++}
++
+ void __attribute__ ((constructor)) _gcry_global_constructor (void)
+ {
+   int rv;
+ 
++  in_constructor = 1;
+   rv = access (FIPS_MODULE_PATH, F_OK);
+   if (rv < 0 && errno != ENOENT)
+     rv = 0;
+@@ -163,10 +171,12 @@ void __attribute__ ((constructor)) _gcry
+       /* force selftests */
+       global_init();
+       _gcry_fips_run_selftests (0);
+-      if (!fips_mode())
+-         _gcry_random_close_fds ();
++      _gcry_random_close_fds ();
++      _gcry_random_deinit ();
+       no_secure_memory = no_secmem_save;
+     }
++
++  in_constructor = 0;
+ }
+ 
+ /* This function is called by the macro fips_is_operational and makes

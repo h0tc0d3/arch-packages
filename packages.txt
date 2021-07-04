@@ -1,4 +1,5 @@
 -glibc
+-libgcrypt
 -llvm
 libclc
 +zlib-ng
@@ -29,7 +30,6 @@ libxfont2
 xorg-xkbcomp
 xorg-setxkbmap
 xorg-xauth
-libgcrypt
 libxslt
 wayland-protocols
 egl-wayland
