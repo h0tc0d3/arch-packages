@@ -2,7 +2,7 @@ pkgname=mesa+clang
 pkgdesc="Mesa open-source implementation of the OpenGL specification"
 pkgver=21.1.4
 _pkgver=21.1.4
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 makedepends=('git' 'python-mako' 'xorgproto'
   'libxml2' 'libx11' 'libvdpau' 'libva' 'elfutils' 'libxrandr'
@@ -19,20 +19,17 @@ source=(
   'LICENSE'
   'mesa.conf'
   '0001.patch'
-  '0002.patch'
 )
 
 md5sums=('645a27655bea5d83752da49510836731'
   'SKIP'
   '5c65a0fe315dd347e09b1f2826a1df5a'
   '79e9d277704ee3815ac03d22bcf5da0d'
-  '3aa4b1f30be9eecead2251fb33049b99'
   '888ebe9c1f510fae5a1c6b1a62c41a2f')
 sha512sums=('1f4e2d8ba2c3c02bad5468687752d7e87d6e79c4a0e6ec4b2741a57fb270d18ae4712aaa07a9e09a2d3348540f5a26cdbe05464cd52adb8df1e2e28a581b2b53'
   'SKIP'
   '25da77914dded10c1f432ebcbf29941124138824ceecaf1367b3deedafaecabc082d463abcfa3d15abff59f177491472b505bcb5ba0c4a51bb6b93b4721a23c2'
   'd4434797c3d8da997ba9db96f11cd1f0c0a76a71ee6779955801e1fb6c6221f8aa1a6779047ea27660d4b37696035adea926b5d0ef260447f3a4b7a3148ed7e0'
-  '0659dc54411fac163322f6d6770236de6a1742f7c362f57c25e626395cf6011d9679ddce97ff6e7a1c202e32cf11df19517bd71fac75a97939cafa57deaccafc'
   '9e4270ff285ad7eeeefaebc512c707d4d11fce63272b837e8f26f761e1d499b732b08d2dac8ace818a3d80c9614a39d14e4e19fb468164ec0fa61c757fa08ca7')
 
 validpgpkeys=(
@@ -65,7 +62,6 @@ prepare() {
 
   # Fix radeonsi rendering glitches
   patch --forward --strip=1 --input="${srcdir}/0001.patch"
-  patch --forward --strip=1 --input="${srcdir}/0002.patch"
 
   if [[ -f "${srcdir:?}/mesa.conf" ]]; then
     # shellcheck disable=SC1091

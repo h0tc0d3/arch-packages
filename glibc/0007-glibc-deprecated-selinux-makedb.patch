@@ -1,0 +1,20 @@
+This is necessary to get things building again after libselinux changes.
+A proper fix is under discussion upstream:
+
+  <https://sourceware.org/pipermail/libc-alpha/2020-July/116504.html>
+
+diff --git a/nss/makedb.c b/nss/makedb.c
+index 8e389a1683747cf1..9d81aed57d384a22 100644
+--- a/nss/makedb.c
++++ b/nss/makedb.c
+@@ -17,6 +17,10 @@
+    License along with the GNU C Library; if not, see
+    <https://www.gnu.org/licenses/>.  */
+ 
++/* This file uses deprecated declarations from libselinux.  */
++#include <libc-diag.h>
++DIAG_IGNORE_NEEDS_COMMENT (4.9, "-Wdeprecated-declarations");
++
+ #include <argp.h>
+ #include <assert.h>
+ #include <ctype.h>

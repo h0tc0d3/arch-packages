@@ -1,0 +1,17 @@
+This patch works around deprecated libselinux features used by nscd.
+
+diff --git a/nscd/selinux.c b/nscd/selinux.c
+index a4ea8008e201b939..0acca4639202a75a 100644
+--- a/nscd/selinux.c
++++ b/nscd/selinux.c
+@@ -17,6 +17,10 @@
+    License along with the GNU C Library; if not, see
+    <https://www.gnu.org/licenses/>.  */
+ 
++/* This file uses deprecated declarations from libselinux.  */
++#include <libc-diag.h>
++DIAG_IGNORE_NEEDS_COMMENT (4.9, "-Wdeprecated-declarations");
++
+ #include "config.h"
+ #include <error.h>
+ #include <errno.h>
