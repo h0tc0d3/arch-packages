@@ -1,0 +1,63 @@
+pkgname=dolphin+clang
+pkgver=21.04.2
+pkgrel=1
+pkgdesc='KDE File Manager'
+arch=(x86_64)
+url='https://apps.kde.org/dolphin/'
+license=(LGPL)
+provides=('dolphin' "dolphin=${pkgver}")
+conflicts=('dolphin')
+depends=(baloo-widgets knewstuff kio-extras kcmutils kparts kinit kactivities kuserfeedback)
+makedepends=(extra-cmake-modules kdoctools packagekit-qt5)
+optdepends=('kde-cli-tools: for editing file type options' 'ffmpegthumbs: video thumbnails' 'kdegraphics-thumbnailers: PDF and PS thumbnails'
+  'konsole: terminal panel' 'purpose: share context menu' 'packagekit-qt5: service menu installer')
+groups=(kde-applications kde-system)
+
+source=(
+  "https://download.kde.org/stable/release-service/${pkgver}/src/dolphin-${pkgver}.tar.xz"
+  'lto.cmake'
+)
+
+sha256sums=('4fb3d6c15725fc86f78d6f6fb305f32d94ba95bf6d02480f3c06feaeb6e5c553'
+  '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
+
+validpgpkeys=(
+  'CA262C6C83DE4D2FB28A332A3A6A4DB839EAA6D7' # Albert Astals Cid <aacid@kde.org>
+  'F23275E4BF10AFC1DF6914A6DBD2CE893E2D1C87' # Christoph Feck <cfeck@kde.org>
+  'D81C0CB38EB725EF6691C385BB463350D6EF31EF' # Heiko Becker <heiko.becker@kde.org>
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    cmake -B build -S dolphin-${pkgver} \
+      -DCMAKE_TOOLCHAIN_FILE=../lto.cmake \
+      -DBUILD_TESTING=OFF
+
+  else
+
+    cmake -B build -S dolphin-${pkgver} \
+      -DBUILD_TESTING=OFF
+
+  fi
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+}

@@ -66,6 +66,8 @@ expat
 wayland
 plasma-workspace
 plasma-framework
+konsole
+dolphin
 glib2
 gtk2
 gtk3
