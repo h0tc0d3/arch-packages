@@ -1,5 +1,7 @@
 # Arch Linux performance important packages
 
+We open official packages repository: **[Arch Linux Club](https://archlinux.club/)**
+
 All packages optimized for build with LLVM and Clang.
 
 Usage: `./build.sh --help`
