@@ -1,0 +1,88 @@
+pkgname=alsa-lib+clang
+pkgver=1.2.5.1
+pkgrel=3
+pkgdesc="An alternative implementation of Linux sound support"
+arch=('x86_64')
+url="https://www.alsa-project.org"
+license=('LGPL2.1')
+depends=('glibc' 'alsa-topology-conf' 'alsa-ucm-conf')
+provides=('alsa-lib' "alsa-lib=${pkgver}" 'libasound.so' 'libatopology.so')
+conflicts=('alsa-lib')
+install="alsa-lib.install"
+source=("https://www.alsa-project.org/files/pub/lib/alsa-lib-${pkgver}.tar.bz2"{,.sig})
+sha512sums=('01998ffa449e925ff552c13aea47f9540903afdc533086067c78dcaba4d239c347180d3d28bb0000e6d19b7779c7249fcc77a30057930ca22d18ba55e163fa1c'
+  'SKIP')
+b2sums=('5464cc7f263bdf7b10aa7e1f542ad6dbc55bf300156fd1bded00375c41a518d4b14f96e28eb1c60a6ce7cc6e27da4b2e8598cd867f15417f260fc23513f93e11'
+  'SKIP')
+validpgpkeys=('F04DF50737AC1A884C4B3D718380596DA6E59C91') # ALSA Release Team (Package Signing Key v1) <release@alsa-project.org>
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/alsa-lib-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/alsa-lib-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  autoreconf -vfi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/alsa-lib-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/alsa-lib-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure \
+      --prefix=/usr \
+      --without-debug
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./configure \
+      --prefix=/usr \
+      --without-debug
+
+    make
+
+  fi
+
+}
+
+check() {
+
+  cd "${srcdir:?}/alsa-lib-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/alsa-lib-${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  export LD_LIBRARY_PATH="${PWD}/src/.libs/:${LD_LIBRARY_PATH}"
+  make -k check
+
+}
+
+package() {
+
+  cd "${srcdir:?}/alsa-lib-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/alsa-lib-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  make DESTDIR="${pkgdir:?}" install -C doc
+  install -vDm 644 {MEMORY-LEAK,TODO,NOTES,ChangeLog,doc/asoundrc.txt} \
+    -t "${pkgdir:?}/usr/share/doc/${pkgname}"
+
+}

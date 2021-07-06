@@ -1,0 +1,78 @@
+pkgname=speexdsp+clang
+pkgver=1.2.0
+pkgrel=2
+pkgdesc="DSP library derived from Speex"
+arch=(x86_64)
+url="https://www.speex.org/"
+license=(BSD)
+provides=("speexdsp" "speexdsp=${pkgver}")
+conflicts=("speexdsp")
+depends=(glibc)
+source=("https://downloads.us.xiph.org/releases/speex/speexdsp-${pkgver}.tar.gz")
+sha512sums=('e357cd5377415ea66c862302c7cf8bf6a10063cacd903f0846478975b87974cf5bdf00e2c6759d8f4f453c4c869cf284e9dc948a84a83d7b2ab96bd5405c05ec')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/speexdsp-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/speexdsp-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      ./configure \
+      --prefix=/usr \
+      --sysconfdir=/etc \
+      --localstatedir=/var \
+      --disable-static
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    ./configure \
+      --prefix=/usr \
+      --sysconfdir=/etc \
+      --localstatedir=/var \
+      --disable-static
+
+    make
+
+  fi
+
+}
+
+check() {
+
+  cd "${srcdir:?}/speexdsp-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/speexdsp-${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make -k check
+
+}
+
+package() {
+
+  cd "${srcdir:?}/speexdsp-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/speexdsp-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname}" -m644 COPYING
+
+}

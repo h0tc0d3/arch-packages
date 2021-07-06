@@ -107,5 +107,13 @@ gnutls
 libcurl-gnutls
 telegram-desktop
 mpv
+speexdsp
+alsa-lib
+libsamplerate
 pulseaudio
+alsa-plugins
+zita-resampler
+zita-alsa-pcmi
+zita-ajbridge
+jack2
 -chromium

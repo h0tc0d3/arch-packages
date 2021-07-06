@@ -1,0 +1,58 @@
+pkgname=zita-ajbridge+clang
+pkgver=0.8.4
+pkgrel=1
+pkgdesc="Jack client to use additional ALSA devices."
+arch=('x86_64')
+url="https://kokkinizita.linuxaudio.org/linuxaudio/zita-ajbridge-doc/quickguide.html"
+license=('GPL3')
+provides=('zita-ajbridge' "zita-ajbridge=${pkgver}")
+conflicts=('zita-ajbridge')
+groups=('pro-audio')
+depends=('gcc-libs' 'glibc' 'libjack.so' 'libzita-alsa-pcmi.so' 'libzita-resampler.so')
+makedepends=('jack' 'zita-alsa-pcmi' 'zita-resampler')
+source=("https://kokkinizita.linuxaudio.org/linuxaudio/downloads/zita-ajbridge-${pkgver}.tar.bz2")
+sha512sums=('591c75324fdb51d705b15b7cb93ff0ff098d354277262468faba2c45741c24e0749ae9fa9169d206a4d589c7fac33d05ed33cb6ea6d9d808b3f640c7e938f244')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+}
+
+build() {
+
+  cd "${srcdir:?}/zita-ajbridge-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/zita-ajbridge-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+  
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    # libs
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      make LDFLAGS="-flto=thin ${LDFLAGS}" PREFIX="/usr" -C source
+
+  else
+
+    make -C source
+
+  fi
+
+}
+
+package() {
+
+  cd "${srcdir:?}/zita-ajbridge-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/zita-ajbridge-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make PREFIX=/usr DESTDIR="${pkgdir:?}" install -C source
+  # docs
+  install -vDm 644 {AUTHORS,README} \
+    -t "${pkgdir:?}/usr/share/doc/${pkgname}"
+
+}
