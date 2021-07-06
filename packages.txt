@@ -106,4 +106,5 @@ openssl
 gnutls
 libcurl-gnutls
 telegram-desktop
+mpv
 -chromium
