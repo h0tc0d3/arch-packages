@@ -1,0 +1,60 @@
+pkgname=kwayland-integration+clang
+pkgver=5.22.2.1
+pkgrel=1
+pkgdesc='Provides integration plugins for various KDE frameworks for the wayland windowing system'
+arch=(x86_64)
+url='https://kde.org/plasma-desktop/'
+license=(LGPL)
+provides=("kwayland-integration" "kwaylan-integration=${pkgver}")
+conflicts=("kwayland-integration")
+depends=(kwindowsystem kidletime kwayland kguiaddons)
+makedepends=(extra-cmake-modules)
+groups=(plasma)
+source=(
+  "https://download.kde.org/stable/plasma/${pkgver}/kwayland-integration-${pkgver}.tar.xz"{,.sig}
+  'lto.cmake'
+)
+sha256sums=('7346ae8a165b46b9067f838ca9d6b282f18de964a54bd7f87dbb3bdad54191e8'
+  'SKIP'
+  '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
+validpgpkeys=(
+  '2D1D5B0588357787DE9EE225EC94D18F7F05997E' # Jonathan Riddell <jr@jriddell.org>
+  '0AAC775BB6437A8D9AF7A3ACFE0784117FBCE11D' # Bhushan Shah <bshah@kde.org>
+  'D07BD8662C56CB291B316EB2F5675605C74E02CF' # David Edmundson <davidedmundson@kde.org>
+  '1FA881591C26B276D7A5518EEAAF29B42A678C20' # Marco Martin <notmart@gmail.com>
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    cmake -B build -S kwayland-integration-${pkgver} \
+      -DCMAKE_TOOLCHAIN_FILE=../lto.cmake \
+      -DBUILD_TESTING=OFF
+
+  else
+
+    cmake -B build -S kwayland-integration-${pkgver} \
+      -DBUILD_TESTING=OFF
+
+  fi
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+}

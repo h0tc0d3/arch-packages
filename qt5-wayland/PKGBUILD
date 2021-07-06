@@ -1,0 +1,88 @@
+pkgname=qt5-wayland+clang
+pkgver=5.15.2+kde+r28
+pkgrel=1
+arch=('x86_64')
+url='https://www.qt.io'
+license=('GPL3' 'LGPL3' 'FDL' 'custom')
+provides=("qt5-wayland" "qt5-wayland=${pkgver}")
+conflicts=("qt5-wayland")
+pkgdesc='Provides APIs for Wayland'
+depends=('qt5-declarative' 'libxcomposite')
+makedepends=('vulkan-headers' 'git')
+groups=('qt' 'qt5')
+_commit=a6476d1a1c78eb7f17408241b268404e27b3e161
+source=("git+https://invent.kde.org/qt/qt/qtwayland#commit=${_commit}")
+sha256sums=('SKIP')
+
+_llvm=0
+
+pkgver() {
+
+  cd "${srcdir:?}/qtwayland" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/qtwayland directory! PkgVer Failed! \E[0m"
+    exit 1
+  )
+
+  echo "5.15.2+kde+r$(git rev-list --count origin/5.15.2..${_commit})"
+
+}
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  if [[ ! -d build ]]; then
+    mkdir -p build
+  fi
+
+  cd "${srcdir:?}/qtwayland" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/qtwayland directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  git revert -n 30cb2a87fcc6265232cb5a3ffce9836da6e531d6 # Revert version bump
+
+}
+
+build() {
+
+  cd "${srcdir:?}/build" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/build directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
+      qmake ../qtwayland
+
+    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+
+  else
+
+    qmake ../qtwayland
+    make
+
+  fi
+
+}
+
+package() {
+
+  cd "${srcdir:?}/build" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/build directory! Pcakage Failed! \E[0m"
+    exit 1
+  )
+
+  make INSTALL_ROOT="${pkgdir:?}" install
+
+  # Drop QMAKE_PRL_BUILD_DIR because reference the build dir
+  find "${pkgdir:?}/usr/lib" -type f -name '*.prl' \
+    -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \;
+
+  install -d "${pkgdir:?}/usr/share/licenses"
+  ln -s /usr/share/licenses/qt5-base "${pkgdir:?}/usr/share/licenses/${pkgname}"
+
+}

@@ -9,6 +9,8 @@ libjpeg-turbo
 libpng
 mesa
 qt5-base
+qt5-x11extras
+qt5-tools
 icu
 freetype2
 fontconfig
@@ -64,6 +66,14 @@ kwin
 libffi
 expat
 wayland
+xorg-xwayland
+qt5-wayland
+plasma-wayland-protocols
+kwayland
+kwindowsystem
+kwayland-integration
+kwayland-server
+plasma-integration
 plasma-workspace
 plasma-framework
 konsole
