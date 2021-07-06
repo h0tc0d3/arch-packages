@@ -82,6 +82,7 @@ kwayland-server
 plasma-integration
 plasma-workspace
 plasma-framework
+plasma-desktop
 konsole
 dolphin
 glib2

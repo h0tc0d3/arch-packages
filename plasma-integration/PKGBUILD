@@ -23,6 +23,7 @@ validpgpkeys=(
   'D07BD8662C56CB291B316EB2F5675605C74E02CF' # David Edmundson <davidedmundson@kde.org>
   '1FA881591C26B276D7A5518EEAAF29B42A678C20' # Marco Martin <notmart@gmail.com>
 )
+
 _llvm=0
 
 prepare() {
