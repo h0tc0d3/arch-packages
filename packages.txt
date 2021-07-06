@@ -9,8 +9,14 @@ libjpeg-turbo
 libpng
 mesa
 qt5-base
+qt5-imageformats
 qt5-x11extras
 qt5-tools
+phonon-qt5
+phonon-qt5-gstreamer
+phonon-qt5-vlc
+kimageformats
+gwenview
 icu
 freetype2
 fontconfig

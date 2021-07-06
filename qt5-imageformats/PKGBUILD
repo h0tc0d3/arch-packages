@@ -1,17 +1,18 @@
-pkgname=qt5-x11extras+clang
+pkgname=qt5-imageformats+clang
 _qtver=5.15.2
 pkgver=${_qtver/-/}
 pkgrel=1
 arch=('x86_64')
 url='https://www.qt.io'
-provides=("qt5-x11extras" "qt5-x11extras=${pkgver}")
-conflicts=("qt5-x11extras")
 license=('GPL3' 'LGPL3' 'FDL' 'custom')
-pkgdesc='Provides platform-specific APIs for X11'
-depends=('qt5-base')
+provides=("qt5-imageformats" "qt5-imageformats=${pkgver}")
+conflicts=("qt5-imageformats")
+pkgdesc='Plugins for additional image formats: TIFF, MNG, TGA, WBMP'
+depends=('qt5-base' 'jasper' 'libmng' 'libwebp')
+makedepends=()
 groups=('qt' 'qt5')
-source=("https://download.qt.io/official_releases/qt/${pkgver%.*}/${_qtver}/submodules/qtx11extras-everywhere-src-${_qtver}.tar.xz")
-sha256sums=('7014702ee9a644a5a93da70848ac47c18851d4f8ed622b29a72eed9282fc6e3e')
+source=("https://download.qt.io/official_releases/qt/${pkgver%.*}/${_qtver}/submodules/qtimageformats-everywhere-src-${_qtver}.tar.xz")
+sha256sums=('bf8285c7ce04284527ab823ddc7cf48a1bb79131db3a7127342167f4814253d7')
 
 _llvm=0
 
@@ -37,13 +38,13 @@ build() {
   if [[ ${_llvm} -eq 1 ]]; then
 
     CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
-      qmake ../qtx11extras-everywhere-src-${_qtver}
+      qmake ../qtimageformats-everywhere-src-${_qtver}
 
     CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
 
   else
 
-    qmake ../qtx11extras-everywhere-src-${_qtver}
+    qmake ../qtimageformats-everywhere-src-${_qtver}
     make
 
   fi
@@ -59,11 +60,7 @@ package() {
 
   make INSTALL_ROOT="${pkgdir:?}" install
 
-  # Drop QMAKE_PRL_BUILD_DIR because reference the build dir
-  find "${pkgdir:?}/usr/lib" -type f -name '*.prl' \
-    -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \;
-
-  install -d "${pkgdir:?}"/usr/share/licenses
+  install -d "${pkgdir:?}/usr/share/licenses"
   ln -s /usr/share/licenses/qt5-base "${pkgdir:?}/usr/share/licenses/${pkgname}"
 
 }

@@ -1,0 +1,52 @@
+pkgname=phonon-qt5+clang
+pkgdesc="The multimedia framework by KDE"
+pkgver=4.11.1
+pkgrel=2
+arch=(x86_64)
+url='https://community.kde.org/Phonon'
+license=(LGPL)
+provides=("phonon-qt5" "phonon-qt5=${pkgver}")
+conflicts=("phonon-qt5")
+depends=(libpulse qt5-base phonon-qt5-backend)
+optdepends=('pulseaudio: PulseAudio support' 'qt5-tools: Designer plugin')
+makedepends=(extra-cmake-modules qt5-tools)
+source=(
+  "https://download.kde.org/stable/phonon/${pkgver}/phonon-${pkgver}.tar.xz"
+  'lto.cmake'
+)
+sha256sums=('b4431ea2600df8137a717741ad9ebc7f7ec1649fa3e138541d8f42597144de2d'
+            '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
+validpgpkeys=(CB9387521E1EE0127DA804843FDBB55084CC5D84) # Harald Sitter <sitter@kde.org>
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    cmake -B build -S phonon-${pkgver} \
+      -DCMAKE_TOOLCHAIN_FILE=../lto.cmake
+
+  else
+
+    cmake -B build -S phonon-${pkgver}
+
+  fi
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+}
