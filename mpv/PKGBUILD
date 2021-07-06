@@ -69,6 +69,7 @@ build() {
     -D dvdnav=enabled \
     -D libarchive=enabled \
     -D libmpv-shared=enbaled \
+    -D libmpv=enabled \
     -D build-date=disabled \
     -D opensles=disabled \
     -D vapoursynth=disabled \
