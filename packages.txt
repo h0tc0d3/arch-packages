@@ -107,4 +107,5 @@ gnutls
 libcurl-gnutls
 telegram-desktop
 mpv
+pulseaudio
 -chromium
