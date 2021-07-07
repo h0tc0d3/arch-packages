@@ -45,7 +45,9 @@ prepare() {
 
   # Add meson build
   git cherry-pick -n 94abf63f601d6c28350d6e92277072c4d18bafd9
-  sed -ie "s/posix\s=\sfalse/posix = true/g" meson.build
+  #git cherry-pick -n f9ad8f07d99c1caa4be206f64964f722bc14b296
+  sed -ie "s/posix\s=\sfalse/posix = true/g;s/'video\/out\/vulkan\/context_display\.c',//g" meson.build
+  
 
 }
 
