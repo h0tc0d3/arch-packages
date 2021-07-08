@@ -1,5 +1,5 @@
 pkgname=dolphin+clang
-pkgver=21.04.2
+pkgver=21.04.3
 pkgrel=1
 pkgdesc='KDE File Manager'
 arch=(x86_64)
@@ -18,8 +18,8 @@ source=(
   'lto.cmake'
 )
 
-sha256sums=('4fb3d6c15725fc86f78d6f6fb305f32d94ba95bf6d02480f3c06feaeb6e5c553'
-  '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
+sha256sums=('e3a1560c216efaa80c3ec99138c4657e9602e17aea250a418b18c2fc85295264'
+            '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
 
 validpgpkeys=(
   'CA262C6C83DE4D2FB28A332A3A6A4DB839EAA6D7' # Albert Astals Cid <aacid@kde.org>

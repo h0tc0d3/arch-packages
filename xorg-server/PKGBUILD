@@ -7,7 +7,7 @@ pkgname=(
   'xorg-server-common+clang'
   'xorg-server-devel+clang'
 )
-pkgver=1.20.11
+pkgver=1.20.12
 pkgrel=1
 arch=('x86_64')
 license=('custom')
@@ -20,7 +20,7 @@ makedepends=('xorgproto' 'pixman' 'libx11' 'mesa' 'mesa-libgl' 'xtrans'
   'xcb-util' 'xcb-util-image' 'xcb-util-renderutil' 'xcb-util-wm' 'xcb-util-keysyms'
   'libxshmfence' 'libunwind' 'systemd' 'meson' 'git'
   'wayland-protocols' 'egl-wayland')
-source=("https://xorg.freedesktop.org/releases/individual/xserver/xorg-server-${pkgver}.tar.bz2"{,.sig}
+source=("https://xorg.freedesktop.org/releases/individual/xserver/xorg-server-${pkgver}.tar.xz"{,.sig}
   xserver-autobind-hotplug.patch
   0001-v2-FS-58644.patch
   0002-fix-libshadow-2.patch
@@ -34,13 +34,13 @@ validpgpkeys=(
   '3BB639E56F861FA2E86505690FDD682D974CA72A'
 )
 
-sha256sums=('914c796e3ffabe1af48071d40ccc85e92117c97a9082ed1df29e4d64e3c34c49'
-  'SKIP'
-  'cae1b7f296c18177de38f9b1215a4f916da2288b85f1fcb9e80373a42e2892b8'
-  '6253fb5cf06cf650539be585d6ca13cfa00217b51ca9825476c8fd55c09341a4'
-  'd07b2fe55828dad61517a80c77f6f183113916f5e1fce30ff43041550d58bd6e'
-  'd709078f5658576931655c7a46ff90b3586a2643a9124075d00ff3a567937845'
-  '2460adccd3362fefd4cdc5f1c70f332d7b578091fb9167bf88b5f91265bbd776')
+sha256sums=('336dc093431d81ecc03fa36af771f1181334f2746b7de7796f3cc6a8fa9e8cac'
+            'SKIP'
+            'cae1b7f296c18177de38f9b1215a4f916da2288b85f1fcb9e80373a42e2892b8'
+            '6253fb5cf06cf650539be585d6ca13cfa00217b51ca9825476c8fd55c09341a4'
+            'd07b2fe55828dad61517a80c77f6f183113916f5e1fce30ff43041550d58bd6e'
+            'd709078f5658576931655c7a46ff90b3586a2643a9124075d00ff3a567937845'
+            '2460adccd3362fefd4cdc5f1c70f332d7b578091fb9167bf88b5f91265bbd776')
 
 _extra_lto_flag=""
 

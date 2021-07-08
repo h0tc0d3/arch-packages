@@ -1,5 +1,5 @@
 pkgname=konsole+clang
-pkgver=21.04.2
+pkgver=21.04.3
 pkgrel=1
 arch=(x86_64)
 url='https://apps.kde.org/konsole/'
@@ -15,7 +15,7 @@ source=(
   "https://download.kde.org/stable/release-service/${pkgver}/src/konsole-${pkgver}.tar.xz"
   'lto.cmake'
 )
-sha256sums=('0b67b1b854b670f30e45a8613b6c9372de6817af17851e910cbec155d104f366'
+sha256sums=('bcb1fe3af641de857e2b2991f2ccb8a1fb5d5b46ebef57869b271f4ffb722b14'
             '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
 
 validpgpkeys=(
