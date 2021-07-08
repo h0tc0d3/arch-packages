@@ -1,7 +1,7 @@
 pkgbase=qt5-base+clang
 pkgname=(qt5-base+clang qt5-xcb-private-headers+clang)
 pkgver=5.15.2+kde+r207
-pkgrel=1
+pkgrel=2
 _commit=6ee419d6597fb297c2f35d5be63c4eb16ae9b12c
 arch=('x86_64')
 url='https://www.qt.io'
@@ -25,12 +25,16 @@ optdepends=('qt5-svg: to use SVG icon themes'
 conflicts=('qtchooser')
 groups=('qt' 'qt5')
 
-source=("git+https://invent.kde.org/qt/qt/qtbase#commit=${_commit}"
+source=(
+  "git+https://invent.kde.org/qt/qt/qtbase#commit=${_commit}"
   qt5-base-cflags.patch
-  qt5-base-nostrip.patch)
+  qt5-base-nostrip.patch
+  qt5-base-mariadb-10.6.patch
+)
 sha256sums=('SKIP'
-  'cf707cd970650f8b60f8897692b36708ded9ba116723ec8fcd885576783fe85c'
-  '4b93f6a79039e676a56f9d6990a324a64a36f143916065973ded89adc621e094')
+            'cf707cd970650f8b60f8897692b36708ded9ba116723ec8fcd885576783fe85c'
+            '4b93f6a79039e676a56f9d6990a324a64a36f143916065973ded89adc621e094'
+            'dde1c2c7300a6e05b12145f0c0b180991aa5929a4bf13c026eef6511593f357b')
 
 _llvm=0
 
@@ -57,6 +61,9 @@ prepare() {
   )
 
   git revert -n 6344955d17e17e2398720fe60c34cfc2a4a95208 # Revert version bump
+
+  patch -p1 <../qt5-base-mariadb-10.6.patch
+  patch -p1 <../qt5-base-nostrip.patch # Don't strip binaries with qmake
 
 }
 
@@ -97,8 +104,6 @@ build() {
   else
 
     patch -p1 <../qt5-base-cflags.patch  # Use system CFLAGS in qmake
-    patch -p1 <../qt5-base-nostrip.patch # Don't strip binaries with qmake
-
     ./configure -confirm-license -opensource -v \
       -prefix /usr \
       -docdir /usr/share/doc/qt \
