@@ -1,0 +1,56 @@
+diff --git a/src/gui/kernel/qguiapplication.cpp b/src/gui/kernel/qguiapplication.cpp
+index d294cc38..dd31e31c 100644
+--- a/src/gui/kernel/qguiapplication.cpp
++++ b/src/gui/kernel/qguiapplication.cpp
+@@ -3155,13 +3155,14 @@ void QGuiApplicationPrivate::processScreenGeometryChange(QWindowSystemInterfaceP
+     bool availableGeometryChanged = e->availableGeometry != s->d_func()->availableGeometry;
+     s->d_func()->availableGeometry = e->availableGeometry;
+ 
+-    if (geometryChanged) {
+-        Qt::ScreenOrientation primaryOrientation = s->primaryOrientation();
++    const Qt::ScreenOrientation primaryOrientation = s->primaryOrientation();
++    if (geometryChanged)
+         s->d_func()->updatePrimaryOrientation();
+ 
+-        emit s->geometryChanged(s->geometry());
++    s->d_func()->emitGeometryChangeSignals(geometryChanged, availableGeometryChanged);
++
++    if (geometryChanged) {
+         emit s->physicalSizeChanged(s->physicalSize());
+-        emit s->physicalDotsPerInchChanged(s->physicalDotsPerInch());
+         emit s->logicalDotsPerInchChanged(s->logicalDotsPerInch());
+ 
+         if (s->primaryOrientation() != primaryOrientation)
+@@ -3171,8 +3172,6 @@ void QGuiApplicationPrivate::processScreenGeometryChange(QWindowSystemInterfaceP
+             updateFilteredScreenOrientation(s);
+     }
+ 
+-    s->d_func()->emitGeometryChangeSignals(geometryChanged, availableGeometryChanged);
+-
+     resetCachedDevicePixelRatio();
+ }
+ 
+diff --git a/src/gui/kernel/qscreen.cpp b/src/gui/kernel/qscreen.cpp
+index df628fcc..a1afc1ba 100644
+--- a/src/gui/kernel/qscreen.cpp
++++ b/src/gui/kernel/qscreen.cpp
+@@ -88,6 +88,9 @@ void QScreenPrivate::updateGeometriesWithSignals()
+ void QScreenPrivate::emitGeometryChangeSignals(bool geometryChanged, bool availableGeometryChanged)
+ {
+     Q_Q(QScreen);
++    if (geometryChanged)
++        emit q->geometryChanged(geometry);
++
+     if (availableGeometryChanged)
+         emit q->availableGeometryChanged(availableGeometry);
+ 
+@@ -96,6 +99,9 @@ void QScreenPrivate::emitGeometryChangeSignals(bool geometryChanged, bool availa
+         for (QScreen* sibling : siblings)
+             emit sibling->virtualGeometryChanged(sibling->virtualGeometry());
+     }
++
++    if (geometryChanged)
++        emit q->physicalDotsPerInchChanged(q->physicalDotsPerInch());
+ }
+ 
+ void QScreenPrivate::setPlatformScreen(QPlatformScreen *screen)
