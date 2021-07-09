@@ -12,11 +12,9 @@ makedepends=(extra-cmake-modules qt5-tools qt5-doc doxygen)
 groups=(kf5)
 source=(
   "https://download.kde.org/stable/frameworks/${pkgver%.*}/kwindowsystem-${pkgver}.tar.xz"{,.sig}
-  'lto.cmake'
 )
 sha256sums=('69af314db832f4dcc6c0edfbe79ed67b145283a95a189a5b81c8f886b44ccd61'
-  'SKIP'
-  '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
+            'SKIP')
 validpgpkeys=(53E6B47B45CEA3E0D5B7457758D0EE648A48B3BB) # David Faure <faure@kde.org>
 
 _llvm=0
@@ -33,18 +31,14 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    cmake -B build -S kwindowsystem-${pkgver} \
-      -DCMAKE_TOOLCHAIN_FILE=../lto.cmake \
-      -DBUILD_TESTING=OFF \
-      -DBUILD_QCH=ON
-
-  else
-
-    cmake -B build -S kwindowsystem-${pkgver} \
-      -DBUILD_TESTING=OFF \
-      -DBUILD_QCH=ON
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
 
   fi
+
+  cmake -B build -S kwindowsystem-${pkgver} \
+    -DBUILD_TESTING=OFF \
+    -DBUILD_QCH=ON
 
   cmake --build build
 

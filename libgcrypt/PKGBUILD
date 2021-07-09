@@ -124,30 +124,19 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    CFLAGS="${CFLAGS} -flto=thin" \
-      CXXFLAGS="${CXXFLAGS} -flto=thin" \
-      ./configure \
-      --prefix=/usr \
-      --disable-static \
-      --enable-hmac-binary-check \
-      --enable-pubkey-ciphers='dsa elgamal rsa ecc'
-
-    CFLAGS="${CFLAGS} -flto=thin" \
-      CXXFLAGS="${CXXFLAGS} -flto=thin" \
-      make
-
-  else
-
-      ./configure \
-      --prefix=/usr \
-      --disable-static \
-      --enable-hmac-binary-check \
-      --enable-pubkey-ciphers='dsa elgamal rsa ecc' \
-      --disable-O-flag-munging
-
-      make
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
 
   fi
+
+  ./configure \
+    --prefix=/usr \
+    --disable-static \
+    --enable-hmac-binary-check \
+    --enable-pubkey-ciphers='dsa elgamal rsa ecc' \
+    --disable-O-flag-munging
+
+  make
 
 }
 

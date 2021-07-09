@@ -12,14 +12,11 @@ provides=("libsamplerate" "libsamplerate=${pkgver}" 'libsamplerate.so')
 conflicts=("libsamplerate")
 source=(
   "https://github.com/libsndfile/libsamplerate/releases/download/${pkgver}/libsamplerate-${pkgver}.tar.bz2"{,.sig}
-  'lto.cmake'
 )
 sha512sums=('f54f7f12c9536868d7a11fc9cbb86857505e7b75fe34cedaf0b9bfc864da6037296b3eae303a33d4c87b7fd20d96933b91ef59c8cc3d1313b9fc21654e5daa2d'
-  'SKIP'
-  '03b3d99735a3a95098dd8e69468ab95b0f039f6c61aa4dcc2e12cee60d1ececf6e7d5d15d3f0687f3b5c6dd4118195c8365353df028bdde31a6b499dd80148ed')
+            'SKIP')
 b2sums=('83540f3e75cfa79cbd166f075d22cab6a63e0e057b90ac6a3760c07196cac962df7d1ca26620a9033de046e0528bee3ded2b482e8629b1ae316844b5b31f3074'
-  'SKIP'
-  'e8231a307ed96394c1ee7ee6f9db3da9b2f7cbe31252d3446662cfed3fc4a5ceb8791a302b4150deca826ad854fddcda12e3754b743e000a133e6f22771b92c0')
+        'SKIP')
 validpgpkeys=('31D95CAB6D80D262244A1750A47620E801E47E95') # David Seifert soap@gentoo.org
 
 _llvm=0
@@ -36,22 +33,16 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    cmake -B build -S libsamplerate-${pkgver} \
-      -DCMAKE_TOOLCHAIN_FILE=../lto.cmake \
-      -DCMAKE_INSTALL_PREFIX=/usr \
-      -DCMAKE_BUILD_TYPE='None' \
-      -DBUILD_SHARED_LIBS=ON \
-      -Wno-dev
-
-  else
-
-    cmake -B build -S libsamplerate-${pkgver} \
-      -DCMAKE_INSTALL_PREFIX=/usr \
-      -DCMAKE_BUILD_TYPE='None' \
-      -DBUILD_SHARED_LIBS=ON \
-      -Wno-dev
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
 
   fi
+
+  cmake -B build -S libsamplerate-${pkgver} \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_BUILD_TYPE='None' \
+    -DBUILD_SHARED_LIBS=ON \
+    -Wno-dev
 
   cmake --build build
 

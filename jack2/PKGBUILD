@@ -48,33 +48,22 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    export LINKFLAGS="-flto=thin ${LDFLAGS}"
-    export PYTHONPATH="${PWD}:${PYTHONPATH}"
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
-      waf configure --prefix=/usr \
-      --htmldir="/usr/share/doc/${pkgbase}/" \
-      --autostart=none \
-      --systemd-unit \
-      --classic \
-      --dbus
-
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
-      waf build
-
-  else
-
-    export LINKFLAGS="${LDFLAGS}"
-    export PYTHONPATH="${PWD}:${PYTHONPATH}"
-    waf configure --prefix=/usr \
-      --htmldir="/usr/share/doc/${pkgbase}/" \
-      --autostart=none \
-      --systemd-unit \
-      --classic \
-      --dbus
-
-    waf build
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -flto=thin"
 
   fi
+
+  export LINKFLAGS="${LDFLAGS}"
+  export PYTHONPATH="${PWD}:${PYTHONPATH}"
+  waf configure --prefix=/usr \
+    --htmldir="/usr/share/doc/${pkgbase}/" \
+    --autostart=none \
+    --systemd-unit \
+    --classic \
+    --dbus
+
+  waf build
 
 }
 

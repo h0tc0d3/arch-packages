@@ -35,46 +35,29 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" ./configure \
-      --prefix=/usr \
-      --disable-ldap \
-      --disable-ldaps \
-      --disable-manual \
-      --disable-versioned-symbols \
-      --enable-ipv6 \
-      --enable-threaded-resolver \
-      --without-gssapi \
-      --with-libssh2 \
-      --without-libidn \
-      --without-ssl \
-      --with-gnutls='/usr' \
-      --with-random='/dev/urandom' \
-      --with-ca-bundle='/etc/ssl/certs/ca-certificates.crt'
-
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make -C lib
-
-  else
-
-    ./configure \
-      --prefix=/usr \
-      --disable-ldap \
-      --disable-ldaps \
-      --disable-manual \
-      --disable-versioned-symbols \
-      --enable-ipv6 \
-      --enable-threaded-resolver \
-      --without-gssapi \
-      --with-libssh2 \
-      --without-libidn \
-      --without-ssl \
-      --with-gnutls='/usr' \
-      --with-random='/dev/urandom' \
-      --with-ca-bundle='/etc/ssl/certs/ca-certificates.crt'
-
-    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
-    make -C lib
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
 
   fi
+
+  ./configure \
+    --prefix=/usr \
+    --disable-ldap \
+    --disable-ldaps \
+    --disable-manual \
+    --disable-versioned-symbols \
+    --enable-ipv6 \
+    --enable-threaded-resolver \
+    --without-gssapi \
+    --with-libssh2 \
+    --without-libidn \
+    --without-ssl \
+    --with-gnutls='/usr' \
+    --with-random='/dev/urandom' \
+    --with-ca-bundle='/etc/ssl/certs/ca-certificates.crt'
+
+  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+  make -C lib
 
 }
 

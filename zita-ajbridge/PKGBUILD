@@ -28,18 +28,16 @@ build() {
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/zita-ajbridge-${pkgver} directory! Build Failed! \E[0m"
     exit 1
   )
-  
+
   if [[ ${_llvm} -eq 1 ]]; then
 
-    # libs
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
-      make LDFLAGS="-flto=thin ${LDFLAGS}" PREFIX="/usr" -C source
-
-  else
-
-    make -C source
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -flto=thin"
 
   fi
+
+  make PREFIX="/usr" -C source
 
 }
 

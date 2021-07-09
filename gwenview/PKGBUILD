@@ -16,10 +16,8 @@ optdepends=('qt5-imageformats: support for tiff, webp, and more image formats'
 makedepends=(extra-cmake-modules kdoctools)
 source=(
   "https://download.kde.org/stable/release-service/${pkgver}/src/gwenview-${pkgver}.tar.xz"
-  'lto.cmake'
 )
-sha256sums=('726c75b60a71049378e1afee5cfd87957c8c1e4926d446ba993e9b13f2d647d2'
-            '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
+sha256sums=('726c75b60a71049378e1afee5cfd87957c8c1e4926d446ba993e9b13f2d647d2')
 validpgpkeys=(CA262C6C83DE4D2FB28A332A3A6A4DB839EAA6D7 # Albert Astals Cid <aacid@kde.org>
   F23275E4BF10AFC1DF6914A6DBD2CE893E2D1C87             # Christoph Feck <cfeck@kde.org>
   D81C0CB38EB725EF6691C385BB463350D6EF31EF)            # Heiko Becker <heiko.becker@kde.org>
@@ -38,18 +36,14 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    cmake -B build -S gwenview-${pkgver} \
-      -DCMAKE_TOOLCHAIN_FILE=../lto.cmake \
-      -DGWENVIEW_SEMANTICINFO_BACKEND="Baloo" \
-      -DBUILD_TESTING=OFF
-
-  else
-
-    cmake -B build -S gwenview-${pkgver} \
-      -DGWENVIEW_SEMANTICINFO_BACKEND="Baloo" \
-      -DBUILD_TESTING=OFF
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
 
   fi
+
+  cmake -B build -S gwenview-${pkgver} \
+    -DGWENVIEW_SEMANTICINFO_BACKEND="Baloo" \
+    -DBUILD_TESTING=OFF
 
   cmake --build build
 

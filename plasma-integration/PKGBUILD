@@ -12,11 +12,9 @@ makedepends=(extra-cmake-modules breeze)
 groups=(plasma)
 source=(
   "https://download.kde.org/stable/plasma/${pkgver}/plasma-integration-${pkgver}.tar.xz"{,.sig}
-  'lto.cmake'
 )
 sha256sums=('18f254cd1de0f7f21aae364f93bdef5e195f3595eb616bd63fe10efb41e0ba0b'
-            'SKIP'
-            '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
+            'SKIP')
 validpgpkeys=(
   '2D1D5B0588357787DE9EE225EC94D18F7F05997E' # Jonathan Riddell <jr@jriddell.org>
   '0AAC775BB6437A8D9AF7A3ACFE0784117FBCE11D' # Bhushan Shah <bshah@kde.org>
@@ -38,16 +36,13 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    cmake -B build -S plasma-integration-${pkgver} \
-      -DCMAKE_TOOLCHAIN_FILE=../lto.cmake \
-      -DBUILD_TESTING=OFF
-
-  else
-
-    cmake -B build -S plasma-integration-${pkgver} \
-      -DBUILD_TESTING=OFF
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
 
   fi
+
+  cmake -B build -S plasma-integration-${pkgver} \
+    -DBUILD_TESTING=OFF
 
   cmake --build build
 

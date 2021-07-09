@@ -1,5 +1,5 @@
 pkgname=libclc12+clang
-pkgver=12.0.1_rc4+r0
+pkgver=12.0.1+r0
 pkgrel=1
 pkgdesc="Library requirements of the OpenCL C programming language"
 arch=('any')

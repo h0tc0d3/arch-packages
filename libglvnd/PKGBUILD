@@ -24,7 +24,10 @@ prepare() {
 
 build() {
 
-  LLVM_IAS=1 meson setup libglvnd-v$pkgver build \
+  CFLAGS=${CFLAGS/-fstack-protector-strong/}
+  CXXFLAGS=${CXXFLAGS/-fstack-protector-strong/}
+  LDFLAGS=${LDFLAGS/,-z,now/}
+  meson setup libglvnd-v$pkgver build \
     --prefix /usr \
     --libexecdir lib \
     --sbindir bin \

@@ -66,28 +66,19 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
-      ./configure \
-      --prefix=/usr \
-      --without-python \
-      --disable-static
-
-    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
-
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
-
-  else
-
-    ./configure \
-      --prefix=/usr \
-      --without-python \
-      --disable-static
-
-    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
-
-    make
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
 
   fi
+
+  ./configure \
+    --prefix=/usr \
+    --without-python \
+    --disable-static
+
+  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+
+  make
 
 }
 

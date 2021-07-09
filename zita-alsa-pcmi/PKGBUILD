@@ -45,26 +45,20 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    # libs
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
-      make LDFLAGS="-flto=thin ${LDFLAGS}" PREFIX="/usr" -C source
-    # create lib link for building apps
-    ln -sv "libzita-alsa-pcmi.so.${pkgver}" "source/libzita-alsa-pcmi.so"
-    # apps
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin -I../source" \
-      make PREFIX="/usr" LDFLAGS="-flto=thin ${LDFLAGS} -L../source" -C apps
-
-  else
-
-    # libs
-    make -C source
-    # create lib link for building apps
-    ln -sv "libzita-alsa-pcmi.so.${pkgver}" "source/libzita-alsa-pcmi.so"
-    CXXFLAGS+=" -I../source" \
-      LDFLAGS+=" -L../source" \
-      make -C apps
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -flto=thin"
 
   fi
+
+  # libs
+  make PREFIX="/usr" -C source
+  # create lib link for building apps
+  ln -sv "libzita-alsa-pcmi.so.${pkgver}" "source/libzita-alsa-pcmi.so"
+  CXXFLAGS+=" -I../source" \
+    LDFLAGS+=" -L../source" \
+    PREFIX="/usr" \
+    make -C apps
 
   # cleanup link
   rm -v source/libzita-alsa-pcmi.so

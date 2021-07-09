@@ -37,20 +37,15 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    DOCBOOK_TO_MAN="xmlto man --skip-validation" CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
-      ./configure \
-      --prefix=/usr
-
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
-
-  else
-
-    DOCBOOK_TO_MAN="xmlto man --skip-validation" ./configure \
-      --prefix=/usr
-
-    make
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
 
   fi
+
+  DOCBOOK_TO_MAN="xmlto man --skip-validation" ./configure \
+    --prefix=/usr
+
+  make
 
 }
 

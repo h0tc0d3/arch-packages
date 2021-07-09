@@ -11,10 +11,9 @@ conflicts=("phonon-qt5-vlc")
 makedepends=(extra-cmake-modules qt5-tools)
 source=(
   "https://download.kde.org/stable/phonon/phonon-backend-vlc/${pkgver}/phonon-backend-vlc-${pkgver}.tar.xz"
-  'lto.cmake'
+
 )
-sha256sums=('5e69fdeccb060c7e6b5924cef2e65bee5a08ace4127005b95344ed3077dc6397'
-            '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
+sha256sums=('5e69fdeccb060c7e6b5924cef2e65bee5a08ace4127005b95344ed3077dc6397')
 validpgpkeys=(CB9387521E1EE0127DA804843FDBB55084CC5D84) # Harald Sitter <sitter@kde.org>
 
 llvm=0
@@ -31,14 +30,12 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    cmake -B build -S phonon-backend-vlc-${pkgver} \
-      -DCMAKE_TOOLCHAIN_FILE=../lto.cmake
-
-  else
-
-    cmake -B build -S phonon-backend-vlc-${pkgver}
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
 
   fi
+
+  cmake -B build -S phonon-backend-vlc-${pkgver}
 
   cmake --build build
 

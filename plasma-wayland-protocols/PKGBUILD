@@ -11,12 +11,10 @@ makedepends=(qt5-base extra-cmake-modules)
 
 source=(
   "https://download.kde.org/stable/plasma-wayland-protocols/plasma-wayland-protocols-${pkgver}.tar.xz"{,.sig}
-  'lto.cmake'
 )
 
 sha256sums=('0daa2362f2e0d15f79e0e006e8d7f1908e88e37b5c5208b40c9cb0d4d6dca9b5'
-  'SKIP'
-  '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
+            'SKIP')
 
 validpgpkeys=(CA1B4E348D22755A67EF4E1A6A4F2C4CDC8BC77F # Aleix Pol Gonzalez <aleixpol@kde.org>
   EC5516B514543DA145169FD12276F09AF4A790F4             # Vlad Zahorodnii <vlad.zahorodnii@kde.org>
@@ -36,14 +34,12 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    cmake -B build -S plasma-wayland-protocols-${pkgver} \
-      -DCMAKE_TOOLCHAIN_FILE=../lto.cmake
-
-  else
-
-    cmake -B build -S plasma-wayland-protocols-${pkgver}
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
 
   fi
+
+  cmake -B build -S plasma-wayland-protocols-${pkgver}
 
   cmake --build build
 

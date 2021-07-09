@@ -37,10 +37,15 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
-      ./configure --prefix=/usr
+    CFLAGS="${CFLAGS/-fstack-protector-strong/} -flto=thin"
+    CXXFLAGS="${CXXFLAGS/-fstack-protector-strong/} -flto=thin"
+    LDFLAGS=${LDFLAGS/,-z,now/}
 
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
+    ./configure --prefix=/usr
+
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+
+    make
 
   else
 

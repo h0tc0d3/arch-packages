@@ -36,12 +36,14 @@ build() {
   )
 
   if [[ ${_llvm} -eq 1 ]]; then
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make -C contrib/pzstd
-  else
-    make
-    make -C contrib/pzstd
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+
   fi
+
+  make
+  make -C contrib/pzstd
 
 }
 
@@ -53,7 +55,6 @@ check() {
   )
 
   make check
-
   make -C contrib/pzstd test
 
 }

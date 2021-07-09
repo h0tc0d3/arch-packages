@@ -39,24 +39,17 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
-      ./configure \
-      --prefix=/usr \
-      --disable-static \
-      --enable-pax_emutramp
-
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
-
-  else
-
-    ./configure \
-      --prefix=/usr \
-      --disable-static \
-      --enable-pax_emutramp
-
-    make
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
 
   fi
+
+  ./configure \
+    --prefix=/usr \
+    --disable-static \
+    --enable-pax_emutramp
+
+  make
 
 }
 

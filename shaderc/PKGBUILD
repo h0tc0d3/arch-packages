@@ -11,10 +11,8 @@ provides=('shaderc' "shaderc=${pkgver}" 'libshaderc_shared.so')
 conflicts=('shaderc')
 source=(
   "shaderc-${pkgver}.tar.gz::https://github.com/google/shaderc/archive/v${pkgver}.tar.gz"
-  'lto.cmake'
 )
-sha512sums=('b6668bc2dd54cc745184c6a0b9a8f7ba6579fd6b67691a57179d03300f3054776e70b54b82e54b16e04aa14f3b5b28385079d2533657191a69e5698af3cde444'
-  '03b3d99735a3a95098dd8e69468ab95b0f039f6c61aa4dcc2e12cee60d1ececf6e7d5d15d3f0687f3b5c6dd4118195c8365353df028bdde31a6b499dd80148ed')
+sha512sums=('b6668bc2dd54cc745184c6a0b9a8f7ba6579fd6b67691a57179d03300f3054776e70b54b82e54b16e04aa14f3b5b28385079d2533657191a69e5698af3cde444')
 
 _llvm=0
 
@@ -39,25 +37,22 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    cmake -B build -S shaderc-${pkgver} \
-      -DCMAKE_TOOLCHAIN_FILE=../lto.cmake \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_INSTALL_PREFIX=/usr \
-      -DCMAKE_INSTALL_LIBDIR=lib \
-      -DSHADERC_SKIP_TESTS=ON \
-      -Dglslang_SOURCE_DIR=/usr/include/glslang
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+
+  fi
+
+  cmake -B build -S shaderc-${pkgver} \
+    -DCMAKE_INSTALL_LIBEXECDIR=lib \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DSHADERC_SKIP_TESTS=ON \
+    -Dglslang_SOURCE_DIR=/usr/include/glslang
+
+  if [[ ${_llvm} -eq 1 ]]; then
 
     sed -ie 's/\/usr\/bin\/ar/\/usr\/bin\/llvm-ar/g' build/libshaderc/CMakeFiles/shaderc_combined_genfile.dir/build.make
-
-  else
-
-    cmake -B build -S shaderc-${pkgver} \
-      -DCMAKE_INSTALL_LIBEXECDIR=lib \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_INSTALL_PREFIX=/usr \
-      -DCMAKE_INSTALL_LIBDIR=lib \
-      -DSHADERC_SKIP_TESTS=ON \
-      -Dglslang_SOURCE_DIR=/usr/include/glslang
 
   fi
 

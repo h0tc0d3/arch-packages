@@ -15,11 +15,9 @@ groups=(kde-applications kde-system)
 
 source=(
   "https://download.kde.org/stable/release-service/${pkgver}/src/dolphin-${pkgver}.tar.xz"
-  'lto.cmake'
 )
 
-sha256sums=('e3a1560c216efaa80c3ec99138c4657e9602e17aea250a418b18c2fc85295264'
-            '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
+sha256sums=('e3a1560c216efaa80c3ec99138c4657e9602e17aea250a418b18c2fc85295264')
 
 validpgpkeys=(
   'CA262C6C83DE4D2FB28A332A3A6A4DB839EAA6D7' # Albert Astals Cid <aacid@kde.org>
@@ -41,16 +39,13 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    cmake -B build -S dolphin-${pkgver} \
-      -DCMAKE_TOOLCHAIN_FILE=../lto.cmake \
-      -DBUILD_TESTING=OFF
-
-  else
-
-    cmake -B build -S dolphin-${pkgver} \
-      -DBUILD_TESTING=OFF
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
 
   fi
+
+  cmake -B build -S dolphin-${pkgver} \
+    -DBUILD_TESTING=OFF
 
   cmake --build build
 

@@ -51,26 +51,18 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
-      ./configure \
-      --prefix=/usr \
-      --sysconfdir=/etc \
-      --enable-maemo-plugin \
-      --enable-maemo-resource-manager
-
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
-
-  else
-
-    ./configure \
-      --prefix=/usr \
-      --sysconfdir=/etc \
-      --enable-maemo-plugin \
-      --enable-maemo-resource-manager
-
-    make
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
 
   fi
+
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --enable-maemo-plugin \
+    --enable-maemo-resource-manager
+
+  make
 
 }
 

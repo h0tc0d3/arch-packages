@@ -16,11 +16,9 @@ optdepends=('karchive: plugin for Krita and OpenRaster images'
 groups=(kf5)
 source=(
   "https://download.kde.org/stable/frameworks/${pkgver%.*}/kimageformats-${pkgver}.tar.xz"{,.sig}
-  'lto.cmake'
 )
 sha256sums=('dc3965efbf9f2a42b78bbaea3d825b0946a27ad5fc79395cd405c858f38d8917'
-            'SKIP'
-            '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
+            'SKIP')
 validpgpkeys=(53E6B47B45CEA3E0D5B7457758D0EE648A48B3BB) # David Faure <faure@kde.org>
 
 _llvm=0
@@ -37,18 +35,14 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    cmake -B build -S kimageformats-${pkgver} \
-      -DCMAKE_TOOLCHAIN_FILE=../lto.cmake \
-      -DBUILD_TESTING=OFF \
-      -DKIMAGEFORMATS_HEIF=ON
-
-  else
-
-    cmake -B build -S kimageformats-${pkgver} \
-      -DBUILD_TESTING=OFF \
-      -DKIMAGEFORMATS_HEIF=ON
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
 
   fi
+
+  cmake -B build -S kimageformats-${pkgver} \
+    -DBUILD_TESTING=OFF \
+    -DKIMAGEFORMATS_HEIF=ON
 
   cmake --build build
 

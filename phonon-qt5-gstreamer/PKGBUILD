@@ -13,10 +13,8 @@ optdepends=('pulseaudio: PulseAudio support' 'gst-plugins-good: PulseAudio suppo
 makedepends=(extra-cmake-modules qt5-tools)
 source=(
   "https://download.kde.org/stable/phonon/phonon-backend-gstreamer/${pkgver}/phonon-backend-gstreamer-${pkgver}.tar.xz"
-  'lto.cmake'
 )
-sha256sums=('c5871835521d015ef2ad1276b1f58340d946c2903466337f3170bac3c58d61f2'
-            '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
+sha256sums=('c5871835521d015ef2ad1276b1f58340d946c2903466337f3170bac3c58d61f2')
 validpgpkeys=(CB9387521E1EE0127DA804843FDBB55084CC5D84) # Harald Sitter <sitter@kde.org>
 
 _llvm=0
@@ -33,14 +31,12 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    cmake -B build -S phonon-backend-gstreamer-${pkgver} \
-      -DCMAKE_TOOLCHAIN_FILE=../lto.cmake
-
-  else
-
-    cmake -B build -S phonon-backend-gstreamer-${pkgver}
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
 
   fi
+
+  cmake -B build -S phonon-backend-gstreamer-${pkgver}
 
   cmake --build build
 

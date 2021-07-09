@@ -108,6 +108,7 @@ build() {
       -sysconfdir /etc/xdg \
       -examplesdir /usr/share/doc/qt/examples \
       -plugin-sql-{psql,mysql,sqlite,odbc,ibase} \
+      -reduce-relocations \
       -ltcg \
       -system-zlib \
       -system-libjpeg \
@@ -116,14 +117,10 @@ build() {
       -system-harfbuzz \
       -openssl-linked \
       -optimized-qmake \
-      -no-pch \
-      -no-reduce-relocations \
       -no-feature-relocatable \
       -no-rpath \
       -no-separate-debug-info \
-      -no-directfb \
       -no-mimetype-database \
-      -no-strip \
       -nomake examples \
       -dbus-linked \
       -journald
@@ -148,12 +145,10 @@ build() {
       -system-harfbuzz \
       -openssl-linked \
       -optimized-qmake \
-      -no-pch \
       -no-reduce-relocations \
       -no-feature-relocatable \
       -no-rpath \
       -no-separate-debug-info \
-      -no-directfb \
       -no-mimetype-database \
       -no-strip \
       -nomake examples \

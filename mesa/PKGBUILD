@@ -2,7 +2,7 @@ pkgname=mesa+clang
 pkgdesc="Mesa open-source implementation of the OpenGL specification"
 pkgver=21.1.4
 _pkgver=21.1.4
-pkgrel=2
+pkgrel=3
 arch=('x86_64')
 makedepends=('git' 'python-mako' 'xorgproto'
   'libxml2' 'libx11' 'libvdpau' 'libva' 'elfutils' 'libxrandr'
@@ -24,12 +24,12 @@ source=(
 md5sums=('645a27655bea5d83752da49510836731'
   'SKIP'
   '5c65a0fe315dd347e09b1f2826a1df5a'
-  '79e9d277704ee3815ac03d22bcf5da0d'
+  '5135c2ea618d26e2e0c2803fe46c0eaf'
   '888ebe9c1f510fae5a1c6b1a62c41a2f')
 sha512sums=('1f4e2d8ba2c3c02bad5468687752d7e87d6e79c4a0e6ec4b2741a57fb270d18ae4712aaa07a9e09a2d3348540f5a26cdbe05464cd52adb8df1e2e28a581b2b53'
   'SKIP'
   '25da77914dded10c1f432ebcbf29941124138824ceecaf1367b3deedafaecabc082d463abcfa3d15abff59f177491472b505bcb5ba0c4a51bb6b93b4721a23c2'
-  'd4434797c3d8da997ba9db96f11cd1f0c0a76a71ee6779955801e1fb6c6221f8aa1a6779047ea27660d4b37696035adea926b5d0ef260447f3a4b7a3148ed7e0'
+  '408f3fd0c664f1807696c563925580b809dea512747e23d0774b1ba9fbc2f1d52efd2c221d7135b73ff242c66d77a100d46d2e6e1c59aab73677859605fb23cb'
   '9e4270ff285ad7eeeefaebc512c707d4d11fce63272b837e8f26f761e1d499b732b08d2dac8ace818a3d80c9614a39d14e4e19fb468164ec0fa61c757fa08ca7')
 
 validpgpkeys=(
@@ -40,8 +40,9 @@ validpgpkeys=(
 # NOTE: It's your responbility to validate the value of $NINJAFLAGS. If unsure, don't set it.
 
 DRI_DRIVERS="i915,i965,r200,r100,nouveau"
-GALLIUM_DRIVERS="r300,r600,radeonsi,nouveau,svga,swrast,virgl,iris,zink"
+GALLIUM_DRIVERS="r300,r600,radeonsi,nouveau,virgl,svga,swrast,swr,iris,zink"
 VULKAN_DRIVERS="amd,intel,swrast"
+VULKAN_LAYERS="device-select,intel-nullhw,overlay"
 
 _extra_lto_flag=""
 
@@ -86,9 +87,12 @@ build() {
     -D dri-drivers="${DRI_DRIVERS}" \
     -D gallium-drivers="${GALLIUM_DRIVERS}" \
     -D vulkan-drivers="${VULKAN_DRIVERS}" \
+    -D vulkan-layers="${VULKAN_LAYERS}" \
+    -D swr-arches=avx,avx2 \
     -D gallium-extra-hud=true \
     -D gallium-omx=bellagio \
     -D gallium-nine=true \
+    -D gallium-opencl=icd \
     -D gallium-va=enabled \
     -D gallium-vdpau=enabled \
     -D gallium-xa=enabled \
@@ -105,8 +109,6 @@ build() {
     -D lmsensors=enabled \
     -D osmesa=true \
     -D shared-glapi=enabled \
-    -D gallium-opencl=icd \
-    -D vulkan-layers=device-select,overlay \
     -D zstd=enabled \
     -D tools=[] \
     -D microsoft-clc=disabled \
@@ -121,9 +123,6 @@ build() {
 package() {
 
   DESTDIR="${pkgdir:?}" ninja ${NINJAFLAGS} -C _build install
-
-  rm -f "${pkgdir}/usr/bin/mesa-overlay-control.py"
-  rm -rf "${pkgdir:?}/usr/bin"
 
   ln -s /usr/lib/libGLX_mesa.so.0 "${pkgdir:?}/usr/lib/libGLX_indirect.so.0"
 

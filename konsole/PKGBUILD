@@ -13,10 +13,8 @@ makedepends=(extra-cmake-modules kdoctools)
 optdepends=('keditbookmarks: to manage bookmarks')
 source=(
   "https://download.kde.org/stable/release-service/${pkgver}/src/konsole-${pkgver}.tar.xz"
-  'lto.cmake'
 )
-sha256sums=('bcb1fe3af641de857e2b2991f2ccb8a1fb5d5b46ebef57869b271f4ffb722b14'
-            '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
+sha256sums=('bcb1fe3af641de857e2b2991f2ccb8a1fb5d5b46ebef57869b271f4ffb722b14')
 
 validpgpkeys=(
   'CA262C6C83DE4D2FB28A332A3A6A4DB839EAA6D7' # Albert Astals Cid <aacid@kde.org>
@@ -38,16 +36,13 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    cmake -B build -S konsole-${pkgver} \
-      -DCMAKE_TOOLCHAIN_FILE=../lto.cmake \
-      -DBUILD_TESTING=OFF
-
-  else
-
-    cmake -B build -S konsole-${pkgver} \
-      -DBUILD_TESTING=OFF
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
 
   fi
+
+  cmake -B build -S konsole-${pkgver} \
+    -DBUILD_TESTING=OFF
 
   cmake --build build
 

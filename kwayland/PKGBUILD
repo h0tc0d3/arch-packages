@@ -12,11 +12,9 @@ makedepends=(extra-cmake-modules doxygen qt5-tools qt5-doc wayland-protocols pla
 groups=(kf5)
 source=(
   "https://download.kde.org/stable/frameworks/${pkgver%.*}/kwayland-${pkgver}.tar.xz"{,.sig}
-  'lto.cmake'
 )
 sha256sums=('8ccc71f363f93807ea8cbf7d07310a6e9f45a7085e9ee68d2f11d768453dfab9'
-  'SKIP'
-  '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
+            'SKIP')
 validpgpkeys=(53E6B47B45CEA3E0D5B7457758D0EE648A48B3BB) # David Faure <faure@kde.org>
 
 _llvm=0
@@ -33,20 +31,15 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    cmake -B build -S kwayland-${pkgver} \
-      -DCMAKE_TOOLCHAIN_FILE=../lto.cmake \
-      -DCMAKE_INSTALL_LIBEXECDIR=lib \
-      -DBUILD_TESTING=OFF \
-      -DBUILD_QCH=ON
-
-  else
-
-    cmake -B build -S kwayland-${pkgver} \
-      -DCMAKE_INSTALL_LIBEXECDIR=lib \
-      -DBUILD_TESTING=OFF \
-      -DBUILD_QCH=ON
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
 
   fi
+
+  cmake -B build -S kwayland-${pkgver} \
+    -DCMAKE_INSTALL_LIBEXECDIR=lib \
+    -DBUILD_TESTING=OFF \
+    -DBUILD_QCH=ON
 
   cmake --build build
 

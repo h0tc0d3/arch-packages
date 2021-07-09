@@ -7,7 +7,7 @@ url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
 makedepends=(git gd lib32-gcc-libs python)
 optdepends=('perl: for mtrace')
-options=(staticlibs)
+options=(!strip staticlibs)
 #_commit=3de512be7ea6053255afed6154db9ee31d4e557a
 #source=(git+https://sourceware.org/git/glibc.git#commit=$_commit
 source=("https://ftp.gnu.org/gnu/glibc/glibc-${pkgver}.tar.xz"
@@ -104,7 +104,7 @@ build() {
   CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
   CFLAGS=${CFLAGS/-fno-plt/}
   CXXFLAGS=${CXXFLAGS/-fno-plt/}
-  LDFLAGS=${LDFLAGS/,-z,now/}
+  #LDFLAGS=${LDFLAGS/,-z,now/}
 
   "${srcdir:?}/glibc/configure" \
     --libdir=/usr/lib \
@@ -138,7 +138,6 @@ build() {
   CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
   CFLAGS=${CFLAGS/-fno-plt/}
   CXXFLAGS=${CXXFLAGS/-fno-plt/}
-  LDFLAGS=${LDFLAGS/,-z,now/}
 
   "${srcdir:?}/glibc/configure" \
     --host=i686-pc-linux-gnu \

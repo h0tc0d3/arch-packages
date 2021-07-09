@@ -51,29 +51,20 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" ./Configure \
-      --prefix=/usr \
-      --openssldir=/etc/ssl \
-      --libdir=lib \
-      shared no-ssl3-method enable-ec_nistp_64_gcc_128 linux-x86_64 \
-      "-Wa,--noexecstack"
-
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make depend
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
-
-  else
-
-    ./Configure \
-      --prefix=/usr \
-      --openssldir=/etc/ssl \
-      --libdir=lib \
-      shared no-ssl3-method enable-ec_nistp_64_gcc_128 linux-x86_64 \
-      "-Wa,--noexecstack ${CPPFLAGS} ${CFLAGS} ${LDFLAGS}"
-
-    make depend
-    make
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
 
   fi
+
+  ./Configure \
+    --prefix=/usr \
+    --openssldir=/etc/ssl \
+    --libdir=lib \
+    shared no-ssl3-method enable-ec_nistp_64_gcc_128 linux-x86_64 \
+    "-Wa,--noexecstack ${CPPFLAGS} ${CFLAGS} ${LDFLAGS}"
+
+  make depend
+  make
 
 }
 

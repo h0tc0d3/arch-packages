@@ -36,17 +36,13 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" \
-      qmake ../qtx11extras-everywhere-src-${_qtver}
-
-    CFLAGS="${CFLAGS} -flto=thin" CXXFLAGS="${CXXFLAGS} -flto=thin" make
-
-  else
-
-    qmake ../qtx11extras-everywhere-src-${_qtver}
-    make
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
 
   fi
+
+  qmake ../qtx11extras-everywhere-src-${_qtver}
+  make
 
 }
 

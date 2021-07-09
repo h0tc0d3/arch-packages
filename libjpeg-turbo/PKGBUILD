@@ -11,14 +11,11 @@ provides=('libjpeg' 'libjpeg-turbo' "libjpeg-turbo=${pkgver}" 'libjpeg.so' 'libt
 conflicts=('libjpeg-turbo')
 source=(
   "https://sourceforge.net/projects/libjpeg-turbo/files/${pkgver}/libjpeg-turbo-${pkgver}.tar.gz"{,.sig}
-  'lto.cmake'
 )
 sha256sums=('bef89803e506f27715c5627b1e3219c95b80fc31465d4452de2a909d382e4444'
-  'SKIP'
-  '7971e5dd106804e615bf270a1d660835ded44f5707263e40a0b402cd1d63348e')
+  'SKIP')
 sha512sums=('6632a2a71cb3a350fe4f850fe84e51e361755c373babf2b47fb164c3a9fc3fd66705639bebedd8c1b40cf6c15fd702e814425b0be5919048987bbec357828605'
-  'SKIP'
-  '03b3d99735a3a95098dd8e69468ab95b0f039f6c61aa4dcc2e12cee60d1ececf6e7d5d15d3f0687f3b5c6dd4118195c8365353df028bdde31a6b499dd80148ed')
+  'SKIP')
 validpgpkeys=('0338C8D8D9FDA62CF9C421BD7EC2DBB6F4DBF434') # The libjpeg-turbo Project (Signing key for official binaries) <information@libjpeg-turbo.org>
 
 _llvm=0
@@ -40,26 +37,18 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    cmake -DCMAKE_INSTALL_PREFIX=/usr \
-      -DCMAKE_INSTALL_LIBDIR=/usr/lib \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_TOOLCHAIN_FILE=../lto.cmake \
-      -DWITH_JPEG8=ON \
-      -W no-dev \
-      -B build \
-      -S .
-
-  else
-
-    cmake -DCMAKE_INSTALL_PREFIX=/usr \
-      -DCMAKE_INSTALL_LIBDIR=/usr/lib \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DWITH_JPEG8=ON \
-      -W no-dev \
-      -B build \
-      -S .
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
 
   fi
+
+  cmake -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=/usr/lib \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DWITH_JPEG8=ON \
+    -W no-dev \
+    -B build \
+    -S .
 
   make VERBOSE=1 -C build
 
