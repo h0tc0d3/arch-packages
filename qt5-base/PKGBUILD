@@ -30,11 +30,13 @@ source=(
   qt5-base-cflags.patch
   qt5-base-nostrip.patch
   qt5-base-mariadb-10.6.patch
+  qt5-base-cxxflag.patch
 )
 sha256sums=('SKIP'
             'cf707cd970650f8b60f8897692b36708ded9ba116723ec8fcd885576783fe85c'
             '4b93f6a79039e676a56f9d6990a324a64a36f143916065973ded89adc621e094'
-            'dde1c2c7300a6e05b12145f0c0b180991aa5929a4bf13c026eef6511593f357b')
+            'dde1c2c7300a6e05b12145f0c0b180991aa5929a4bf13c026eef6511593f357b'
+            'ad4dc439bc23826b7f165b1e897d8544adff593254cb03061be397358a7163b0')
 
 _llvm=0
 
@@ -64,6 +66,8 @@ prepare() {
 
   patch -p1 <../qt5-base-mariadb-10.6.patch
   patch -p1 <../qt5-base-nostrip.patch # Don't strip binaries with qmake
+  patch -p1 <../qt5-base-cflags.patch  # Use system CFLAGS in qmake
+  patch -p1 <../qt5-base-cxxflag.patch
 
 }
 
@@ -76,7 +80,12 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    ./configure -platform linux-clang -confirm-license -opensource -v \
+    CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
+    CFLAGS=${CFLAGS/-fstack-protector-strong/}
+    CXXFLAGS=${CXXFLAGS/-fstack-protector-strong/}
+    ./configure -platform linux-clang \
+      -confirm-license \
+      -opensource -v \
       -prefix /usr \
       -docdir /usr/share/doc/qt \
       -headerdir /usr/include/qt \
@@ -103,7 +112,6 @@ build() {
 
   else
 
-    patch -p1 <../qt5-base-cflags.patch  # Use system CFLAGS in qmake
     ./configure -confirm-license -opensource -v \
       -prefix /usr \
       -docdir /usr/share/doc/qt \
