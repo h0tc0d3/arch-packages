@@ -1,0 +1,12 @@
+diff --git a/src/mesa/program/prog_to_nir.c b/src/mesa/program/prog_to_nir.c
+index 72f4dcdc487e8efbf5815c7be9a591d3c0c02bf9..c5dd37fd9768f1f02587bcf2108b4e94e8687c6c 100644
+--- a/src/mesa/program/prog_to_nir.c
++++ b/src/mesa/program/prog_to_nir.c
+@@ -1024,6 +1024,7 @@ prog_to_nir(const struct gl_program *prog,
+    s->info.clip_distance_array_size = 0;
+    s->info.cull_distance_array_size = 0;
+    s->info.separate_shader = false;
++   s->info.io_lowered = false;
+ 
+ fail:
+    if (c->error) {
