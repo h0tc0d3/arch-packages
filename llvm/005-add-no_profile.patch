@@ -1,0 +1,107 @@
+diff --git a/clang/include/clang/Basic/Attr.td b/clang/include/clang/Basic/Attr.td
+--- a/clang/include/clang/Basic/Attr.td
++++ b/clang/include/clang/Basic/Attr.td
+@@ -1898,6 +1898,13 @@
+   let SimpleHandler = 1;
+ }
+ 
++def NoProfileFunction : InheritableAttr {
++  let Spellings = [Clang<"no_profile">];
++  let Subjects = SubjectList<[Function]>;
++  let Documentation = [NoProfileDocs];
++  let SimpleHandler = 1;
++}
++
+ def NotTailCalled : InheritableAttr {
+   let Spellings = [Clang<"not_tail_called">];
+   let Subjects = SubjectList<[Function]>;
+diff --git a/clang/include/clang/Basic/AttrDocs.td b/clang/include/clang/Basic/AttrDocs.td
+--- a/clang/include/clang/Basic/AttrDocs.td
++++ b/clang/include/clang/Basic/AttrDocs.td
+@@ -2474,6 +2474,17 @@
+   }];
+ }
+ 
++def NoProfileDocs : Documentation {
++  let Category = DocCatFunction;
++  let Content = [{
++Use the ``no_profile`` attribute on a function declaration to denote that the
++compiler should not instrument the function with profile-related
++instrumentation, such as via the
++``-fprofile-generate`` / ``-fprofile-instr-generate`` /
++``-fcs-profile-generate`` / ``-fprofile-arcs`` flags.
++}];
++}
++
+ def NoSanitizeDocs : Documentation {
+   let Category = DocCatFunction;
+   let Content = [{
+diff --git a/clang/lib/CodeGen/CodeGenFunction.cpp b/clang/lib/CodeGen/CodeGenFunction.cpp
+--- a/clang/lib/CodeGen/CodeGenFunction.cpp
++++ b/clang/lib/CodeGen/CodeGenFunction.cpp
+@@ -876,6 +876,9 @@
+   if (D && D->hasAttr<CFICanonicalJumpTableAttr>())
+     Fn->addFnAttr("cfi-canonical-jump-table");
+ 
++  if (D && D->hasAttr<NoProfileFunctionAttr>())
++    Fn->addFnAttr(llvm::Attribute::NoProfile);
++
+   if (getLangOpts().OpenCL) {
+     // Add metadata for a kernel function.
+     if (const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(D))
+diff --git a/clang/test/CodeGen/no_profile.c b/clang/test/CodeGen/no_profile.c
+new file mode 100644
+--- /dev/null
++++ b/clang/test/CodeGen/no_profile.c
+@@ -0,0 +1,21 @@
++// RUN: %clang_cc1 -fprofile-instrument=llvm -disable-llvm-passes \
++// RUN:   -emit-llvm -o - %s | FileCheck %s
++// RUN: %clang_cc1 -fprofile-instrument=csllvm -disable-llvm-passes \
++// RUN:   -emit-llvm -o - %s | FileCheck %s
++// RUN: %clang_cc1 -fprofile-instrument=clang -disable-llvm-passes \
++// RUN:   -emit-llvm -o - %s | FileCheck %s
++// RUN: %clang_cc1 -fprofile-arcs -disable-llvm-passes \
++// RUN:   -emit-llvm -o - %s | FileCheck %s
++int g(int);
++
++void __attribute__((no_profile)) no_instr() {
++// CHECK: define {{.*}} void @no_instr() [[ATTR:#[0-9]+]]
++}
++
++void instr(void) {
++// CHECK: define {{.*}} void @instr() [[ATTR2:#[0-9]+]]
++}
++// CHECK: attributes [[ATTR]] = {{.*}} noprofile
++// CHECK: attributes [[ATTR2]] = {
++// CHECK-NOT: noprofile
++// CHECK: }
+diff --git a/clang/test/Misc/pragma-attribute-supported-attributes-list.test b/clang/test/Misc/pragma-attribute-supported-attributes-list.test
+--- a/clang/test/Misc/pragma-attribute-supported-attributes-list.test
++++ b/clang/test/Misc/pragma-attribute-supported-attributes-list.test
+@@ -99,6 +99,7 @@
+ // CHECK-NEXT: NoMerge (SubjectMatchRule_function)
+ // CHECK-NEXT: NoMicroMips (SubjectMatchRule_function)
+ // CHECK-NEXT: NoMips16 (SubjectMatchRule_function)
++// CHECK-NEXT: NoProfileFunction (SubjectMatchRule_function)
+ // CHECK-NEXT: NoSanitize (SubjectMatchRule_function, SubjectMatchRule_objc_method, SubjectMatchRule_variable_is_global)
+ // CHECK-NEXT: NoSanitizeSpecific (SubjectMatchRule_function, SubjectMatchRule_variable_is_global)
+ // CHECK-NEXT: NoSpeculativeLoadHardening (SubjectMatchRule_function, SubjectMatchRule_objc_method)
+diff --git a/clang/test/Sema/no_profile-attribute.c b/clang/test/Sema/no_profile-attribute.c
+new file mode 100644
+--- /dev/null
++++ b/clang/test/Sema/no_profile-attribute.c
+@@ -0,0 +1,13 @@
++// RUN: %clang_cc1 %s -fsyntax-only -verify
++__attribute__((no_profile))
++void no_profile0(void);
++#if !__has_attribute(no_profile)
++#error "Where did the no_profile function attribute go?"
++#endif
++
++void no_profile1(__attribute__((no_profile)) int param); // expected-warning {{'no_profile' attribute only applies to functions}}
++__attribute__((no_profile(""))) // expected-error {{'no_profile' attribute takes no arguments}}
++void no_profile2(void);
++void no_profile3(void) {
++  __attribute__((no_profile)); // expected-error {{'no_profile' attribute cannot be applied to a statement}}
++}
+
