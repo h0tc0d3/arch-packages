@@ -1,0 +1,66 @@
+pkgname=musl+clang
+pkgver=1.2.2
+pkgrel=1
+pkgdesc='Lightweight implementation of C standard library'
+arch=('x86_64')
+url='https://www.musl-libc.org/'
+license=('MIT')
+provides=("musl" "musl=${pkgver}")
+conflicts=("musl")
+options=('staticlibs')
+validpgpkeys=('836489290BB6B70F99FFDA0556BCDB593020450F')
+source=("https://www.musl-libc.org/releases/musl-${pkgver}.tar.gz"{,.asc})
+sha256sums=('9b969322012d796dc23dda27a35866034fa67d8fb67e0e2c45c913c3d43219dd'
+  'SKIP')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/musl-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}musl-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  #if [[ ${_llvm} -eq 1 ]]; then
+
+    #CFLAGS="${CFLAGS} -flto=thin"
+    #CXXFLAGS="${CXXFLAGS} -flto=thin"
+    #LDFLAGS="${LDFLAGS} -flto=thin"
+
+  #fi
+
+  ./configure \
+    --prefix=/usr/lib/musl \
+    --exec-prefix=/usr \
+    --enable-wrapper=all
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/musl-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}musl-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  # configure syslibdir with /lib for PT_INTERP compat, but install to /usr/lib
+  mv "${pkgdir:?}/lib/ld-musl"*.so* "${pkgdir:?}/usr/lib/"
+  rmdir "${pkgdir:?}/lib"
+
+  install -Dm0644 README "${pkgdir:?}/usr/share/doc/musl/README"
+  install -Dm0644 COPYRIGHT "${pkgdir:?}/usr/share/licenses/musl/COPYRIGHT"
+
+}

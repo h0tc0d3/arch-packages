@@ -2,6 +2,7 @@
 -libgcrypt
 -llvm
 libclc
+musl
 +zlib-ng
 zstd
 libxml2
