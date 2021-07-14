@@ -83,6 +83,8 @@ kwayland-server
 plasma-integration
 plasma-workspace
 plasma-framework
+kio
+kdegraphics-thumbnailers
 plasma-desktop
 konsole
 dolphin

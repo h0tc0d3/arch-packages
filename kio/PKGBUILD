@@ -1,0 +1,58 @@
+pkgname=kio+clang
+pkgver=5.84.0
+pkgrel=2
+pkgdesc='Resource and network access abstraction'
+arch=(x86_64)
+url='https://community.kde.org/Frameworks'
+license=(LGPL)
+provides=("kio" "kio=${pkgver}")
+conflicts=("kio")
+depends=(solid kjobwidgets kbookmarks libxslt kwallet ktextwidgets kded)
+makedepends=(extra-cmake-modules kdoctools doxygen qt5-tools qt5-doc)
+optdepends=('kio-extras: extra protocols support (sftp, fish and more)' 'kdoctools: for the help kioslave'
+  'kio-fuse: to mount remote filesystems via FUSE')
+groups=(kf5)
+source=(
+  "https://download.kde.org/stable/frameworks/${pkgver%.*}/kio-$pkgver.tar.xz"{,.sig}
+  "https://invent.kde.org/frameworks/kio/-/commit/8ad69215.patch"
+)
+sha256sums=('96be2b732faf97a484edc5238049ad22f0f233b9e404468f4da40c5ec839e0d3'
+  'SKIP'
+  '1b0e4575282769d64f334ea2c4a9ba17986bdc9bad9813272d350a937668467e')
+validpgpkeys=(53E6B47B45CEA3E0D5B7457758D0EE648A48B3BB) # David Faure <faure@kde.org>
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  patch -d kio-${pkgver} -p1 <8ad69215.patch # Fix selecting binaries from component chooser KCM
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+
+  fi
+
+  cmake -B build -S kio-${pkgver} \
+    -DCMAKE_INSTALL_LIBEXECDIR=lib \
+    -DBUILD_TESTING=OFF \
+    -DBUILD_QCH=ON
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+}
