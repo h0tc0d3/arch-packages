@@ -72,6 +72,7 @@ xorg-server
 kwin
 libffi
 expat
+dbus
 wayland
 xorg-xwayland
 qt5-wayland
