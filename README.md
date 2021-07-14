@@ -82,9 +82,6 @@ Yours  **/etc/makepkg.conf** can be like this:
 CARCH="x86_64"
 CHOST="x86_64-pc-linux-gnu"
 
-CARCH="x86_64"
-CHOST="x86_64-pc-linux-gnu"
-#-- Compiler and Linker Flags
 export CC=clang
 export CXX=clang++
 export LD=ld.lld
@@ -105,17 +102,15 @@ export HOSTLD=ld.lld
 CPPFLAGS="-D_FORTIFY_SOURCE=2"
 CFLAGS="-fdiagnostics-color=always -pipe -O2 -march=native -fstack-protector-strong"
 CXXFLAGS="-fdiagnostics-color=always -pipe -O2 -march=native -fstack-protector-strong"
-LDFLAGS="-Wl,-O1,--sort-common,--as-needed,-z,relro,-z,now"
+LDFLAGS="-Wl,-O1,-z,now,-z,relro,--as-needed,--sort-common"
 RUSTFLAGS="-C opt-level=2"
-#-- Make Flags: change this for DistCC/SMP systems
+
 MAKEFLAGS="-j$(nproc)"
 NINJAFLAGS="-j$(nproc)"
-#-- Debugging flags
+
 DEBUG_CFLAGS="-g"
 DEBUG_CXXFLAGS="-g"
-#DEBUG_CFLAGS="-g -fvar-tracking-assignments"
-#DEBUG_CXXFLAGS="-g -fvar-tracking-assignments"
-#DEBUG_RUSTFLAGS="-C debuginfo=2"
+DEBUG_RUSTFLAGS="-C debuginfo=2"
 ```
 
 Before build Mesa edit `mesa/mesa.conf` file and set dri, gallium, vulkan drivers for build.
