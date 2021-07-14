@@ -1,7 +1,7 @@
 pkgname=mesa+clang
 pkgdesc="Mesa open-source implementation of the OpenGL specification"
-pkgver=21.1.4
-_pkgver=21.1.4
+pkgver=21.1.5
+_pkgver=21.1.5
 pkgrel=3
 arch=('x86_64')
 makedepends=('git' 'python-mako' 'xorgproto'
@@ -22,18 +22,12 @@ source=(
   '0002.patch'
 )
 
-md5sums=('645a27655bea5d83752da49510836731'
-         'SKIP'
-         '5c65a0fe315dd347e09b1f2826a1df5a'
-         '5135c2ea618d26e2e0c2803fe46c0eaf'
-         '888ebe9c1f510fae5a1c6b1a62c41a2f'
-         '3f1bca818ef1b5f6bd00712956e12f14')
-sha512sums=('1f4e2d8ba2c3c02bad5468687752d7e87d6e79c4a0e6ec4b2741a57fb270d18ae4712aaa07a9e09a2d3348540f5a26cdbe05464cd52adb8df1e2e28a581b2b53'
+sha256sums=('022c7293074aeeced2278c872db4fa693147c70f8595b076cf3f1ef81520766d'
             'SKIP'
-            '25da77914dded10c1f432ebcbf29941124138824ceecaf1367b3deedafaecabc082d463abcfa3d15abff59f177491472b505bcb5ba0c4a51bb6b93b4721a23c2'
-            '408f3fd0c664f1807696c563925580b809dea512747e23d0774b1ba9fbc2f1d52efd2c221d7135b73ff242c66d77a100d46d2e6e1c59aab73677859605fb23cb'
-            '9e4270ff285ad7eeeefaebc512c707d4d11fce63272b837e8f26f761e1d499b732b08d2dac8ace818a3d80c9614a39d14e4e19fb468164ec0fa61c757fa08ca7'
-            'd5edec65cbb67834dc70e9b210cf1bf8a631236db0ed45167c54cd7b0a28f189a00266331e3267203114408a08e0fef38319dbb644ad31e6714fd65a952a4d0e')
+            '7fdc119cf53c8ca65396ea73f6d10af641ba41ea1dd2bd44a824726e01c8b3f2'
+            '33e14140fbfca33b62fc83bfe062fe48f0539a239c0821118d55abfd7993ed3c'
+            '18c7b5d570524a493b7c4d4061668e975891770d9c36e48fb746bd0d6a64047b'
+            '4b70fc3f0b07f5f056de798b2ea79e342a1aa061689a90fc994791eeb16cc00f')
 
 validpgpkeys=(
   '57551DE15B968F6341C248F68D8E31AFC32428A6' # Keith Packard <keithp@keithp.com>
