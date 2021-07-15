@@ -1,0 +1,487 @@
+From 3f1639f8f96c4c60ccf737b02c61eb7c59355a5b Mon Sep 17 00:00:00 2001
+From: Nathan Chancellor <nathan@kernel.org>
+Date: Mon, 31 May 2021 14:06:30 -0700
+Subject: MAINTAINERS: Add Clang CFI section
+
+Sami is the primary developer and Kees has been chauffeuring the patches
+to Linus so ensure they are always kept in the loop about proposed
+changes to these files. Add Nick and I as reviewers so we are CC'd as
+well.
+
+Fixes: cf68fffb66d6 ("add support for Clang CFI")
+Signed-off-by: Nathan Chancellor <nathan@kernel.org>
+Acked-by: Nick Desaulniers <ndesaulniers@google.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Link: https://lore.kernel.org/r/20210531210629.864888-1-nathan@kernel.org
+---
+ MAINTAINERS | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 008fcad7ac008..4ddf370572d31 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4436,6 +4436,18 @@ F:	include/linux/compiler-clang.h
+ F:	scripts/clang-tools/
+ K:	\b(?i:clang|llvm)\b
+ 
++CLANG CONTROL FLOW INTEGRITY SUPPORT
++M:	Sami Tolvanen <samitolvanen@google.com>
++M:	Kees Cook <keescook@chromium.org>
++R:	Nathan Chancellor <nathan@kernel.org>
++R:	Nick Desaulniers <ndesaulniers@google.com>
++L:	clang-built-linux@googlegroups.com
++S:	Supported
++B:	https://github.com/ClangBuiltLinux/linux/issues
++T:	git git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux.git for-next/clang/features
++F:	include/linux/cfi.h
++F:	kernel/cfi.c
++
+ CLEANCACHE API
+ M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+ L:	linux-kernel@vger.kernel.org
+-- 
+cgit 1.2.3-1.el7
+
+
+From 590e8a082a5772071d7bcfea2b8e5a2453cecad2 Mon Sep 17 00:00:00 2001
+From: Mark Rutland <mark.rutland@arm.com>
+Date: Wed, 2 Jun 2021 16:37:01 +0100
+Subject: CFI: Move function_nocfi() into compiler.h
+
+Currently the common definition of function_nocfi() is provided by
+<linux/mm.h>, and architectures are expected to provide a definition in
+<asm/memory.h>. Due to header dependencies, this can make it hard to use
+function_nocfi() in low-level headers.
+
+As function_nocfi() has no dependency on any mm code, nor on any memory
+definitions, it doesn't need to live in <linux/mm.h> or <asm/memory.h>.
+Generally, it would make more sense for it to live in
+<linux/compiler.h>, where an architecture can override it in
+<asm/compiler.h>.
+
+Move the definitions accordingly.
+
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Nathan Chancellor <nathan@kernel.org>
+Cc: Sami Tolvanen <samitolvanen@google.com>
+Cc: Will Deacon <will@kernel.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Link: https://lore.kernel.org/r/20210602153701.35957-1-mark.rutland@arm.com
+---
+ arch/arm64/include/asm/compiler.h | 16 ++++++++++++++++
+ arch/arm64/include/asm/memory.h   | 16 ----------------
+ include/linux/compiler.h          | 10 ++++++++++
+ include/linux/mm.h                | 10 ----------
+ 4 files changed, 26 insertions(+), 26 deletions(-)
+
+diff --git a/arch/arm64/include/asm/compiler.h b/arch/arm64/include/asm/compiler.h
+index 6fb2e6bcc392f..dc3ea4080e2eb 100644
+--- a/arch/arm64/include/asm/compiler.h
++++ b/arch/arm64/include/asm/compiler.h
+@@ -23,4 +23,20 @@
+ #define __builtin_return_address(val)					\
+ 	(void *)(ptrauth_clear_pac((unsigned long)__builtin_return_address(val)))
+ 
++#ifdef CONFIG_CFI_CLANG
++/*
++ * With CONFIG_CFI_CLANG, the compiler replaces function address
++ * references with the address of the function's CFI jump table
++ * entry. The function_nocfi macro always returns the address of the
++ * actual function instead.
++ */
++#define function_nocfi(x) ({						\
++	void *addr;							\
++	asm("adrp %0, " __stringify(x) "\n\t"				\
++	    "add  %0, %0, :lo12:" __stringify(x)			\
++	    : "=r" (addr));						\
++	addr;								\
++})
++#endif
++
+ #endif /* __ASM_COMPILER_H */
+diff --git a/arch/arm64/include/asm/memory.h b/arch/arm64/include/asm/memory.h
+index 87b90dc27a432..ced44ca3e1752 100644
+--- a/arch/arm64/include/asm/memory.h
++++ b/arch/arm64/include/asm/memory.h
+@@ -323,22 +323,6 @@ static inline void *phys_to_virt(phys_addr_t x)
+ #define virt_to_pfn(x)		__phys_to_pfn(__virt_to_phys((unsigned long)(x)))
+ #define sym_to_pfn(x)		__phys_to_pfn(__pa_symbol(x))
+ 
+-#ifdef CONFIG_CFI_CLANG
+-/*
+- * With CONFIG_CFI_CLANG, the compiler replaces function address
+- * references with the address of the function's CFI jump table
+- * entry. The function_nocfi macro always returns the address of the
+- * actual function instead.
+- */
+-#define function_nocfi(x) ({						\
+-	void *addr;							\
+-	asm("adrp %0, " __stringify(x) "\n\t"				\
+-	    "add  %0, %0, :lo12:" __stringify(x)			\
+-	    : "=r" (addr));						\
+-	addr;								\
+-})
+-#endif
+-
+ /*
+  *  virt_to_page(x)	convert a _valid_ virtual address to struct page *
+  *  virt_addr_valid(x)	indicates whether a virtual address is valid
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index df5b405e63051..099e529a5d254 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -213,6 +213,16 @@ void ftrace_likely_update(struct ftrace_likely_data *f, int val,
+ 	__v;								\
+ })
+ 
++/*
++ * With CONFIG_CFI_CLANG, the compiler replaces function addresses in
++ * instrumented C code with jump table addresses. Architectures that
++ * support CFI can define this macro to return the actual function address
++ * when needed.
++ */
++#ifndef function_nocfi
++#define function_nocfi(x) (x)
++#endif
++
+ #endif /* __KERNEL__ */
+ 
+ /*
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index c274f75efcf97..b8c28b10f25d4 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -124,16 +124,6 @@ extern int mmap_rnd_compat_bits __read_mostly;
+ #define lm_alias(x)	__va(__pa_symbol(x))
+ #endif
+ 
+-/*
+- * With CONFIG_CFI_CLANG, the compiler replaces function addresses in
+- * instrumented C code with jump table addresses. Architectures that
+- * support CFI can define this macro to return the actual function address
+- * when needed.
+- */
+-#ifndef function_nocfi
+-#define function_nocfi(x) (x)
+-#endif
+-
+ /*
+  * To prevent common memory management code establishing
+  * a zero page mapping on a read fault.
+-- 
+cgit 1.2.3-1.el7
+
+
+From 380d53c45ff21f66870ee965b62613137f9d010d Mon Sep 17 00:00:00 2001
+From: Nick Desaulniers <ndesaulniers@google.com>
+Date: Mon, 21 Jun 2021 16:18:20 -0700
+Subject: compiler_attributes.h: define __no_profile, add to noinstr
+
+noinstr implies that we would like the compiler to avoid instrumenting a
+function.  Add support for the compiler attribute
+no_profile_instrument_function to compiler_attributes.h, then add
+__no_profile to the definition of noinstr.
+
+Link: https://lore.kernel.org/lkml/20210614162018.GD68749@worktop.programming.kicks-ass.net/
+Link: https://reviews.llvm.org/D104257
+Link: https://reviews.llvm.org/D104475
+Link: https://reviews.llvm.org/D104658
+Link: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=80223
+Reviewed-by: Fangrui Song <maskray@google.com>
+Reviewed-by: Miguel Ojeda <ojeda@kernel.org>
+Suggested-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Nick Desaulniers <ndesaulniers@google.com>
+Reviewed-by: Nathan Chancellor <nathan@kernel.org>
+Acked-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Link: https://lore.kernel.org/r/20210621231822.2848305-2-ndesaulniers@google.com
+---
+ include/linux/compiler_attributes.h | 13 +++++++++++++
+ include/linux/compiler_types.h      |  2 +-
+ 2 files changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/compiler_attributes.h b/include/linux/compiler_attributes.h
+index c043b8d2b17bf..225511b172236 100644
+--- a/include/linux/compiler_attributes.h
++++ b/include/linux/compiler_attributes.h
+@@ -33,6 +33,7 @@
+ # define __GCC4_has_attribute___externally_visible__  1
+ # define __GCC4_has_attribute___no_caller_saved_registers__ 0
+ # define __GCC4_has_attribute___noclone__             1
++# define __GCC4_has_attribute___no_profile_instrument_function__ 0
+ # define __GCC4_has_attribute___nonstring__           0
+ # define __GCC4_has_attribute___no_sanitize_address__ (__GNUC_MINOR__ >= 8)
+ # define __GCC4_has_attribute___no_sanitize_undefined__ (__GNUC_MINOR__ >= 9)
+@@ -237,6 +238,18 @@
+ # define __nonstring
+ #endif
+ 
++/*
++ * Optional: only supported since GCC >= 7.1, clang >= 13.0.
++ *
++ *      gcc: https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html#index-no_005fprofile_005finstrument_005ffunction-function-attribute
++ *    clang: https://clang.llvm.org/docs/AttributeReference.html#no-profile-instrument-function
++ */
++#if __has_attribute(__no_profile_instrument_function__)
++# define __no_profile                  __attribute__((__no_profile_instrument_function__))
++#else
++# define __no_profile
++#endif
++
+ /*
+  *   gcc: https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html#index-noreturn-function-attribute
+  * clang: https://clang.llvm.org/docs/AttributeReference.html#noreturn
+diff --git a/include/linux/compiler_types.h b/include/linux/compiler_types.h
+index d29bda7f6ebdd..d509169860f12 100644
+--- a/include/linux/compiler_types.h
++++ b/include/linux/compiler_types.h
+@@ -210,7 +210,7 @@ struct ftrace_likely_data {
+ /* Section for code which can't be instrumented at all */
+ #define noinstr								\
+ 	noinline notrace __attribute((__section__(".noinstr.text")))	\
+-	__no_kcsan __no_sanitize_address
++	__no_kcsan __no_sanitize_address __no_profile
+ 
+ #endif /* __KERNEL__ */
+ 
+-- 
+cgit 1.2.3-1.el7
+
+
+From ae4d682dfd3350d9836dafeed1fc5aa1e27c4963 Mon Sep 17 00:00:00 2001
+From: Nick Desaulniers <ndesaulniers@google.com>
+Date: Mon, 21 Jun 2021 16:18:21 -0700
+Subject: compiler_attributes.h: cleanups for GCC 4.9+
+
+Since
+commit 6ec4476ac825 ("Raise gcc version requirement to 4.9")
+we no longer support building the kernel with GCC 4.8; drop the
+preprocess checks for __GNUC_MINOR__ version. It's implied that if
+__GNUC_MAJOR__ is 4, then the only supported version of __GNUC_MINOR__
+left is 9.
+
+Signed-off-by: Nick Desaulniers <ndesaulniers@google.com>
+Reviewed-by: Nathan Chancellor <nathan@kernel.org>
+Acked-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Reviewed-by: Miguel Ojeda <ojeda@kernel.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Link: https://lore.kernel.org/r/20210621231822.2848305-3-ndesaulniers@google.com
+---
+ include/linux/compiler_attributes.h | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/compiler_attributes.h b/include/linux/compiler_attributes.h
+index 225511b172236..84b1c970acb3a 100644
+--- a/include/linux/compiler_attributes.h
++++ b/include/linux/compiler_attributes.h
+@@ -27,7 +27,7 @@
+  */
+ #ifndef __has_attribute
+ # define __has_attribute(x) __GCC4_has_attribute_##x
+-# define __GCC4_has_attribute___assume_aligned__      (__GNUC_MINOR__ >= 9)
++# define __GCC4_has_attribute___assume_aligned__      1
+ # define __GCC4_has_attribute___copy__                0
+ # define __GCC4_has_attribute___designated_init__     0
+ # define __GCC4_has_attribute___externally_visible__  1
+@@ -35,8 +35,8 @@
+ # define __GCC4_has_attribute___noclone__             1
+ # define __GCC4_has_attribute___no_profile_instrument_function__ 0
+ # define __GCC4_has_attribute___nonstring__           0
+-# define __GCC4_has_attribute___no_sanitize_address__ (__GNUC_MINOR__ >= 8)
+-# define __GCC4_has_attribute___no_sanitize_undefined__ (__GNUC_MINOR__ >= 9)
++# define __GCC4_has_attribute___no_sanitize_address__ 1
++# define __GCC4_has_attribute___no_sanitize_undefined__ 1
+ # define __GCC4_has_attribute___fallthrough__         0
+ #endif
+ 
+-- 
+cgit 1.2.3-1.el7
+
+
+From 51c2ee6d121ceb31ab8d35aff4ce53007aefb455 Mon Sep 17 00:00:00 2001
+From: Nick Desaulniers <ndesaulniers@google.com>
+Date: Mon, 21 Jun 2021 16:18:22 -0700
+Subject: Kconfig: Introduce ARCH_WANTS_NO_INSTR and CC_HAS_NO_PROFILE_FN_ATTR
+
+We don't want compiler instrumentation to touch noinstr functions,
+which are annotated with the no_profile_instrument_function function
+attribute. Add a Kconfig test for this and make GCOV depend on it, and
+in the future, PGO.
+
+If an architecture is using noinstr, it should denote that via this
+Kconfig value. That makes Kconfigs that depend on noinstr able to express
+dependencies in an architecturally agnostic way.
+
+Cc: Masahiro Yamada <masahiroy@kernel.org>
+Link: https://lore.kernel.org/lkml/YMTn9yjuemKFLbws@hirez.programming.kicks-ass.net/
+Link: https://lore.kernel.org/lkml/YMcssV%2Fn5IBGv4f0@hirez.programming.kicks-ass.net/
+Suggested-by: Nathan Chancellor <nathan@kernel.org>
+Suggested-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Nick Desaulniers <ndesaulniers@google.com>
+Reviewed-by: Peter Oberparleiter <oberpar@linux.ibm.com>
+Reviewed-by: Nathan Chancellor <nathan@kernel.org>
+Acked-by: Mark Rutland <mark.rutland@arm.com>
+Acked-by: Heiko Carstens <hca@linux.ibm.com>
+Acked-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Link: https://lore.kernel.org/r/20210621231822.2848305-4-ndesaulniers@google.com
+---
+ arch/Kconfig        | 7 +++++++
+ arch/arm64/Kconfig  | 1 +
+ arch/s390/Kconfig   | 1 +
+ arch/x86/Kconfig    | 1 +
+ init/Kconfig        | 3 +++
+ kernel/gcov/Kconfig | 1 +
+ 6 files changed, 14 insertions(+)
+
+diff --git a/arch/Kconfig b/arch/Kconfig
+index c45b770d3579a..129df498a8e12 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -285,6 +285,13 @@ config ARCH_THREAD_STACK_ALLOCATOR
+ config ARCH_WANTS_DYNAMIC_TASK_STRUCT
+ 	bool
+ 
++config ARCH_WANTS_NO_INSTR
++	bool
++	help
++	  An architecture should select this if the noinstr macro is being used on
++	  functions to denote that the toolchain should avoid instrumenting such
++	  functions and is required for correctness.
++
+ config ARCH_32BIT_OFF_T
+ 	bool
+ 	depends on !64BIT
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 9f1d8566bbf95..39bf982b06f8d 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -93,6 +93,7 @@ config ARM64
+ 	select ARCH_WANT_FRAME_POINTERS
+ 	select ARCH_WANT_HUGE_PMD_SHARE if ARM64_4K_PAGES || (ARM64_16K_PAGES && !ARM64_VA_BITS_36)
+ 	select ARCH_WANT_LD_ORPHAN_WARN
++	select ARCH_WANTS_NO_INSTR
+ 	select ARCH_HAS_UBSAN_SANITIZE_ALL
+ 	select ARM_AMBA
+ 	select ARM_ARCH_TIMER
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index b4c7c34069f81..bd60310f33b9d 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -117,6 +117,7 @@ config S390
+ 	select ARCH_USE_BUILTIN_BSWAP
+ 	select ARCH_USE_CMPXCHG_LOCKREF
+ 	select ARCH_WANTS_DYNAMIC_TASK_STRUCT
++	select ARCH_WANTS_NO_INSTR
+ 	select ARCH_WANT_DEFAULT_BPF_JIT
+ 	select ARCH_WANT_IPC_PARSE_VERSION
+ 	select BUILDTIME_TABLE_SORT
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 12fa0d7bfa644..268a5dec8b3f6 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -113,6 +113,7 @@ config X86
+ 	select ARCH_WANT_BATCHED_UNMAP_TLB_FLUSH
+ 	select ARCH_WANT_DEFAULT_BPF_JIT	if X86_64
+ 	select ARCH_WANTS_DYNAMIC_TASK_STRUCT
++	select ARCH_WANTS_NO_INSTR
+ 	select ARCH_WANT_HUGE_PMD_SHARE
+ 	select ARCH_WANT_LD_ORPHAN_WARN
+ 	select ARCH_WANTS_THP_SWAP		if X86_64
+diff --git a/init/Kconfig b/init/Kconfig
+index 1ea12c64e4c9f..31397a7a45fb7 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -83,6 +83,9 @@ config TOOLS_SUPPORT_RELR
+ config CC_HAS_ASM_INLINE
+ 	def_bool $(success,echo 'void foo(void) { asm inline (""); }' | $(CC) -x c - -c -o /dev/null)
+ 
++config CC_HAS_NO_PROFILE_FN_ATTR
++	def_bool $(success,echo '__attribute__((no_profile_instrument_function)) int x();' | $(CC) -x c - -c -o /dev/null -Werror)
++
+ config CONSTRUCTORS
+ 	bool
+ 
+diff --git a/kernel/gcov/Kconfig b/kernel/gcov/Kconfig
+index 58f87a3092f32..053447183ac5b 100644
+--- a/kernel/gcov/Kconfig
++++ b/kernel/gcov/Kconfig
+@@ -5,6 +5,7 @@ config GCOV_KERNEL
+ 	bool "Enable gcov-based kernel profiling"
+ 	depends on DEBUG_FS
+ 	depends on !CC_IS_CLANG || CLANG_VERSION >= 110000
++	depends on !ARCH_WANTS_NO_INSTR || CC_HAS_NO_PROFILE_FN_ATTR
+ 	select CONSTRUCTORS
+ 	default n
+ 	help
+-- 
+cgit 1.2.3-1.el7
+
+
+From fca41af18e10318e4de090db47d9fa7169e1bf2f Mon Sep 17 00:00:00 2001
+From: Nathan Chancellor <nathan@kernel.org>
+Date: Thu, 11 Feb 2021 12:42:58 -0700
+Subject: qemu_fw_cfg: Make fw_cfg_rev_attr a proper kobj_attribute
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+fw_cfg_showrev() is called by an indirect call in kobj_attr_show(),
+which violates clang's CFI checking because fw_cfg_showrev()'s second
+parameter is 'struct attribute', whereas the ->show() member of 'struct
+kobj_structure' expects the second parameter to be of type 'struct
+kobj_attribute'.
+
+$ cat /sys/firmware/qemu_fw_cfg/rev
+3
+
+$ dmesg | grep "CFI failure"
+[   26.016832] CFI failure (target: fw_cfg_showrev+0x0/0x8):
+
+Fix this by converting fw_cfg_rev_attr to 'struct kobj_attribute' where
+this would have been caught automatically by the incompatible pointer
+types compiler warning. Update fw_cfg_showrev() accordingly.
+
+Fixes: 75f3e8e47f38 ("firmware: introduce sysfs driver for QEMU's fw_cfg device")
+Link: https://github.com/ClangBuiltLinux/linux/issues/1299
+Signed-off-by: Nathan Chancellor <nathan@kernel.org>
+Reviewed-by: Sami Tolvanen <samitolvanen@google.com>
+Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+Reviewed-by: Sami Tolvanen <samitolvanen@google.com>
+Reviewed-by: Philippe Mathieu-Daudé <philmd@redhat.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: stable@vger.kernel.org
+Link: https://lore.kernel.org/r/20210211194258.4137998-1-nathan@kernel.org
+---
+ drivers/firmware/qemu_fw_cfg.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/firmware/qemu_fw_cfg.c b/drivers/firmware/qemu_fw_cfg.c
+index 0078260fbabea..172c751a4f6c2 100644
+--- a/drivers/firmware/qemu_fw_cfg.c
++++ b/drivers/firmware/qemu_fw_cfg.c
+@@ -299,15 +299,13 @@ static int fw_cfg_do_platform_probe(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static ssize_t fw_cfg_showrev(struct kobject *k, struct attribute *a, char *buf)
++static ssize_t fw_cfg_showrev(struct kobject *k, struct kobj_attribute *a,
++			      char *buf)
+ {
+ 	return sprintf(buf, "%u\n", fw_cfg_rev);
+ }
+ 
+-static const struct {
+-	struct attribute attr;
+-	ssize_t (*show)(struct kobject *k, struct attribute *a, char *buf);
+-} fw_cfg_rev_attr = {
++static const struct kobj_attribute fw_cfg_rev_attr = {
+ 	.attr = { .name = "rev", .mode = S_IRUSR },
+ 	.show = fw_cfg_showrev,
+ };
+-- 
+cgit 1.2.3-1.el7
+
