@@ -1,0 +1,96 @@
+pkgname=librsvg+clang
+pkgver=2.50.7
+pkgrel=1
+epoch=2
+pkgdesc="SVG rendering library"
+url="https://wiki.gnome.org/Projects/LibRsvg"
+arch=(x86_64)
+license=(LGPL)
+provides=("librsvg" "librsvg=${pkgver}" "librsvg-${pkgver%%.*}.so")
+conflicts=("librsvg")
+depends=(gdk-pixbuf2 pango)
+makedepends=(gobject-introspection vala gtk-doc git rust)
+_commit=6ca387974e6a3e248c261d3dac15b8d4a742d3aa # tags/2.50.7^0
+source=("git+https://gitlab.gnome.org/GNOME/librsvg.git#commit=${_commit}")
+sha256sums=('SKIP')
+
+_llvm=0
+
+pkgver() {
+
+  cd "${srcdir:?}/librsvg" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/librsvg directory! PkgVer Failed! \E[0m"
+    exit 1
+  )
+
+  git describe --tags | sed 's/-/+/g'
+
+}
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/librsvg" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/librsvg directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  NOCONFIGURE=1 ./autogen.sh
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+
+  fi
+
+  cd "${srcdir:?}/librsvg" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/librsvg directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  # Use LTO
+  export CARGO_PROFILE_RELEASE_LTO=true CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1
+
+  ./configure \
+    --prefix=/usr \
+    --disable-static \
+    --enable-vala \
+    --enable-gtk-doc
+
+  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0 /g' libtool
+
+  make
+
+}
+
+check() {
+
+  cd "${srcdir:?}/librsvg" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/librsvg directory! Test Failed! \E[0m"
+    exit 1
+  )
+
+  # Test suite is very dependent on the versions of
+  # Cairo, Pango, FreeType and HarfBuzz
+  make check || :
+
+}
+
+package() {
+
+  cd "${srcdir:?}/librsvg" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/librsvg directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+}

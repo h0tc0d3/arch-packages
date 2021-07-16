@@ -21,6 +21,8 @@ icu
 freetype2
 fontconfig
 pango
+librsvg
+qt5-svg
 harfbuzz
 xorg-util-macros
 libxkbfile
