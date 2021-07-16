@@ -1,0 +1,49 @@
+pkgname=imath+clang
+pkgver=3.1.0
+pkgrel=1
+pkgdesc='A C++ and python library of 2D and 3D vector, matrix, and math operations for computer graphics'
+url='https://www.openexr.com/'
+arch=(x86_64)
+license=(BSD)
+provides=("imath" "imath=${pkgver}")
+conflicts=("imath")
+depends=(gcc-libs)
+optdepends=('python: python bindings' 'boost-libs: python bindings')
+makedepends=(cmake python boost)
+source=("https://github.com/AcademySoftwareFoundation/Imath/archive/v${pkgver}/imath-${pkgver}.tar.gz")
+sha256sums=('211c907ab26d10bd01e446da42f073ee7381e1913d8fa48084444bc4e1b4ef87')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+
+  fi
+
+  cmake -B build -S Imath-${pkgver} \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DPYTHON=ON
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+  install -Dm644 Imath-${pkgver}/LICENSE.md -t "${pkgdir:?}/usr/share/licenses/${pkgname}"
+
+}

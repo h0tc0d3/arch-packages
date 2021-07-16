@@ -16,7 +16,6 @@ qt5-tools
 phonon-qt5
 phonon-qt5-gstreamer
 phonon-qt5-vlc
-kimageformats
 gwenview
 icu
 freetype2
@@ -85,6 +84,12 @@ plasma-integration
 plasma-workspace
 plasma-framework
 kio
+kio-extras
+imath
+libheif
+libavif
+libwebp
+kimageformats
 kdegraphics-thumbnailers
 plasma-desktop
 konsole
