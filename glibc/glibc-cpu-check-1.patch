@@ -1,0 +1,64 @@
+Downstream-only patch to enhance CPU detection.  Review thread:
+
+  <https://sourceware.org/pipermail/libc-alpha/2021-May/125916.html>
+
+Author: Florian Weimer <fweimer@redhat.com>
+Date:   Thu May 6 11:54:52 2021 +0200
+
+    elf: Add hook for checking HWCAP bits after auxiliary vector parsing
+
+diff --git a/elf/dl-sysdep.c b/elf/dl-sysdep.c
+index 0658c17da632efa5..657d74597e64045f 100644
+--- a/elf/dl-sysdep.c
++++ b/elf/dl-sysdep.c
+@@ -46,6 +46,7 @@
+ 
+ #include <dl-tunables.h>
+ #include <dl-auxv.h>
++#include <dl-hwcap-check.h>
+ 
+ extern char **_environ attribute_hidden;
+ extern char _end[] attribute_hidden;
+@@ -182,6 +183,8 @@ _dl_sysdep_start (void **start_argptr,
+       DL_PLATFORM_AUXV
+       }
+ 
++  dl_hwcap_check ();
++
+ #ifndef HAVE_AUX_SECURE
+   if (seen != -1)
+     {
+diff --git a/sysdeps/generic/dl-hwcap-check.h b/sysdeps/generic/dl-hwcap-check.h
+new file mode 100644
+index 0000000000000000..8db7a86256c9c724
+--- /dev/null
++++ b/sysdeps/generic/dl-hwcap-check.h
+@@ -0,0 +1,28 @@
++/* Check for hardware capabilities after HWCAP parsing.  Generic version.
++   Copyright (C) 2021 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#ifndef _DL_HWCAP_CHECK_H
++#define _DL_HWCAP_CHECK_H
++
++static inline void
++dl_hwcap_check (void)
++{
++  /* The generic implementation does not perform any checks.  */
++}
++
++#endif /* _DL_HWCAP_CHECK_H */

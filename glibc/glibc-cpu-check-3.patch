@@ -1,0 +1,62 @@
+Downstream-only patch to enhance CPU detection.  Review thread:
+
+  <https://sourceware.org/pipermail/libc-alpha/2021-May/125916.html>
+
+Author: Florian Weimer <fweimer@redhat.com>
+Date:   Thu May 6 11:58:02 2021 +0200
+
+    s390x: Check HWCAP bits against compiler flags
+    
+    When compiled with GCC 11.1 and -march=z14 -O3 build flags, running
+    ld.so (or any dynamically linked program) prints:
+    
+    Fatal glibc error: CPU lacks VXE support (z14 or later required)
+    
+    Co-Authored-By: Stefan Liebler <stli@linux.ibm.com>
+
+diff --git a/sysdeps/s390/s390-64/dl-hwcap-check.h b/sysdeps/s390/s390-64/dl-hwcap-check.h
+new file mode 100644
+index 0000000000000000..87e18be6bd0c512b
+--- /dev/null
++++ b/sysdeps/s390/s390-64/dl-hwcap-check.h
+@@ -0,0 +1,40 @@
++/* Check for hardware capabilities after HWCAP parsing.  S390 version.
++   Copyright (C) 2021 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#ifndef _DL_HWCAP_CHECK_H
++#define _DL_HWCAP_CHECK_H
++
++#include <ldsodefs.h>
++
++static inline void
++dl_hwcap_check (void)
++{
++#if defined __ARCH__
++# if __ARCH__ >= 13
++  if (!(GLRO(dl_hwcap) & HWCAP_S390_VXRS_EXT2))
++    _dl_fatal_printf ("\
++Fatal glibc error: CPU lacks VXRS_EXT2 support (z15 or later required)\n");
++# elif __ARCH__ >= 12
++  if (!(GLRO(dl_hwcap) & HWCAP_S390_VXE))
++    _dl_fatal_printf ("\
++Fatal glibc error: CPU lacks VXE support (z14 or later required)\n");
++# endif
++#endif /* __ARCH__ */
++}
++
++#endif /* _DL_HWCAP_CHECK_H */

@@ -1,49 +1,56 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
 pkgver=2.33
-pkgrel=7
+pkgrel=8
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
 makedepends=(git gd lib32-gcc-libs python)
 optdepends=('perl: for mtrace')
 options=(!strip staticlibs)
-#_commit=3de512be7ea6053255afed6154db9ee31d4e557a
-#source=(git+https://sourceware.org/git/glibc.git#commit=$_commit
-source=("https://ftp.gnu.org/gnu/glibc/glibc-${pkgver}.tar.xz"
+_commit=b5711025bc138c0c94d90b2015d57eda404decbe
+source=("git+https://sourceware.org/git/glibc.git#commit=${_commit}"
+  #source=("https://ftp.gnu.org/gnu/glibc/glibc-${pkgver}.tar.xz"
   locale.gen.txt
   locale-gen
   lib32-glibc.conf
   sdt.h sdt-config.h
-  0001-nptl_db-Support-different-libpthread-ld.so-load-orde.patch
-  0002-nptl-Check-for-compatible-GDB-in-nptl-tst-pthread-gd.patch
-  0003-nptl-Do-not-build-nptl-tst-pthread-gdb-attach-as-PIE.patch
-  0004-bz27343.patch
-  0005-glibc-c-utf8-locale.patch
-  0006-glibc-cs-path.patch
-  0007-glibc-deprecated-selinux-makedb.patch
-  0008-glibc-deprecated-selinux-nscd.patch
-  0009-glibc-fedora-linux-tcsetattr.patch
-  0010-glibc-rh827510.patch
+  glibc-fedora-linux-tcsetattr.patch
+  glibc-rh827510.patch
+  glibc-rh819430.patch
+  glibc-c-utf8-locale.patch
+  glibc-cs-path.patch
+  glibc-deprecated-selinux-makedb.patch
+  glibc-deprecated-selinux-nscd.patch
+  glibc-cpu-check-1.patch
+  glibc-cpu-check-2.patch
+  glibc-cpu-check-3.patch
 )
 validpgpkeys=(7273542B39962DF7B299931416792B4EA25340F8 # Carlos O'Donell
   BC7C7372637EC10C57D7AA6579C43DFBF1CF2187)            # Siddhesh Poyarekar
-sha256sums=('2e2556000e105dbd57f0b6b2a32ff2cf173bde4f0d85dffccfd8b7e51a0677ff'
+sha256sums=('SKIP'
   'd42648cea552ba5353a32e264686e992263289d5cc86207314dffc54ab514981'
   '83f108f915863c7ed0338e2d3e8f2e071a531a090ef8f8b2eb3a956a3c4f04d7'
   'c27424154a6096ae32c0824b785e05de6acef33d9224fd6147d1936be9b4962b'
   '774061aff612a377714a509918a9e0e0aafce708b87d2d7e06b1bd1f6542fe70'
   'cdc234959c6fdb43f000d3bb7d1080b0103f4080f5e67bcfe8ae1aaf477812f0'
-  '353b4c5eae6982b4bb16803a583567ae37b7907ce19c2b40ff79f380ea3956a8'
-  '093d3fd3211456172028cdf58f83c73669b99da2e1170a5113a6272e8debfc43'
-  '73603e9b9ad24c8336ce651f0da6a3d1ffa94f6e8388c2bac25fabcaa206805f'
-  '1caa9946bb15f6a84193a7a6ed4e4a77006085ef6728de7ede8cc9694534c24e'
+  'a9c10b02fe9fb3d0d5c1565124fedaace2932be4b147b6c6deaf1efbe2c07882'
+  '733396588e1e7c356f8d33ba80f6c317963dd936f9039f3f77f0bcec81138159'
+  '5b46d72f406baab29298a3a15a581ea96188ac58719a9b5afd80b8dc46bbcf46'
   '00ebbb270c81b5e9ec22749918f899e29f6b72972aa4289daac5ad8cf57ba60b'
   'bdc28d5b5444e0ec35c98cb959635cf4f3bd23c47aa1b2f1c334a79db411b911'
   '75b18a8e0631c70fb4727051855a6c1981d3f81ef66de3b47acb9c496899495e'
   '2d8cd7587f36de05788b5ba3cfb3dffadf4f971c1762a66d15e0ee1bec59e5fe'
-  'a9c10b02fe9fb3d0d5c1565124fedaace2932be4b147b6c6deaf1efbe2c07882'
-  '733396588e1e7c356f8d33ba80f6c317963dd936f9039f3f77f0bcec81138159')
+  'a477aeb27c36d46325b2b3863a33751849e5e274ce1a5acec7383dc597490ab4'
+  '788ea8c49401e64d33896d5c980de30724c4f7d95c5aedeefaaa89b0f4bc3b5f'
+  'adb8e36b9e1ac135430e798c8e050250a40d64cb0a8ec25353a2593f664a56a5')
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
 
 prepare() {
 
@@ -52,20 +59,17 @@ prepare() {
   [[ -d glibc-$pkgver ]] && ln -s glibc-$pkgver glibc
 
   cd glibc || exit 1
-  # nptl_db: Support different libpthread/ld.so load orders (bug 27744)
-  patch -p1 -i "${srcdir:?}/0001-nptl_db-Support-different-libpthread-ld.so-load-orde.patch"
-  # nptl: Check for compatible GDB in nptl/tst-pthread-gdb-attach
-  patch -p1 -i "${srcdir:?}/0002-nptl-Check-for-compatible-GDB-in-nptl-tst-pthread-gd.patch"
-  # nptl: Do not build nptl/tst-pthread-gdb-attach as PIE
-  patch -p1 -i "${srcdir:?}/0003-nptl-Do-not-build-nptl-tst-pthread-gdb-attach-as-PIE.patch"
-  # commit c3479fb7939898ec22c655c383454d6e8b982a67
-  patch -p1 -i "${srcdir:?}/0004-bz27343.patch"
-  patch -p1 -i "${srcdir:?}/0005-glibc-c-utf8-locale.patch"
-  patch -p1 -i "${srcdir:?}/0006-glibc-cs-path.patch"
-  patch -p1 -i "${srcdir:?}/0007-glibc-deprecated-selinux-makedb.patch"
-  patch -p1 -i "${srcdir:?}/0008-glibc-deprecated-selinux-nscd.patch"
-  patch -p1 -i "${srcdir:?}/0009-glibc-fedora-linux-tcsetattr.patch"
-  patch -p1 -i "${srcdir:?}/0010-glibc-rh827510.patch"
+
+  _patch "glibc-fedora-linux-tcsetattr.patch"
+  _patch "glibc-rh827510.patch"
+  _patch "glibc-rh819430.patch"
+  _patch "glibc-c-utf8-locale.patch"
+  _patch "glibc-cs-path.patch"
+  _patch "glibc-deprecated-selinux-makedb.patch"
+  _patch "glibc-deprecated-selinux-nscd.patch"
+  _patch "glibc-cpu-check-1.patch"
+  _patch "glibc-cpu-check-2.patch"
+  _patch "glibc-cpu-check-3.patch"
 
 }
 
