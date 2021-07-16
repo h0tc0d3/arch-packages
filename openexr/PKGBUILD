@@ -1,0 +1,48 @@
+pkgname=openexr+clang
+pkgver=3.0.5
+pkgrel=2
+pkgdesc='A high dynamic-range image file format library'
+url='https://www.openexr.com/'
+arch=(x86_64)
+license=(BSD)
+provides=("openexr" "openexr=${pkgver}")
+conflicts=("openexr")
+depends=(zlib imath)
+makedepends=(cmake)
+source=("https://github.com/openexr/openexr/archive/v${pkgver}/openexr-${pkgver}.tar.gz")
+sha256sums=('7aa6645da70e9a0cce8215d25030cfd4f4b17b4abf1ceec314f7eae15674e8e4')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+
+  fi
+
+  cmake -B build -S openexr-${pkgver} \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_BUILD_TYPE=Release
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+  install -Dm644 openexr-${pkgver}/LICENSE.md -t "${pkgdir:?}/usr/share/licenses/${pkgname}"
+
+}

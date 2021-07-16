@@ -91,6 +91,7 @@ imath
 libheif
 libavif
 libwebp
+openexr
 kimageformats
 kdegraphics-thumbnailers
 plasma-desktop
