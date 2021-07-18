@@ -1,6 +1,6 @@
 pkgname=libxml2+clang
 pkgver=2.9.12
-pkgrel=1
+pkgrel=2
 pkgdesc='XML parsing library, version 2'
 url='http://www.xmlsoft.org/'
 arch=(x86_64)
@@ -18,14 +18,16 @@ source=(
   "libxml2-2.9.8-python3-unicode-errors.patch"
   "libxml2-2.9.12-fix-lxml-corrupted-tree.patch"
   "libxml2-2.9.12-fix-formatting-regression.patch"
+  "libxml2-2.9.12-fix-whitespace-when-serializing-empty-html.patch"
 )
 
 sha256sums=('SKIP'
-  '9b61db9f5dbffa545f4b8d78422167083a8568c59bd1129f94138f936cf6fc1f'
-  'ecebc33b731b24c88a5411574f92b813164bdb90754244be193d95e73e706776'
-  '37eb81a8ec6929eed1514e891bff2dd05b450bcf0c712153880c485b7366c17c'
-  '5b64aa7f2411eb7650491bf42e4a3531fc3158257b4745956975b9b9bc605f7d'
-  'a0bb996bc73a13f3c3758f74d0a4198757e703710c5e3e462fd7a8e58a561563')
+            '9b61db9f5dbffa545f4b8d78422167083a8568c59bd1129f94138f936cf6fc1f'
+            'ecebc33b731b24c88a5411574f92b813164bdb90754244be193d95e73e706776'
+            '37eb81a8ec6929eed1514e891bff2dd05b450bcf0c712153880c485b7366c17c'
+            '5b64aa7f2411eb7650491bf42e4a3531fc3158257b4745956975b9b9bc605f7d'
+            'a0bb996bc73a13f3c3758f74d0a4198757e703710c5e3e462fd7a8e58a561563'
+            '37eb3fc32e7731c72734117ddbb9d31916c0a1cfeb9b06562b63ee977b2bbd8a')
 
 _llvm=0
 
@@ -57,6 +59,7 @@ prepare() {
   patch -Np1 <"../libxml2-2.9.8-python3-unicode-errors.patch"
   patch -Np1 <"../libxml2-2.9.12-fix-lxml-corrupted-tree.patch"
   patch -Np1 <"../libxml2-2.9.12-fix-formatting-regression.patch"
+  patch -Np1 <"../libxml2-2.9.12-fix-whitespace-when-serializing-empty-html.patch"
 
   sed -e '/cd fuzz; /d' -e 's/fuzz //g' -i Makefile.am
   autoreconf -fiv
