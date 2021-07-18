@@ -1,7 +1,7 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
 pkgver=2.33
-pkgrel=8
+pkgrel=9
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
@@ -194,11 +194,13 @@ package_glibc() {
 
   install -dm755 "${pkgdir:?}"/usr/lib/{locale,systemd/system,tmpfiles.d}
   install -m644 nscd/nscd.conf "${pkgdir:?}/etc/nscd.conf"
+  # Change nscd settings https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system-level_authentication_guide/usingnscd-sssd
+  sed -i -E 's/enable-cache(\s+)(passwd|group|netgroup|services)(\s+)yes/enable-cache\1\2\3no/Ig' "${pkgdir:?}/etc/nscd.conf"
   install -m644 nscd/nscd.service "${pkgdir:?}/usr/lib/systemd/system"
   install -m644 nscd/nscd.tmpfiles "${pkgdir:?}/usr/lib/tmpfiles.d/nscd.conf"
   install -dm755 "${pkgdir:?}/var/db/nscd"
 
-  install -m644 posix/gai.conf "${pkgdir:?}"/etc/gai.conf
+  install -m644 posix/gai.conf "${pkgdir:?}/etc/gai.conf"
 
   install -m755 "${srcdir:?}/locale-gen" "${pkgdir:?}/usr/bin"
 
