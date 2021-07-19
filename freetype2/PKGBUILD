@@ -1,6 +1,6 @@
 pkgbase=freetype2+clang
 pkgname=(freetype2+clang freetype2-docs+clang)
-pkgver=2.10.4
+pkgver=2.11.0
 pkgrel=1
 pkgdesc="Font rasterization library"
 url="https://www.freetype.org/"
@@ -17,15 +17,15 @@ source=("https://download.savannah.gnu.org/releases/freetype/freetype-${pkgver}.
     '0003-Enable-infinality-subpixel-hinting.patch'
     '0004-Enable-long-PCF-family-names.patch'
     'freetype2.sh')
-sha256sums=('86a854d8905b19698bbc8f23b860bc104246ce4854dcea8e3b0fb21284f75784'
-    'SKIP'
-    'cca1c19d1efa911bb685d919b5b0fe1279b0699bf8eb6a3d3bf9f02784758212'
-    'SKIP'
-    'f41df4f336d5e82e58733c7a4594476c9216cfc85c096327745a7e1b559e17e1'
-    'dc77c1cfee4bf8e7e0690628c95d211df09e0d0750e4c8f075b78b5f105514f7'
-    '21a62bc12b848320c686d602d8d4e3bcd51294a9def4dc9c301736e077b59f3f'
-    '266384222f87a02fb02b2179828f6c26fe6d7b1fd09d1f7e3734e7fcb09cda2e'
-    'f7f8e09c44f7552c883846e9a6a1efc50377c4932234e74adc4a8ff750606467')
+sha256sums=('8bee39bd3968c4804b70614a0a3ad597299ad0e824bc8aad5ce8aaf48067bde7'
+            'SKIP'
+            '5b0b5f504f3547ab6123049917b36cfe6944837eaa7baa86ae742a596b5c206c'
+            'SKIP'
+            'f41df4f336d5e82e58733c7a4594476c9216cfc85c096327745a7e1b559e17e1'
+            'dc77c1cfee4bf8e7e0690628c95d211df09e0d0750e4c8f075b78b5f105514f7'
+            '21a62bc12b848320c686d602d8d4e3bcd51294a9def4dc9c301736e077b59f3f'
+            '266384222f87a02fb02b2179828f6c26fe6d7b1fd09d1f7e3734e7fcb09cda2e'
+            'f7f8e09c44f7552c883846e9a6a1efc50377c4932234e74adc4a8ff750606467')
 validpgpkeys=(58E0C111E39F5408C5D3EC76C1A60EACE707FDA5) # Werner Lemberg <wl@gnu.org>
 
 _extra_lto_flag=""
