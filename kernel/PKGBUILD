@@ -1,6 +1,6 @@
 pkgbase=linux+clang
 pkgname=("${pkgbase}" "${pkgbase}-headers" "${pkgbase}-docs")
-pkgver=5.13.1
+pkgver=5.13.3
 pkgrel=1
 arch=(x86_64)
 pkgdesc='Linux Kernel(archlinux.club)'
@@ -17,16 +17,16 @@ source=(
   "https://cdn.kernel.org/pub/linux/kernel/v${pkgver:0:1}.x/linux-${pkgver}.tar"{.xz,.sign}
   'config' # kernel config file
   '0001-compiler-march-kernel-5.8+.patch'
-  '0002-sched-core-2021-06-28.patch'
-  '0003-x86-fpu-2021-07-07.patch'
+  '0002-x86-fpu-2021-07-07.patch'
+  '0003-clang.patch'
 )
 
-sha256sums=('72aaf6464185526068ef51a1535a18844f36bee98f5b5b09b2312bfa9f4d0a90'
-  'SKIP'
-  '8d740f771b2b2284c4866fb228629e456a08e3f87b07f08f8b31f43f677ee6ae'
-  'fa6cee9527d8e963d3398085d1862edc509a52e4540baec463edb8a9dd95bee0'
-  '8f649421f1332b8b08f2f5258b8528bc6fde6e30aefebf6708cdc933e2ac8ff4'
-  'af2f2bdac87f888f1cf363b1962f6ea83479c4e09e240f1745d344b89f8e383a')
+sha256sums=('78ea6e25137dc4c9d9203acca9c74299ca9cd56e1d47edcda67aa6002c0728c7'
+            'SKIP'
+            '8d740f771b2b2284c4866fb228629e456a08e3f87b07f08f8b31f43f677ee6ae'
+            'fa6cee9527d8e963d3398085d1862edc509a52e4540baec463edb8a9dd95bee0'
+            'af2f2bdac87f888f1cf363b1962f6ea83479c4e09e240f1745d344b89f8e383a'
+            'f1e6b22b0d98c512b23dba9126d86bc4112c8b8a2958252d80ea2bd36a7e9cf2')
 
 validpgpkeys=(
   'ABAF11C65A2970B130ABE3C479BE3E4300411886' # Linus Torvalds
@@ -49,8 +49,8 @@ prepare() {
   echo "-archlinux+clang" >.scmversion
 
   patch -Np1 <"${srcdir:?}/0001-compiler-march-kernel-5.8+.patch"
-  patch -Np1 <"${srcdir:?}/0002-sched-core-2021-06-28.patch"
-  patch -Np1 <"${srcdir:?}/0003-x86-fpu-2021-07-07.patch"
+  patch -Np1 <"${srcdir:?}/0002-x86-fpu-2021-07-07.patch"
+  patch -Np1 <"${srcdir:?}/0003-clang.patch"
 
   echo "Setting config..."
   cp ../config .config

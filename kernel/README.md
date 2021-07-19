@@ -1,6 +1,8 @@
 # Kernel Patches
 
-## 0001-compiler-march-kernel-5.8+.patch 
+Take care, patches only works with 5.13.3 version of kernel!
+
+## 0001-compiler-march-kernel-5.8+.patch
 [graysky2/kernel_compiler_patch](https://github.com/graysky2/kernel_compiler_patch)
 
 Allow choose processor optimization. **Processor type and features**  --->
