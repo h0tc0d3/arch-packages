@@ -1,7 +1,7 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
 pkgver=2.33
-pkgrel=9
+pkgrel=10
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
@@ -25,9 +25,13 @@ source=("git+https://sourceware.org/git/glibc.git#commit=${_commit}"
   glibc-cpu-check-1.patch
   glibc-cpu-check-2.patch
   glibc-cpu-check-3.patch
+  glibc-cpu-amd-1.patch
+  glibc-cpu-amd-2.patch
 )
-validpgpkeys=(7273542B39962DF7B299931416792B4EA25340F8 # Carlos O'Donell
-  BC7C7372637EC10C57D7AA6579C43DFBF1CF2187)            # Siddhesh Poyarekar
+validpgpkeys=(
+  7273542B39962DF7B299931416792B4EA25340F8 # Carlos O'Donell
+  BC7C7372637EC10C57D7AA6579C43DFBF1CF2187 # Siddhesh Poyarekar
+)
 sha256sums=('SKIP'
   'd42648cea552ba5353a32e264686e992263289d5cc86207314dffc54ab514981'
   '83f108f915863c7ed0338e2d3e8f2e071a531a090ef8f8b2eb3a956a3c4f04d7'
@@ -43,7 +47,9 @@ sha256sums=('SKIP'
   '2d8cd7587f36de05788b5ba3cfb3dffadf4f971c1762a66d15e0ee1bec59e5fe'
   'a477aeb27c36d46325b2b3863a33751849e5e274ce1a5acec7383dc597490ab4'
   '788ea8c49401e64d33896d5c980de30724c4f7d95c5aedeefaaa89b0f4bc3b5f'
-  'adb8e36b9e1ac135430e798c8e050250a40d64cb0a8ec25353a2593f664a56a5')
+  'adb8e36b9e1ac135430e798c8e050250a40d64cb0a8ec25353a2593f664a56a5'
+  '84dafba59abd433ef676458ad2542ba4f1b2c1027b3bff2b4cc91fc8a1bdd4ab'
+  '7e1435dfa064e6f6bdc2d2ce4f5f3364b2eca80dbdb2c22223ad8767347577a7')
 
 _patch() {
 
@@ -56,7 +62,7 @@ prepare() {
 
   mkdir -p glibc-build lib32-glibc-build
 
-  [[ -d glibc-$pkgver ]] && ln -s glibc-$pkgver glibc
+  [[ -d glibc-${pkgver} ]] && ln -s glibc-${pkgver} glibc
 
   cd glibc || exit 1
 
@@ -70,6 +76,8 @@ prepare() {
   _patch "glibc-cpu-check-1.patch"
   _patch "glibc-cpu-check-2.patch"
   _patch "glibc-cpu-check-3.patch"
+  _patch "glibc-cpu-amd-1.patch"
+  _patch "glibc-cpu-amd-2.patch"
 
 }
 
@@ -88,7 +96,7 @@ build() {
     --disable-lock-elision
     --enable-multi-arch
     --enable-stack-protector=strong
-    --enable-stackguard-randomization
+    --disable-stackguard-randomization # BZ #27872 Commit f294306ba1385b096f4e4cac9146a989f1e6d1c0
     --enable-static-pie
     --enable-systemtap
     --enable-nscd
@@ -194,8 +202,12 @@ package_glibc() {
 
   install -dm755 "${pkgdir:?}"/usr/lib/{locale,systemd/system,tmpfiles.d}
   install -m644 nscd/nscd.conf "${pkgdir:?}/etc/nscd.conf"
-  # Change nscd settings https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system-level_authentication_guide/usingnscd-sssd
-  sed -i -E 's/enable-cache(\s+)(passwd|group|netgroup|services)(\s+)yes/enable-cache\1\2\3no/Ig' "${pkgdir:?}/etc/nscd.conf"
+
+  # Change nscd settings
+  # https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system-level_authentication_guide/usingnscd-sssd
+  sed -i -E 's/enable-cache(\s+)(passwd|group|netgroup|services)(\s+)yes/enable-cache\1\2\3no/Ig' \
+    "${pkgdir:?}/etc/nscd.conf"
+
   install -m644 nscd/nscd.service "${pkgdir:?}/usr/lib/systemd/system"
   install -m644 nscd/nscd.tmpfiles "${pkgdir:?}/usr/lib/tmpfiles.d/nscd.conf"
   install -dm755 "${pkgdir:?}/var/db/nscd"
@@ -233,7 +245,7 @@ package_glibc() {
 
 package_lib32-glibc() {
   pkgdesc='GNU C Library (32-bit)'
-  depends=("glibc=$pkgver")
+  depends=("glibc=${pkgver}")
   options+=('!emptydirs')
 
   cd lib32-glibc-build

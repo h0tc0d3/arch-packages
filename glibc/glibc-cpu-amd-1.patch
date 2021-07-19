@@ -1,0 +1,170 @@
+From e3e3eb0a2ea615c272cec5f47ba9f243ccdaf386 Mon Sep 17 00:00:00 2001
+From: Adhemerval Zanella <adhemerval.zanella@linaro.org>
+Date: Tue, 22 Jun 2021 16:41:28 -0300
+Subject: [PATCH] x86: Fix tst-cpu-features-cpuinfo on Ryzen 9 (BZ #27873)
+
+AMD define different flags for IRPB, IBRS, and STIPBP [1], so new
+x86_64_cpu are added and IBRS_IBPB is only tested for Intel.
+
+The SSDB is also defined and implemented different on AMD [2],
+and also a new AMD_SSDB flag is added.  It should map to the
+cpuinfo 'ssdb' on recent AMD cpus.
+
+It fixes tst-cpu-features-cpuinfo and tst-cpu-features-cpuinfo-static
+on recent AMD cpus.
+
+Checked on x86_64-linux-gnu on AMD Ryzen 9 5900X.
+
+[1] https://developer.amd.com/wp-content/resources/Architecture_Guidelines_Update_Indirect_Branch_Control.pdf
+[2] https://bugzilla.kernel.org/show_bug.cgi?id=199889
+
+Reviewed-by: H.J. Lu <hjl.tools@gmail.com>
+---
+ manual/platform.texi                   | 12 ++++++++++++
+ sysdeps/x86/bits/platform/x86.h        |  4 ++++
+ sysdeps/x86/include/cpu-features.h     | 12 ++++++++++++
+ sysdeps/x86/tst-cpu-features-cpuinfo.c | 22 ++++++++++++++++++----
+ 4 files changed, 46 insertions(+), 4 deletions(-)
+
+diff --git a/manual/platform.texi b/manual/platform.texi
+index a0b204b099..4cd029cfad 100644
+--- a/manual/platform.texi
++++ b/manual/platform.texi
+@@ -177,6 +177,18 @@ The supported processor features are:
+ @item
+ @code{AESKLE} -- AES Key Locker instructions are enabled by OS.
+ 
++@item
++@code{AMD_IBPB} -- Indirect branch predictor barrier (IBPB) for AMD cpus.
++
++@item
++@code{AMD_IBRS} -- Indirect branch restricted speculation (IBPB) for AMD cpus.
++
++@item
++@code{AMD_SSBD} -- Speculative Store Bypass Disable (SSBD) for AMD cpus.
++
++@item
++@code{AMD_STIBP} -- Single thread indirect branch predictors (STIBP) for AMD cpus.
++
+ @item
+ @code{AMX_BF16} -- Tile computational operations on bfloat16 numbers.
+ 
+diff --git a/sysdeps/x86/bits/platform/x86.h b/sysdeps/x86/bits/platform/x86.h
+index fe08d8a1b6..26e3b67ede 100644
+--- a/sysdeps/x86/bits/platform/x86.h
++++ b/sysdeps/x86/bits/platform/x86.h
+@@ -278,6 +278,10 @@ enum
+        + cpuid_register_index_ebx * 8 * sizeof (unsigned int)),
+ 
+   x86_cpu_WBNOINVD		= x86_cpu_index_80000008_ebx + 9,
++  x86_cpu_AMD_IBPB	        = x86_cpu_index_80000008_ebx + 12,
++  x86_cpu_AMD_IBRS	        = x86_cpu_index_80000008_ebx + 14,
++  x86_cpu_AMD_STIBP	        = x86_cpu_index_80000008_ebx + 15,
++  x86_cpu_AMD_SSBD	        = x86_cpu_index_80000008_ebx + 24,
+ 
+   x86_cpu_index_7_ecx_1_eax
+     = (CPUID_INDEX_7_ECX_1 * 8 * 4 * sizeof (unsigned int)
+diff --git a/sysdeps/x86/include/cpu-features.h b/sysdeps/x86/include/cpu-features.h
+index d042a2ebef..4f1c4ee402 100644
+--- a/sysdeps/x86/include/cpu-features.h
++++ b/sysdeps/x86/include/cpu-features.h
+@@ -289,6 +289,10 @@ enum
+ 
+ /* EBX.  */
+ #define bit_cpu_WBNOINVD	(1u << 9)
++#define bit_cpu_AMD_IBPB	(1u << 12)
++#define bit_cpu_AMD_IBRS	(1u << 14)
++#define bit_cpu_AMD_STIBP	(1u << 15)
++#define bit_cpu_AMD_SSBD	(1u << 24)
+ 
+ /* CPUID_INDEX_7_ECX_1.  */
+ 
+@@ -519,6 +523,10 @@ enum
+ 
+ /* EBX.  */
+ #define index_cpu_WBNOINVD	CPUID_INDEX_80000008
++#define index_cpu_AMD_IBPB	CPUID_INDEX_80000008
++#define index_cpu_AMD_IBRS	CPUID_INDEX_80000008
++#define index_cpu_AMD_STIBP	CPUID_INDEX_80000008
++#define index_cpu_AMD_SSBD	CPUID_INDEX_80000008
+ 
+ /* CPUID_INDEX_7_ECX_1.  */
+ 
+@@ -749,6 +757,10 @@ enum
+ 
+ /* EBX.  */
+ #define reg_WBNOINVD		ebx
++#define reg_AMD_IBPB		ebx
++#define reg_AMD_IBRS		ebx
++#define reg_AMD_STIBP		ebx
++#define reg_AMD_SSBD		ebx
+ 
+ /* CPUID_INDEX_7_ECX_1.  */
+ 
+diff --git a/sysdeps/x86/tst-cpu-features-cpuinfo.c b/sysdeps/x86/tst-cpu-features-cpuinfo.c
+index 75e7eb9352..f457e8677b 100644
+--- a/sysdeps/x86/tst-cpu-features-cpuinfo.c
++++ b/sysdeps/x86/tst-cpu-features-cpuinfo.c
+@@ -16,10 +16,11 @@
+    License along with the GNU C Library; if not, see
+    <https://www.gnu.org/licenses/>.  */
+ 
+-#include <sys/platform/x86.h>
++#include <cpu-features.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <stdbool.h>
+ 
+ static char *cpu_flags;
+ 
+@@ -99,6 +100,7 @@ static int
+ do_test (int argc, char **argv)
+ {
+   int fails = 0;
++  const struct cpu_features *cpu_features = __get_cpu_features ();
+ 
+   get_cpuinfo ();
+   fails += CHECK_PROC (acpi, ACPI);
+@@ -159,7 +161,17 @@ do_test (int argc, char **argv)
+   fails += CHECK_PROC (hle, HLE);
+   fails += CHECK_PROC (ht, HTT);
+   fails += CHECK_PROC (hybrid, HYBRID);
+-  fails += CHECK_PROC (ibrs, IBRS_IBPB);
++  if (cpu_features->basic.kind == arch_kind_intel)
++    {
++      fails += CHECK_PROC (ibrs, IBRS_IBPB);
++      fails += CHECK_PROC (stibp, STIBP);
++    }
++  else if (cpu_features->basic.kind == arch_kind_amd)
++    {
++      fails += CHECK_PROC (ibpb, AMD_IBPB);
++      fails += CHECK_PROC (ibrs, AMD_IBRS);
++      fails += CHECK_PROC (stibp, AMD_STIBP);
++    }
+   fails += CHECK_PROC (ibt, IBT);
+   fails += CHECK_PROC (invariant_tsc, INVARIANT_TSC);
+   fails += CHECK_PROC (invpcid, INVPCID);
+@@ -221,7 +233,10 @@ do_test (int argc, char **argv)
+   fails += CHECK_PROC (smep, SMEP);
+   fails += CHECK_PROC (smx, SMX);
+   fails += CHECK_PROC (ss, SS);
+-  fails += CHECK_PROC (ssbd, SSBD);
++  if (cpu_features->basic.kind == arch_kind_intel)
++    fails += CHECK_PROC (ssbd, SSBD);
++  else if (cpu_features->basic.kind == arch_kind_amd)
++    fails += CHECK_PROC (ssbd, AMD_SSBD);
+   fails += CHECK_PROC (sse, SSE);
+   fails += CHECK_PROC (sse2, SSE2);
+   fails += CHECK_PROC (pni, SSE3);
+@@ -229,7 +244,6 @@ do_test (int argc, char **argv)
+   fails += CHECK_PROC (sse4_2, SSE4_2);
+   fails += CHECK_PROC (sse4a, SSE4A);
+   fails += CHECK_PROC (ssse3, SSSE3);
+-  fails += CHECK_PROC (stibp, STIBP);
+   fails += CHECK_PROC (svm, SVM);
+ #ifdef __x86_64__
+   /* NB: SYSCALL_SYSRET is 64-bit only.  */
+-- 
+2.27.0
+
