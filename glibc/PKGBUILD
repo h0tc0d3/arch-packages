@@ -1,7 +1,7 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
 pkgver=2.33
-pkgrel=11
+pkgrel=12
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
@@ -18,8 +18,6 @@ source=("git+https://sourceware.org/git/glibc.git#commit=${_commit}"
   glibc-rh819430.patch
   glibc-c-utf8-locale.patch
   glibc-cs-path.patch
-  glibc-deprecated-selinux-makedb.patch
-  glibc-deprecated-selinux-nscd.patch
   glibc-cpu-check-1.patch
   glibc-cpu-check-2.patch
   glibc-cpu-check-3.patch
@@ -37,10 +35,8 @@ sha256sums=('SKIP'
   'a9c10b02fe9fb3d0d5c1565124fedaace2932be4b147b6c6deaf1efbe2c07882'
   '733396588e1e7c356f8d33ba80f6c317963dd936f9039f3f77f0bcec81138159'
   '5b46d72f406baab29298a3a15a581ea96188ac58719a9b5afd80b8dc46bbcf46'
-  '00ebbb270c81b5e9ec22749918f899e29f6b72972aa4289daac5ad8cf57ba60b'
+  '943f15d2642143d23cd05bda5f74fe6d12bdb70711e49242741c70750c03721b'
   'bdc28d5b5444e0ec35c98cb959635cf4f3bd23c47aa1b2f1c334a79db411b911'
-  '75b18a8e0631c70fb4727051855a6c1981d3f81ef66de3b47acb9c496899495e'
-  '2d8cd7587f36de05788b5ba3cfb3dffadf4f971c1762a66d15e0ee1bec59e5fe'
   'a477aeb27c36d46325b2b3863a33751849e5e274ce1a5acec7383dc597490ab4'
   '788ea8c49401e64d33896d5c980de30724c4f7d95c5aedeefaaa89b0f4bc3b5f'
   'adb8e36b9e1ac135430e798c8e050250a40d64cb0a8ec25353a2593f664a56a5'
@@ -67,8 +63,6 @@ prepare() {
   _patch "glibc-rh819430.patch"
   _patch "glibc-c-utf8-locale.patch"
   _patch "glibc-cs-path.patch"
-  _patch "glibc-deprecated-selinux-makedb.patch"
-  _patch "glibc-deprecated-selinux-nscd.patch"
   _patch "glibc-cpu-check-1.patch"
   _patch "glibc-cpu-check-2.patch"
   _patch "glibc-cpu-check-3.patch"
@@ -83,22 +77,21 @@ build() {
     --prefix=/usr
     --with-headers=/usr/include
     --with-bugurl=https://bugs.archlinux.org/
-    --without-cvs
     --enable-add-ons
     --enable-bind-now
-    --disable-cet
     --enable-tunables
     --enable-kernel=5.10.1
-    --disable-lock-elision
     --enable-multi-arch
     --enable-stack-protector=strong
-    --disable-stackguard-randomization # BZ #27872 Commit f294306ba1385b096f4e4cac9146a989f1e6d1c0
     --enable-static-pie
     --enable-systemtap
     --disable-nscd # Deprecated
+    --disable-cet
+    --disable-stackguard-randomization # BZ #27872 Commit f294306ba1385b096f4e4cac9146a989f1e6d1c0
+    --disable-lock-elision
     --disable-profile
     --disable-werror
-
+    --without-cvs
   )
 
   cd "${srcdir:?}/glibc-build" || exit 1
