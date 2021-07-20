@@ -1,6 +1,6 @@
 pkgname=cairo+clang
 pkgver=1.17.4
-pkgrel=5
+pkgrel=6
 pkgdesc="2D graphics library with support for multiple output devices"
 url="https://cairographics.org/"
 arch=(x86_64)
@@ -11,7 +11,9 @@ depends=(lzo zlib libpng fontconfig freetype2 libx11 libxext libxrender libxcb
   glib2 pixman)
 makedepends=(valgrind git meson)
 _commit=156cd3eaaebfd8635517c2baf61fcf3627ff7ec2 # tags/1.17.4^0
-source=("git+https://gitlab.freedesktop.org/cairo/cairo.git#commit=$_commit")
+source=(
+  "git+https://gitlab.freedesktop.org/cairo/cairo.git#commit=${_commit}"
+)
 sha256sums=('SKIP')
 
 _extra_lto_flag=""
@@ -50,6 +52,10 @@ prepare() {
   # Disable XCB backend for Xlib surfaces
   # https://bugs.archlinux.org/task/68839
   git cherry-pick -n 3468c67fe91f0c37e0ec5d335082653a6fa609b6
+
+  # Set default LCD filter to FreeType's default
+  # https://bugzilla.redhat.com/show_bug.cgi?id=1645763
+  git cherry-pick -n 2f118e79df74942cd959b783bd81ec0e3da8d4b3
 
 }
 
