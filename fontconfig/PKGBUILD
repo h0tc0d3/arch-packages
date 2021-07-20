@@ -1,6 +1,6 @@
 pkgname=fontconfig+clang
 pkgver=2.13.94
-pkgrel=1
+pkgrel=2
 epoch=2
 pkgdesc="Library for configuring and customizing font access"
 url=https://www.freedesktop.org/wiki/Software/fontconfig/
@@ -15,15 +15,19 @@ replaces=('fontconfig-docs<2:2.13.93-1')
 install=fontconfig.install
 backup=(etc/fonts/fonts.conf)
 _commit=e291fda7d42e5d64379555097a066d9c2c4efce3 # tags/2.13.94^0
-source=("git+https://gitlab.freedesktop.org/fontconfig/fontconfig.git#commit=$_commit"
+source=(
+  "git+https://gitlab.freedesktop.org/fontconfig/fontconfig.git#commit=$_commit"
   40-fontconfig-config.script
   40-fontconfig-config.hook
-  fontconfig.hook)
+  fontconfig.hook
+  fontconfig-sleep-less.patch
+)
 
 sha256sums=('SKIP'
   '7a9d50bccc709eb15db6ba8e13f69bc9d79b0bf354f1d17c1a5b2748edff3c33'
   '44f12491c9fd7eff825853846a2b3b8df2b96fc6520be5cb31ce7f37a160ff02'
-  'fd7b6ce8ce178107f2e0b52462ebf186b6051c6eec945770107fda57048c9f34')
+  'fd7b6ce8ce178107f2e0b52462ebf186b6051c6eec945770107fda57048c9f34'
+  'b2bee567aab161615cf565a5a426ab2e93ab706f0913d4a3ff94b8f40766b574')
 
 _extra_lto_flag=""
 
@@ -32,6 +36,13 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _extra_lto_flag='-D b_lto_mode=thin'
   fi
+
+  cd "${srcdir:?}/fontconfig" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/fontconfig directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  patch --forward --strip=1 --input="${srcdir:?}/fontconfig-sleep-less.patch"
 
 }
 
