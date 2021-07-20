@@ -59,8 +59,8 @@ prepare() {
   )
 
   # Fix radeonsi rendering glitches
-  patch --forward --strip=1 --input="${srcdir}/0001.patch"
-  patch --forward --strip=1 --input="${srcdir}/0002.patch"
+  patch --forward --strip=1 --input="${srcdir:?}/0001.patch"
+  patch --forward --strip=1 --input="${srcdir:?}/0002.patch"
 
   if [[ -f "${srcdir:?}/mesa.conf" ]]; then
     # shellcheck disable=SC1091
