@@ -117,6 +117,7 @@ gperftools
 openssl
 gnutls
 libcurl-gnutls
+gnupg
 telegram-desktop
 mpv
 speexdsp
