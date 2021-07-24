@@ -29,6 +29,7 @@ fontconfig
 pango
 librsvg
 qt5-svg
+graphite
 harfbuzz
 xorg-util-macros
 libxkbfile
