@@ -1,0 +1,80 @@
+pkgname=libxcrypt+clang
+_commit='5dcc36aeeb053654659e898fd3de7f365c1c4df5' # git rev-parse v${pkgver}
+pkgver=4.4.23
+pkgrel=1
+pkgdesc='Modern library for one-way hashing of passwords'
+arch=('x86_64')
+url='https://github.com/besser82/libxcrypt/'
+license=('GPL')
+depends=('glibc')
+makedepends=('git')
+provides=("libxcrypt" "libxcrypt=${pkgver}" 'libcrypt.so')
+conflicts=("libxcrypt")
+install=libxcrypt.install
+validpgpkeys=('678CE3FEE430311596DB8C16F52E98007594C21D') # Björn 'besser82' Esser
+source=("git+https://github.com/besser82/libxcrypt.git#commit=${_commit}?signed")
+sha256sums=('SKIP')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/libxcrypt" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxcrypt directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  autoreconf -fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libxcrypt" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxcrypt directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin -Wno-gnu-statement-expression"
+    CXXFLAGS="${CXXFLAGS} -flto=thin -Wno-gnu-statement-expression"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --disable-static \
+    --enable-hashes=strong,glibc \
+    --enable-obsolete-api=no \
+    --disable-failure-tokens
+
+  make
+
+}
+
+check() {
+
+  cd "${srcdir:?}/libxcrypt" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxcrypt directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make check
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libxcrypt" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxcrypt directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+}
