@@ -4,7 +4,7 @@ Install dependencies:
 
 ```bash
 pacman -Syu base-devel llvm clang lld vim git \
-  ninja cmake libffi libedit ncurses libxml2
+  ninja cmake libffi libedit ncurses libxml2 \
   ocaml ocaml-ctypes ocaml-findlib python-setuptools \
   python-psutil python-sphinx python-recommonmark
 ```
