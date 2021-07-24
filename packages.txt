@@ -1,9 +1,13 @@
 -glibc
-libidn
-libxcrypt
 -libgcrypt
 -llvm
 libclc
+libidn
+libcap-ng
+libxcrypt
+util-linux
+elfutils
+libedit
 musl
 +zlib-ng
 zstd

@@ -1,0 +1,101 @@
+pkgbase=libcap-ng+clang
+pkgname=(libcap-ng+clang python-capng+clang)
+pkgver=0.8.2
+pkgrel=3
+pkgdesc='A library for Linux that makes using posix capabilities easy'
+url='https://people.redhat.com/sgrubb/libcap-ng/'
+arch=('x86_64')
+license=('LGPL2.1')
+depends=('glibc')
+makedepends=('python' 'swig')
+source=("https://github.com/stevegrubb/libcap-ng/archive/v${pkgver}/libcap-ng-${pkgver}.tar.gz")
+sha256sums=('65b86885b8d873e55c05bd49427fd370d559b26f0c2089ac9194828e6a2fe233')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/libcap-ng-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libcap-ng-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  autoreconf -fiv
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libcap-ng-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libcap-ng-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --enable-static=no \
+    --without-python \
+    --with-python3
+
+  make
+
+}
+
+check() {
+
+  cd "${srcdir:?}/libcap-ng-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libcap-ng-${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make check
+
+}
+
+package_libcap-ng+clang() {
+
+  provides=("libcap-ng" "libcap-ng=${pkgver}" 'libcap-ng.so' 'libdrop_ambient.so')
+  conflicts=("libcap-ng")
+
+  cd "${srcdir:?}/libcap-ng-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libcap-ng-${pkgver} directory! Package libcap-ng Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  # remove files provided by python-capng
+  rm -frv "${pkgdir:?}/usr/lib/python"*
+
+}
+
+package_python-capng+clang() {
+
+  pkgdesc+=' (Python bindings)'
+  depends+=('libcap-ng+clang')
+  provides=('python-libcap-ng' "python-capng" "python-capng=${pkgver}")
+  conflicts=("python-capng")
+
+  cd "${srcdir:?}/libcap-ng-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libcap-ng-${pkgver} directory! Package python-capng Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  # remove files provided by libcap-ng
+  rm -frv "${pkgdir:?}/usr/lib/"{lib*,pkgconfig}
+  rm -frv "${pkgdir:?}/usr/"{bin,include,share}
+
+}
