@@ -1,4 +1,5 @@
 -glibc
+libidn
 -libgcrypt
 -llvm
 libclc
