@@ -1,0 +1,72 @@
+pkgname=rtkit+clang
+pkgver=0.13
+pkgrel=1
+pkgdesc="Realtime Policy and Watchdog Daemon"
+arch=(x86_64)
+url="https://github.com/heftig/rtkit"
+license=(GPL3 'custom:BSD')
+provides=('rtkit' "rtkit=${pkgver}")
+conflicts=('rtkit')
+depends=(dbus polkit systemd)
+makedepends=(git meson vim)
+_commit=b9169402fe5e82d20efb754509eb0b191f214599 # tags/v0.13^0
+source=("git+https://github.com/heftig/rtkit?signed#commit=${_commit}")
+sha256sums=('SKIP')
+validpgpkeys=('8218F88849AAC522E94CF470A5E9288C4FA415FA') # Jan Alexander Steffens (heftig)
+
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+}
+
+pkgver() {
+
+  cd "${srcdir:?}/rtkit" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/rtkit directory! PkgVer Failed! \E[0m"
+    exit 1
+  )
+
+  git describe --tags | sed 's/^v//;s/-/+/g'
+
+}
+
+build() {
+
+  meson setup rtkit build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true \
+    -D installed_tests=false
+
+  meson compile -C build
+
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" meson install -C build
+
+  echo 'u rtkit 133 "RealtimeKit" /proc' |
+    install -Dm644 /dev/stdin "${pkgdir:?}/usr/lib/sysusers.d/rtkit.conf"
+
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname}" -m644 rtkit/LICENSE
+  sed -ne '4,25p' rtkit/rtkit.c |
+    install -Dm644 /dev/stdin "${pkgdir:?}/usr/share/licenses/${pkgname}/COPYING"
+
+}

@@ -1,0 +1,81 @@
+pkgname=libusb+clang
+pkgver=1.0.24
+pkgrel=2
+pkgdesc="Library that provides generic access to USB devices"
+arch=('x86_64')
+url="https://libusb.info/"
+license=('LGPL2.1')
+provides=('libusb' "libusb=${pkgver}" 'libusb-1.0.so')
+conflicts=('libusb')
+depends=('glibc' 'libudev.so')
+makedepends=('systemd')
+source=(
+  "https://github.com/libusb/libusb/releases/download/v${pkgver}/libusb-${pkgver}.tar.bz2"
+  "libusb-1.0.24-descriptor_parsing.patch"
+)
+sha256sums=('7efd2685f7b327326dcfb85cee426d9b871fd70e22caa15bb68d595ce2a2b12a'
+  '80a7da451ccae7980f1919d80c50c019410a43b81f6831e0e642f7d1704960d2')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/libusb-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libusb-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  patch -Np1 -i ../"libusb-1.0.24-descriptor_parsing.patch"
+
+  autoreconf -vfi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libusb-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libusb-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+
+  fi
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+check() {
+
+  cd "${srcdir:?}/libusb-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libusb-${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make -k check
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libusb-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libusb-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  install -vDm 644 {AUTHORS,ChangeLog,README} \
+    -t "${pkgdir:?}/usr/share/doc/${pkgname}/"
+
+}

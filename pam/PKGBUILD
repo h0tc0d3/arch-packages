@@ -1,0 +1,79 @@
+pkgname=pam+clang
+pkgver=1.5.1
+pkgrel=1
+pkgdesc="PAM (Pluggable Authentication Modules) library"
+arch=('x86_64')
+license=('GPL2')
+provides=('pam' "pam=${pkgver}" 'libpam.so' 'libpamc.so' 'libpam_misc.so')
+conflicts=('pam')
+url="http://linux-pam.org"
+depends=('glibc' 'libtirpc' 'pambase' 'audit' 'libaudit.so' 'libxcrypt' 'libcrypt.so')
+makedepends=('flex' 'w3m' 'docbook-xml>=4.4' 'docbook-xsl')
+backup=(etc/security/{access.conf,faillock.conf,group.conf,limits.conf,namespace.conf,namespace.init,pam_env.conf,time.conf} etc/environment)
+source=(
+  "https://github.com/linux-pam/linux-pam/releases/download/v${pkgver}/Linux-PAM-${pkgver}.tar.xz"{,.asc}
+  pam.tmpfiles
+)
+validpgpkeys=(
+  '8C6BFD92EE0F42EDF91A6A736D1A7F052E5924BB' # Thorsten Kukuk
+  '296D6F29A020808E8717A8842DB5BD89A340AEB7' #Dimitry V. Levin <ldv@altlinux.org>
+)
+
+sha256sums=('201d40730b1135b1b3cdea09f2c28ac634d73181ccd0172ceddee3649c5792fc'
+  'SKIP'
+  '5631f224e90c4f0459361c2a5b250112e3a91ba849754bb6f67d69d683a2e5ac')
+
+options=('!emptydirs')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/Linux-PAM-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/Linux-PAM-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+
+  fi
+
+  ./configure \
+    --libdir=/usr/lib \
+    --sbindir=/usr/bin \
+    --disable-db
+
+  make
+
+}
+
+package() {
+
+  install -Dm 644 pam.tmpfiles "${pkgdir:?}/usr/lib/tmpfiles.d/pam.conf"
+
+  cd "${srcdir:?}/Linux-PAM-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/Linux-PAM-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" SCONFIGDIR=/etc/security install
+
+  # set unix_chkpwd uid
+  chmod +s "${pkgdir:?}/usr/bin/unix_chkpwd"
+
+  # remove doc which is not used anymore
+  # FS #40749
+  rm "${pkgdir:?}/usr/share/doc/Linux-PAM/sag-pam_userdb.html"
+
+}

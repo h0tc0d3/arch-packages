@@ -1,0 +1,42 @@
+From ec070b2e83a4ee698c08d6d68c205aea4d90b0bb Mon Sep 17 00:00:00 2001
+From: Simo Sorce <simo@redhat.com>
+Date: Tue, 5 May 2020 14:31:10 -0400
+Subject: [PATCH] Emit debug log only in case of errors
+
+Backport of commit id:
+ccc5e547d4b40ee2b182a9945f8f6cc10b4fdf48
+
+Signed-off-by: Simo Sorce <simo@redhat.com>
+---
+ plugins/gssapi.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/plugins/gssapi.c b/plugins/gssapi.c
+index 7480316..6bcd78e 100644
+--- a/plugins/gssapi.c
++++ b/plugins/gssapi.c
+@@ -1444,9 +1444,6 @@ gssapi_server_mech_step(void *conn_context,
+ 
+     if (text == NULL) return SASL_BADPROT;
+ 
+-    params->utils->log(params->utils->conn, SASL_LOG_DEBUG,
+-		       "GSSAPI server step %d\n", text->state);
+-
+     switch (text->state) {
+ 
+     case SASL_GSSAPI_STATE_AUTHNEG:
+@@ -1496,8 +1493,10 @@ gssapi_server_mech_step(void *conn_context,
+ 	}
+ 
+ 	oparams->doneflag = 1;
++    } else {
++        params->utils->log(params->utils->conn, SASL_LOG_DEBUG,
++		           "GSSAPI server step failed: %d\n", text->state);
+     }
+-    
+     return ret;
+ }
+ 
+-- 
+2.18.2
+

@@ -1,4 +1,4 @@
-pkgname=kdegraphics-thumbnailers
+pkgname=kdegraphics-thumbnailers+clang
 pkgver=21.04.3
 pkgrel=1
 pkgdesc='Thumbnailers for various graphics file formats'
@@ -10,7 +10,7 @@ conflicts=("kdegraphics-thumbnailers")
 depends=(libkexiv2 libkdcraw kio ghostscript)
 makedepends=(extra-cmake-modules)
 groups=(kde-applications kde-graphics)
-source=("https://download.kde.org/stable/release-service/${pkgver}/src/$pkgname-${pkgver}.tar.xz"{,.sig})
+source=("https://download.kde.org/stable/release-service/${pkgver}/src/kdegraphics-thumbnailers-${pkgver}.tar.xz"{,.sig})
 sha256sums=('c1b7a34542826e093bf0cb5ee9b9235c0d6f7acfb7f88f106c1edbd4651d706c'
   'SKIP')
 validpgpkeys=(

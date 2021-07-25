@@ -1,0 +1,85 @@
+pkgname=libcap+clang
+pkgver=2.51
+pkgrel=1
+pkgdesc='POSIX 1003.1e capabilities'
+arch=('x86_64')
+url="https://sites.google.com/site/fullycapable/"
+license=('GPL2')
+depends=('glibc' 'pam')
+makedepends=('linux-api-headers')
+provides=('libcap' "libcap=${pkgver}" 'libcap.so' 'libpsx.so')
+conflicts=('libcap')
+source=(
+  "https://kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-${pkgver}.tar."{xz,sign}
+  "libcap-2.45-makefile.patch"
+)
+sha256sums=('6609f3ab7aebcc8f9277f53a577c657d9f3056d1352ea623da7fd7c0f00890f9'
+            'SKIP'
+            'bf007b9712d5992e3f0bdcdaf74a69b5fc24049fc084eb225171931d38b3fde3')
+
+validpgpkeys=(38A644698C69787344E954CE29EE848AE2CCF3F4) # Andrew G. Morgan <morgan@kernel.org>
+
+_llvm=0
+
+prepare() {
+
+  cd "${srcdir:?}/libcap-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libcap-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+  
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+    sed -i -e 's/\$(CROSS_COMPILE)gcc/clang/;s/\$(CROSS_COMPILE)ar/llvm-ar/;s/\$(CROSS_COMPILE)ranlib/llvm-ranlib/' Make.Rules
+  fi
+
+  # SBINDIR is hardcoded to sbin. set to bin
+  # add CPPFLAGS
+  patch -Np1 -i "../libcap-2.45-makefile.patch"
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libcap-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libcap-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -flto=thin"
+
+  fi
+
+  make KERNEL_HEADERS='/usr/include' lib='lib' prefix='/usr'
+
+}
+
+check() {
+
+  cd "${srcdir:?}/libcap-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libcap-${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make test
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libcap-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libcap-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" RAISE_SETFCAP='no' lib='lib' prefix='/usr' install
+  # docs
+  install -vDm 644 {CHANGELOG,README} -t "${pkgdir:?}/usr/share/doc/${pkgname}/"
+  install -vDm 644 pam_cap/capability.conf \
+    -t "${pkgdir:?}/usr/share/doc/${pkgname}/examples/"
+
+}

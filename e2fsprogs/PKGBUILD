@@ -1,0 +1,103 @@
+pkgname=e2fsprogs+clang
+pkgver=1.46.2
+pkgrel=1
+pkgdesc="Ext2/3/4 filesystem utilities"
+arch=('x86_64')
+license=('GPL' 'LGPL' 'MIT')
+url="http://e2fsprogs.sourceforge.net"
+depends=('sh' 'util-linux-libs')
+makedepends=('systemd' 'util-linux')
+provides=(
+  'e2fsprogs' "e2fsprogs=${pkgver}"
+  'libcom_err.so'
+  'libe2p.so'
+  'libext2fs.so'
+  'libss.so'
+)
+conflicts=('e2fsprogs')
+backup=('etc/mke2fs.conf')
+options=('staticlibs')
+validpgpkeys=('3AB057B7E78D945C8C5591FBD36F769BC11804F0') # Theodore Ts'o <tytso@mit.edu>
+source=("https://www.kernel.org/pub/linux/kernel/people/tytso/e2fsprogs/v${pkgver}/e2fsprogs-${pkgver}.tar."{xz,sign}
+  'MIT-LICENSE')
+sha256sums=('23aa093295c94e71ef1be490c4004871c5b01d216a8cb4d111fa6c0aac354168'
+  'SKIP'
+  'cc45386c1d71f438ad648fd7971e49e3074ad9dbacf9dd3a5b4cb61fd294ecbb')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/e2fsprogs-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/e2fsprogs-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # Remove unnecessary init.d directory
+  sed -i '/init\.d/s|^|#|' misc/Makefile.in
+
+}
+
+build() {
+
+  cd "${srcdir:?}/e2fsprogs-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/e2fsprogs-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -flto=thin"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --with-root-prefix="" \
+    --libdir=/usr/lib \
+    --sbindir=/usr/bin \
+    --enable-elf-shlibs \
+    --disable-fsck \
+    --disable-uuidd \
+    --disable-libuuid \
+    --disable-libblkid
+
+  make
+
+  # regenerate locale files
+  find po/ -name '*.gmo' -delete
+  make -C po update-gmo
+
+}
+
+package() {
+
+  unset MAKEFLAGS
+
+  cd "${srcdir:?}/e2fsprogs-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/e2fsprogs-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install install-libs
+
+  sed -i -e 's/^AWK=.*/AWK=awk/' "${pkgdir:?}/usr/bin/compile_et"
+
+  # remove references to build directory
+  sed -i -e 's#^SS_DIR=.*#SS_DIR="/usr/share/ss"#' "${pkgdir:?}/usr/bin/mk_cmds"
+  sed -i -e 's#^ET_DIR=.*#ET_DIR="/usr/share/et"#' "${pkgdir:?}/usr/bin/compile_et"
+
+  # remove static libraries with a shared counterpart
+  rm "${pkgdir:?}"/usr/lib/lib{com_err,e2p,ext2fs,ss}.a
+
+  # install MIT license
+  install -Dm644 "${srcdir}/MIT-LICENSE" \
+    "${pkgdir:?}/usr/share/licenses/${pkgname}/MIT-LICENSE"
+
+}

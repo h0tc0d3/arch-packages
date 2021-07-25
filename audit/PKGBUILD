@@ -1,0 +1,119 @@
+pkgbase=audit+clang
+pkgname=('audit+clang' 'python-audit+clang')
+pkgver=3.0.3
+pkgrel=1
+pkgdesc='Userspace components of the audit framework'
+url='https://people.redhat.com/sgrubb/audit'
+arch=('x86_64')
+makedepends=('glibc' 'krb5' 'libcap-ng' 'libldap' 'swig' 'linux-headers' 'python')
+license=('GPL')
+options=('emptydirs')
+source=("https://people.redhat.com/sgrubb/audit/audit-${pkgver}.tar.gz")
+sha512sums=('7132fd5d90c3745cdb2cd664c8d0b74ad9108bc39940e87fd1ae3ee461c484505d5d33fa5c741caa237e79e3bf9c7e1ccb07cac81b5cbfbe59db8fc8db021fd7')
+b2sums=('53e3fbb2acc574bad86cd41e6ffe396631695321e1c02f2d0f1f1f6fed8c77f61c3513431eafb157ec11e99330b4e277f6c75eaabac6179dac2abc8826e9cc76')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/audit-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/audit-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  sed 's|/var/run/auditd.pid|/run/auditd.pid|' -i init.d/auditd.service
+
+}
+
+build() {
+
+  cd "${srcdir:?}/audit-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/audit-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --sbindir=/usr/bin \
+    --sysconfdir=/etc \
+    --libexecdir=/usr/lib/audit \
+    --enable-gssapi-krb5=yes \
+    --enable-systemd=yes \
+    --with-libcap-ng=yes
+
+  make
+
+  [ -n "${SOURCE_DATE_EPOCH}" ] && touch -h -d @$SOURCE_DATE_EPOCH bindings/swig/python/audit.py
+
+}
+
+package_audit+clang() {
+
+  depends=('glibc' 'krb5' 'libcap-ng')
+  provides=('audit' "audit=${pkgver}" 'libaudit.so' 'libauparse.so')
+  conflicts=('audit')
+  backup=(
+    etc/libaudit.conf
+    etc/audit/audit-stop.rules
+    etc/audit/auditd.conf
+    etc/audit/audisp-remote.conf
+    etc/audit/zos-remote.conf
+    etc/audit/plugins.d/af_unix.conf
+    etc/audit/plugins.d/au-remote.conf
+    etc/audit/plugins.d/audispd-zos-remote.conf
+    etc/audit/plugins.d/syslog.conf
+  )
+
+  cd "${srcdir:?}/audit-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/audit-${pkgver} directory! Package audit Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" INSTALL='install -p' install
+
+  cd "${pkgdir:?}" || (
+    echo -e "\E[1;31mCan't cd to ${pkgdir:?} directory! Package audit Failed! \E[0m"
+    exit 1
+  )
+
+  install -d -m 0700 var/log/audit
+  rm -rf etc/rc.d \
+    etc/sysconfig \
+    usr/lib/audit \
+    usr/lib/python*
+
+  sed -ri 's|/sbin|/usr/bin|' \
+    etc/audit/*.conf \
+    etc/audit/plugins.d/*.conf \
+    usr/lib/systemd/system/auditd.service
+
+  chmod 644 usr/lib/systemd/system/auditd.service
+
+}
+
+package_python-audit+clang() {
+
+  depends=('python' 'audit+clang')
+  pkgdesc+=' (python bindings)'
+  provides=('python-audit' "python-audit=${pkgver}")
+  conflicts=('python-audit')
+
+  cd "${srcdir:?}/audit-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/audit-${pkgver} directory! Package python-audit Failed! \E[0m"
+    exit 1
+  )
+
+  make -C bindings DESTDIR="${pkgdir:?}" INSTALL='install -p' install
+
+}
