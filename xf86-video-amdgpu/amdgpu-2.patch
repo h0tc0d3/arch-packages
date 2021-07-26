@@ -1,0 +1,29 @@
+From aedbf47ffc9459c3654b66d8abf6d4f8515c4815 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <mdaenzer@redhat.com>
+Date: Mon, 26 Apr 2021 15:00:54 +0200
+Subject: [PATCH] Include xf86drm.h instead of sarea.h
+
+Fixes build against current xorg-x11-server-devel from Fedora
+34/35/rawhide.
+
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+---
+ src/drmmode_display.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/drmmode_display.c b/src/drmmode_display.c
+index 6047316..b6cdde7 100644
+--- a/src/drmmode_display.c
++++ b/src/drmmode_display.c
+@@ -40,7 +40,7 @@
+ #include "mipointrst.h"
+ #include "xf86cmap.h"
+ #include "xf86Priv.h"
+-#include "sarea.h"
++#include <xf86drm.h>
+ 
+ #include "drmmode_display.h"
+ #include "amdgpu_bo_helper.h"
+-- 
+GitLab
+

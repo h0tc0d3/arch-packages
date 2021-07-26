@@ -8,7 +8,7 @@ pkgname=(
   'xorg-server-devel+clang'
 )
 pkgver=1.20.12
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 license=('custom')
 groups=('xorg')
@@ -21,9 +21,10 @@ makedepends=('xorgproto' 'pixman' 'libx11' 'mesa' 'mesa-libgl' 'xtrans'
   'libxshmfence' 'libunwind' 'systemd' 'meson' 'git'
   'wayland-protocols' 'egl-wayland')
 source=("https://xorg.freedesktop.org/releases/individual/xserver/xorg-server-${pkgver}.tar.xz"{,.sig}
-  xserver-autobind-hotplug.patch
-  0001-v2-FS-58644.patch
-  0002-fix-libshadow-2.patch
+  xorg-use-intel-only-on-pre-gen4.diff
+  xorg-xfree86-use-modesetting-driver-by-default-on-GeForce.patch
+  xorg-xf86-dri2-Use-va_gl-as-vdpau_driver-for-Intel-i965-G.patch
+  xorg-autobind-GPUs-to-the-screen.patch
   xvfb-run # with updates from FC master
   xvfb-run.1)
 
@@ -36,9 +37,10 @@ validpgpkeys=(
 
 sha256sums=('336dc093431d81ecc03fa36af771f1181334f2746b7de7796f3cc6a8fa9e8cac'
             'SKIP'
+            'f8703466041a04428e68a77e1c07579679b07d15f8ec28934f1a65548007a756'
+            '91b067753e823d6e3462d35be127f66e94e71a490c666e1aae41fe4e5b1ea47c'
+            '6b04d1f8e2fbe97627d2edd2c80d8aad0bd8513b1972a6e431f7c46311bdf2f2'
             'cae1b7f296c18177de38f9b1215a4f916da2288b85f1fcb9e80373a42e2892b8'
-            '6253fb5cf06cf650539be585d6ca13cfa00217b51ca9825476c8fd55c09341a4'
-            'd07b2fe55828dad61517a80c77f6f183113916f5e1fce30ff43041550d58bd6e'
             'd709078f5658576931655c7a46ff90b3586a2643a9124075d00ff3a567937845'
             '2460adccd3362fefd4cdc5f1c70f332d7b578091fb9167bf88b5f91265bbd776')
 
@@ -55,15 +57,19 @@ prepare() {
     exit 1
   )
 
-  # patch from Fedora, not yet merged
-  patch -Np1 -i ../xserver-autobind-hotplug.patch
+  # From Debian use intel ddx driver only for gen4 and older chipsets
+  patch -Np1 -i ../xorg-use-intel-only-on-pre-gen4.diff
 
-  # Fix rootless xorg - FS#58644
-  # https://bugs.freedesktop.org/show_bug.cgi?id=106588
-  patch -Np1 -i ../0001-v2-FS-58644.patch
+  # Default to xf86-video-modesetting on GeForce 8 and newer
+  patch -Np1 -i ../xorg-xfree86-use-modesetting-driver-by-default-on-GeForce.patch
 
-  # Fix libshadow.so: libfb.so => not found - merge in master
-  patch -Np1 -i ../0002-fix-libshadow-2.patch
+  # Default to va_gl on intel i965 as we use the modesetting drv there
+  # va_gl should probably just be the default everywhere ?
+  patch -Np1 -i ../xorg-xf86-dri2-Use-va_gl-as-vdpau_driver-for-Intel-i965-G.patch
+
+  # Submitted upstream, but not going anywhere
+  patch -Np1 -i ../xorg-autobind-GPUs-to-the-screen.patch
+  
 
 }
 
