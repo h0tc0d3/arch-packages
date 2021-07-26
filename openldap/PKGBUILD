@@ -52,6 +52,7 @@ build() {
     CFLAGS="${CFLAGS} -flto=thin"
     CXXFLAGS="${CXXFLAGS} -flto=thin"
     LDFLAGS="${LDFLAGS} -flto=thin"
+    CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
 
   fi
 
@@ -79,16 +80,12 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    sed -i -e 's/ -shared / -flto=thin -Wl,-O1,--as-needed\0/g' libtool
+    sed -i -e 's/ -shared / -shared -flto=thin/g' libtool
     sed -i -e 's/CC\s=\sgcc/CC = clang/g' contrib/slapd-modules/nssov/Makefile
     sed -i -e 's/CC\s=\sgcc/CC = clang/g' contrib/slapd-modules/autogroup/Makefile
     sed -i -e 's/CC\s=\sgcc/CC = clang/g' contrib/slapd-modules/lastbind/Makefile
     sed -i -e 's/CC\s=\sgcc/CC = clang/g' contrib/slapd-modules/passwd/sha2/Makefile
     sed -i -e 's/CC\s=\sgcc/CC = clang/g' contrib/slapd-modules/passwd/argon2/Makefile
-
-  else
-
-    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
 
   fi
 

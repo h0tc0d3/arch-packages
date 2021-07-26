@@ -45,11 +45,11 @@ build() {
 
   fi
 
-  ./configure --prefix=/usr \
+  ./configure \
+    --prefix=/usr \
     --disable-static \
     --disable-xf86bigfont
 
-  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
   make
 
 }

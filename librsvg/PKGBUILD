@@ -65,8 +65,6 @@ build() {
     --enable-vala \
     --enable-gtk-doc
 
-  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0 /g' libtool
-
   make
 
 }

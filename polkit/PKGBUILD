@@ -67,12 +67,6 @@ build() {
     --enable-gtk-doc \
     --with-os-type=redhat
 
-  if [[ ${_llvm} -ne 1 ]]; then
-
-    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
-
-  fi
-
   make
 
 }

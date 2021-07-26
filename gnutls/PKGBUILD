@@ -50,7 +50,6 @@ build() {
     --with-guile-site-dir=no \
     --with-default-trust-store-pkcs11="pkcs11:"
 
-  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
   make
 
 }
