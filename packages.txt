@@ -155,4 +155,5 @@ libusb
 js78
 polkit
 rtkit
+pipewire
 -chromium
