@@ -1,0 +1,99 @@
+pkgname=snappy+clang
+pkgver=1.1.9
+pkgrel=2
+pkgdesc='A fast compressor/decompressor library'
+arch=('x86_64')
+url="https://google.github.io/snappy/"
+license=('BSD')
+provides=("snappy" "snappy=${pkgver}")
+conflicts=("snappy")
+depends=('glibc' 'gcc-libs')
+checkdepends=('zlib')
+makedepends=('cmake' 'clang' 'gtest' 'benchmark')
+source=(
+  "https://github.com/google/snappy/archive/${pkgver}/snappy-${pkgver}.tar.gz"
+  snappy.pc
+  snappy-thirdparty.patch
+  snappy-inline.patch
+  snappy-do-not-disable-rtti.patch
+)
+sha256sums=('75c1fbb3d618dd3a0483bff0e26d0a92b495bbe5059c8b4f1c962b478b6e06e7'
+            '4db5f0774a5a2677ccb2cc12bfcff7e64f83c4aae7d50bc89f9d875a145d8da4'
+            'c9599e8a4880e7205c74aaadad153c5426853d11ffb7c8a6862d3e291353de7d'
+            'e8c2d80a6425f9bdf4faf0bd24fdb5f5c55633d9c8775a3bc37ee518b944fae3'
+            '0934868ea57a9d9cb3f55b5a2bf0c66f53ec130bd1e1bb3f83f200e6cf3af557')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/snappy-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/snappy-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # Remove dependency on bundled gtest and google-benchmark.
+  patch -Np1 -i ../snappy-thirdparty.patch
+
+  # Prevent compiler error due to missing 'inline'.
+  patch -Np1 -i ../snappy-inline.patch
+
+  # Do not forcibly disable RTTI
+  patch -Np1 -i ../snappy-do-not-disable-rtti.patch
+
+}
+
+build() {
+
+  cd "${srcdir:?}/snappy-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/snappy-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -flto=thin"
+
+  fi
+
+  CXXFLAGS+=\ -DNDEBUG
+
+  cmake \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=/usr/lib \
+    -DBUILD_SHARED_LIBS=yes \
+    .
+
+  make
+
+}
+
+check() {
+
+  # compile without assertions
+  CXXFLAGS+=\ -DNDEBUG
+
+  make -C "snappy-${pkgver}" test
+
+}
+
+package() {
+
+  cd "${srcdir:?}/snappy-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/snappy-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  install -m644 -D COPYING "$pkgdir/usr/share/licenses/snappy/LICENSE"
+
+  # upstream dropped the pkgconfig file and isn't interested in adding it back.
+  # https://github.com/google/snappy/pull/55
+  install -Dm644 "${srcdir:?}/snappy.pc" "$pkgdir/usr/lib/pkgconfig/snappy.pc"
+}

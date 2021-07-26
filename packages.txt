@@ -14,6 +14,7 @@ elfutils
 libedit
 audit
 musl
+snappy
 +zlib-ng
 zstd
 libxml2
