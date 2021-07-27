@@ -1,7 +1,7 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
 pkgver=2.33
-pkgrel=12
+pkgrel=13
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
@@ -17,6 +17,7 @@ source=("git+https://sourceware.org/git/glibc.git#commit=${_commit}"
   glibc-rh827510.patch
   glibc-rh819430.patch
   glibc-c-utf8-locale.patch
+  glibc-c-utf8-strcmp_collation-LC_COLLATE.patch
   glibc-cs-path.patch
   glibc-cpu-check-1.patch
   glibc-cpu-check-2.patch
@@ -29,19 +30,20 @@ validpgpkeys=(
   BC7C7372637EC10C57D7AA6579C43DFBF1CF2187 # Siddhesh Poyarekar
 )
 sha256sums=('SKIP'
-  '83f108f915863c7ed0338e2d3e8f2e071a531a090ef8f8b2eb3a956a3c4f04d7'
-  '774061aff612a377714a509918a9e0e0aafce708b87d2d7e06b1bd1f6542fe70'
-  'cdc234959c6fdb43f000d3bb7d1080b0103f4080f5e67bcfe8ae1aaf477812f0'
-  'a9c10b02fe9fb3d0d5c1565124fedaace2932be4b147b6c6deaf1efbe2c07882'
-  '733396588e1e7c356f8d33ba80f6c317963dd936f9039f3f77f0bcec81138159'
-  '5b46d72f406baab29298a3a15a581ea96188ac58719a9b5afd80b8dc46bbcf46'
-  '943f15d2642143d23cd05bda5f74fe6d12bdb70711e49242741c70750c03721b'
-  'bdc28d5b5444e0ec35c98cb959635cf4f3bd23c47aa1b2f1c334a79db411b911'
-  'a477aeb27c36d46325b2b3863a33751849e5e274ce1a5acec7383dc597490ab4'
-  '788ea8c49401e64d33896d5c980de30724c4f7d95c5aedeefaaa89b0f4bc3b5f'
-  'adb8e36b9e1ac135430e798c8e050250a40d64cb0a8ec25353a2593f664a56a5'
-  '84dafba59abd433ef676458ad2542ba4f1b2c1027b3bff2b4cc91fc8a1bdd4ab'
-  '7e1435dfa064e6f6bdc2d2ce4f5f3364b2eca80dbdb2c22223ad8767347577a7')
+            '83f108f915863c7ed0338e2d3e8f2e071a531a090ef8f8b2eb3a956a3c4f04d7'
+            '774061aff612a377714a509918a9e0e0aafce708b87d2d7e06b1bd1f6542fe70'
+            'cdc234959c6fdb43f000d3bb7d1080b0103f4080f5e67bcfe8ae1aaf477812f0'
+            'a9c10b02fe9fb3d0d5c1565124fedaace2932be4b147b6c6deaf1efbe2c07882'
+            '733396588e1e7c356f8d33ba80f6c317963dd936f9039f3f77f0bcec81138159'
+            '5b46d72f406baab29298a3a15a581ea96188ac58719a9b5afd80b8dc46bbcf46'
+            'ef1e271d76f65357854a0754b0defd2bb7e58c25a54870861a5b1ec54345c80b'
+            'b0f0bd9376609b79babfa2b10c58a701d08f09f7ec41a760dbd4f4af24421fd2'
+            'bdc28d5b5444e0ec35c98cb959635cf4f3bd23c47aa1b2f1c334a79db411b911'
+            'a477aeb27c36d46325b2b3863a33751849e5e274ce1a5acec7383dc597490ab4'
+            '788ea8c49401e64d33896d5c980de30724c4f7d95c5aedeefaaa89b0f4bc3b5f'
+            'adb8e36b9e1ac135430e798c8e050250a40d64cb0a8ec25353a2593f664a56a5'
+            '84dafba59abd433ef676458ad2542ba4f1b2c1027b3bff2b4cc91fc8a1bdd4ab'
+            '7e1435dfa064e6f6bdc2d2ce4f5f3364b2eca80dbdb2c22223ad8767347577a7')
 
 _patch() {
 
@@ -62,6 +64,7 @@ prepare() {
   _patch "glibc-rh827510.patch"
   _patch "glibc-rh819430.patch"
   _patch "glibc-c-utf8-locale.patch"
+  _patch "glibc-c-utf8-strcmp_collation-LC_COLLATE.patch"
   _patch "glibc-cs-path.patch"
   _patch "glibc-cpu-check-1.patch"
   _patch "glibc-cpu-check-2.patch"

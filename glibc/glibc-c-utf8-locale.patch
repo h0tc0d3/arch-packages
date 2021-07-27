@@ -1,776 +1,184 @@
-From 736019081977706528bda62e2c156043ca59594a Mon Sep 17 00:00:00 2001
+From 147ed422f86c5753b861e473dceca0b7787f0f65 Mon Sep 17 00:00:00 2001
 From: Carlos O'Donell <carlos@redhat.com>
-Date: Fri, 9 Jul 2021 00:36:11 -0400
+Date: Sun, 25 Jul 2021 22:14:08 -0400
 Subject: [PATCH] Add generic C.UTF-8 locale (Bug 17318)
 
 We add a new C.UTF-8 locale.  This locale is not builtin to glibc, but
 is provided as a distinct locale.  The locale provides full support
-for UTF-8 and this includes full code point sorting via collation
-(excludes surrogates).
+for UTF-8 and this includes full code point sorting via strcmp-based
+collation.
 
 The collation uses a new keyword 'strcmp_collation' which drops all
-collation rules and generates an empty zero rules collation to trigger
+collation rules and generates an empty zero rules collation to enable
 strcmp usage in collation. This ensures that we get full code point
-sorting for C.UTF-8 with a minimal 92 bytes of overhead (structure
-information).
+sorting for C.UTF-8 with a minimal 92 bytes of overhead (LC_COLLATE
+structure information).
 
 The new locale is added to SUPPORTED.  Minimal test data for specific
 code points (minus those not supported by collate-test) is provided
 in C.UTF-8.in, and this verifies code point sorting is working
 reasonably across the range.  The locale was tested manually with the
-full set of code points, but failure at this point is a failure in
-strcmp.
+full set of code points without failure.
 
 The locale is harmonized with locales already shipping in Gentoo,
-Debian, Ubuntu, Fedora, CentOS Stream, and RHEL.
+Debian, Ubuntu, Fedora, CentOS Stream, and RHEL. A new tst-iconv9 test
+is added which verifies the C.UTF-8 locale is generally usable.
 
 Tested on x86_64 or i686 without regression.
 ---
- locale/programs/ld-collate.c     |  20 +-
- locale/programs/locfile-kw.gperf |   1 +
- locale/programs/locfile-kw.h     | 306 ++++++++++++++++---------------
- locale/programs/locfile-token.h  |   1 +
- localedata/C.UTF-8.in            | 156 ++++++++++++++++
- localedata/Makefile              |   2 +
- localedata/SUPPORTED             |   1 +
- localedata/locales/C             | 193 +++++++++++++++++++
- 8 files changed, 525 insertions(+), 155 deletions(-)
+ iconv/Makefile        |  22 ++++-
+ iconv/tst-iconv9.c    |  87 +++++++++++++++++++
+ localedata/C.UTF-8.in | 157 ++++++++++++++++++++++++++++++++++
+ localedata/Makefile   |   2 +
+ localedata/SUPPORTED  |   1 +
+ localedata/locales/C  | 194 ++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 460 insertions(+), 3 deletions(-)
+ create mode 100644 iconv/tst-iconv9.c
  create mode 100644 localedata/C.UTF-8.in
  create mode 100644 localedata/locales/C
 
-diff --git a/locale/programs/ld-collate.c b/locale/programs/ld-collate.c
-index b6406b775d..b486718f7b 100644
---- a/locale/programs/ld-collate.c
-+++ b/locale/programs/ld-collate.c
-@@ -195,6 +195,9 @@ struct name_list
- /* The real definition of the struct for the LC_COLLATE locale.  */
- struct locale_collate_t
- {
-+  /* Does the locale use strcmp to compare the encoding?  */
-+  bool strcmp_collation;
+diff --git a/iconv/Makefile b/iconv/Makefile
+index 07d77c9eca..9993f2d3f3 100644
+--- a/iconv/Makefile
++++ b/iconv/Makefile
+@@ -43,8 +43,19 @@ CFLAGS-charmap.c += -DCHARMAP_PATH='"$(i18ndir)/charmaps"' \
+ CFLAGS-linereader.c += -DNO_TRANSLITERATION
+ CFLAGS-simple-hash.c += -I../locale
+ 
+-tests	= tst-iconv1 tst-iconv2 tst-iconv3 tst-iconv4 tst-iconv5 tst-iconv6 \
+-	  tst-iconv7 tst-iconv8 tst-iconv-mt tst-iconv-opt
++tests = \
++	tst-iconv1 \
++	tst-iconv2 \
++	tst-iconv3 \
++	tst-iconv4 \
++	tst-iconv5 \
++	tst-iconv6 \
++	tst-iconv7 \
++	tst-iconv8 \
++	tst-iconv9 \
++	tst-iconv-mt \
++	tst-iconv-opt \
++	# tests
+ 
+ others		= iconv_prog iconvconfig
+ install-others-programs	= $(inst_bindir)/iconv
+@@ -83,10 +94,15 @@ endif
+ include ../Rules
+ 
+ ifeq ($(run-built-tests),yes)
+-LOCALES := en_US.UTF-8
++# We have to generate locales (list sorted alphabetically)
++LOCALES := \
++	C.UTF-8 \
++	en_US.UTF-8 \
++	# LOCALES
+ include ../gen-locales.mk
+ 
+ $(objpfx)tst-iconv-opt.out: $(gen-locales)
++$(objpfx)tst-iconv9.out: $(gen-locales)
+ endif
+ 
+ $(inst_bindir)/iconv: $(objpfx)iconv_prog $(+force)
+diff --git a/iconv/tst-iconv9.c b/iconv/tst-iconv9.c
+new file mode 100644
+index 0000000000..78a5324279
+--- /dev/null
++++ b/iconv/tst-iconv9.c
+@@ -0,0 +1,87 @@
++/* Verify that using C.UTF-8 works.
 +
-   int col_weight_max;
-   int cur_weight_max;
- 
-@@ -1510,6 +1513,7 @@ collate_startup (struct linereader *ldfile, struct localedef_t *locale,
- 	  obstack_init (&collate->mempool);
- 
- 	  collate->col_weight_max = -1;
-+	  collate->strcmp_collation = false;
- 	}
-       else
- 	/* Reuse the copy_locale's data structures.  */
-@@ -1568,6 +1572,10 @@ collate_finish (struct localedef_t *locale, const struct charmap_t *charmap)
-       return;
-     }
- 
-+  /* No data required.  */
-+  if (collate->strcmp_collation)
-+    return;
++   Copyright (C) 2021 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
 +
-   /* If this assertion is hit change the type in `element_t'.  */
-   assert (nrules <= sizeof (runp->used_in_level) * 8);
- 
-@@ -2115,7 +2123,7 @@ collate_output (struct localedef_t *locale, const struct charmap_t *charmap,
-   add_locale_uint32 (&file, nrules);
- 
-   /* If we have no LC_COLLATE data emit only the number of rules as zero.  */
--  if (collate == NULL)
-+  if (collate == NULL || collate->strcmp_collation)
-     {
-       size_t idx;
-       for (idx = 1; idx < nelems; idx++)
-@@ -2672,6 +2680,10 @@ collate_read (struct linereader *ldfile, struct localedef_t *result,
- 
-       switch (nowtok)
- 	{
-+	case tok_strcmp_collation:
-+	  collate->strcmp_collation = true;
-+	  break;
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
 +
- 	case tok_copy:
- 	  /* Allow copying other locales.  */
- 	  now = lr_token (ldfile, charmap, result, NULL, verbose);
-@@ -3742,9 +3754,11 @@ error while adding equivalent collating symbol"));
- 	  /* Next we assume `LC_COLLATE'.  */
- 	  if (!ignore_content)
- 	    {
--	      if (state == 0 && copy_locale == NULL)
-+	      if (state == 0
-+		  && copy_locale == NULL
-+		  && !collate->strcmp_collation)
- 		/* We must either see a copy statement or have
--		   ordering values.  */
-+		   ordering values, or strcmp_collation.  */
- 		lr_error (ldfile,
- 			  _("%s: empty category description not allowed"),
- 			  "LC_COLLATE");
-diff --git a/locale/programs/locfile-kw.gperf b/locale/programs/locfile-kw.gperf
-index bcded15ddb..0ae7267340 100644
---- a/locale/programs/locfile-kw.gperf
-+++ b/locale/programs/locfile-kw.gperf
-@@ -54,6 +54,7 @@ translit_end,           tok_translit_end,           0
- translit_ignore,        tok_translit_ignore,        0
- default_missing,        tok_default_missing,        0
- LC_COLLATE,             tok_lc_collate,             0
-+strcmp_collation,       tok_strcmp_collation,       0
- coll_weight_max,        tok_coll_weight_max,        0
- section-symbol,         tok_section_symbol,         0
- collating-element,      tok_collating_element,      0
-diff --git a/locale/programs/locfile-kw.h b/locale/programs/locfile-kw.h
-index bc1cb8f084..f7af5c8a0a 100644
---- a/locale/programs/locfile-kw.h
-+++ b/locale/programs/locfile-kw.h
-@@ -54,7 +54,7 @@
- #line 24 "locfile-kw.gperf"
- struct keyword_t ;
- 
--#define TOTAL_KEYWORDS 178
-+#define TOTAL_KEYWORDS 179
- #define MIN_WORD_LENGTH 3
- #define MAX_WORD_LENGTH 22
- #define MIN_HASH_VALUE 3
-@@ -78,7 +78,7 @@ hash (register const char *str, register size_t len)
-       631, 631, 631, 631, 631, 631, 631, 631, 631, 631,
-       631, 631, 631, 631, 631, 631, 631, 631, 631, 631,
-       631, 631, 631, 631, 631, 631, 631, 631, 631, 631,
--        5,   0, 631, 631, 631, 631, 631, 631, 631, 631,
-+       10,   5, 631, 631, 631, 631, 631, 631, 631, 631,
-       631, 631, 631, 631, 631,   5, 631,   0,   0,   0,
-         0,   0,  10,   0, 631, 631,   0, 631,   0,   5,
-       631, 631,   0,   0,   0,  10, 631, 631, 631,   0,
-@@ -134,92 +134,92 @@ locfile_hash (register const char *str, register size_t len)
- #line 31 "locfile-kw.gperf"
-       {"END",                    tok_end,                    0},
-       {""}, {""},
--#line 70 "locfile-kw.gperf"
-+#line 71 "locfile-kw.gperf"
-       {"IGNORE",                 tok_ignore,                 0},
--#line 129 "locfile-kw.gperf"
-+#line 130 "locfile-kw.gperf"
-       {"LC_TIME",                tok_lc_time,                0},
- #line 30 "locfile-kw.gperf"
-       {"LC_CTYPE",               tok_lc_ctype,               0},
-       {""},
--#line 168 "locfile-kw.gperf"
-+#line 169 "locfile-kw.gperf"
-       {"LC_ADDRESS",             tok_lc_address,             0},
--#line 153 "locfile-kw.gperf"
-+#line 154 "locfile-kw.gperf"
-       {"LC_MESSAGES",            tok_lc_messages,            0},
--#line 161 "locfile-kw.gperf"
-+#line 162 "locfile-kw.gperf"
-       {"LC_NAME",                tok_lc_name,                0},
--#line 158 "locfile-kw.gperf"
-+#line 159 "locfile-kw.gperf"
-       {"LC_PAPER",               tok_lc_paper,               0},
--#line 186 "locfile-kw.gperf"
-+#line 187 "locfile-kw.gperf"
-       {"LC_MEASUREMENT",         tok_lc_measurement,         0},
- #line 56 "locfile-kw.gperf"
-       {"LC_COLLATE",             tok_lc_collate,             0},
-       {""},
--#line 188 "locfile-kw.gperf"
-+#line 189 "locfile-kw.gperf"
-       {"LC_IDENTIFICATION",      tok_lc_identification,      0},
--#line 201 "locfile-kw.gperf"
-+#line 202 "locfile-kw.gperf"
-       {"revision",               tok_revision,               0},
--#line 69 "locfile-kw.gperf"
-+#line 70 "locfile-kw.gperf"
-       {"UNDEFINED",              tok_undefined,              0},
--#line 125 "locfile-kw.gperf"
-+#line 126 "locfile-kw.gperf"
-       {"LC_NUMERIC",             tok_lc_numeric,             0},
--#line 82 "locfile-kw.gperf"
-+#line 83 "locfile-kw.gperf"
-       {"LC_MONETARY",            tok_lc_monetary,            0},
--#line 181 "locfile-kw.gperf"
-+#line 182 "locfile-kw.gperf"
-       {"LC_TELEPHONE",           tok_lc_telephone,           0},
-       {""}, {""}, {""},
--#line 75 "locfile-kw.gperf"
-+#line 76 "locfile-kw.gperf"
-       {"define",                 tok_define,                 0},
--#line 154 "locfile-kw.gperf"
-+#line 155 "locfile-kw.gperf"
-       {"yesexpr",                tok_yesexpr,                0},
--#line 141 "locfile-kw.gperf"
-+#line 142 "locfile-kw.gperf"
-       {"era_year",               tok_era_year,               0},
-       {""},
- #line 54 "locfile-kw.gperf"
-       {"translit_ignore",        tok_translit_ignore,        0},
--#line 156 "locfile-kw.gperf"
-+#line 157 "locfile-kw.gperf"
-       {"yesstr",                 tok_yesstr,                 0},
-       {""},
--#line 89 "locfile-kw.gperf"
-+#line 90 "locfile-kw.gperf"
-       {"negative_sign",          tok_negative_sign,          0},
-       {""},
--#line 137 "locfile-kw.gperf"
-+#line 138 "locfile-kw.gperf"
-       {"t_fmt",                  tok_t_fmt,                  0},
--#line 159 "locfile-kw.gperf"
-+#line 160 "locfile-kw.gperf"
-       {"height",                 tok_height,                 0},
-       {""}, {""},
- #line 52 "locfile-kw.gperf"
-       {"translit_start",         tok_translit_start,         0},
--#line 136 "locfile-kw.gperf"
-+#line 137 "locfile-kw.gperf"
-       {"d_fmt",                  tok_d_fmt,                  0},
-       {""},
- #line 53 "locfile-kw.gperf"
-       {"translit_end",           tok_translit_end,           0},
--#line 94 "locfile-kw.gperf"
-+#line 95 "locfile-kw.gperf"
-       {"n_cs_precedes",          tok_n_cs_precedes,          0},
--#line 144 "locfile-kw.gperf"
-+#line 145 "locfile-kw.gperf"
-       {"era_t_fmt",              tok_era_t_fmt,              0},
- #line 39 "locfile-kw.gperf"
-       {"space",                  tok_space,                  0},
--#line 72 "locfile-kw.gperf"
--      {"reorder-end",            tok_reorder_end,            0},
- #line 73 "locfile-kw.gperf"
-+      {"reorder-end",            tok_reorder_end,            0},
-+#line 74 "locfile-kw.gperf"
-       {"reorder-sections-after", tok_reorder_sections_after, 0},
-       {""},
--#line 142 "locfile-kw.gperf"
-+#line 143 "locfile-kw.gperf"
-       {"era_d_fmt",              tok_era_d_fmt,              0},
--#line 189 "locfile-kw.gperf"
-+#line 190 "locfile-kw.gperf"
-       {"title",                  tok_title,                  0},
-       {""}, {""},
--#line 149 "locfile-kw.gperf"
-+#line 150 "locfile-kw.gperf"
-       {"timezone",               tok_timezone,               0},
-       {""},
--#line 74 "locfile-kw.gperf"
-+#line 75 "locfile-kw.gperf"
-       {"reorder-sections-end",   tok_reorder_sections_end,   0},
-       {""}, {""}, {""},
--#line 95 "locfile-kw.gperf"
-+#line 96 "locfile-kw.gperf"
-       {"n_sep_by_space",         tok_n_sep_by_space,         0},
-       {""}, {""},
--#line 100 "locfile-kw.gperf"
-+#line 101 "locfile-kw.gperf"
-       {"int_n_cs_precedes",      tok_int_n_cs_precedes,      0},
-       {""}, {""}, {""},
- #line 26 "locfile-kw.gperf"
-@@ -233,147 +233,147 @@ locfile_hash (register const char *str, register size_t len)
-       {"print",                  tok_print,                  0},
- #line 44 "locfile-kw.gperf"
-       {"xdigit",                 tok_xdigit,                 0},
--#line 110 "locfile-kw.gperf"
-+#line 111 "locfile-kw.gperf"
-       {"duo_n_cs_precedes",      tok_duo_n_cs_precedes,      0},
--#line 127 "locfile-kw.gperf"
-+#line 128 "locfile-kw.gperf"
-       {"thousands_sep",          tok_thousands_sep,          0},
--#line 197 "locfile-kw.gperf"
-+#line 198 "locfile-kw.gperf"
-       {"territory",              tok_territory,              0},
- #line 36 "locfile-kw.gperf"
-       {"digit",                  tok_digit,                  0},
-       {""}, {""},
--#line 92 "locfile-kw.gperf"
-+#line 93 "locfile-kw.gperf"
-       {"p_cs_precedes",          tok_p_cs_precedes,          0},
-       {""}, {""},
--#line 62 "locfile-kw.gperf"
-+#line 63 "locfile-kw.gperf"
-       {"script",                 tok_script,                 0},
- #line 29 "locfile-kw.gperf"
-       {"include",                tok_include,                0},
-       {""},
--#line 78 "locfile-kw.gperf"
-+#line 79 "locfile-kw.gperf"
-       {"else",                   tok_else,                   0},
--#line 184 "locfile-kw.gperf"
-+#line 185 "locfile-kw.gperf"
-       {"int_select",             tok_int_select,             0},
-       {""}, {""}, {""},
--#line 132 "locfile-kw.gperf"
-+#line 133 "locfile-kw.gperf"
-       {"week",                   tok_week,                   0},
- #line 33 "locfile-kw.gperf"
-       {"upper",                  tok_upper,                  0},
-       {""}, {""},
--#line 194 "locfile-kw.gperf"
-+#line 195 "locfile-kw.gperf"
-       {"tel",                    tok_tel,                    0},
--#line 93 "locfile-kw.gperf"
-+#line 94 "locfile-kw.gperf"
-       {"p_sep_by_space",         tok_p_sep_by_space,         0},
--#line 160 "locfile-kw.gperf"
-+#line 161 "locfile-kw.gperf"
-       {"width",                  tok_width,                  0},
-       {""},
--#line 98 "locfile-kw.gperf"
-+#line 99 "locfile-kw.gperf"
-       {"int_p_cs_precedes",      tok_int_p_cs_precedes,      0},
-       {""}, {""},
- #line 41 "locfile-kw.gperf"
-       {"punct",                  tok_punct,                  0},
-       {""}, {""},
--#line 101 "locfile-kw.gperf"
-+#line 102 "locfile-kw.gperf"
-       {"int_n_sep_by_space",     tok_int_n_sep_by_space,     0},
-       {""}, {""}, {""},
--#line 108 "locfile-kw.gperf"
-+#line 109 "locfile-kw.gperf"
-       {"duo_p_cs_precedes",      tok_duo_p_cs_precedes,      0},
- #line 48 "locfile-kw.gperf"
-       {"charconv",               tok_charconv,               0},
-       {""},
- #line 47 "locfile-kw.gperf"
-       {"class",                  tok_class,                  0},
--#line 114 "locfile-kw.gperf"
--      {"duo_int_n_cs_precedes",  tok_duo_int_n_cs_precedes,  0},
- #line 115 "locfile-kw.gperf"
-+      {"duo_int_n_cs_precedes",  tok_duo_int_n_cs_precedes,  0},
-+#line 116 "locfile-kw.gperf"
-       {"duo_int_n_sep_by_space", tok_duo_int_n_sep_by_space, 0},
--#line 111 "locfile-kw.gperf"
-+#line 112 "locfile-kw.gperf"
-       {"duo_n_sep_by_space",     tok_duo_n_sep_by_space,     0},
--#line 119 "locfile-kw.gperf"
-+#line 120 "locfile-kw.gperf"
-       {"duo_int_n_sign_posn",    tok_duo_int_n_sign_posn,    0},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
-       {""}, {""}, {""}, {""}, {""},
--#line 58 "locfile-kw.gperf"
-+#line 59 "locfile-kw.gperf"
-       {"section-symbol",         tok_section_symbol,         0},
--#line 185 "locfile-kw.gperf"
-+#line 186 "locfile-kw.gperf"
-       {"int_prefix",             tok_int_prefix,             0},
-       {""}, {""}, {""}, {""},
- #line 42 "locfile-kw.gperf"
-       {"graph",                  tok_graph,                  0},
-       {""}, {""},
--#line 99 "locfile-kw.gperf"
-+#line 100 "locfile-kw.gperf"
-       {"int_p_sep_by_space",     tok_int_p_sep_by_space,     0},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""},
--#line 112 "locfile-kw.gperf"
--      {"duo_int_p_cs_precedes",  tok_duo_int_p_cs_precedes,  0},
- #line 113 "locfile-kw.gperf"
-+      {"duo_int_p_cs_precedes",  tok_duo_int_p_cs_precedes,  0},
-+#line 114 "locfile-kw.gperf"
-       {"duo_int_p_sep_by_space", tok_duo_int_p_sep_by_space, 0},
--#line 109 "locfile-kw.gperf"
-+#line 110 "locfile-kw.gperf"
-       {"duo_p_sep_by_space",     tok_duo_p_sep_by_space,     0},
--#line 118 "locfile-kw.gperf"
-+#line 119 "locfile-kw.gperf"
-       {"duo_int_p_sign_posn",    tok_duo_int_p_sign_posn,    0},
--#line 157 "locfile-kw.gperf"
-+#line 158 "locfile-kw.gperf"
-       {"nostr",                  tok_nostr,                  0},
-       {""}, {""},
--#line 140 "locfile-kw.gperf"
-+#line 141 "locfile-kw.gperf"
-       {"era",                    tok_era,                    0},
-       {""},
--#line 84 "locfile-kw.gperf"
-+#line 85 "locfile-kw.gperf"
-       {"currency_symbol",        tok_currency_symbol,        0},
-       {""},
--#line 167 "locfile-kw.gperf"
-+#line 168 "locfile-kw.gperf"
-       {"name_ms",                tok_name_ms,                0},
--#line 165 "locfile-kw.gperf"
--      {"name_mrs",               tok_name_mrs,               0},
- #line 166 "locfile-kw.gperf"
-+      {"name_mrs",               tok_name_mrs,               0},
-+#line 167 "locfile-kw.gperf"
-       {"name_miss",              tok_name_miss,              0},
--#line 83 "locfile-kw.gperf"
-+#line 84 "locfile-kw.gperf"
-       {"int_curr_symbol",        tok_int_curr_symbol,        0},
--#line 190 "locfile-kw.gperf"
-+#line 191 "locfile-kw.gperf"
-       {"source",                 tok_source,                 0},
--#line 164 "locfile-kw.gperf"
-+#line 165 "locfile-kw.gperf"
-       {"name_mr",                tok_name_mr,                0},
--#line 163 "locfile-kw.gperf"
-+#line 164 "locfile-kw.gperf"
-       {"name_gen",               tok_name_gen,               0},
--#line 202 "locfile-kw.gperf"
-+#line 203 "locfile-kw.gperf"
-       {"date",                   tok_date,                   0},
-       {""}, {""},
--#line 191 "locfile-kw.gperf"
-+#line 192 "locfile-kw.gperf"
-       {"address",                tok_address,                0},
--#line 162 "locfile-kw.gperf"
-+#line 163 "locfile-kw.gperf"
-       {"name_fmt",               tok_name_fmt,               0},
- #line 32 "locfile-kw.gperf"
-       {"copy",                   tok_copy,                   0},
--#line 103 "locfile-kw.gperf"
-+#line 104 "locfile-kw.gperf"
-       {"int_n_sign_posn",        tok_int_n_sign_posn,        0},
-       {""}, {""},
--#line 131 "locfile-kw.gperf"
-+#line 132 "locfile-kw.gperf"
-       {"day",                    tok_day,                    0},
--#line 105 "locfile-kw.gperf"
-+#line 106 "locfile-kw.gperf"
-       {"duo_currency_symbol",    tok_duo_currency_symbol,    0},
-       {""}, {""}, {""},
--#line 150 "locfile-kw.gperf"
-+#line 151 "locfile-kw.gperf"
-       {"date_fmt",               tok_date_fmt,               0},
--#line 64 "locfile-kw.gperf"
-+#line 65 "locfile-kw.gperf"
-       {"order_end",              tok_order_end,              0},
--#line 117 "locfile-kw.gperf"
-+#line 118 "locfile-kw.gperf"
-       {"duo_n_sign_posn",        tok_duo_n_sign_posn,        0},
-       {""},
--#line 170 "locfile-kw.gperf"
-+#line 171 "locfile-kw.gperf"
-       {"country_name",           tok_country_name,           0},
--#line 71 "locfile-kw.gperf"
-+#line 72 "locfile-kw.gperf"
-       {"reorder-after",          tok_reorder_after,          0},
-       {""}, {""},
--#line 155 "locfile-kw.gperf"
-+#line 156 "locfile-kw.gperf"
-       {"noexpr",                 tok_noexpr,                 0},
- #line 50 "locfile-kw.gperf"
-       {"tolower",                tok_tolower,                0},
--#line 198 "locfile-kw.gperf"
-+#line 199 "locfile-kw.gperf"
-       {"audience",               tok_audience,               0},
-       {""}, {""}, {""},
- #line 49 "locfile-kw.gperf"
-       {"toupper",                tok_toupper,                0},
--#line 68 "locfile-kw.gperf"
-+#line 69 "locfile-kw.gperf"
-       {"position",               tok_position,               0},
-       {""},
- #line 40 "locfile-kw.gperf"
-@@ -381,196 +381,198 @@ locfile_hash (register const char *str, register size_t len)
-       {""},
- #line 27 "locfile-kw.gperf"
-       {"comment_char",           tok_comment_char,           0},
--#line 88 "locfile-kw.gperf"
-+#line 89 "locfile-kw.gperf"
-       {"positive_sign",          tok_positive_sign,          0},
-       {""}, {""}, {""}, {""},
--#line 61 "locfile-kw.gperf"
-+#line 62 "locfile-kw.gperf"
-       {"symbol-equivalence",     tok_symbol_equivalence,     0},
-       {""},
--#line 102 "locfile-kw.gperf"
-+#line 103 "locfile-kw.gperf"
-       {"int_p_sign_posn",        tok_int_p_sign_posn,        0},
--#line 175 "locfile-kw.gperf"
-+#line 176 "locfile-kw.gperf"
-       {"country_car",            tok_country_car,            0},
-       {""}, {""},
--#line 104 "locfile-kw.gperf"
-+#line 105 "locfile-kw.gperf"
-       {"duo_int_curr_symbol",    tok_duo_int_curr_symbol,    0},
-       {""}, {""},
--#line 135 "locfile-kw.gperf"
-+#line 136 "locfile-kw.gperf"
-       {"d_t_fmt",                tok_d_t_fmt,                0},
-       {""}, {""},
--#line 116 "locfile-kw.gperf"
-+#line 117 "locfile-kw.gperf"
-       {"duo_p_sign_posn",        tok_duo_p_sign_posn,        0},
--#line 187 "locfile-kw.gperf"
-+#line 188 "locfile-kw.gperf"
-       {"measurement",            tok_measurement,            0},
--#line 176 "locfile-kw.gperf"
-+#line 177 "locfile-kw.gperf"
-       {"country_isbn",           tok_country_isbn,           0},
- #line 37 "locfile-kw.gperf"
-       {"outdigit",               tok_outdigit,               0},
-       {""}, {""},
--#line 143 "locfile-kw.gperf"
-+#line 144 "locfile-kw.gperf"
-       {"era_d_t_fmt",            tok_era_d_t_fmt,            0},
-       {""}, {""}, {""},
- #line 34 "locfile-kw.gperf"
-       {"lower",                  tok_lower,                  0},
--#line 183 "locfile-kw.gperf"
-+#line 184 "locfile-kw.gperf"
-       {"tel_dom_fmt",            tok_tel_dom_fmt,            0},
--#line 171 "locfile-kw.gperf"
-+#line 172 "locfile-kw.gperf"
-       {"country_post",           tok_country_post,           0},
--#line 148 "locfile-kw.gperf"
-+#line 149 "locfile-kw.gperf"
-       {"cal_direction",          tok_cal_direction,          0},
-       {""},
--#line 139 "locfile-kw.gperf"
-+#line 140 "locfile-kw.gperf"
-       {"t_fmt_ampm",             tok_t_fmt_ampm,             0},
--#line 91 "locfile-kw.gperf"
-+#line 92 "locfile-kw.gperf"
-       {"frac_digits",            tok_frac_digits,            0},
-       {""}, {""},
--#line 177 "locfile-kw.gperf"
-+#line 178 "locfile-kw.gperf"
-       {"lang_name",              tok_lang_name,              0},
--#line 90 "locfile-kw.gperf"
-+#line 91 "locfile-kw.gperf"
-       {"int_frac_digits",        tok_int_frac_digits,        0},
-       {""},
--#line 121 "locfile-kw.gperf"
-+#line 122 "locfile-kw.gperf"
-       {"uno_valid_to",           tok_uno_valid_to,           0},
--#line 126 "locfile-kw.gperf"
-+#line 127 "locfile-kw.gperf"
-       {"decimal_point",          tok_decimal_point,          0},
-       {""},
--#line 133 "locfile-kw.gperf"
-+#line 134 "locfile-kw.gperf"
-       {"abmon",                  tok_abmon,                  0},
-       {""}, {""}, {""}, {""},
--#line 107 "locfile-kw.gperf"
-+#line 108 "locfile-kw.gperf"
-       {"duo_frac_digits",        tok_duo_frac_digits,        0},
--#line 182 "locfile-kw.gperf"
-+#line 183 "locfile-kw.gperf"
-       {"tel_int_fmt",            tok_tel_int_fmt,            0},
--#line 123 "locfile-kw.gperf"
-+#line 124 "locfile-kw.gperf"
-       {"duo_valid_to",           tok_duo_valid_to,           0},
--#line 146 "locfile-kw.gperf"
-+#line 147 "locfile-kw.gperf"
-       {"first_weekday",          tok_first_weekday,          0},
-       {""},
--#line 130 "locfile-kw.gperf"
-+#line 131 "locfile-kw.gperf"
-       {"abday",                  tok_abday,                  0},
-       {""},
--#line 200 "locfile-kw.gperf"
-+#line 201 "locfile-kw.gperf"
-       {"abbreviation",           tok_abbreviation,           0},
--#line 147 "locfile-kw.gperf"
-+#line 148 "locfile-kw.gperf"
-       {"first_workday",          tok_first_workday,          0},
-       {""}, {""},
--#line 97 "locfile-kw.gperf"
-+#line 98 "locfile-kw.gperf"
-       {"n_sign_posn",            tok_n_sign_posn,            0},
-       {""}, {""}, {""},
--#line 145 "locfile-kw.gperf"
-+#line 146 "locfile-kw.gperf"
-       {"alt_digits",             tok_alt_digits,             0},
-       {""}, {""},
--#line 128 "locfile-kw.gperf"
-+#line 129 "locfile-kw.gperf"
-       {"grouping",               tok_grouping,               0},
-       {""},
- #line 45 "locfile-kw.gperf"
-       {"blank",                  tok_blank,                  0},
-       {""}, {""},
--#line 196 "locfile-kw.gperf"
-+#line 197 "locfile-kw.gperf"
-       {"language",               tok_language,               0},
--#line 120 "locfile-kw.gperf"
-+#line 121 "locfile-kw.gperf"
-       {"uno_valid_from",         tok_uno_valid_from,         0},
-       {""},
--#line 199 "locfile-kw.gperf"
-+#line 200 "locfile-kw.gperf"
-       {"application",            tok_application,            0},
-       {""},
--#line 80 "locfile-kw.gperf"
-+#line 81 "locfile-kw.gperf"
-       {"elifndef",               tok_elifndef,               0},
-       {""}, {""}, {""}, {""}, {""},
--#line 122 "locfile-kw.gperf"
-+#line 123 "locfile-kw.gperf"
-       {"duo_valid_from",         tok_duo_valid_from,         0},
--#line 57 "locfile-kw.gperf"
-+#line 58 "locfile-kw.gperf"
-       {"coll_weight_max",        tok_coll_weight_max,        0},
-       {""},
--#line 79 "locfile-kw.gperf"
-+#line 80 "locfile-kw.gperf"
-       {"elifdef",                tok_elifdef,                0},
--#line 67 "locfile-kw.gperf"
-+#line 68 "locfile-kw.gperf"
-       {"backward",               tok_backward,               0},
--#line 106 "locfile-kw.gperf"
-+#line 107 "locfile-kw.gperf"
-       {"duo_int_frac_digits",    tok_duo_int_frac_digits,    0},
-       {""}, {""}, {""}, {""}, {""}, {""},
--#line 96 "locfile-kw.gperf"
-+#line 97 "locfile-kw.gperf"
-       {"p_sign_posn",            tok_p_sign_posn,            0},
-       {""},
--#line 203 "locfile-kw.gperf"
-+#line 204 "locfile-kw.gperf"
-       {"category",               tok_category,               0},
-       {""}, {""}, {""}, {""},
--#line 134 "locfile-kw.gperf"
-+#line 135 "locfile-kw.gperf"
-       {"mon",                    tok_mon,                    0},
-       {""},
--#line 124 "locfile-kw.gperf"
-+#line 125 "locfile-kw.gperf"
-       {"conversion_rate",        tok_conversion_rate,        0},
-       {""}, {""}, {""}, {""}, {""},
--#line 63 "locfile-kw.gperf"
-+#line 64 "locfile-kw.gperf"
-       {"order_start",            tok_order_start,            0},
-       {""}, {""}, {""}, {""}, {""},
--#line 178 "locfile-kw.gperf"
-+#line 179 "locfile-kw.gperf"
-       {"lang_ab",                tok_lang_ab,                0},
--#line 180 "locfile-kw.gperf"
-+#line 181 "locfile-kw.gperf"
-       {"lang_lib",               tok_lang_lib,               0},
-       {""}, {""}, {""},
--#line 192 "locfile-kw.gperf"
-+#line 193 "locfile-kw.gperf"
-       {"contact",                tok_contact,                0},
-       {""}, {""}, {""},
--#line 173 "locfile-kw.gperf"
--      {"country_ab3",            tok_country_ab3,            0},
-+#line 57 "locfile-kw.gperf"
-+      {"strcmp_collation",       tok_strcmp_collation,       0},
-       {""}, {""}, {""},
--#line 193 "locfile-kw.gperf"
-+#line 194 "locfile-kw.gperf"
-       {"email",                  tok_email,                  0},
--#line 172 "locfile-kw.gperf"
--      {"country_ab2",            tok_country_ab2,            0},
-+#line 174 "locfile-kw.gperf"
-+      {"country_ab3",            tok_country_ab3,            0},
-       {""}, {""}, {""},
- #line 55 "locfile-kw.gperf"
-       {"default_missing",        tok_default_missing,        0},
--      {""}, {""},
--#line 195 "locfile-kw.gperf"
-+#line 173 "locfile-kw.gperf"
-+      {"country_ab2",            tok_country_ab2,            0},
-+      {""},
-+#line 196 "locfile-kw.gperf"
-       {"fax",                    tok_fax,                    0},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""},
--#line 174 "locfile-kw.gperf"
-+#line 175 "locfile-kw.gperf"
-       {"country_num",            tok_country_num,            0},
-       {""}, {""}, {""}, {""}, {""}, {""},
- #line 51 "locfile-kw.gperf"
-       {"map",                    tok_map,                    0},
--#line 65 "locfile-kw.gperf"
-+#line 66 "locfile-kw.gperf"
-       {"from",                   tok_from,                   0},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""},
--#line 86 "locfile-kw.gperf"
-+#line 87 "locfile-kw.gperf"
-       {"mon_thousands_sep",      tok_mon_thousands_sep,      0},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
-       {""}, {""}, {""},
--#line 81 "locfile-kw.gperf"
-+#line 82 "locfile-kw.gperf"
-       {"endif",                  tok_endif,                  0},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
--#line 151 "locfile-kw.gperf"
-+#line 152 "locfile-kw.gperf"
-       {"alt_mon",                tok_alt_mon,                0},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""},
--#line 76 "locfile-kw.gperf"
-+#line 77 "locfile-kw.gperf"
-       {"undef",                  tok_undef,                  0},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
--#line 59 "locfile-kw.gperf"
-+#line 60 "locfile-kw.gperf"
-       {"collating-element",      tok_collating_element,      0},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
--#line 152 "locfile-kw.gperf"
-+#line 153 "locfile-kw.gperf"
-       {"ab_alt_mon",             tok_ab_alt_mon,             0},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
--#line 66 "locfile-kw.gperf"
-+#line 67 "locfile-kw.gperf"
-       {"forward",                tok_forward,                0},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
-       {""}, {""}, {""}, {""}, {""},
--#line 85 "locfile-kw.gperf"
-+#line 86 "locfile-kw.gperf"
-       {"mon_decimal_point",      tok_mon_decimal_point,      0},
-       {""}, {""},
--#line 169 "locfile-kw.gperf"
-+#line 170 "locfile-kw.gperf"
-       {"postal_fmt",             tok_postal_fmt,             0},
-       {""}, {""}, {""}, {""}, {""},
--#line 60 "locfile-kw.gperf"
-+#line 61 "locfile-kw.gperf"
-       {"collating-symbol",       tok_collating_symbol,       0},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
-@@ -583,15 +585,15 @@ locfile_hash (register const char *str, register size_t len)
- #line 38 "locfile-kw.gperf"
-       {"alnum",                  tok_alnum,                  0},
-       {""},
--#line 87 "locfile-kw.gperf"
-+#line 88 "locfile-kw.gperf"
-       {"mon_grouping",           tok_mon_grouping,           0},
-       {""},
--#line 179 "locfile-kw.gperf"
-+#line 180 "locfile-kw.gperf"
-       {"lang_term",              tok_lang_term,              0},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""},
--#line 77 "locfile-kw.gperf"
-+#line 78 "locfile-kw.gperf"
-       {"ifdef",                  tok_ifdef,                  0},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
-@@ -599,7 +601,7 @@ locfile_hash (register const char *str, register size_t len)
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
-       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
-       {""}, {""}, {""}, {""},
--#line 138 "locfile-kw.gperf"
-+#line 139 "locfile-kw.gperf"
-       {"am_pm",                  tok_am_pm,                  0}
-     };
- 
-diff --git a/locale/programs/locfile-token.h b/locale/programs/locfile-token.h
-index 414ad30762..0ea73c51f1 100644
---- a/locale/programs/locfile-token.h
-+++ b/locale/programs/locfile-token.h
-@@ -91,6 +91,7 @@ enum token_t
-   tok_translit_ignore,
-   tok_default_missing,
-   tok_lc_collate,
-+  tok_strcmp_collation,
-   tok_coll_weight_max,
-   tok_section_symbol,
-   tok_collating_element,
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <iconv.h>
++#include <stddef.h>
++#include <stdio.h>
++#include <string.h>
++#include <support/support.h>
++#include <support/check.h>
++
++/* This test does two things:
++   (1) Verify that we have likely included translit_combining in C.UTF-8.
++   (2) Verify default_missing is '?' as expected.  */
++
++/* ISO-8859-1 encoding of "fÃ¼r".  */
++char iso88591_in[] = { 0x66, 0xfc, 0x72, 0x0 };
++/* ASCII transliteration is "fur" with C.UTF-8 translit_combining.  */
++char ascii_exp[] = { 0x66, 0x75, 0x72, 0x0 };
++
++/* First 3-byte UTF-8 code point.  */
++char utf8_in[] = { 0xe0, 0xa0, 0x80, 0x0 };
++/* There is no ASCII transliteration for SAMARITAN LETTER ALAF
++   so we get default_missing used which is '?'.  */
++char default_missing_exp[] = { 0x3f, 0x0 };
++
++static int
++do_test (void)
++{
++  char ascii_out[5];
++  iconv_t cd;
++  char *inbuf;
++  char *outbuf;
++  size_t inbytes;
++  size_t outbytes;
++  size_t n;
++
++  /* The C.UTF-8 locale should include translit_combining, which provides
++     the transliteration for "LATIN SMALL LETTER U WITH DIAERESIS" which
++     is not provided by locale/C-translit.h.in.  */
++  xsetlocale (LC_ALL, "C.UTF-8");
++
++  /* From ISO-8859-1 to ASCII. */
++  cd = iconv_open ("ASCII//TRANSLIT,IGNORE", "ISO-8859-1");
++  TEST_VERIFY (cd != (iconv_t) -1);
++  inbuf = iso88591_in;
++  inbytes = 3;
++  outbuf = ascii_out;
++  outbytes = 3;
++  n = iconv (cd, &inbuf, &inbytes, &outbuf, &outbytes);
++  TEST_VERIFY (n != -1);
++  *outbuf = '\0';
++  TEST_COMPARE_BLOB (ascii_out, 3, ascii_exp, 3);
++  TEST_VERIFY (iconv_close (cd) == 0);
++
++  /* From UTF-8 to ASCII. */
++  cd = iconv_open ("ASCII//TRANSLIT,IGNORE", "UTF-8");
++  TEST_VERIFY (cd != (iconv_t) -1);
++  inbuf = utf8_in;
++  inbytes = 3;
++  outbuf = ascii_out;
++  outbytes = 3;
++  n = iconv (cd, &inbuf, &inbytes, &outbuf, &outbytes);
++  TEST_VERIFY (n != -1);
++  *outbuf = '\0';
++  TEST_COMPARE_BLOB (ascii_out, 1, default_missing_exp, 1);
++  TEST_VERIFY (iconv_close (cd) == 0);
++
++  return 0;
++}
++
++#include <support/test-driver.c>
 diff --git a/localedata/C.UTF-8.in b/localedata/C.UTF-8.in
 new file mode 100644
-index 0000000000..b8764a4e04
+index 0000000000..c31dcc2aa0
 --- /dev/null
 +++ b/localedata/C.UTF-8.in
-@@ -0,0 +1,156 @@
+@@ -0,0 +1,157 @@
 + ; <U1>
 + ; <U2>
 + ; <U3>
@@ -894,6 +302,7 @@ index 0000000000..b8764a4e04
 +Ä ; <U100>
 +à¿¿ ; <UFFF>
 +á ; <U1000>
++ï¿½ ; <UFFFD>
 +ï¿¿ ; <UFFFF>
 +ð ; <U10000>
 +ð¿¿ ; <U1FFFF>
@@ -928,7 +337,7 @@ index 0000000000..b8764a4e04
 +ô ; <U100001>
 +ô¿¿ ; <U10FFFF>
 diff --git a/localedata/Makefile b/localedata/Makefile
-index 14e04cd3c5..38017f2c4c 100644
+index f585e0dd41..66a269641b 100644
 --- a/localedata/Makefile
 +++ b/localedata/Makefile
 @@ -47,6 +47,7 @@ test-input := \
@@ -948,23 +357,23 @@ index 14e04cd3c5..38017f2c4c 100644
  	cmn_TW.UTF-8 \
  	crh_UA.UTF-8 \
 diff --git a/localedata/SUPPORTED b/localedata/SUPPORTED
-index 1ee5b5e8c8..f1ff5517a0 100644
+index 1ee5b5e8c8..d768aa4795 100644
 --- a/localedata/SUPPORTED
 +++ b/localedata/SUPPORTED
 @@ -79,6 +79,7 @@ brx_IN/UTF-8 \
  bs_BA.UTF-8/UTF-8 \
  bs_BA/ISO-8859-2 \
  byn_ER/UTF-8 \
-+C/UTF-8 \
++C.UTF-8/UTF-8 \
  ca_AD.UTF-8/UTF-8 \
  ca_AD/ISO-8859-15 \
  ca_ES.UTF-8/UTF-8 \
 diff --git a/localedata/locales/C b/localedata/locales/C
 new file mode 100644
-index 0000000000..cd11b3fa4c
+index 0000000000..651691c724
 --- /dev/null
 +++ b/localedata/locales/C
-@@ -0,0 +1,193 @@
+@@ -0,0 +1,194 @@
 +escape_char /
 +comment_char %
 +% Locale for C locale in UTF-8
@@ -996,7 +405,6 @@ index 0000000000..cd11b3fa4c
 +END LC_IDENTIFICATION
 +
 +LC_CTYPE
-+
 +% Include only the i18n character type classes without any of the
 +% transliteration that i18n uses by default.
 +copy "i18n_ctype"
@@ -1006,6 +414,9 @@ index 0000000000..cd11b3fa4c
 +% the locales, and these are a superset of those.
 +translit_start
 +include "translit_neutral";""
++% We must use '?' for default_missing because the transliteration
++% framework includes it directly into the output and so it must
++% be compatible with ASCII if that is the target character set.
 +default_missing <U003F>
 +translit_end
 +
@@ -1157,7 +568,6 @@ index 0000000000..cd11b3fa4c
 +%metric
 +measurement    1
 +END LC_MEASUREMENT
-+
 -- 
 2.27.0
 
