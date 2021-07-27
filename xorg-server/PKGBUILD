@@ -8,7 +8,7 @@ pkgname=(
   'xorg-server-devel+clang'
 )
 pkgver=1.20.12
-pkgrel=2
+pkgrel=3
 arch=('x86_64')
 license=('custom')
 groups=('xorg')
@@ -20,13 +20,16 @@ makedepends=('xorgproto' 'pixman' 'libx11' 'mesa' 'mesa-libgl' 'xtrans'
   'xcb-util' 'xcb-util-image' 'xcb-util-renderutil' 'xcb-util-wm' 'xcb-util-keysyms'
   'libxshmfence' 'libunwind' 'systemd' 'meson' 'git'
   'wayland-protocols' 'egl-wayland')
-source=("https://xorg.freedesktop.org/releases/individual/xserver/xorg-server-${pkgver}.tar.xz"{,.sig}
+source=(
+  "https://xorg.freedesktop.org/releases/individual/xserver/xorg-server-${pkgver}.tar.xz"{,.sig}
+  xorg-fix-libshadow-2.patch
   xorg-use-intel-only-on-pre-gen4.diff
   xorg-xfree86-use-modesetting-driver-by-default-on-GeForce.patch
   xorg-xf86-dri2-Use-va_gl-as-vdpau_driver-for-Intel-i965-G.patch
   xorg-autobind-GPUs-to-the-screen.patch
   xvfb-run # with updates from FC master
-  xvfb-run.1)
+  xvfb-run.1
+)
 
 validpgpkeys=(
   '7B27A3F1A6E18CD9588B4AE8310180050905E40C'
@@ -37,6 +40,7 @@ validpgpkeys=(
 
 sha256sums=('336dc093431d81ecc03fa36af771f1181334f2746b7de7796f3cc6a8fa9e8cac'
             'SKIP'
+            'd07b2fe55828dad61517a80c77f6f183113916f5e1fce30ff43041550d58bd6e'
             'f8703466041a04428e68a77e1c07579679b07d15f8ec28934f1a65548007a756'
             '91b067753e823d6e3462d35be127f66e94e71a490c666e1aae41fe4e5b1ea47c'
             '6b04d1f8e2fbe97627d2edd2c80d8aad0bd8513b1972a6e431f7c46311bdf2f2'
@@ -57,6 +61,9 @@ prepare() {
     exit 1
   )
 
+  # Fix libshadow.so: libfb.so => not found - merge in master
+  patch -Np1 -i ../xorg-fix-libshadow-2.patch
+
   # From Debian use intel ddx driver only for gen4 and older chipsets
   patch -Np1 -i ../xorg-use-intel-only-on-pre-gen4.diff
 
@@ -69,18 +76,17 @@ prepare() {
 
   # Submitted upstream, but not going anywhere
   patch -Np1 -i ../xorg-autobind-GPUs-to-the-screen.patch
-  
 
 }
 
 build() {
+
   # Since pacman 5.0.2-2, hardened flags are now enabled in makepkg.conf
   # With them, module fail to load with undefined symbol.
   # See https://bugs.archlinux.org/task/55102/ https://bugs.archlinux.org/task/54845
-
-  export CFLAGS=${CFLAGS/-fno-plt/}
-  export CXXFLAGS=${CXXFLAGS/-fno-plt/}
-  export LDFLAGS=${LDFLAGS/,-z,now/}
+  CFLAGS=${CFLAGS/-fno-plt/}
+  CXXFLAGS=${CXXFLAGS/-fno-plt/}
+  LDFLAGS=${LDFLAGS/,-z,now/}
 
   meson setup xorg-server-${pkgver} build \
     --prefix /usr \
@@ -106,6 +112,7 @@ build() {
     -D udev=true \
     -D systemd_logind=true \
     -D suid_wrapper=true \
+    -D dtrace=true \
     -D xkb_dir=/usr/share/X11/xkb \
     -D xkb_output_dir=/var/lib/xkb
 
@@ -155,7 +162,6 @@ package_xorg-server+clang() {
   provides=('xorg-server' "xorg-server=${pkgver}" 'X-ABI-VIDEODRV_VERSION=24.0' 'X-ABI-XINPUT_VERSION=24.1' 'X-ABI-EXTENSION_VERSION=10.0' 'x-server')
   conflicts=('xorg-server' 'nvidia-utils<=331.20' 'glamor-egl' 'xf86-video-modesetting')
   replaces=('xorg-server' 'glamor-egl' 'xf86-video-modesetting')
-  install=xorg-server.install
 
   _install fakeinstall/usr/bin/{Xorg,cvt,gtf}
   ln -s /usr/bin/Xorg "${pkgdir}/usr/bin/X"
