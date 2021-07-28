@@ -15,6 +15,8 @@ sha512sums=('7def9a4834a9203d1672613b1a4b384a0eb3d664818865b375969bf9ca96c512b75
   'SKIP')
 validpgpkeys=('3C2C43D9447D5938EF4551EBE23B7E70B467F0BF') # Peter Hutterer (Who-T) <office@who-t.net>
 
+_llvm=0
+
 prepare() {
 
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
