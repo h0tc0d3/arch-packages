@@ -1,0 +1,63 @@
+pkgname=xf86-input-wacom+clang
+pkgver=0.40.0
+pkgrel=1
+pkgdesc="X.Org Wacom tablet driver"
+arch=(x86_64)
+url="https://github.com/linuxwacom/xf86-input-wacom"
+license=(GPL)
+provides=("xf86-input-wacom" "xf86-input-wacom=${pkgver}")
+depends=(libxi libxinerama libxrandr systemd-libs)
+makedepends=('xorg-server-devel' 'X-ABI-XINPUT_VERSION=24.1')
+conflicts=('xf86-input-wacom' 'xorg-server<1.19' 'X-ABI-XINPUT_VERSION<24.1' 'X-ABI-XINPUT_VERSION>=25')
+source=("https://github.com/linuxwacom/xf86-input-wacom/releases/download/xf86-input-wacom-${pkgver}/xf86-input-wacom-${pkgver}.tar.bz2"{,.sig})
+# check at https://github.com/linuxwacom/xf86-input-wacom/releases
+sha256sums=('8c4f5dba4bee803dafea98277f81cb0e67b4e474c9cc2e42ceb443cdb4ea2062'
+  'SKIP')
+validpgpkeys=(
+  '9A12ECCC5383CA2AF5B42CDCA6DC66911B2127D5' # Jason Gerecke <killertofu@gmail.com>
+  '3C2C43D9447D5938EF4551EBE23B7E70B467F0BF' #  "Peter Hutterer (Who-T) <office@who-t.net>"
+  '5222AA87620F928D2C16F62BDB4ABF7C3424190B' # "Aaron Armstrong Skomra <skomra@gmail.com>"
+  'FBE078781106933D3DDCF93E5B4EA609784983CA' # "Jason Gerecke <jason.gerecke@wacom.com>"
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/xf86-input-wacom-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xf86-input-wacom-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+
+  fi
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/xf86-input-wacom-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xf86-input-wacom-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+}

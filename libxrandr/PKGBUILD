@@ -1,0 +1,65 @@
+pkgname=libxrandr+clang
+pkgver=1.5.2
+pkgrel=3
+pkgdesc="X11 RandR extension library"
+arch=('x86_64')
+license=('custom')
+provides=("libxrandr" "libxrandr=${pkgver}")
+conflicts=("libxrandr")
+url="https://xorg.freedesktop.org/"
+depends=('libxext' 'libxrender')
+makedepends=('xorg-util-macros' 'xorgproto')
+source=("${url}/releases/individual/lib/libXrandr-${pkgver}.tar.bz2"{,.sig})
+sha512sums=('fcd005f9839e7ef980607128a5d76d7b671cc2f5755949e03c569c500d7e987cb3f6932750ab8bf6e2c1086ec69dde09d5831f0c2098b9f9ad46be4f56db0d87'
+  'SKIP')
+validpgpkeys=(
+  '10A6D91DA1B05BD29F6DEBAC0C74F35979C486BE' # Dave Airlie <airlied@redhat.com>
+  'C41C985FDCF1E5364576638B687393EE37D128F8' # Matthieu Herrb <matthieu.herrb@laas.fr>
+  '4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E' # Alan Coopersmith <alan.coopersmith@oracle.com>
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libXrandr-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libXrandr-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libXrandr-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libXrandr-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -d -m755 "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -m644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/"
+
+}

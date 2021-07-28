@@ -57,6 +57,7 @@ libxslt
 wayland-protocols
 egl-wayland
 xorgproto
+libxinerama
 libxxf86vm
 libxfixes
 libxcomposite
@@ -75,6 +76,7 @@ libxpm
 libxmu
 libxaw
 libxrender
+libxrandr
 libepoxy
 shaderc
 libglvnd
@@ -152,6 +154,7 @@ zita-ajbridge
 jack2
 systemd
 xf86-video-amdgpu
+xf86-input-wacom
 e2fsprogs
 libusb
 js78
