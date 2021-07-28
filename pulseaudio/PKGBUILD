@@ -1,8 +1,8 @@
 pkgbase=pulseaudio+clang
 pkgname=(pulseaudio+clang libpulse+clang pulseaudio-{zeroconf,lirc,jack,bluetooth,equalizer,rtp}+clang)
 pkgdesc="A featureful, general-purpose sound server"
-pkgver=14.2
-pkgrel=3
+pkgver=15.0
+pkgrel=1
 arch=(x86_64)
 url="https://www.freedesktop.org/wiki/Software/PulseAudio/"
 license=(GPL)
@@ -10,14 +10,12 @@ makedepends=(libasyncns libcap attr libxtst libsm libsndfile rtkit libsoxr
   speexdsp tdb systemd dbus avahi bluez bluez-libs jack2 sbc
   lirc openssl fftw orc gtk3 webrtc-audio-processing check git meson
   xmltoman valgrind doxygen)
-_commit=6a487c5244563f49a025088de3510c80824fc99e # tags/v14.2^0
+_commit=6329a2498eb038f8a9537888280a62b00a93f68e # tags/v15.0^0
 source=(
   "git+https://gitlab.freedesktop.org/pulseaudio/pulseaudio.git#commit=${_commit}"
-  'meson-0.58.0.patch'
 )
 
-sha256sums=('SKIP'
-  'e23ce0ddf5a63dee8d91fc1d3bb9323f1e3bfc76d58420bf89f19d23d27f5929')
+sha256sums=('SKIP')
 
 _extra_lto_flag=""
 
@@ -47,8 +45,6 @@ prepare() {
 
   # Freeze version before patching
   ./git-version-gen doesnt-exist >.tarball-version
-
-  patch -p1 -i "${srcdir:?}/meson-0.58.0.patch"
 
 }
 
