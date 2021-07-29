@@ -100,6 +100,8 @@ kwayland-server
 frameworkintegration
 breeze
 plasma-integration
+kinit
+libqalculate
 plasma-workspace
 plasma-framework
 kio
