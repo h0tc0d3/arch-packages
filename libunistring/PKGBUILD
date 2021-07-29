@@ -1,0 +1,67 @@
+pkgname=libunistring+clang
+pkgver=0.9.10
+pkgrel=3
+pkgdesc='Library for manipulating Unicode strings and C strings'
+url='https://www.gnu.org/software/libunistring/'
+arch=(x86_64)
+license=(GPL)
+depends=(glibc)
+provides=('libunistring' "libunistring=${pkgver}" 'libunistring.so')
+conflicts=('libunistring')
+source=("https://ftp.gnu.org/gnu/libunistring/libunistring-${pkgver}.tar.xz"{,.sig})
+validpgpkeys=('462225C3B46F34879FC8496CD605848ED7E69871') # Daiki Ueno <ueno@unixuser.org>
+sha256sums=('eb8fb2c3e4b6e2d336608377050892b54c3c983b646c561836550863003c05d7'
+  'SKIP')
+b2sums=('25d162d9d510cc35ad4209acceb9b06bcc0553b8ce56e94f8df12c4df64d91abfc4a9e15b50b5c8d5b9672939305a394a7e83f1892258defb7ae5ac2ccf79dfb'
+  'SKIP')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/libunistring-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libunistring-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # https://git.savannah.gnu.org/cgit/gnulib.git/commit/?id=cca32830b5
+  sed -i '/pragma weak pthread_create/d' tests/glthread/thread.h
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libunistring-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libunistring-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+
+  fi
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+check() {
+
+  make -C "libunistring-${pkgver}" check
+
+}
+
+package() {
+
+  make -C "libunistring-${pkgver}" DESTDIR="${pkgdir:?}" install
+
+}

@@ -2,6 +2,8 @@
 -libgcrypt
 -llvm
 libclc
+libunistring
+libidn2
 ncurses
 readline
 bash
