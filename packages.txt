@@ -164,3 +164,4 @@ polkit
 rtkit
 pipewire
 -chromium
+krita

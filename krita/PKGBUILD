@@ -1,0 +1,79 @@
+pkgname=krita+clang
+pkgver=4.4.7
+pkgrel=1
+pkgdesc='Edit and paint images'
+arch=(x86_64)
+url='https://krita.org'
+license=(GPL3)
+provides=('krita' "krita=${pkgver}")
+conflicts=('krita')
+depends=(kitemviews kitemmodels ki18n kcompletion kguiaddons kcrash qt5-svg qt5-multimedia quazip
+  gsl libraw exiv2 openexr fftw giflib openjpeg2 opencolorio1 hicolor-icon-theme)
+makedepends=(extra-cmake-modules kdoctools boost eigen vc poppler-qt5 python-pyqt5 libheif
+  qt5-tools sip4 python-sip4 kseexpr git)
+optdepends=('poppler-qt5: PDF filter' 'ffmpeg: to save animations'
+  "krita-plugin-gmic: G'MIC plugin" 'python-pyqt5: for the Python plugins' 'libheif: HEIF filter'
+  'kseexpr: SeExpr generator layer' 'kimageformats: PSD support')
+_gitcommit="6b66767646302a722c45108dbdacfa51563b495e"
+source=(
+  "krita::git+https://invent.kde.org/graphics/krita.git#commit=${_gitcommit}"
+)
+sha256sums=('SKIP')
+validpgpkeys=(
+  '05D00A8B73A686789E0A156858B9596C722EA3BD' # Boudewijn Rempt <foundation@krita.org>
+  'E9FB29E74ADEACC5E3035B8AB69EB4CF7468332F' # Dmitry Kazakov (main key) <dimula73@gmail.com>
+)
+
+_llvm=0
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/krita" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/krita directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # Fix build with OpenEXR 3
+  git cherry-pick -n d66383f6c593d21463c658fbcc6adef28a7f570f
+
+  # Fix OCIO include dir detection
+  git cherry-pick -n 0c16f82fa2d0453d49561c27cb94b7fb88e9bc8f
+  git cherry-pick -n 5ff49bc36763b599d1c58a80d86949695d541573
+  sed -i -e 's/PATH_SUFFIXES\sOpenColorIO/PATH_SUFFIXES OpenColorIO1/;s/OCIO_LIBRARIES\sOpenColorIO/OCIO_LIBRARIES OpenColorIO1/' \
+    cmake/modules/FindOCIO.cmake
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+
+  fi
+
+  cmake -B build -S krita \
+    -DBUILD_TESTING=OFF \
+    -DBUILD_KRITA_QT_DESIGNER_PLUGINS=ON
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+}
