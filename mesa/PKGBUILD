@@ -1,10 +1,9 @@
 pkgname=mesa+clang
 pkgdesc="Mesa open-source implementation of the OpenGL specification"
-pkgver=21.1.5
-_pkgver=21.1.5
-pkgrel=3
+pkgver=21.1.6
+pkgrel=1
 arch=('x86_64')
-makedepends=('git' 'python-mako' 'xorgproto'
+makedepends=('git' 'python-mako' 'xorgproto' 'llvm'
   'libxml2' 'libx11' 'libvdpau' 'libva' 'elfutils' 'libxrandr'
   'ocl-icd' 'wayland-protocols' 'meson' 'ninja' 'glslang' 'valgrind')
 depends=('libdrm' 'libxxf86vm' 'libxdamage' 'libxshmfence' 'libelf'
@@ -15,26 +14,19 @@ conflicts=('mesa' 'opencl-mesa' 'vulkan-intel' 'vulkan-radeon' 'vulkan-mesa-laye
 url="https://www.mesa3d.org"
 license=('custom')
 source=(
-  "https://archive.mesa3d.org/mesa-${_pkgver}.tar.xz"{,.sig}
+  "https://archive.mesa3d.org/mesa-${pkgver}.tar.xz"{,.sig}
   'LICENSE'
   'mesa.conf'
-  '0001.patch'
-  '0002.patch'
 )
 
-sha256sums=('022c7293074aeeced2278c872db4fa693147c70f8595b076cf3f1ef81520766d'
+sha256sums=('b1cb0122f911dfa9fe1f209a7061378c61a1448a280e711511ca72dad9999e37'
             'SKIP'
             '7fdc119cf53c8ca65396ea73f6d10af641ba41ea1dd2bd44a824726e01c8b3f2'
-            '33e14140fbfca33b62fc83bfe062fe48f0539a239c0821118d55abfd7993ed3c'
-            '18c7b5d570524a493b7c4d4061668e975891770d9c36e48fb746bd0d6a64047b'
-            '4b70fc3f0b07f5f056de798b2ea79e342a1aa061689a90fc994791eeb16cc00f')
+            '33e14140fbfca33b62fc83bfe062fe48f0539a239c0821118d55abfd7993ed3c')
 
 validpgpkeys=(
   '57551DE15B968F6341C248F68D8E31AFC32428A6' # Keith Packard <keithp@keithp.com>
 )
-
-# NINJAFLAGS is an env var used to pass commandline options to ninja
-# NOTE: It's your responbility to validate the value of $NINJAFLAGS. If unsure, don't set it.
 
 DRI_DRIVERS="i915,i965,r200,r100,nouveau"
 GALLIUM_DRIVERS="r300,r600,radeonsi,nouveau,virgl,svga,swrast,swr,iris,zink"
@@ -43,24 +35,23 @@ VULKAN_LAYERS="device-select,intel-nullhw,overlay"
 
 _extra_lto_flag=""
 
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
+
 prepare() {
 
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _extra_lto_flag='-D b_lto_mode=thin'
   fi
 
-  if [[ -d _build ]]; then
-    rm -rf _build
-  fi
-
-  cd "${srcdir:?}/mesa-${_pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/mesa-${_pkgver} directory! Prepare Failed! \E[0m"
+  cd "${srcdir:?}/mesa-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/mesa-${pkgver} directory! Prepare Failed! \E[0m"
     exit 1
   )
-
-  # Fix radeonsi rendering glitches
-  patch --forward --strip=1 --input="${srcdir:?}/0001.patch"
-  patch --forward --strip=1 --input="${srcdir:?}/0002.patch"
 
   if [[ -f "${srcdir:?}/mesa.conf" ]]; then
     # shellcheck disable=SC1091
@@ -71,7 +62,10 @@ prepare() {
 
 build() {
 
-  meson setup mesa-${_pkgver} _build \
+  meson setup mesa-${pkgver} build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
     --auto-features enabled \
     --wrap-mode nodownload \
     -D debug=false \
@@ -79,7 +73,6 @@ build() {
     -D b_ndebug=true \
     -D b_lto=true ${_extra_lto_flag} \
     -D b_pie=true \
-    -D prefix=/usr \
     -D sysconfdir=/etc \
     -D platforms=x11,wayland \
     -D dri-drivers="${DRI_DRIVERS}" \
@@ -108,19 +101,16 @@ build() {
     -D osmesa=true \
     -D shared-glapi=enabled \
     -D zstd=enabled \
-    -D tools=[] \
     -D microsoft-clc=disabled \
     -D valgrind=disabled
 
-  meson configure _build
-
-  ninja ${NINJAFLAGS} -C _build
+  meson compile -C build
 
 }
 
 package() {
 
-  DESTDIR="${pkgdir:?}" ninja ${NINJAFLAGS} -C _build install
+  DESTDIR="${pkgdir:?}" meson install -C build
 
   ln -s /usr/lib/libGLX_mesa.so.0 "${pkgdir:?}/usr/lib/libGLX_indirect.so.0"
 
