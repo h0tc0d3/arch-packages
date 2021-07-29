@@ -1,7 +1,7 @@
 pkgbase=freetype2+clang
-pkgname=(freetype2+clang freetype2-docs+clang)
+pkgname=(freetype2+clang freetype2-docs+clang freetype2-demos+clang)
 pkgver=2.11.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Font rasterization library"
 url="https://www.freetype.org/"
 arch=(x86_64)
@@ -10,95 +10,132 @@ license=(GPL)
 # introduces a cycle dep to harfbuzz depending on freetype wanted by upstream
 depends=(zlib bzip2 sh libpng harfbuzz)
 makedepends=(libx11 meson)
-source=("https://download.savannah.gnu.org/releases/freetype/freetype-${pkgver}.tar.xz"{,.sig}
-    "https://download.savannah.gnu.org/releases/freetype/freetype-doc-${pkgver}.tar.xz"{,.sig}
-    '0001-Enable-table-validation-modules.patch'
-    '0002-Enable-subpixel-rendering.patch'
-    '0003-Enable-infinality-subpixel-hinting.patch'
-    '0004-Enable-long-PCF-family-names.patch'
-    'freetype2.sh')
+source=(
+  "https://download.savannah.gnu.org/releases/freetype/freetype-${pkgver}.tar.xz"{,.sig}
+  "https://download.savannah.gnu.org/releases/freetype/freetype-doc-${pkgver}.tar.xz"{,.sig}
+  "https://download-mirror.savannah.gnu.org/releases/freetype/ft2demos-${pkgver}.tar.xz"{,.sig}
+  '0001-Enable-table-validation-modules.patch'
+  '0002-Enable-subpixel-rendering.patch'
+  '0003-Enable-infinality-subpixel-hinting.patch'
+  '0004-Enable-long-PCF-family-names.patch'
+  '0005-ft2-demos-meson-fixes.patch'
+  'freetype2.sh'
+)
 sha256sums=('8bee39bd3968c4804b70614a0a3ad597299ad0e824bc8aad5ce8aaf48067bde7'
-            'SKIP'
-            '5b0b5f504f3547ab6123049917b36cfe6944837eaa7baa86ae742a596b5c206c'
-            'SKIP'
-            'f41df4f336d5e82e58733c7a4594476c9216cfc85c096327745a7e1b559e17e1'
-            'dc77c1cfee4bf8e7e0690628c95d211df09e0d0750e4c8f075b78b5f105514f7'
-            '21a62bc12b848320c686d602d8d4e3bcd51294a9def4dc9c301736e077b59f3f'
-            '266384222f87a02fb02b2179828f6c26fe6d7b1fd09d1f7e3734e7fcb09cda2e'
-            'f7f8e09c44f7552c883846e9a6a1efc50377c4932234e74adc4a8ff750606467')
+  'SKIP'
+  '5b0b5f504f3547ab6123049917b36cfe6944837eaa7baa86ae742a596b5c206c'
+  'SKIP'
+  'eb0622296c6dfb38fc305c99ebbfb5c770db7e344b94f63042ec03f3db164550'
+  'SKIP'
+  'f41df4f336d5e82e58733c7a4594476c9216cfc85c096327745a7e1b559e17e1'
+  'dc77c1cfee4bf8e7e0690628c95d211df09e0d0750e4c8f075b78b5f105514f7'
+  '21a62bc12b848320c686d602d8d4e3bcd51294a9def4dc9c301736e077b59f3f'
+  '266384222f87a02fb02b2179828f6c26fe6d7b1fd09d1f7e3734e7fcb09cda2e'
+  '7b1268c229414bc75c50fa826a0f8d391c15568742bca10afd8c12f0c61e5597'
+  'f7f8e09c44f7552c883846e9a6a1efc50377c4932234e74adc4a8ff750606467')
 validpgpkeys=(58E0C111E39F5408C5D3EC76C1A60EACE707FDA5) # Werner Lemberg <wl@gnu.org>
 
 _extra_lto_flag=""
 
 prepare() {
 
-    if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
-        _extra_lto_flag='-D b_lto_mode=thin'
-    fi
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
 
-    cd "${srcdir:?}/freetype-${pkgver}" || (
-        echo -e "\E[1;31mCan't cd to ${srcdir:?}/freetype-${pkgver}! Prepare Failed! \E[0m"
-        exit 1
-    )
+  cd "${srcdir:?}/freetype-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/freetype-${pkgver}! Prepare Failed! \E[0m"
+    exit 1
+  )
 
-    patch -Np1 -i ../0001-Enable-table-validation-modules.patch
-    patch -Np1 -i ../0002-Enable-subpixel-rendering.patch
-    patch -Np1 -i ../0003-Enable-infinality-subpixel-hinting.patch
-    patch -Np1 -i ../0004-Enable-long-PCF-family-names.patch
+  patch -Np1 -i ../0001-Enable-table-validation-modules.patch
+  patch -Np1 -i ../0002-Enable-subpixel-rendering.patch
+  patch -Np1 -i ../0003-Enable-infinality-subpixel-hinting.patch
+  patch -Np1 -i ../0004-Enable-long-PCF-family-names.patch
+
+  ln -sr "${srcdir:?}/freetype-${pkgver}" "${srcdir:?}/ft2demos-${pkgver}/subprojects/freetype2"
+
+  patch -d "${srcdir:?}/ft2demos-${pkgver}" -Np1 -i ../0005-ft2-demos-meson-fixes.patch
 
 }
 
 build() {
 
-    meson setup "freetype-${pkgver}" build \
-        --prefix /usr \
-        --libexecdir lib \
-        --sbindir bin \
-        --auto-features enabled \
-        --wrap-mode nodownload \
-        -D default_library=shared \
-        -D debug=false \
-        -D optimization=2 \
-        -D b_ndebug=true \
-        -D b_lto=true ${_extra_lto_flag} \
-        -D b_pie=true
+  meson setup "ft2demos-${pkgver}" build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D default_library=shared \
+    -D freetype2:default_library=shared \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true
 
-    ninja -C build
+  ninja -C build
 
 }
 
 check() {
 
-    meson test -C build
+  meson test -C build --print-errorlogs
+
+}
+
+_pick() {
+
+  local dst="${1}"
+  local src="${2}"
+
+  if [ ! -d "${srcdir:?}/${dst:?}/${src}" ]; then
+    mkdir -p "${srcdir:?}/${dst:?}/${src}"
+  fi
+
+  mv "${pkgdir:?}/${src}/" "${srcdir:?}/${dst:?}/${src%/*}"
 
 }
 
 package_freetype2+clang() {
 
-    provides=(freetype2 "freetype2=${pkgver}" libfreetype.so)
-    conflicts=(freetype2)
-    install=freetype2.install
-    backup=(etc/profile.d/freetype2.sh)
+  provides=(freetype2 "freetype2=${pkgver}" libfreetype.so)
+  conflicts=(freetype2)
+  install=freetype2.install
+  backup=(etc/profile.d/freetype2.sh)
 
-    DESTDIR="${pkgdir:?}" ninja -C build install
-    sed -i 's/Version:\s6\./Version: 23./' "${pkgdir:?}/usr/lib/pkgconfig/freetype2.pc"
-    install -Dt "${pkgdir:?}/etc/profile.d" -m644 freetype2.sh
+  meson install -C build --destdir="${pkgdir:?}"
+  install -Dt "${pkgdir:?}/etc/profile.d" -m644 freetype2.sh
+  install -Dt "${pkgdir:?}/usr/share/aclocal" -m644 \
+    "freetype-${pkgver}/builds/unix/freetype2.m4"
+
+  _pick demos "/usr/bin"
+  _pick demos "/usr/share/man/man1"
+  find "${pkgdir:?}" -type d -empty -delete
 
 }
 
 package_freetype2-docs+clang() {
 
-    pkgdesc="Freetype documentation"
-    depends=(freetype2+clang)
-    provides=(freetype2-docs "freetype2-docs=${pkgver}")
-    conflicts=(freetype2-docs)
+  pkgdesc="Freetype documentation"
+  depends=(freetype2+clang)
+  provides=(freetype2-docs "freetype2-docs=${pkgver}")
+  conflicts=(freetype2-docs)
 
-    cd "${srcdir:?}/freetype-${pkgver}" || (
-        echo -e "\E[1;31mCan't cd to ${srcdir:?}/freetype-${pkgver}! Package Failed! \E[0m"
-        exit 1
-    )
+  mkdir -p "${pkgdir:?}/usr/share/doc"
+  cp -r "freetype-${pkgver}/docs" "${pkgdir:?}/usr/share/doc/freetype2"
 
-    install -d "${pkgdir:?}/usr/share/doc"
-    cp -a docs "${pkgdir:?}/usr/share/doc/freetype2"
+}
+
+package_freetype2-demos+clang() {
+
+  pkgdesc="Freetype tools and demos"
+  depends=(freetype2+clang libx11)
+  provides=(freetype2-demos "freetype2-demos=${pkgver}")
+  conflicts=(freetype2-demos)
+  optdepends=('qt5-base: ftinspect')
+
+  mv "${srcdir:?}/demos/"* "${pkgdir:?}"
 
 }
