@@ -1,7 +1,7 @@
 pkgbase=qt5-base+clang
 pkgname=(qt5-base+clang qt5-xcb-private-headers+clang)
 pkgver=5.15.2+kde+r210
-pkgrel=1
+pkgrel=2
 _commit=663d240a18f5acac82fd2bd0fd4a33c4f47b260a
 arch=('x86_64')
 url='https://www.qt.io'
@@ -32,24 +32,18 @@ source=(
   qt5-base-mariadb-10.6.patch
   qt5-base-cxxflag.patch
   qt5-base-gcc11.patch
-  qtbase-emit-qscreen-geometry-changed-when-logical-dpi-changes.patch
-  qtbase-everywhere-src-5.14.2-no_relocatable.patch
-  qtbase-hidpi_scale_at_192.patch
-  qtbase-multilib_optflags.patch
-  qtbase-qmake_LFLAGS.patch
+  qt5-base-everywhere-no_relocatable.patch
+  qt5-base-qmake_LFLAGS.patch
 )
 
 sha256sums=('SKIP'
-  'cf707cd970650f8b60f8897692b36708ded9ba116723ec8fcd885576783fe85c'
-  '4b93f6a79039e676a56f9d6990a324a64a36f143916065973ded89adc621e094'
-  'dde1c2c7300a6e05b12145f0c0b180991aa5929a4bf13c026eef6511593f357b'
-  'ad4dc439bc23826b7f165b1e897d8544adff593254cb03061be397358a7163b0'
-  '9378afd071ad5c0ec8f7aef48421e4b9fab02f24c856bee9c0951143941913c5'
-  'b741134bd3ce7114ed08090e6415a0029cf35af7215d3d7dbc27d6d569f44e16'
-  '1fed8b9e4eb5749e70d85d7678f08a5abc881e2a2ecab85fb21f59cb124500e5'
-  '483672e86b7f971c7aa9b40eba45911166d6febf2162fa5be829537c23562805'
-  '7a03cbccd88df0dd2c69783a113a30c3e49a341818e9f006a8d0da1927317e68'
-  '5063b93e72e6737bcec64ec05a2306286f936c8e43dea2ba7b3cf145ed09bd34')
+            'cf707cd970650f8b60f8897692b36708ded9ba116723ec8fcd885576783fe85c'
+            '4b93f6a79039e676a56f9d6990a324a64a36f143916065973ded89adc621e094'
+            'dde1c2c7300a6e05b12145f0c0b180991aa5929a4bf13c026eef6511593f357b'
+            'ad4dc439bc23826b7f165b1e897d8544adff593254cb03061be397358a7163b0'
+            '9378afd071ad5c0ec8f7aef48421e4b9fab02f24c856bee9c0951143941913c5'
+            '1fed8b9e4eb5749e70d85d7678f08a5abc881e2a2ecab85fb21f59cb124500e5'
+            '5063b93e72e6737bcec64ec05a2306286f936c8e43dea2ba7b3cf145ed09bd34')
 
 _llvm=0
 
@@ -61,6 +55,13 @@ pkgver() {
   )
 
   echo "5.15.2+kde+r$(git rev-list --count origin/5.15.2..${_commit})"
+
+}
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
 
 }
 
@@ -77,11 +78,14 @@ prepare() {
 
   git revert -n 6344955d17e17e2398720fe60c34cfc2a4a95208 # Revert version bump
 
-  patch -p1 <../qt5-base-mariadb-10.6.patch
-  patch -p1 <../qt5-base-nostrip.patch # Don't strip binaries with qmake
-  patch -p1 <../qt5-base-cflags.patch  # Use system CFLAGS in qmake
-  patch -p1 <../qt5-base-cxxflag.patch
-  patch -p1 <../qt5-base-gcc11.patch
+  _patch qt5-base-mariadb-10.6.patch
+  _patch qt5-base-nostrip.patch # Don't strip binaries with qmake
+  _patch qt5-base-cflags.patch  # Use system CFLAGS in qmake
+  _patch qt5-base-cxxflag.patch
+  _patch qt5-base-gcc11.patch
+
+  _patch qt5-base-everywhere-no_relocatable.patch
+  _patch qt5-base-qmake_LFLAGS.patch
 
 }
 
