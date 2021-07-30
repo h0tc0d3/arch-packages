@@ -1,6 +1,6 @@
 pkgname=xf86-video-amdgpu+clang
-pkgver=19.1.0
-pkgrel=2
+pkgver=21.0.0
+pkgrel=1
 pkgdesc="X.org amdgpu video driver"
 arch=('x86_64')
 url="https://xorg.freedesktop.org/"
@@ -12,14 +12,14 @@ conflicts=('xf86-video-amdgpu' 'xorg-server<1.20.0' 'X-ABI-VIDEODRV_VERSION<24' 
 groups=('xorg-drivers')
 source=(
   "${url}/releases/individual/driver/xf86-video-amdgpu-${pkgver}.tar.bz2"{,.sig}
-  amdgpu-1.patch
-  amdgpu-2.patch
 )
-sha256sums=('4f0ea4e0ae61995ac2b7c72433d31deab63b60c78763020aaa1b28696124fe5d'
-            'SKIP'
-            'da2d8641a8f1e3c945df62954ca4b032b2a9caa611b108d52dfac7fce8e7ee2c'
-            '66aae41bb023cb3866a9728daec15ee0996eba3459994f49f796d84472c85b45')
-validpgpkeys=('B09FAF35BE914521980951145A81AF8E6ADBB200') # Michel Daenzer <michel@daenzer.net>
+sha256sums=('607823034defba6152050e5eb1c4df94b38819ef764291abadd81b620bc2ad88'
+  'SKIP'
+)
+validpgpkeys=(
+  #'B09FAF35BE914521980951145A81AF8E6ADBB200' # Michel Daenzer <michel@daenzer.net>
+  '017E91A875CBA321258380F19B4EE4F98474DE40' # "Alex Deucher <alexdeucher@gmail.com>"
+)
 
 _llvm=0
 
@@ -28,14 +28,6 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=1
   fi
-
-  cd "${srcdir:?}/xf86-video-amdgpu-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xf86-video-amdgpu-${pkgver} directory! Prepare Failed! \E[0m"
-    exit 1
-  )
-
-  patch -Np1 -i ../amdgpu-1.patch
-  patch -Np1 -i ../amdgpu-2.patch
 
 }
 
@@ -60,7 +52,7 @@ build() {
   # See https://bugs.archlinux.org/task/55102 / https://bugs.archlinux.org/task/54845
   CFLAGS=${CFLAGS/-fno-plt/}
   CXXFLAGS=${CXXFLAGS/-fno-plt/}
-  LDFLAGS=${LDFLAGS/,-z,now}
+  LDFLAGS=${LDFLAGS/,-z,now/}
 
   CFLAGS+=' -fcommon' # https://wiki.gentoo.org/wiki/Gcc_10_porting_notes/fno_common
 
