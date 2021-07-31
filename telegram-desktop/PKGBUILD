@@ -1,5 +1,5 @@
 pkgname=telegram-desktop+clang
-pkgver=2.8.11
+pkgver=2.9.0
 pkgrel=1
 pkgdesc='Official Telegram Desktop client'
 arch=('x86_64')
@@ -14,10 +14,8 @@ makedepends=('cmake' 'git' 'ninja' 'python' 'range-v3' 'tl-expected' 'microsoft-
   'libtg_owt' 'extra-cmake-modules')
 source=(
   "https://github.com/telegramdesktop/tdesktop/releases/download/v${pkgver}/tdesktop-${pkgver}-full.tar.gz"
-  already_exists_extern_c.patch
 )
-sha256sums=('168487a59a8ae6ca1fbd66ccefc9eae19344af61bfb8d4cdde3cf73c115aa9dc'
-            '0f86e29e9e2e9398dcb999036067615b1f9d09855541a80af9ce85c8aad1a0b2')
+sha256sums=('e908b8f479cf1f41892848f3cda1a7b46fca2339ce8980268dd204ff7ba8b6f5')
 
 _llvm=0
 
@@ -36,8 +34,6 @@ prepare() {
   echo "target_link_libraries(external_webrtc INTERFACE jpeg)" | tee -a cmake/external/webrtc/CMakeLists.txt
   echo "find_package(X11 REQUIRED COMPONENTS Xcomposite Xdamage Xext Xfixes Xrender Xrandr Xtst)" | tee -a cmake/external/webrtc/CMakeLists.txt
   echo "target_link_libraries(external_webrtc INTERFACE Xcomposite Xdamage Xext Xfixes Xrandr Xrender Xtst)" | tee -a cmake/external/webrtc/CMakeLists.txt
-
-  patch -d Telegram/lib_webview/ -Np1 -i "${srcdir:?}/already_exists_extern_c.patch"
 
 }
 
