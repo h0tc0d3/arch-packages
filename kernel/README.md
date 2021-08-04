@@ -78,18 +78,12 @@ net.ipv4.tcp_congestion_control=bbr2
 tc qdisc add dev your_network_device root fq_codel
 ```
 
-## 0006-pgo.patch
+## 0006-compat.patch
 
-Excluded. Kernel Panic.
+For Kernel 5.14+
+Remove uneeded compatable code.
 
-Build kernel with LLVM PGO optimization.
+## 0007-string.patch
 
-```bash
-su
-mount -t debugfs none /sys/kernel/debug
-cp -a /sys/kernel/debug/pgo/profraw vmlinux.profraw
-chown user:user vmlinux.profraw
-exit
-llvm-profdata merge --output=vmlinux.profdata vmlinux.profraw
-make LLVM=1 KCFLAGS=-fprofile-use=vmlinux.profdata
-```
+For Kernel 5.14+
+Optimize performance of kernel code for working with strings.

@@ -1,29 +1,21 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
-pkgver=2.33
-pkgrel=13
+pkgver=2.34
+pkgrel=3
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
 makedepends=(git gd lib32-gcc-libs python)
 optdepends=('perl: for mtrace')
 options=(!strip staticlibs)
-_commit=b5711025bc138c0c94d90b2015d57eda404decbe
+_commit=ae37d06c7d127817ba43850f0f898b793d42aea7
 source=("git+https://sourceware.org/git/glibc.git#commit=${_commit}"
   #source=("https://ftp.gnu.org/gnu/glibc/glibc-${pkgver}.tar.xz"
   locale-gen
   sdt.h sdt-config.h
   glibc-fedora-linux-tcsetattr.patch
-  glibc-rh827510.patch
-  glibc-rh819430.patch
-  glibc-c-utf8-locale.patch
-  glibc-c-utf8-strcmp_collation-LC_COLLATE.patch
+  glibc-newlocale-error.patch
   glibc-cs-path.patch
-  glibc-cpu-check-1.patch
-  glibc-cpu-check-2.patch
-  glibc-cpu-check-3.patch
-  glibc-cpu-amd-1.patch
-  glibc-cpu-amd-2.patch
 )
 validpgpkeys=(
   7273542B39962DF7B299931416792B4EA25340F8 # Carlos O'Donell
@@ -35,15 +27,7 @@ sha256sums=('SKIP'
             'cdc234959c6fdb43f000d3bb7d1080b0103f4080f5e67bcfe8ae1aaf477812f0'
             'a9c10b02fe9fb3d0d5c1565124fedaace2932be4b147b6c6deaf1efbe2c07882'
             '733396588e1e7c356f8d33ba80f6c317963dd936f9039f3f77f0bcec81138159'
-            '5b46d72f406baab29298a3a15a581ea96188ac58719a9b5afd80b8dc46bbcf46'
-            'ef1e271d76f65357854a0754b0defd2bb7e58c25a54870861a5b1ec54345c80b'
-            'b0f0bd9376609b79babfa2b10c58a701d08f09f7ec41a760dbd4f4af24421fd2'
-            'bdc28d5b5444e0ec35c98cb959635cf4f3bd23c47aa1b2f1c334a79db411b911'
-            'a477aeb27c36d46325b2b3863a33751849e5e274ce1a5acec7383dc597490ab4'
-            '788ea8c49401e64d33896d5c980de30724c4f7d95c5aedeefaaa89b0f4bc3b5f'
-            'adb8e36b9e1ac135430e798c8e050250a40d64cb0a8ec25353a2593f664a56a5'
-            '84dafba59abd433ef676458ad2542ba4f1b2c1027b3bff2b4cc91fc8a1bdd4ab'
-            '7e1435dfa064e6f6bdc2d2ce4f5f3364b2eca80dbdb2c22223ad8767347577a7')
+            'bdc28d5b5444e0ec35c98cb959635cf4f3bd23c47aa1b2f1c334a79db411b911')
 
 _patch() {
 
@@ -61,16 +45,24 @@ prepare() {
   cd glibc || exit 1
 
   _patch "glibc-fedora-linux-tcsetattr.patch"
-  _patch "glibc-rh827510.patch"
-  _patch "glibc-rh819430.patch"
-  _patch "glibc-c-utf8-locale.patch"
-  _patch "glibc-c-utf8-strcmp_collation-LC_COLLATE.patch"
+  _patch "glibc-newlocale-error.patch"
   _patch "glibc-cs-path.patch"
-  _patch "glibc-cpu-check-1.patch"
-  _patch "glibc-cpu-check-2.patch"
-  _patch "glibc-cpu-check-3.patch"
-  _patch "glibc-cpu-amd-1.patch"
-  _patch "glibc-cpu-amd-2.patch"
+
+  # C.UTF-8 Locale https://sourceware.org/git/?p=glibc.git;a=shortlog;h=refs/heads/codonell/c-utf8
+  git cherry-pick -n 52d5eb7e0678914f848cc3d7ac99f63d9d8359ef
+  git cherry-pick -n 7de41f96a172e5f15bc449ec3c09dbd0ae4cf2c6
+  git cherry-pick -n b2a77206b3c3bf4670acc069f6fdda76cf857d48
+
+  # Upstream bug fix
+  git cherry-pick -n 60698263122b7c54ded3f70a466176e17a529480 # nis: Fix leak on realloc failure in nis_getnames [BZ #28150]
+  git cherry-pick -n 2ee9b24f47db8d0a8d0ccadb999335a1d4cfc364 # Fix build of nptl/tst-thread_local1.cc with GCC 12
+  git cherry-pick -n b0234d79e7d82475d1666f25326ec045c045b3ed # ldconfig: avoid leak on empty paths in config file
+  git cherry-pick -n 5f9b78fe35d08739b6da1e5b356786d41116c108 # gconv_parseconfdir: Fix memory leak
+  git cherry-pick -n 1e0e6d656db9dfa12ef7eb67976385d3deb0d4ff # iconv_charmap: Close output file when done
+  git cherry-pick -n 45caed9d67a00af917d8b5b88d4b5eb1225b7aef # copy_and_spawn_sgid: Avoid double calls to close()
+  git cherry-pick -n 77a34079d8f3d63b61543bf3af93043f8674e4c4 # gaiconf_init: Avoid double-free in label and precedence lists
+  git cherry-pick -n df183287ff7ded9471205abfa59df27e5e5401da # hurd: Avoid spurious warning
+  git cherry-pick -n b17e842a60819098d2a203ecc8b8371b7e1d6c65 # gethosts: Remove unused argument _type
 
 }
 
@@ -109,7 +101,6 @@ build() {
   CFLAGS=${CFLAGS/-fno-plt/}
   CXXFLAGS=${CXXFLAGS/-fno-plt/}
   #LDFLAGS=${LDFLAGS/,-z,now/}
-
   "${srcdir:?}/glibc/configure" \
     --libdir=/usr/lib \
     --libexecdir=/usr/lib \
@@ -159,6 +150,9 @@ build() {
   echo "CC += -D_FORTIFY_SOURCE=2" >>configparms
   echo "CXX += -D_FORTIFY_SOURCE=2" >>configparms
   make
+
+  unset CC
+  unset CXX
 
 }
 
