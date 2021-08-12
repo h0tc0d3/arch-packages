@@ -11,7 +11,7 @@ depends=('libxkbfile')
 makedepends=('xorg-util-macros')
 source=("${url}/releases/individual/app/setxkbmap-${pkgver}.tar.bz2"{,.sig})
 sha512sums=('bfa8015dee0d8d3fdbbd89afbd71c8606ce168d6edca8521d5ed05a00fecbea39bc4bfcce84b71458bdeb34c60bd80a5df27e0691ccee3966443ecdc937faf38'
-    'SKIP')
+  'SKIP')
 validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E') # Alan Coopersmith <alan.coopersmith@oracle.com>
 groups=('xorg-apps' 'xorg')
 
@@ -19,41 +19,42 @@ _llvm=0
 
 prepare() {
 
-    if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
-        _llvm=1
-    fi
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
 
 }
 
 build() {
 
-    cd "${srcdir:?}/setxkbmap-${pkgver}" || (
-        echo -e "\E[1;31mCan't cd to ${srcdir:?}/setxkbmap-${pkgver} directory! Build Failed! \E[0m"
-        exit 1
-    )
+  cd "${srcdir:?}/setxkbmap-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/setxkbmap-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
 
-    if [[ ${_llvm} -eq 1 ]]; then
+  if [[ ${_llvm} -eq 1 ]]; then
 
-        CFLAGS="${CFLAGS} -flto=thin"
-        CXXFLAGS="${CXXFLAGS} -flto=thin"
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
-    fi
+  fi
 
-    ./configure \
-        --prefix=/usr
+  ./configure \
+    --prefix=/usr
 
-    make
+  make
 
 }
 
 package() {
 
-    cd "${srcdir:?}/setxkbmap-${pkgver}" || (
-        echo -e "\E[1;31mCan't cd to ${srcdir:?}/setxkbmap-${pkgver} directory! Package Failed! \E[0m"
-        exit 1
-    )
+  cd "${srcdir:?}/setxkbmap-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/setxkbmap-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
 
-    make DESTDIR="${pkgdir:?}" install
-    install -Dm644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/COPYING"
+  make DESTDIR="${pkgdir:?}" install
+  install -Dm644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/COPYING"
 
 }

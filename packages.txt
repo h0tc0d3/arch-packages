@@ -78,6 +78,7 @@ libxpm
 libxmu
 libxaw
 libxrender
+libxft
 libxrandr
 libepoxy
 shaderc
@@ -86,6 +87,7 @@ libplacebo
 libxshmfence
 libva
 libvdpau
+libva-vdpau-driver
 xorg-server
 kwin
 libffi
@@ -166,4 +168,6 @@ polkit
 rtkit
 pipewire
 -chromium
+gsl
+lib2geom
 krita

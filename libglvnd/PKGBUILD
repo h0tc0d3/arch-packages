@@ -27,6 +27,7 @@ build() {
   CFLAGS=${CFLAGS/-fstack-protector-strong/}
   CXXFLAGS=${CXXFLAGS/-fstack-protector-strong/}
   LDFLAGS=${LDFLAGS/,-z,now/}
+
   meson setup libglvnd-v$pkgver build \
     --prefix /usr \
     --libexecdir lib \

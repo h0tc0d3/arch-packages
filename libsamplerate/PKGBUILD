@@ -14,9 +14,9 @@ source=(
   "https://github.com/libsndfile/libsamplerate/releases/download/${pkgver}/libsamplerate-${pkgver}.tar.bz2"{,.sig}
 )
 sha512sums=('f54f7f12c9536868d7a11fc9cbb86857505e7b75fe34cedaf0b9bfc864da6037296b3eae303a33d4c87b7fd20d96933b91ef59c8cc3d1313b9fc21654e5daa2d'
-            'SKIP')
+  'SKIP')
 b2sums=('83540f3e75cfa79cbd166f075d22cab6a63e0e057b90ac6a3760c07196cac962df7d1ca26620a9033de046e0528bee3ded2b482e8629b1ae316844b5b31f3074'
-        'SKIP')
+  'SKIP')
 validpgpkeys=('31D95CAB6D80D262244A1750A47620E801E47E95') # David Seifert soap@gentoo.org
 
 _llvm=0
@@ -35,6 +35,7 @@ build() {
 
     CFLAGS="${CFLAGS} -flto=thin"
     CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
 

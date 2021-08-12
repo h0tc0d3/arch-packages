@@ -41,6 +41,7 @@ pkgver() {
 }
 
 build() {
+
   CFLAGS+=" -DENABLE_VA_MESSAGING" # Option missing
 
   meson setup libva build \

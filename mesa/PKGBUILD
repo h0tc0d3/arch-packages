@@ -20,9 +20,9 @@ source=(
 )
 
 sha256sums=('b1cb0122f911dfa9fe1f209a7061378c61a1448a280e711511ca72dad9999e37'
-            'SKIP'
-            '7fdc119cf53c8ca65396ea73f6d10af641ba41ea1dd2bd44a824726e01c8b3f2'
-            '33e14140fbfca33b62fc83bfe062fe48f0539a239c0821118d55abfd7993ed3c')
+  'SKIP'
+  '7fdc119cf53c8ca65396ea73f6d10af641ba41ea1dd2bd44a824726e01c8b3f2'
+  '33e14140fbfca33b62fc83bfe062fe48f0539a239c0821118d55abfd7993ed3c')
 
 validpgpkeys=(
   '57551DE15B968F6341C248F68D8E31AFC32428A6' # Keith Packard <keithp@keithp.com>

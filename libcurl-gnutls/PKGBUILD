@@ -13,7 +13,7 @@ depends=('curl' 'glibc' 'gnutls' 'libidn2' 'libidn2.so' 'libnghttp2'
 options=('strip')
 source=("https://curl.haxx.se/download/curl-${pkgver}.tar.gz"{,.asc})
 sha512sums=('3d74343e06dd3d699f4c883758775554956f7f27de470b71f4af0d7f56ff5e4d7c534ab958c8926fae69cd0ded90c173ac3d5a6ad5518d88c2f39f31f8bba2f3'
-            'SKIP')
+  'SKIP')
 validpgpkeys=('27EDEAF22F3ABCEB50DB9A125CC908FDB71E12C2') # Daniel Stenberg
 
 _llvm=0
@@ -37,6 +37,7 @@ build() {
 
     CFLAGS="${CFLAGS} -flto=thin"
     CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
 

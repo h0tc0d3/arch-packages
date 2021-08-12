@@ -1,6 +1,6 @@
 pkgname=libgcrypt
 pkgver=1.9.3
-pkgrel=2
+pkgrel=3
 pkgdesc="General purpose cryptographic library based on the code from GnuPG"
 arch=(x86_64)
 url="https://www.gnupg.org"
@@ -126,6 +126,7 @@ build() {
 
     CFLAGS="${CFLAGS} -flto=thin"
     CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
 

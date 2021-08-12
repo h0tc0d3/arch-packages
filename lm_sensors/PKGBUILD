@@ -64,8 +64,8 @@ build() {
 
     CFLAGS="${CFLAGS} -flto=thin"
     CXXFLAGS="${CXXFLAGS} -flto=thin"
-    LDFLAGS="${LDFLAGS} -flto=thin"
-    make PREFIX=/usr CC=clang AR=llvm-ar LD=lld EXLDFLAGS="${LDFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+    make PREFIX=/usr CC=clang AR=llvm-ar LD=lld EXLDFLAGS="${LDFLAGS}"
 
   else
 

@@ -2,8 +2,8 @@ pkgbase=pipewire+clang
 pkgname=(pipewire+clang alsa-card-profiles+clang pipewire-docs+clang pipewire-media-session+clang
   pipewire-alsa+clang pipewire-jack+clang pipewire-pulse+clang gst-plugin-pipewire+clang
   pipewire-zeroconf+clang)
-pkgver=0.3.32
-pkgrel=2
+pkgver=0.3.33
+pkgrel=1
 epoch=1
 pkgdesc="Low-latency audio/video router and processor"
 url="https://pipewire.org"
@@ -13,7 +13,7 @@ makedepends=(git meson doxygen xmltoman valgrind libpulse alsa-lib libusb
   gst-plugins-base rtkit dbus sdl2 ncurses libsndfile bluez-libs sbc
   libldac libfreeaptx libfdk-aac avahi webrtc-audio-processing)
 checkdepends=(desktop-file-utils)
-_commit=41ce3092756ab27106881f4246e54bf32ea5adbe # tags/0.3.32
+_commit=8119e5cdb4efc3325f5629cd1afe9957aa5c39dc # tags/0.3.33
 source=("git+https://gitlab.freedesktop.org/pipewire/pipewire.git#commit=${_commit}")
 sha256sums=('SKIP')
 

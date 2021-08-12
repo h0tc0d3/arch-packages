@@ -59,8 +59,10 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
+    CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
     CFLAGS="${CFLAGS} -flto=thin"
     CXXFLAGS="${CXXFLAGS} -flto=thin"
+    #LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
 

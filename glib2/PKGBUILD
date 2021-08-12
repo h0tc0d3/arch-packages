@@ -1,18 +1,23 @@
 pkgbase=glib2+clang
-pkgname=(glib2+clang glib2-docs+clang)
-pkgver=2.68.3
+pkgname=(
+  glib2+clang
+  #glib2-docs+clang
+)
+pkgver=2.69.1
 pkgrel=1
 pkgdesc="Low level core library"
 url="https://wiki.gnome.org/Projects/GLib"
 license=(LGPL)
 arch=(x86_64)
 depends=(pcre libffi util-linux-libs zlib)
-makedepends=(gettext gtk-doc shared-mime-info python libelf git util-linux
-  meson dbus)
+makedepends=(gettext gtk-doc shared-mime-info
+  python libelf git util-linux meson dbus)
 checkdepends=(desktop-file-utils)
-source=("git+https://gitlab.gnome.org/GNOME/glib.git?signed#tag=${pkgver}"
+source=(
+  "git+https://gitlab.gnome.org/GNOME/glib.git?signed#tag=${pkgver}"
   noisy-glib-compile-schemas.diff
-  glib-compile-schemas.hook gio-querymodules.{hook,script})
+  glib-compile-schemas.hook gio-querymodules.{hook,script}
+)
 sha256sums=('SKIP'
   'b1cb539389aaabd13671424452f2805112a359b96c9e0e7f80fad804a77f9c7e'
   '64ae5597dda3cc160fc74be038dbe6267d41b525c0c35da9125fbf0de27f9b25'
@@ -49,9 +54,6 @@ prepare() {
 
   # Fix test fail https://gitlab.gnome.org/GNOME/glib/-/issues/2423
   git cherry-pick -n e522768ef46de78a9ac11cbd81b7f92560228743
-  #if [[ "${CC}" == "clang" && "${LD}" == "ld.lld" ]]; then
-  #  sed -i "s/'objcopy'/'llvm-objcopy'/;s/and\scc.get_id()\s==\s'gcc'//" gio/tests/meson.build
-  #fi
 
 }
 
@@ -72,7 +74,7 @@ build() {
     -D glib_debug=disabled \
     -D selinux=disabled \
     -D man=true \
-    -D gtk_doc=true
+    -D gtk_doc=false
 
   meson compile -C build
 
@@ -105,19 +107,19 @@ package_glib2+clang() {
     "${pkgdir:?}/usr/share/glib-2.0/codegen"
 
   # Split docs
-  mkdir -p docs/usr/share
-  mv {"${pkgdir:?}",docs}/usr/share/gtk-doc
+  #mkdir -p docs/usr/share
+  #mv {"${pkgdir:?}",docs}/usr/share/gtk-doc
 
 }
 
-package_glib2-docs+clang() {
+#package_glib2-docs+clang() {
 
-  pkgdesc="Documentation for GLib"
-  license+=(custom)
-  provides=('glib2-docs' "glib2-docs=${pkgver}")
-  conflicts=('glib2-docs')
+#pkgdesc="Documentation for GLib"
+#license+=(custom)
+#provides=('glib2-docs' "glib2-docs=${pkgver}")
+#conflicts=('glib2-docs')
 
-  mv -t "${pkgdir:?}" docs/*
-  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 glib/docs/reference/COPYING
+#mv -t "${pkgdir:?}" docs/*
+#install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 glib/docs/reference/COPYING
 
-}
+#}

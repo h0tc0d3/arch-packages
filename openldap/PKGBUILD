@@ -49,10 +49,10 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
+    CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
     CFLAGS="${CFLAGS} -flto=thin"
     CXXFLAGS="${CXXFLAGS} -flto=thin"
-    LDFLAGS="${LDFLAGS} -flto=thin"
-    CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
 
@@ -80,7 +80,7 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    sed -i -e 's/ -shared / -shared -flto=thin/g' libtool
+    sed -i -e 's/ -shared / -shared -flto=thin /g' libtool
     sed -i -e 's/CC\s=\sgcc/CC = clang/g' contrib/slapd-modules/nssov/Makefile
     sed -i -e 's/CC\s=\sgcc/CC = clang/g' contrib/slapd-modules/autogroup/Makefile
     sed -i -e 's/CC\s=\sgcc/CC = clang/g' contrib/slapd-modules/lastbind/Makefile

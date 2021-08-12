@@ -32,9 +32,9 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    CFLAGS="${CFLAGS} -fsized-deallocation -flto=thin"
-    CXXFLAGS="${CXXFLAGS} -std=c++17 -fsized-deallocation -flto=thin"
-    LDFLAGS="${LDFLAGS} -flto=thin"
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -std=c++17 -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
 

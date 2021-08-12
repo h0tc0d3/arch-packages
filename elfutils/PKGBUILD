@@ -14,8 +14,8 @@ source=(
   clang.patch
 )
 sha256sums=('dc8d3e74ab209465e7f568e1b3bb9a5a142f8656e2b57d10049a73da2ae6b5a6'
-            'SKIP'
-            '674f0d2790ff29e0a477eceb9f62ff8fb287ecc3294d430215af349b5f26a014')
+  'SKIP'
+  '674f0d2790ff29e0a477eceb9f62ff8fb287ecc3294d430215af349b5f26a014')
 validpgpkeys=(
   '47CC0331081B8BC6D0FD4DA08370665B57816A6A' # Mark J. Wielaard <mark@klomp.org>
   'EC3CFE88F6CA0788774F5C1D1AA44BE649DE760A' # Mark Wielaard <mjw@gnu.org>
@@ -51,6 +51,7 @@ build() {
     sed -i -e 's/ARGP_PROGRAM_BUG_ADDRESS_DEF\s=\sPACKAGE_BUGREPORT;//' debuginfod/debuginfod.cxx
     CFLAGS="${CFLAGS} -Wno-xor-used-as-pow -Wno-gnu-variable-sized-type-not-at-end"
     CXXFLAGS="${CXXFLAGS} -Wno-xor-used-as-pow -Wno-gnu-variable-sized-type-not-at-end"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
 

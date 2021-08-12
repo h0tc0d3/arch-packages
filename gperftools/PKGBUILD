@@ -39,6 +39,7 @@ build() {
 
     CFLAGS="${CFLAGS} -fsized-deallocation -flto=thin"
     CXXFLAGS="${CXXFLAGS} -std=c++17 -fsized-deallocation -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
 

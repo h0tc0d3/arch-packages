@@ -1,5 +1,5 @@
 pkgname=libjpeg-turbo+clang
-pkgver=2.1.0
+pkgver=2.1.1
 pkgrel=1
 pkgdesc='JPEG image codec with accelerated baseline compression and decompression'
 url='https://libjpeg-turbo.org/'
@@ -12,9 +12,9 @@ conflicts=('libjpeg-turbo')
 source=(
   "https://sourceforge.net/projects/libjpeg-turbo/files/${pkgver}/libjpeg-turbo-${pkgver}.tar.gz"{,.sig}
 )
-sha256sums=('bef89803e506f27715c5627b1e3219c95b80fc31465d4452de2a909d382e4444'
+sha256sums=('b76aaedefb71ba882cbad4e9275b30c2ae493e3195be0a099425b5c6b99bd510'
   'SKIP')
-sha512sums=('6632a2a71cb3a350fe4f850fe84e51e361755c373babf2b47fb164c3a9fc3fd66705639bebedd8c1b40cf6c15fd702e814425b0be5919048987bbec357828605'
+sha512sums=('9cf61b4677b38e254063248a3fdbe138634d23a35ae8f2ee2661bdb3248b1d0500bd43201b8d9fe66c779d578074fd9ed19bc097ba22e10143530c2a19738673'
   'SKIP')
 validpgpkeys=('0338C8D8D9FDA62CF9C421BD7EC2DBB6F4DBF434') # The libjpeg-turbo Project (Signing key for official binaries) <information@libjpeg-turbo.org>
 
@@ -39,6 +39,7 @@ build() {
 
     CFLAGS="${CFLAGS} -flto=thin"
     CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
 

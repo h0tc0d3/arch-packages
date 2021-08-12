@@ -18,10 +18,10 @@ source=(
   snappy-do-not-disable-rtti.patch
 )
 sha256sums=('75c1fbb3d618dd3a0483bff0e26d0a92b495bbe5059c8b4f1c962b478b6e06e7'
-            '4db5f0774a5a2677ccb2cc12bfcff7e64f83c4aae7d50bc89f9d875a145d8da4'
-            'c9599e8a4880e7205c74aaadad153c5426853d11ffb7c8a6862d3e291353de7d'
-            'e8c2d80a6425f9bdf4faf0bd24fdb5f5c55633d9c8775a3bc37ee518b944fae3'
-            '0934868ea57a9d9cb3f55b5a2bf0c66f53ec130bd1e1bb3f83f200e6cf3af557')
+  '4db5f0774a5a2677ccb2cc12bfcff7e64f83c4aae7d50bc89f9d875a145d8da4'
+  'c9599e8a4880e7205c74aaadad153c5426853d11ffb7c8a6862d3e291353de7d'
+  'e8c2d80a6425f9bdf4faf0bd24fdb5f5c55633d9c8775a3bc37ee518b944fae3'
+  '0934868ea57a9d9cb3f55b5a2bf0c66f53ec130bd1e1bb3f83f200e6cf3af557')
 
 _llvm=0
 
@@ -58,7 +58,7 @@ build() {
 
     CFLAGS="${CFLAGS} -flto=thin"
     CXXFLAGS="${CXXFLAGS} -flto=thin"
-    LDFLAGS="${LDFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
 

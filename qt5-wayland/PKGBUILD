@@ -58,6 +58,7 @@ build() {
     qmake ../qtwayland
     CFLAGS="${CFLAGS} -flto=thin"
     CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
     make
 
   else

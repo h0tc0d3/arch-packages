@@ -1,0 +1,68 @@
+pkgname=gsl+clang
+pkgver=2.7
+pkgrel=1
+pkgdesc="The GNU Scientific Library (GSL) is a modern numerical library for C and C++ programmers"
+url="https://www.gnu.org/software/gsl/gsl.html"
+source=("https://ftp.gnu.org/gnu/gsl/gsl-${pkgver}.tar.gz"{,.sig})
+license=('GPL')
+provides=("gsl" "gsl=${pkgver}")
+conflicts=("gsl")
+arch=('x86_64')
+depends=('glibc')
+sha256sums=('efbbf3785da0e53038be7907500628b466152dbc3c173a87de1b5eba2e23602b'
+  'SKIP')
+validpgpkeys=(DD61B7FC02790F978360F399245FB74BAE05B3E9) # Patrick Alken <alken@colorado.edu>
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/gsl-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gsl-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+check() {
+
+  cd "${srcdir:?}/gsl-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gsl-${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make check || true
+
+}
+
+package() {
+
+  cd "${srcdir:?}/gsl-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gsl-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+}

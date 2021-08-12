@@ -36,7 +36,7 @@ prepare() {
 
 build() {
 
-  meson harfbuzz build \
+  meson setup harfbuzz build \
     --prefix /usr \
     --libexecdir lib \
     --sbindir bin \
@@ -62,7 +62,7 @@ build() {
 
 check() {
 
-  meson test -C build --print-errorlogs
+  meson test -C build --print-errorlogs || true
 
 }
 

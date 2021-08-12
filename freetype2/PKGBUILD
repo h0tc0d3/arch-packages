@@ -8,7 +8,7 @@ arch=(x86_64)
 license=(GPL)
 # adding harfbuzz for improved OpenType features auto-hinting
 # introduces a cycle dep to harfbuzz depending on freetype wanted by upstream
-depends=(zlib bzip2 sh libpng harfbuzz)
+depends=(zlib bzip2 sh libpng harfbuzz brotli)
 makedepends=(libx11 meson)
 source=(
   "https://download.savannah.gnu.org/releases/freetype/freetype-${pkgver}.tar.xz"{,.sig}

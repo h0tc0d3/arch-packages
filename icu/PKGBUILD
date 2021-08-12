@@ -44,10 +44,15 @@ build() {
 
     CFLAGS="${CFLAGS} -flto=thin"
     CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
 
-  ./configure --prefix=/usr \
+  CFLAGS=${CFLAGS/-fstack-clash-protection/}
+  CXXFLAGS=${CXXFLAGS/-fstack-clash-protection/}
+
+  ./configure \
+    --prefix=/usr \
     --sysconfdir=/etc \
     --mandir=/usr/share/man \
     --sbindir=/usr/bin

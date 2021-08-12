@@ -2,7 +2,7 @@ pkgbase=jack2+clang
 pkgname=('jack2+clang' 'jack2-dbus+clang')
 pkgdesc="The JACK low-latency audio server"
 pkgver=1.9.19
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 url="https://github.com/jackaudio/jack2"
 license=('GPL2' 'LGPL2.1')
@@ -50,7 +50,7 @@ build() {
 
     CFLAGS="${CFLAGS} -flto=thin"
     CXXFLAGS="${CXXFLAGS} -flto=thin"
-    LDFLAGS="${LDFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
 

@@ -1,0 +1,63 @@
+pkgname=libxft+clang
+pkgver=2.3.4
+pkgrel=1
+pkgdesc="FreeType-based font drawing library for X"
+arch=('x86_64')
+license=('custom')
+provides=("libxft" "libxft=${pkgver}")
+conflicts=("libxft")
+url="https://xorg.freedesktop.org/"
+depends=('fontconfig' 'libxrender')
+makedepends=('pkgconfig')
+source=("${url}/releases/individual/lib/libXft-${pkgver}.tar.bz2"{,.sig})
+sha512sums=('5bb019750982ed4643880efd7368bc226ad49cfa8c0c8c6d4614dfeed74f588c65e1ba69adcc12284ec07d841e5b58fc1c27f3fddf83fe1a2837b29dd9ecec51'
+  'SKIP')
+validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E') # "Alan Coopersmith <alan.coopersmith@oracle.com>"
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libXft-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libXft-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --disable-static
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libXft-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libXft-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -d -m755 "${pkgdir}/usr/share/licenses/${pkgname}"
+  install -m644 COPYING "${pkgdir}/usr/share/licenses/${pkgname}/"
+
+}

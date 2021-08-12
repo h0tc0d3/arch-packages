@@ -1,8 +1,8 @@
 pkgbase=qt5-base+clang
 pkgname=(qt5-base+clang qt5-xcb-private-headers+clang)
-pkgver=5.15.2+kde+r210
+pkgver=5.15.2+kde+r211
 pkgrel=2
-_commit=663d240a18f5acac82fd2bd0fd4a33c4f47b260a
+_commit=f0f4d885ed2fb088cadc8e25c0161d37f9e8770b
 arch=('x86_64')
 url='https://www.qt.io'
 license=('GPL3' 'LGPL3' 'FDL' 'custom')
@@ -37,13 +37,13 @@ source=(
 )
 
 sha256sums=('SKIP'
-            'cf707cd970650f8b60f8897692b36708ded9ba116723ec8fcd885576783fe85c'
-            '4b93f6a79039e676a56f9d6990a324a64a36f143916065973ded89adc621e094'
-            'dde1c2c7300a6e05b12145f0c0b180991aa5929a4bf13c026eef6511593f357b'
-            'ad4dc439bc23826b7f165b1e897d8544adff593254cb03061be397358a7163b0'
-            '9378afd071ad5c0ec8f7aef48421e4b9fab02f24c856bee9c0951143941913c5'
-            '1fed8b9e4eb5749e70d85d7678f08a5abc881e2a2ecab85fb21f59cb124500e5'
-            '5063b93e72e6737bcec64ec05a2306286f936c8e43dea2ba7b3cf145ed09bd34')
+  'cf707cd970650f8b60f8897692b36708ded9ba116723ec8fcd885576783fe85c'
+  '4b93f6a79039e676a56f9d6990a324a64a36f143916065973ded89adc621e094'
+  'dde1c2c7300a6e05b12145f0c0b180991aa5929a4bf13c026eef6511593f357b'
+  'ad4dc439bc23826b7f165b1e897d8544adff593254cb03061be397358a7163b0'
+  '9378afd071ad5c0ec8f7aef48421e4b9fab02f24c856bee9c0951143941913c5'
+  '1fed8b9e4eb5749e70d85d7678f08a5abc881e2a2ecab85fb21f59cb124500e5'
+  '5063b93e72e6737bcec64ec05a2306286f936c8e43dea2ba7b3cf145ed09bd34')
 
 _llvm=0
 
@@ -101,6 +101,7 @@ build() {
     CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
     CFLAGS=${CFLAGS/-fstack-protector-strong/}
     CXXFLAGS=${CXXFLAGS/-fstack-protector-strong/}
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
     ./configure -platform linux-clang \
       -confirm-license \
       -opensource -v \

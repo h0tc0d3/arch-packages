@@ -1,5 +1,5 @@
 pkgname=telegram-desktop+clang
-pkgver=2.9.0
+pkgver=2.9.3
 pkgrel=1
 pkgdesc='Official Telegram Desktop client'
 arch=('x86_64')
@@ -8,14 +8,17 @@ license=('GPL3')
 provides=('telegram-desktop' "telegram-desktop=${pkgver}")
 conflicts=('telegram-desktop')
 depends=('hunspell' 'ffmpeg' 'hicolor-icon-theme' 'lz4' 'minizip' 'openal' 'ttf-opensans'
-  'qt5-imageformats' 'xxhash' 'libdbusmenu-qt5' 'kwayland' 'gtk3' 'glibmm'
-  'webkit2gtk' 'rnnoise' 'pipewire' 'libxtst' 'libxrandr' 'jemalloc')
+  'qt5-imageformats' 'xxhash' 'libdbusmenu-qt5' 'kwayland' 'glibmm'
+  'rnnoise' 'pipewire' 'libxtst' 'libxrandr' 'jemalloc' 'libtg_owt')
 makedepends=('cmake' 'git' 'ninja' 'python' 'range-v3' 'tl-expected' 'microsoft-gsl'
-  'libtg_owt' 'extra-cmake-modules')
+  'extra-cmake-modules' 'gtk3' 'webkit2gtk')
+optdepends=('gtk3: GTK environment integration'
+  'webkit2gtk: embedded browser features'
+  'xdg-desktop-portal: desktop integration')
 source=(
   "https://github.com/telegramdesktop/tdesktop/releases/download/v${pkgver}/tdesktop-${pkgver}-full.tar.gz"
 )
-sha256sums=('e908b8f479cf1f41892848f3cda1a7b46fca2339ce8980268dd204ff7ba8b6f5')
+sha256sums=('8f661157030e776f42f8a2a3a5e1434f22ded78cc6a5d4bce67004d6d79c1a14')
 
 _llvm=0
 
@@ -25,16 +28,6 @@ prepare() {
     _llvm=1
   fi
 
-  cd "${srcdir:?}/tdesktop-${pkgver}-full" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/tdesktop-${pkgver}-full/cmake directory! Build Failed! \E[0m"
-    exit 1
-  )
-
-  # force webrtc link to libjpeg and X11 libs
-  echo "target_link_libraries(external_webrtc INTERFACE jpeg)" | tee -a cmake/external/webrtc/CMakeLists.txt
-  echo "find_package(X11 REQUIRED COMPONENTS Xcomposite Xdamage Xext Xfixes Xrender Xrandr Xtst)" | tee -a cmake/external/webrtc/CMakeLists.txt
-  echo "target_link_libraries(external_webrtc INTERFACE Xcomposite Xdamage Xext Xfixes Xrandr Xrender Xtst)" | tee -a cmake/external/webrtc/CMakeLists.txt
-
 }
 
 build() {
@@ -43,6 +36,7 @@ build() {
 
     CFLAGS="${CFLAGS} -flto=thin"
     CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
 
@@ -51,9 +45,7 @@ build() {
     -DCMAKE_INSTALL_PREFIX="/usr" \
     -DCMAKE_BUILD_TYPE=Release \
     -DTDESKTOP_API_ID=611335 \
-    -DTDESKTOP_API_HASH=d524b414d21f4d37f08684c1df41ac9c \
-    -DTDESKTOP_LAUNCHER_BASENAME="telegramdesktop" \
-    -DDESKTOP_APP_SPECIAL_TARGET=""
+    -DTDESKTOP_API_HASH=d524b414d21f4d37f08684c1df41ac9c
 
   ninja ${NINJAFLAGS} -C build
 

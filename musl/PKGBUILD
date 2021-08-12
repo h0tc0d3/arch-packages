@@ -30,13 +30,13 @@ build() {
     exit 1
   )
 
-  #if [[ ${_llvm} -eq 1 ]]; then
+  if [[ ${_llvm} -eq 1 ]]; then
 
     #CFLAGS="${CFLAGS} -flto=thin"
     #CXXFLAGS="${CXXFLAGS} -flto=thin"
-    #LDFLAGS="${LDFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
-  #fi
+  fi
 
   ./configure \
     --prefix=/usr/lib/musl \

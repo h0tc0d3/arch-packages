@@ -47,7 +47,7 @@ pkgver() {
 
 build() {
 
-  CFLAGS+=" -DG_ENABLE_DEBUG -DG_DISABLE_CAST_CHECKS -Wno-macro-redefined"
+  CFLAGS+=" -DG_DISABLE_CAST_CHECKS -Wno-macro-redefined"
   meson setup gtk build \
     --prefix /usr \
     --libexecdir lib \

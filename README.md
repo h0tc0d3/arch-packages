@@ -60,7 +60,6 @@ Before build packages install `pacman -Syu llvm llvm-libs clang lld libclc` and 
 ```bash
 export CC=clang
 export CXX=clang++
-export LD=ld.lld
 export CC_LD=lld
 export CXX_LD=lld
 export AR=llvm-ar
@@ -73,7 +72,6 @@ export RANLIB=llvm-ranlib
 export HOSTCC=clang
 export HOSTCXX=clang++
 export HOSTAR=llvm-ar
-export HOSTLD=ld.lld
 ```
 
 Yours  **/etc/makepkg.conf** can be like this:
@@ -84,7 +82,6 @@ CHOST="x86_64-pc-linux-gnu"
 
 export CC=clang
 export CXX=clang++
-export LD=ld.lld
 export CC_LD=lld
 export CXX_LD=lld
 export AR=llvm-ar
@@ -97,12 +94,14 @@ export RANLIB=llvm-ranlib
 export HOSTCC=clang
 export HOSTCXX=clang++
 export HOSTAR=llvm-ar
-export HOSTLD=ld.lld
+
+CARCH="x86_64"
+CHOST="x86_64-pc-linux-gnu"
 
 CPPFLAGS="-D_FORTIFY_SOURCE=2"
-CFLAGS="-fdiagnostics-color=always -pipe -O2 -march=native -fstack-protector-strong"
-CXXFLAGS="-fdiagnostics-color=always -pipe -O2 -march=native -fstack-protector-strong"
-LDFLAGS="-Wl,-O1,-z,now,-z,relro,--as-needed,--sort-common"
+CFLAGS="-fdiagnostics-color=always -pipe -O2 -march=native -fstack-protector-strong --param ssp-buffer-size=4 -fstack-clash-protection"
+CXXFLAGS="-fdiagnostics-color=always -pipe -O2 -march=native -fstack-protector-strong --param ssp-buffer-size=4 -fstack-clash-protection"
+LDFLAGS="-Wl,-O1 -Wl,-z,now -Wl,-z,relro -Wl,--as-needed -Wl,--no-copy-dt-needed-entries -Wl,--sort-common -Wl,--hash-style=gnu"
 RUSTFLAGS="-C opt-level=2"
 
 MAKEFLAGS="-j$(nproc)"

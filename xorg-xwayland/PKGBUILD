@@ -15,7 +15,7 @@ makedepends=('meson' 'xorgproto' 'xtrans' 'libxkbfile' 'dbus'
 )
 source=("https://xorg.freedesktop.org/archive/individual/xserver/xwayland-${pkgver}.tar.xz"{,.sig})
 sha512sums=('3bd595a563cbc44b49a00c85adabdbcddf02fd55c6500ed2711557c156f10cd273af93f7b232865141ad27392a85583e40268bcedad183ad9eeefba457cef6c6'
-            'SKIP')
+  'SKIP')
 provides=('xorg-xwayland' "xorg-xwayland=${pkgver}" 'xorg-server-xwayland')
 conflicts=('xorg-xwayland' 'xorg-server-xwayland')
 replaces=('xorg-server-xwayland')

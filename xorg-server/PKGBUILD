@@ -8,7 +8,7 @@ pkgname=(
   'xorg-server-devel+clang'
 )
 pkgver=1.20.13
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 license=('custom')
 groups=('xorg')
@@ -39,14 +39,14 @@ validpgpkeys=(
 )
 
 sha256sums=('40aa4e96a56a81a301f15a9b10e06a22700f12b42d9e0e453c7f11d354386300'
-            'SKIP'
-            'd07b2fe55828dad61517a80c77f6f183113916f5e1fce30ff43041550d58bd6e'
-            'f8703466041a04428e68a77e1c07579679b07d15f8ec28934f1a65548007a756'
-            '91b067753e823d6e3462d35be127f66e94e71a490c666e1aae41fe4e5b1ea47c'
-            '6b04d1f8e2fbe97627d2edd2c80d8aad0bd8513b1972a6e431f7c46311bdf2f2'
-            'cae1b7f296c18177de38f9b1215a4f916da2288b85f1fcb9e80373a42e2892b8'
-            'd709078f5658576931655c7a46ff90b3586a2643a9124075d00ff3a567937845'
-            '2460adccd3362fefd4cdc5f1c70f332d7b578091fb9167bf88b5f91265bbd776')
+  'SKIP'
+  'd07b2fe55828dad61517a80c77f6f183113916f5e1fce30ff43041550d58bd6e'
+  'f8703466041a04428e68a77e1c07579679b07d15f8ec28934f1a65548007a756'
+  '91b067753e823d6e3462d35be127f66e94e71a490c666e1aae41fe4e5b1ea47c'
+  '6b04d1f8e2fbe97627d2edd2c80d8aad0bd8513b1972a6e431f7c46311bdf2f2'
+  'cae1b7f296c18177de38f9b1215a4f916da2288b85f1fcb9e80373a42e2892b8'
+  'd709078f5658576931655c7a46ff90b3586a2643a9124075d00ff3a567937845'
+  '2460adccd3362fefd4cdc5f1c70f332d7b578091fb9167bf88b5f91265bbd776')
 
 _extra_lto_flag=""
 
@@ -87,6 +87,10 @@ build() {
   CFLAGS=${CFLAGS/-fno-plt/}
   CXXFLAGS=${CXXFLAGS/-fno-plt/}
   LDFLAGS=${LDFLAGS/,-z,now/}
+
+  CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
+  CFLAGS=${CFLAGS/-fuse-ld=lld -Wno-unused-command-line-argument/}
+  CXXFLAGS=${CXXFLAGS/-fuse-ld=lld -Wno-unused-command-line-argument/}
 
   meson setup xorg-server-${pkgver} build \
     --prefix /usr \
@@ -131,7 +135,9 @@ _install() {
     f="${src#fakeinstall/}"
     dir="${pkgdir:?}/${f%/*}"
     install -m755 -d "${dir}"
-    mv -v "${src}" "${dir}/"
+    # use copy so a new file is created and fakeroot can track properties such as setuid
+    cp -av "${src}" "${dir}/"
+    rm -rf "${src}"
   done
 }
 

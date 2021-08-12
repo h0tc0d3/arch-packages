@@ -14,7 +14,7 @@ source=(
 )
 
 sha256sums=('0daa2362f2e0d15f79e0e006e8d7f1908e88e37b5c5208b40c9cb0d4d6dca9b5'
-            'SKIP')
+  'SKIP')
 
 validpgpkeys=(CA1B4E348D22755A67EF4E1A6A4F2C4CDC8BC77F # Aleix Pol Gonzalez <aleixpol@kde.org>
   EC5516B514543DA145169FD12276F09AF4A790F4             # Vlad Zahorodnii <vlad.zahorodnii@kde.org>
@@ -36,6 +36,7 @@ build() {
 
     CFLAGS="${CFLAGS} -flto=thin"
     CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
 

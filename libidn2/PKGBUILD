@@ -35,9 +35,9 @@ build() {
   if [[ ${_llvm} -eq 1 ]]; then
 
     CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
-    CFLAGS="${CFLAGS} -flto=thin -fuse-ld=lld -Wno-unused-command-line-argument"
-    CXXFLAGS="${CXXFLAGS} -flto=thin -fuse-ld=lld -Wno-unused-command-line-argument"
-    LDFLAGS="${LDFLAGS} -flto=thin"
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
 
