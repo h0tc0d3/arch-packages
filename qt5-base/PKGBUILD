@@ -1,8 +1,8 @@
 pkgbase=qt5-base+clang
 pkgname=(qt5-base+clang qt5-xcb-private-headers+clang)
-pkgver=5.15.2+kde+r211
-pkgrel=2
-_commit=f0f4d885ed2fb088cadc8e25c0161d37f9e8770b
+pkgver=5.15.2+kde+r214
+pkgrel=1
+_commit=59b9316cd54ac956d000557c2bf8c4da07efbc0a
 arch=('x86_64')
 url='https://www.qt.io'
 license=('GPL3' 'LGPL3' 'FDL' 'custom')
@@ -29,7 +29,6 @@ source=(
   "git+https://invent.kde.org/qt/qt/qtbase#commit=${_commit}"
   qt5-base-cflags.patch
   qt5-base-nostrip.patch
-  qt5-base-mariadb-10.6.patch
   qt5-base-cxxflag.patch
   qt5-base-gcc11.patch
   qt5-base-everywhere-no_relocatable.patch
@@ -39,7 +38,6 @@ source=(
 sha256sums=('SKIP'
   'cf707cd970650f8b60f8897692b36708ded9ba116723ec8fcd885576783fe85c'
   '4b93f6a79039e676a56f9d6990a324a64a36f143916065973ded89adc621e094'
-  'dde1c2c7300a6e05b12145f0c0b180991aa5929a4bf13c026eef6511593f357b'
   'ad4dc439bc23826b7f165b1e897d8544adff593254cb03061be397358a7163b0'
   '9378afd071ad5c0ec8f7aef48421e4b9fab02f24c856bee9c0951143941913c5'
   '1fed8b9e4eb5749e70d85d7678f08a5abc881e2a2ecab85fb21f59cb124500e5'
@@ -78,7 +76,6 @@ prepare() {
 
   git revert -n 6344955d17e17e2398720fe60c34cfc2a4a95208 # Revert version bump
 
-  _patch qt5-base-mariadb-10.6.patch
   _patch qt5-base-nostrip.patch # Don't strip binaries with qmake
   _patch qt5-base-cflags.patch  # Use system CFLAGS in qmake
   _patch qt5-base-cxxflag.patch
