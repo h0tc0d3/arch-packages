@@ -1,0 +1,224 @@
+pkgname=binutils
+pkgver=2.37
+pkgrel=3
+pkgdesc='A set of programs to assemble and manipulate binary and object files'
+arch=(x86_64)
+url='https://www.gnu.org/software/binutils/'
+license=(GPL)
+groups=(base-devel)
+depends=(glibc zlib elfutils)
+makedepends=(elfutils git)
+conflicts=(binutils-multilib)
+replaces=(binutils-multilib)
+options=(staticlibs !distcc !ccache)
+#_commit=cb5f6a3e146cc70bc2d864989386df80acec5d3e
+#source=(git+https://sourceware.org/git/binutils-gdb.git#commit=$_commit)
+source=(
+  "https://ftp.gnu.org/gnu/binutils/binutils-${pkgver}.tar.xz"{,.sig}
+  binutils-no-config-h-check.patch
+  binutils-revert-PLT-elision.patch
+  binutils-do-not-link-with-static-libstdc++.patch
+  binutils-special-sections-in-groups.patch
+  binutils-fix-testsuite-failures.patch
+  binutils-gold-mismatched-section-flags.patch
+  binutils-CVE-2019-1010204.patch
+  binutils-gold-warn-unsupported.patch
+  binutils-use-long-long.patch
+  binutils-testsuite-fixes.patch
+  binutils-gold-i386-gnu-property-notes.patch
+  binutils-clang-fails.patch
+  binutils-ld-expression-parsing.patch
+  binutil-opcodes-constify-and-local-meps-macros.patch
+  binutils-bfd-close-file-descriptor.patch
+)
+sha256sums=('820d9724f020a3e69cb337893a0b63c2db161dadcb0e06fc11dc29eb1e84a32c'
+  'SKIP'
+  'c842f958c26c56b868ca7e9a56012490aef4ff29a4956c06ab422955758a9af6'
+  'cf9fd37b33332866a2cebb8e090b51fa6ed5ac3defbff8787d8953056b5b3ba9'
+  '4e5fc2b51ed0a1cc52d279a7ed869b5c5f39de74a637f6ca965a25a496bf6112'
+  '143f53ebe64cf7640d8bce44446995c2d1b393fd3c5a4dbd0a82c24352e0e8f4'
+  '49e01577e2f95926441642d2e798bcfc4ea08a9c83e4d28bbb9d563d569b7ef3'
+  '1939d75dbaa43a917e3388a6b9382ae0ba200b6f65b95979e226281be507394c'
+  '199b4044d06f8daa2197a7a4d03cf8b2a63f2e7b8493e709c6a016c1e3f902d1'
+  '2d430b66f84a19c154725ec535280c493be1d34f1a90f95208dce02fecd0e4e4'
+  '73af103882e23936b5423e5756a6edf485ef327091e0b9aaa2a51be55764e98e'
+  '1a18158ec63bd325e8996affe1e5c660224a8bc30d626773e6d0577627b04654'
+  '72ba8f1a0c9d8ec0f443f11d1a3bea8fff5d7b6ff6cdbd0fd02ded747959503d'
+  '330000140987646c45e882635845439b4cb9fae1eb601f832685243356a9e32e'
+  '2fcb5acbce65f2e0ecc6dac08ffa670041a57379430e9359804e957c2362cbc7'
+  'ae485133cc4df1ff95b541ab893626b8bd2f3a1d9971de9b87228cc409a128f4'
+  '37d2b543dc8d40d49aa6a9d7be004fda0a8ee6a191e5f63676843c83708bbac7'
+)
+validpgpkeys=(3A24BC1E8FB409FA9F14371813FCEF89DD9E3C4F)
+
+# toolchain build order: linux-api-headers->glibc->binutils->gcc->binutils->glibc
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
+
+prepare() {
+
+  [[ ! -d binutils-gdb ]] && ln -s binutils-${pkgver} binutils-gdb
+  mkdir -p binutils-build
+
+  cd binutils-gdb || exit 1
+
+  # Fix clang build fail
+  _patch binutils-clang-fails.patch
+  # ld script expression parsing
+  _patch binutils-ld-expression-parsing.patch
+  # opcodes: constify & local meps macros
+  _patch binutil-opcodes-constify-and-local-meps-macros.patch
+  # Close the file descriptor if there is no archive plugin file descriptor
+  # to avoid running out of file descriptors on thin archives with many
+  # archive members.
+  _patch binutils-bfd-close-file-descriptor.patch
+
+  ##############################
+  #                            #
+  #    From Fedora binutils    #
+  #                            #
+  ##############################
+
+  # Purpose:  Disables the check in the BFD library's bfd.h header file that
+  #           config.h has been included before the bfd.h header.  See BZ
+  #           #845084 for more details.
+  # Lifetime: Permanent - but it should not be.  The bfd.h header defines
+  #           various types that are dependent upon configuration options, so
+  #           the order of inclusion is important.
+  # FIXME:    It would be better if the packages using the bfd.h header were
+  #           fixed so that they do include the header files in the correct
+  #           order.
+  _patch binutils-no-config-h-check.patch
+
+  # Purpose:  Disable an x86/x86_64 optimization that moves functions from the
+  #           PLT into the GOTPLT for faster access.  This optimization is
+  #           problematic for tools that want to intercept PLT entries, such
+  #           as ltrace and LD_AUDIT.  See BZs 1452111 and 1333481.
+  # Lifetime: Permanent.  But it should not be.
+  # FIXME:    Replace with a configure time option.
+  _patch binutils-revert-PLT-elision.patch
+
+  # Purpose:  Stop the binutils from statically linking with libstdc++.
+  # Lifetime: Permanent.
+  _patch binutils-do-not-link-with-static-libstdc++.patch
+
+  # Purpose:  Allow OS specific sections in section groups.
+  # Lifetime: Fixed in 2.38 (maybe)
+  _patch binutils-special-sections-in-groups.patch
+
+  # Purpose:  Fix linker testsuite failures.
+  # Lifetime: Fixed in 2.37 (maybe)
+  _patch binutils-fix-testsuite-failures.patch
+
+  # Purpose:  Stop gold from aborting when input sections with the same name
+  #            have different flags.
+  # Lifetime: Fixed in 2.38 (maybe)
+  _patch binutils-gold-mismatched-section-flags.patch
+
+  # Purpose:  Add a check to the GOLD linker for a corrupt input file
+  #            with a fuzzed section offset.
+  # Lifetime: Fixed in 2.38 (maybe)
+  _patch binutils-CVE-2019-1010204.patch
+
+  # Purpose:  Change the gold configuration script to only warn about
+  #            unsupported targets.  This allows the binutils to be built with
+  #            BPF support enabled.
+  # Lifetime: Permanent.
+  _patch binutils-gold-warn-unsupported.patch
+
+  # Purpose:  Use the "unsigned long long" type for pointers on hosts where
+  #           long is a 32-bit type but pointers are a 64-bit type.  Necessary
+  #           because users expect to be able to install both the i686- and
+  #           x86_64 versions of binutils-devel on the same machine, so they
+  #           need to identical versions of the bfd.h header file.
+  # Lifetime: Permanent.
+  _patch binutils-use-long-long.patch
+
+  # Purpose:  Fix testsuite failures due to the patches applied here.
+  # Lifetime: Permanent, but varying with each new rebase.
+  _patch binutils-testsuite-fixes.patch
+
+  # Purpose:  Enable the creation of .note.gnu.property sections by the GOLD
+  #            linker for x86 binaries.
+  # Lifetime: Fixed in 2.38 maybe
+  _patch binutils-gold-i386-gnu-property-notes.patch
+
+  # Turn off development mode (-Werror, gas run-time checks, date in sonames)
+  sed -i '/^development=/s/true/false/' bfd/development.sh
+
+  # hack! - libiberty configure tests for header files using "${CPP} ${CPPFLAGS}"
+  sed -i "/ac_cpp=/s/\${CPPFLAGS}/\${CPPFLAGS} -O2/" libiberty/configure
+
+  # Fix error: ‘LONG_MIN’ undeclared (first use in this function)
+  sed -i -e "/#include\s\"fibheap\.h\"/ a#include <limits.h>" libiberty/fibheap.c
+
+}
+
+build() {
+
+  cd binutils-build || exit 1
+
+  LDFLAGS="${LDFLAGS} -Wl,--enable-new-dtags"
+  CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
+
+  # --enable-deterministic-archives=no BZ 1195883
+  # --enable-generate-build-notes=no BZ 1572485
+  "${srcdir:?}/binutils-gdb/configure" \
+    --prefix=/usr \
+    --with-lib-path=/usr/lib:/usr/local/lib \
+    --with-bugurl=https://bugs.archlinux.org/ \
+    --enable-gold \
+    --enable-ld=default \
+    --enable-lto \
+    --enable-plugins \
+    --enable-relro \
+    --enable-64-bit-bfd \
+    --enable-targets="x86_64-pep,bpf-unknown-none" \
+    --enable-threads \
+    --enable-new-dtags \
+    --enable-multilib \
+    --disable-rpath \
+    --disable-gdb \
+    --disable-werror \
+    --enable-deterministic-archives=no \
+    --enable-generate-build-notes=no \
+    --disable-cet \
+    --with-debuginfod \
+    --with-pic \
+    --with-system-zlib
+
+  make configure-host
+  make tooldir=/usr
+
+}
+
+check() {
+
+  cd binutils-build || exit 1
+
+  # unset LDFLAGS as testsuite makes assumptions about which ones are active
+  # ignore failures in gold testsuite...
+  make -k LDFLAGS="" check || true
+
+}
+
+package() {
+
+  cd binutils-build || exit 1
+
+  make prefix="${pkgdir:?}/usr" tooldir="${pkgdir:?}/usr" install
+
+  # Remove unwanted files
+  rm -f "${pkgdir:?}"/usr/share/man/man1/{dlltool,nlmconv,windres,windmc}*
+
+  # No shared linking to these files outside binutils
+  rm -f "${pkgdir:?}"/usr/lib/lib{bfd,opcodes}.so
+  echo 'INPUT( /usr/lib/libbfd.a -liberty -lz -ldl )' >"${pkgdir:?}/usr/lib/libbfd.so"
+  echo 'INPUT( /usr/lib/libopcodes.a -lbfd )' >"${pkgdir:?}/usr/lib/libopcodes.so"
+
+}

@@ -1,0 +1,105 @@
+pkgname=libtool
+pkgver=2.4.6+42+gb88cebd5
+pkgrel=21
+pkgdesc='A generic library support script'
+arch=(x86_64)
+url='https://www.gnu.org/software/libtool'
+license=(GPL)
+groups=(base-devel)
+depends=(sh tar glibc)
+makedepends=("gcc" git help2man)
+checkdepends=(gcc-fortran)
+provides=("libltdl=${pkgver}" "libtool-multilib=${pkgver}")
+conflicts=(libltdl libtool-multilib)
+replaces=(libltdl libtool-multilib)
+_commit=b88cebd510add4420dd8f5367e3cc6e6e1f267cd
+source=(
+  "git+https://git.savannah.gnu.org/git/libtool.git#commit=${_commit}"
+  "git+https://git.savannah.gnu.org/git/gnulib.git"
+  "gnulib-bootstrap::git+https://github.com/gnulib-modules/bootstrap.git"
+  libtool-no_hostname.patch
+  libtool-am-1.16-test.patch
+)
+sha256sums=('SKIP'
+            'SKIP'
+            'SKIP'
+            '693aabb24a6e7ce21fe0b5d14394e19edcb8476663b5afa4463f9fa0df24d946'
+            'f1686e8e6d4eb40b711b904e62d713f55a2de0e94da3bf7e5d3e9c30074f5f8e')
+
+pkgver() {
+
+  cd "${srcdir:?}/libtool" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libtool directory! PkgVer Failed! \E[0m"
+    exit 1
+  )
+
+  git describe --tags | sed 's/-/+/g;s/^v//'
+
+}
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
+
+prepare() {
+
+  cd "${srcdir:?}/libtool" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libtool directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  git submodule init
+  git config --local submodule.gnulib.url "${srcdir:?}/gnulib"
+  git config --local submodule.gl-mod/bootstrap.url "${srcdir:?}/gnulib-bootstrap"
+  git submodule update
+
+  _patch libtool-no_hostname.patch
+  _patch libtool-am-1.16-test.patch
+
+  ./bootstrap
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libtool" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libtool directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
+
+  ./configure \
+    --prefix=/usr \
+    lt_cv_sys_lib_dlsearch_path_spec="/usr/lib /usr/lib32"
+
+  make
+
+}
+
+check() {
+
+  cd "${srcdir:?}/libtool" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libtool directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  TESTSUITEFLAGS="-j$(nproc)"
+  export TESTSUITEFLAGS
+  make check gl_public_submodule_commit= || true
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libtool" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libtool directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+}

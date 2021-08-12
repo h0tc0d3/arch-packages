@@ -1,14 +1,14 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
 pkgver=2.34
-pkgrel=3
+pkgrel=4
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
 makedepends=(git gd lib32-gcc-libs python)
 optdepends=('perl: for mtrace')
 options=(!strip staticlibs)
-_commit=ae37d06c7d127817ba43850f0f898b793d42aea7
+_commit=79474303223c5665bec75ffbdb2a86ee04a2514b
 source=("git+https://sourceware.org/git/glibc.git#commit=${_commit}"
   #source=("https://ftp.gnu.org/gnu/glibc/glibc-${pkgver}.tar.xz"
   locale-gen
@@ -22,12 +22,12 @@ validpgpkeys=(
   BC7C7372637EC10C57D7AA6579C43DFBF1CF2187 # Siddhesh Poyarekar
 )
 sha256sums=('SKIP'
-            '83f108f915863c7ed0338e2d3e8f2e071a531a090ef8f8b2eb3a956a3c4f04d7'
-            '774061aff612a377714a509918a9e0e0aafce708b87d2d7e06b1bd1f6542fe70'
-            'cdc234959c6fdb43f000d3bb7d1080b0103f4080f5e67bcfe8ae1aaf477812f0'
-            'a9c10b02fe9fb3d0d5c1565124fedaace2932be4b147b6c6deaf1efbe2c07882'
-            '733396588e1e7c356f8d33ba80f6c317963dd936f9039f3f77f0bcec81138159'
-            'bdc28d5b5444e0ec35c98cb959635cf4f3bd23c47aa1b2f1c334a79db411b911')
+  '83f108f915863c7ed0338e2d3e8f2e071a531a090ef8f8b2eb3a956a3c4f04d7'
+  '774061aff612a377714a509918a9e0e0aafce708b87d2d7e06b1bd1f6542fe70'
+  'cdc234959c6fdb43f000d3bb7d1080b0103f4080f5e67bcfe8ae1aaf477812f0'
+  'a9c10b02fe9fb3d0d5c1565124fedaace2932be4b147b6c6deaf1efbe2c07882'
+  '733396588e1e7c356f8d33ba80f6c317963dd936f9039f3f77f0bcec81138159'
+  'bdc28d5b5444e0ec35c98cb959635cf4f3bd23c47aa1b2f1c334a79db411b911')
 
 _patch() {
 
@@ -53,16 +53,18 @@ prepare() {
   git cherry-pick -n 7de41f96a172e5f15bc449ec3c09dbd0ae4cf2c6
   git cherry-pick -n b2a77206b3c3bf4670acc069f6fdda76cf857d48
 
-  # Upstream bug fix
+  # Upstream patches
   git cherry-pick -n 60698263122b7c54ded3f70a466176e17a529480 # nis: Fix leak on realloc failure in nis_getnames [BZ #28150]
   git cherry-pick -n 2ee9b24f47db8d0a8d0ccadb999335a1d4cfc364 # Fix build of nptl/tst-thread_local1.cc with GCC 12
-  git cherry-pick -n b0234d79e7d82475d1666f25326ec045c045b3ed # ldconfig: avoid leak on empty paths in config file
-  git cherry-pick -n 5f9b78fe35d08739b6da1e5b356786d41116c108 # gconv_parseconfdir: Fix memory leak
-  git cherry-pick -n 1e0e6d656db9dfa12ef7eb67976385d3deb0d4ff # iconv_charmap: Close output file when done
-  git cherry-pick -n 45caed9d67a00af917d8b5b88d4b5eb1225b7aef # copy_and_spawn_sgid: Avoid double calls to close()
-  git cherry-pick -n 77a34079d8f3d63b61543bf3af93043f8674e4c4 # gaiconf_init: Avoid double-free in label and precedence lists
   git cherry-pick -n df183287ff7ded9471205abfa59df27e5e5401da # hurd: Avoid spurious warning
   git cherry-pick -n b17e842a60819098d2a203ecc8b8371b7e1d6c65 # gethosts: Remove unused argument _type
+  git cherry-pick -n 98149b16d645e9644a8e9b3d1f4b7932b9b193c5 # Add PTRACE_GET_RSEQ_CONFIGURATION from Linux 5.13 to sys/ptrace.h
+  git cherry-pick -n 1d7b32ee6145c46c4f4f8a208a6b72e0668d7cf3 # Use binutils 2.37 branch in build-many-glibcs.py
+  git cherry-pick -n 302247c89121e8d4c7629e589edbb4974fff6edb # elf: Unconditionally use __ehdr_start
+  git cherry-pick -n 13710e7e6af6c8965cc9a63a0660cb4ce1966557 # hurd: Add support for AT_NO_AUTOMOUNT
+  git cherry-pick -n 08fc6df294ab7e10e14492094a99b7861ad7d77e # hurd mmap: Factorize MAP_SHARED flag check
+  git cherry-pick -n 5a5358b749d0b153de6f6361342d06228d7270be # hurd mmap: Reduce the requested max vmprot
+  git cherry-pick -n dc906e94f7033892dadbd91718349f19e1376391 # mtrace: Use a static buffer for printing [BZ #25947]
 
 }
 
