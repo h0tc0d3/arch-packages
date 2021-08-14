@@ -167,7 +167,7 @@ js78
 polkit
 rtkit
 pipewire
--chromium
 gsl
 lib2geom
 krita
+-chromium

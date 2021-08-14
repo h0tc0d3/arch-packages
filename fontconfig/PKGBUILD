@@ -1,6 +1,6 @@
 pkgname=fontconfig+clang
 pkgver=2.13.94
-pkgrel=2
+pkgrel=3
 epoch=2
 pkgdesc="Library for configuring and customizing font access"
 url=https://www.freedesktop.org/wiki/Software/fontconfig/
@@ -21,13 +21,17 @@ source=(
   40-fontconfig-config.hook
   fontconfig.hook
   fontconfig-sleep-less.patch
+  fontconfig-score-fix.patch
+  fontconfig-lcdfilter.patch
 )
 
 sha256sums=('SKIP'
-  '7a9d50bccc709eb15db6ba8e13f69bc9d79b0bf354f1d17c1a5b2748edff3c33'
-  '44f12491c9fd7eff825853846a2b3b8df2b96fc6520be5cb31ce7f37a160ff02'
-  'fd7b6ce8ce178107f2e0b52462ebf186b6051c6eec945770107fda57048c9f34'
-  'b2bee567aab161615cf565a5a426ab2e93ab706f0913d4a3ff94b8f40766b574')
+            '7a9d50bccc709eb15db6ba8e13f69bc9d79b0bf354f1d17c1a5b2748edff3c33'
+            '44f12491c9fd7eff825853846a2b3b8df2b96fc6520be5cb31ce7f37a160ff02'
+            'fd7b6ce8ce178107f2e0b52462ebf186b6051c6eec945770107fda57048c9f34'
+            'b2bee567aab161615cf565a5a426ab2e93ab706f0913d4a3ff94b8f40766b574'
+            '35c4ec4a9c23d92442acc30e0b66a7571bc1763c26abd132b5e21c6881044394'
+            '0b5f6d92a677ae7a1bbdbe1edced998fbd241d415301b5af9e694daf5d19e308')
 
 _extra_lto_flag=""
 
@@ -43,6 +47,8 @@ prepare() {
   )
 
   patch --forward --strip=1 --input="${srcdir:?}/fontconfig-sleep-less.patch"
+  patch --forward --strip=1 --input="${srcdir:?}/fontconfig-score-fix.patch"
+  patch --forward --strip=1 --input="${srcdir:?}/fontconfig-lcdfilter.patch"
 
 }
 
@@ -90,9 +96,9 @@ package() {
 
   # Handle conf.d using the hook to avoid overwriting the symlinks on upgrade
   mkdir -p "${pkgdir:?}/usr/share/fontconfig/conf.default"
-  for _f in "${pkgdir:?}"/etc/fonts/conf.d/*.conf; do
-    ln -sr "${pkgdir:?}"/usr/share/fontconfig/conf.{avail,default}/"${_f##*/}"
-    rm "$_f"
+  for _f in "${pkgdir:?}/etc/fonts/conf.d/"*.conf; do
+    ln -sr "${pkgdir:?}/usr/share/fontconfig/conf."{avail,default}"/${_f##*/}"
+    rm "${_f}"
   done
 
   install -Dt "${pkgdir:?}/usr/share/libalpm/hooks" -m644 *.hook

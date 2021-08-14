@@ -1,0 +1,40 @@
+From 2b897d4624f015c0f59a9f46925b758adfc79190 Mon Sep 17 00:00:00 2001
+From: Akira TAGOH <akira@tagoh.org>
+Date: Mon, 19 Jul 2021 21:03:20 +0900
+Subject: [PATCH] Enable 11-lcdfilter-default.conf by default
+
+Some applications needs this enabled by default on non-GNOME desktops.
+
+reference: https://bugzilla.redhat.com/show_bug.cgi?id=1965684
+---
+ conf.d/Makefile.am | 1 +
+ conf.d/meson.build | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/conf.d/Makefile.am b/conf.d/Makefile.am
+index 710318c1..43b6e2b9 100644
+--- a/conf.d/Makefile.am
++++ b/conf.d/Makefile.am
+@@ -32,6 +32,7 @@ DOC_FILES = $(DOC_SOURCES:.in=)
+ CONF_LINKS = \
+ 	10-hinting-$(PREFERRED_HINTING).conf	\
+ 	10-scale-bitmap-fonts.conf \
++	11-lcdfilter-default.conf \
+ 	20-unhint-small-vera.conf \
+ 	30-metric-aliases.conf \
+ 	40-nonlatin.conf \
+diff --git a/conf.d/meson.build b/conf.d/meson.build
+index 2cb144ee..172e2af2 100644
+--- a/conf.d/meson.build
++++ b/conf.d/meson.build
+@@ -42,6 +42,7 @@ preferred_hinting = 'slight'
+ conf_links = [
+   '10-hinting-@0@.conf'.format(preferred_hinting),
+   '10-scale-bitmap-fonts.conf',
++  '11-lcdfilter-default.conf',
+   '20-unhint-small-vera.conf',
+   '30-metric-aliases.conf',
+   '40-nonlatin.conf',
+-- 
+2.32.0
+

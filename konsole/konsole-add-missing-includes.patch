@@ -1,0 +1,35 @@
+From 99b39594642e685ef2a8851d10a05fa9dcd5fa68 Mon Sep 17 00:00:00 2001
+From: Laurent Montel <montel@kde.org>
+Date: Fri, 6 Aug 2021 13:19:52 +0200
+Subject: [PATCH] Add missing includes when we want to build without deprecated
+ methods
+
+---
+ src/BookmarkHandler.h | 1 +
+ src/BookmarkMenu.cpp  | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/src/BookmarkHandler.h b/src/BookmarkHandler.h
+index 705672256..5c8c5bba5 100644
+--- a/src/BookmarkHandler.h
++++ b/src/BookmarkHandler.h
+@@ -13,6 +13,7 @@
+ 
+ // KDE
+ #include <KBookmarkManager>
++#include <KBookmarkOwner>
+ 
+ // Konsole
+ #include "konsoleprivate_export.h"
+diff --git a/src/BookmarkMenu.cpp b/src/BookmarkMenu.cpp
+index 4e1afa1ac..3b51714e4 100644
+--- a/src/BookmarkMenu.cpp
++++ b/src/BookmarkMenu.cpp
+@@ -13,6 +13,7 @@
+ // KDE
+ #include <KActionCollection>
+ #include <KBookmarkManager>
++#include <KBookmarkOwner>
+ #include <KBookmark>
+ 
+ // Qt

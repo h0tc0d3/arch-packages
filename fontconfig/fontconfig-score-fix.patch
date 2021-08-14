@@ -1,0 +1,188 @@
+From 4d43f84188847a6a77f7259f986fb178c52c1ea7 Mon Sep 17 00:00:00 2001
+From: Akira TAGOH <akira@tagoh.org>
+Date: Thu, 8 Jul 2021 14:21:50 +0900
+Subject: [PATCH 1/2] Do not set different score to non-string values
+
+Non-string values in a cache is supposed to choose one from them.
+Due to the change of da1c9f7a, there was a regression on scoring for
+matching functions.  So reverting the behavior for evaluating non-string
+values to the previous one.
+
+Fixes https://gitlab.freedesktop.org/fontconfig/fontconfig/-/issues/286
+---
+ src/fcmatch.c            |  2 +-
+ test/Makefile.am         |  1 +
+ test/run-test-conf.sh    |  1 +
+ test/test-conf.c         | 71 ++++++++++++++++++++++++++--------------
+ test/test-issue-286.json | 35 ++++++++++++++++++++
+ 5 files changed, 85 insertions(+), 25 deletions(-)
+ create mode 100644 test/test-issue-286.json
+
+diff --git a/src/fcmatch.c b/src/fcmatch.c
+index c88e3aa..fd43cbd 100644
+--- a/src/fcmatch.c
++++ b/src/fcmatch.c
+@@ -433,7 +433,7 @@ FcCompareValueList (FcObject	     object,
+ 		*result = FcResultTypeMismatch;
+ 		return FcFalse;
+ 	    }
+-	    v = v * 1000 + j * 100 + k;
++	    v = v * 1000 + j * 100 + k * (v2->value.type == FcTypeString ? 1 : 0);
+ 	    if (v < best)
+ 	    {
+ 		if (bestValue)
+diff --git a/test/Makefile.am b/test/Makefile.am
+index aea8724..d07654b 100644
+--- a/test/Makefile.am
++++ b/test/Makefile.am
+@@ -47,6 +47,7 @@ TESTDATA =			\
+ 	test-45-generic.json	\
+ 	test-60-generic.json	\
+ 	test-90-synthetic.json	\
++	test-issue-286.json	\
+ 	test-style-match.json	\
+ 	$(NULL)
+ 
+diff --git a/test/run-test-conf.sh b/test/run-test-conf.sh
+index 0c2bd52..bbb56f4 100644
+--- a/test/run-test-conf.sh
++++ b/test/run-test-conf.sh
+@@ -49,6 +49,7 @@ for i in \
+     $RUNNER $TESTDIR/../conf.d/$i $TESTDIR/$test_json
+ done
+ for i in \
++	test-issue-286.json \
+ 	test-style-match.json \
+     ; do
+     echo $RUNNER $TESTDIR/$i ...
+diff --git a/test/test-conf.c b/test/test-conf.c
+index e4e9da4..1a52c6e 100644
+--- a/test/test-conf.c
++++ b/test/test-conf.c
+@@ -207,35 +207,58 @@ build_pattern (json_object *obj)
+ 		    }
+ 		}
+ 	    } else if (type == json_type_double || type == json_type_int) {
++		const FcObjectType *fc_o = FcNameGetObjectType (iter.key);
+ 		double values[4];
+-		if (n != 2 && n != 4) {
+-		    fprintf (stderr, "E: array starting with number not range or matrix\n");
++
++		if (fc_o && fc_o->type == FcTypeDouble) {
++		    for (i = 0; i < n; i++)
++		    {
++			o = json_object_array_get_idx (iter.val, i);
++			type = json_object_get_type (o);
++			if (type == json_type_double) {
++			    v.type = FcTypeDouble;
++			    v.u.d = json_object_get_double (o);
++			} else if (type == json_type_int) {
++			    v.type = FcTypeInteger;
++			    v.u.i = json_object_get_int (o);
++			} else {
++			    fprintf (stderr, "E: unable to convert to double\n");
++			    continue;
++			}
++			FcPatternAdd (pat, iter.key, v, FcTrue);
++			v.type = FcTypeVoid;
++		    }
+ 		    continue;
+-		}
+-		for (i = 0; i < n; i++) {
+-		    o = json_object_array_get_idx (iter.val, i);
+-		    type = json_object_get_type (o);
+-		    if (type != json_type_double && type != json_type_int) {
+-			fprintf (stderr, "E: numeric array entry not a number\n");
++		} else {
++		    if (n != 2 && n != 4) {
++			fprintf (stderr, "E: array starting with number not range or matrix\n");
+ 			continue;
+ 		    }
+-		    values[i] = json_object_get_double (o);
+-		}
+-		if (n == 2) {
+-		    v.type = FcTypeRange;
+-		    v.u.r = FcRangeCreateDouble (values[0], values[1]);
+-		    if (!v.u.r) {
+-			fprintf (stderr, "E: failed to create range\n");
+-			continue;
++		    for (i = 0; i < n; i++) {
++			o = json_object_array_get_idx (iter.val, i);
++			type = json_object_get_type (o);
++			if (type != json_type_double && type != json_type_int) {
++			    fprintf (stderr, "E: numeric array entry not a number\n");
++			    continue;
++			}
++			values[i] = json_object_get_double (o);
++		    }
++		    if (n == 2) {
++			v.type = FcTypeRange;
++			v.u.r = FcRangeCreateDouble (values[0], values[1]);
++			if (!v.u.r) {
++			    fprintf (stderr, "E: failed to create range\n");
++			    continue;
++			}
++			destroy_v = FcTrue;
++		    } else {
++			v.type = FcTypeMatrix;
++			v.u.m = &matrix;
++			matrix.xx = values[0];
++			matrix.xy = values[1];
++			matrix.yx = values[2];
++			matrix.yy = values[3];
+ 		    }
+-		    destroy_v = FcTrue;
+-		} else {
+-		    v.type = FcTypeMatrix;
+-		    v.u.m = &matrix;
+-		    matrix.xx = values[0];
+-		    matrix.xy = values[1];
+-		    matrix.yx = values[2];
+-		    matrix.yy = values[3];
+ 		}
+ 	    } else {
+ 		fprintf (stderr, "E: array format not recognized\n");
+diff --git a/test/test-issue-286.json b/test/test-issue-286.json
+new file mode 100644
+index 0000000..a3199fa
+--- /dev/null
++++ b/test/test-issue-286.json
+@@ -0,0 +1,35 @@
++{
++    "fonts": [
++        {
++            "family": "Foo",
++            "style": "Italic",
++	    "pixelsize": [15, 16, 17, 18],
++            "file": "/path/to/Foo-Italic.ttf",
++            "fontversion": 133365
++        },
++        {
++            "family": "Foo",
++            "style": "Regular",
++	    "pixelsize": [11, 12, 13, 14, 15, 16, 17, 18, 22],
++            "file": "/path/to/Foo-Regular.ttf",
++            "fontversion": 133365
++        }
++    ],
++    "tests": [
++        {
++            "method": "match",
++            "query": {
++                "family": "Foo",
++                "style": "Regular",
++		"pixelsize": 16
++            },
++            "result": {
++                "family": "Foo",
++                "style": "Regular",
++	        "pixelsize": 16,
++                "file": "/path/to/Foo-Regular.ttf",
++                "fontversion": 133365
++            }
++        }
++    ]
++}
+-- 
+2.31.1
+

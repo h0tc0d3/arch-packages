@@ -14,9 +14,7 @@ _commit=467bda1e0bc2614b10e2edc46dccc9588388e045 # tags/1.48.7^0
 source=(
   "git+https://gitlab.gnome.org/GNOME/pango.git#commit=${_commit}"
 )
-sha256sums=(
-  'SKIP'
-)
+sha256sums=('SKIP')
 
 _extra_lto_flag=""
 

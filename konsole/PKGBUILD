@@ -1,6 +1,6 @@
 pkgname=konsole+clang
-pkgver=21.04.3
-pkgrel=1
+pkgver=21.08.0
+pkgrel=2
 arch=(x86_64)
 url='https://apps.kde.org/konsole/'
 pkgdesc='KDE terminal emulator'
@@ -13,8 +13,16 @@ makedepends=(extra-cmake-modules kdoctools)
 optdepends=('keditbookmarks: to manage bookmarks')
 source=(
   "https://download.kde.org/stable/release-service/${pkgver}/src/konsole-${pkgver}.tar.xz"
+  konsole-add-missing-includes.patch
+  konsole-prevent-window-flashing-when-closing.patch
+  konsole-improve-session-closing-behavior.patch
+  konsole-fix-crash-when-setting-blur-effect.patch
 )
-sha256sums=('bcb1fe3af641de857e2b2991f2ccb8a1fb5d5b46ebef57869b271f4ffb722b14')
+sha256sums=('5bdd16aadfe3e45a353dfac31c66cc769232f31dea8d4735a6de61f1384abebf'
+            'b94c3b4a5265d6f5e6ab5b0ea8a34c23e7ded24d00044d6ca0fbbbd16e869a47'
+            '4fb4e2d434c08cb70cbbe5a759d8961e6ff0b35859ccf849746a01053bb2d927'
+            '1375246d0a49d0cf05195693f2a010f0a39e7073ecf50b7d8381aafbe697296b'
+            '20265136a55f9d28f1bcbb04b361bd15173ff39c21c1cd205ebc3e0526720584')
 
 validpgpkeys=(
   'CA262C6C83DE4D2FB28A332A3A6A4DB839EAA6D7' # Albert Astals Cid <aacid@kde.org>
@@ -24,11 +32,28 @@ validpgpkeys=(
 
 _llvm=0
 
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
+
 prepare() {
 
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=1
   fi
+
+  cd "${srcdir:?}/konsole-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/konsole-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  _patch konsole-add-missing-includes.patch
+  _patch konsole-prevent-window-flashing-when-closing.patch
+  _patch konsole-improve-session-closing-behavior.patch
+  _patch konsole-fix-crash-when-setting-blur-effect.patch
 
 }
 
