@@ -104,12 +104,12 @@ kwayland-server
 frameworkintegration
 breeze
 plasma-integration
+kio
+kio-extras
 kinit
 libqalculate
 plasma-workspace
 plasma-framework
-kio
-kio-extras
 imath
 libheif
 libavif
