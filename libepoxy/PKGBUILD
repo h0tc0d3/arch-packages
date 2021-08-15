@@ -1,5 +1,5 @@
 pkgname=libepoxy+clang
-pkgver=1.5.8
+pkgver=1.5.9
 pkgrel=1
 pkgdesc="Library handling OpenGL function pointer management"
 url="https://github.com/anholt/libepoxy"
@@ -9,7 +9,7 @@ provides=(libepoxy "libepoxy=${pkgver}")
 conflicts=(libepoxy)
 depends=(glibc)
 makedepends=(python mesa-libgl git meson doxygen graphviz)
-_commit=2a1665c632d47c2c73f4e8e1d2f2db62b26682d2 # tags/1.5.8^0
+_commit=ecfa8e0f083084181d36966fa084aca9a6c97d53 # tags/1.5.8^0
 source=("git+https://github.com/anholt/libepoxy#commit=$_commit")
 sha256sums=('SKIP')
 
