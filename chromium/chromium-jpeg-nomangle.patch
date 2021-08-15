@@ -1,0 +1,17 @@
+diff --git a/third_party/libjpeg_turbo/jpeglib.h b/third_party/libjpeg_turbo/jpeglib.h
+index a717928..d7664f0 100644
+--- a/third_party/libjpeg_turbo/jpeglib.h
++++ b/third_party/libjpeg_turbo/jpeglib.h
+@@ -18,12 +18,6 @@
+ #ifndef JPEGLIB_H
+ #define JPEGLIB_H
+ 
+-/* Begin chromium edits */
+-#ifdef MANGLE_JPEG_NAMES
+-#include "jpeglibmangler.h"
+-#endif
+-/* End chromium edits */
+-
+ /*
+  * First we include the configuration files that record how this
+  * installation of the JPEG library is set up.  jconfig.h can be

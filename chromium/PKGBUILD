@@ -1,8 +1,7 @@
 pkgname=chromium+clang
-pkgver=92.0.4515.107
-pkgrel=3
-_launcher_ver=7
-_gcc_patchset=7
+pkgver=92.0.4515.131
+pkgrel=1
+_launcher_ver=8
 pkgdesc="A web browser built for speed, simplicity, and security"
 arch=('x86_64')
 url="https://www.chromium.org/Home"
@@ -21,23 +20,55 @@ optdepends=('pipewire: WebRTC desktop sharing under Wayland'
 source=(
   "https://commondatastorage.googleapis.com/chromium-browser-official/chromium-${pkgver}.tar.xz"
   "https://github.com/foutrelis/chromium-launcher/archive/v${_launcher_ver}/chromium-launcher-${_launcher_ver}.tar.gz"
-  "https://github.com/stha09/chromium-patches/releases/download/chromium-${pkgver%%.*}-patchset-${_gcc_patchset}/chromium-${pkgver%%.*}-patchset-${_gcc_patchset}.tar.xz"
+  chromium-sandbox-pie.patch
+  chromium-freetype-2.11.patch
+  chromium-no-libpng-prefix.patch
+  chromium-jpeg-nomangle.patch
+  chromium-no-zlib-mangle.patch
+  chromium-norar.patch
+  chromium-unbundle-zlib.patch
+  chromium-use-oauth2-client-switches-as-default.patch
+  chromium-enable-hardware-accelerated-mjpeg.patch
+  chromium-vaapi-i686-fpermissive.patch
+  chromium-fix-vaapi-on-intel.patch
   extend-enable-accelerated-video-decode-flag.patch
   sql-make-VirtualCursor-standard-layout-type.patch
-  use-oauth2-client-switches-as-default.patch
-  GetUsableSize-handle-nullptr-gracefully.patch
-  linux-sandbox-syscall-broker-use-struct-kernel_stat.patch
-  linux-sandbox-fix-fstatat-crash.patch
+  chromium-sandbox-syscall-broker-use-struct-kernel_stat.patch
+  chromium-sandbox-fix-fstatat-crash.patch
+  chromium-EnumTable-crash.patch
+  chromium-std-max-fix.patch
+  chromium-crashpad-consent.patch
+  chromium-ruy-include.patch
+  chromium-gcc11.patch
+  chromium-py3-bootstrap.patch
+  chromium-py3-fixes.patch
+  chromium-libdav1d.patch
 )
-sha256sums=('6e51ac6512a4e95018eefc9fef1d2e7597f28a1c45c763b3a8eb7dde5f557012'
-            '86859c11cfc8ba106a3826479c0bc759324a62150b271dd35d1a0f96e890f52f'
-            '53a2cbb1b58d652d5424ff9040b6a51b9dc6348ce3edc68344cd0d25f1f4beb2'
-            '66db9132d6f5e06aa26e5de0924f814224a76a9bdf4b61afce161fb1d7643b22'
-            'dd317f85e5abfdcfc89c6f23f4c8edbcdebdd5e083dcec770e5da49ee647d150'
-            'e393174d7695d0bafed69e868c5fbfecf07aa6969f3b64596d0bae8b067e1711'
-            'fd405edba74d535bac951c456ce8437b9fee93ad68a52fbf3bbdb3d53fd0c58e'
-            '268e18ad56e5970157b51ec9fc8eb58ba93e313ea1e49c842a1ed0820d9c1fa3'
-            '253348550d54b8ae317fd250f772f506d2bae49fb5dc75fe15d872ea3d0e04a5')
+sha256sums=('b6ac840ed5390de69f962e922649bf1df895ff0f5db8e5f656b5191e0cf4ce3a'
+  '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
+  'e5b651b403e5b161bf9b5e049f8202c444d7f1700411f89d62c20303c80846e0'
+  '7ef689cd6b2f85f2b76b2a10ecede003cfa0c2da15acc998ecbc445f2c95ced6'
+  '70a2805a63df15817a3435e983c0350c5d04ff62deffd8214cbb040b904f54a5'
+  '15c93da644dbc533a6b74bd7f86a07dc59023c7b369298acd649715b9a9209a5'
+  'c162eafc1f128e616281e719d860ec8726eec89660f449ed0e9af7dfe07c8cc9'
+  '8b1956b539c91d71df6391f155dad26409a524047e752b860c2afe289e1d1a72'
+  'f8dcac3a18e20bee8c54912c1c931e723e97981cc88c8568bd05411812ff6204'
+  'e393174d7695d0bafed69e868c5fbfecf07aa6969f3b64596d0bae8b067e1711'
+  '043d83d22af1210c2dd7f3ef9e42e6f316556cb9ec3e377deded080025abf9c1'
+  '7a84822b25734547055c2aba265df50ab02f47515b3f7fa0ce821572d4d1f8cd'
+  'cfd35f512cd966a1566397c02897d3cb3d89e117b41b8629e2de11329a2c0b17'
+  '66db9132d6f5e06aa26e5de0924f814224a76a9bdf4b61afce161fb1d7643b22'
+  '2b36574144bb7135512b81f394e53ea80d931ac62148b28c17a70a2869cb501c'
+  '268e18ad56e5970157b51ec9fc8eb58ba93e313ea1e49c842a1ed0820d9c1fa3'
+  '253348550d54b8ae317fd250f772f506d2bae49fb5dc75fe15d872ea3d0e04a5'
+  '66691bc935062091c7570b973fa66e99990f549622fa9122cf52df6bb1b2a6fd'
+  '0589f73f37e39d7244c8aee15e0d4a52277929d77fe5c1b5d7506198012473a2'
+  '62543a39702bb2782ec844c189d8e0fc6909453648fd9e9ed907007e201e91d2'
+  '885e83c91fe29246f1d8abc62b70cb28348bf5eda722bd06b17663c86244106c'
+  '5690089b8bd6946dfa975b8022531213b882b3396a3c968eeef9836b131725b7'
+  '7d13de3735c434ae2568f5d5c4c79904b13f4e368d3e1b67691a1d3e7eec7dec'
+  'ff80a8fe749363ff91b063cf641d3527807c48b23efe62f8de1d0a6076b39b11'
+  '97c5c3551c19e5a9b77ac9db5dd3bd396f08acccf735ac5710274bd31e4ce08c')
 #noextract=("${source[@]##*/}")
 # Possible replacements are listed in build/linux/unbundle/replace_gn_files.py
 # Keys are the names in the above script; values are the dependencies in Arch
@@ -75,6 +106,13 @@ depends+=(${_system_libs[@]})
 # out: https://archlinux.org/news/chromium-losing-sync-support-in-early-march/
 _google_api_key=AIzaSyDwr302FpOSkGRpLlUpPThNTDPbXcIn_FM
 
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
+
 prepare() {
 
   cd "${srcdir:?}/chromium-${pkgver}"
@@ -84,43 +122,61 @@ prepare() {
     tools/generate_shim_headers/generate_shim_headers.py
 
   # https://crbug.com/893950
-  sed -i -e 's/\<xmlMalloc\>/malloc/' -e 's/\<xmlFree\>/free/' \
-    third_party/blink/renderer/core/xml/*.cc \
-    third_party/blink/renderer/core/xml/parser/xml_document_parser.cc \
-    third_party/libxml/chromium/*.cc
+  #sed -i -e 's/\<xmlMalloc\>/malloc/' -e 's/\<xmlFree\>/free/' \
+  #  third_party/blink/renderer/core/xml/*.cc \
+  #  third_party/blink/renderer/core/xml/parser/xml_document_parser.cc \
+  #  third_party/libxml/chromium/*.cc
+
+  # Add pie build flags to sandbox
+  _patch chromium-sandbox-pie.patch
+  # Fix build with Freetype 2.11
+  _patch chromium-freetype-2.11.patch
+  # Do not prefix libpng functions
+  _patch chromium-no-libpng-prefix.patch
+  # Do not mangle libjpeg
+  _patch chromium-jpeg-nomangle.patch
+  # Do not mangle zlib
+  _patch chromium-no-zlib-mangle.patch
+  # Unbundle zlib
+  _patch chromium-unbundle-zlib.patch
+  # Do not use unrar code, it is non-free
+  _patch chromium-norar.patch
 
   # Use the --oauth2-client-id= and --oauth2-client-secret= switches for
   # setting GOOGLE_DEFAULT_CLIENT_ID and GOOGLE_DEFAULT_CLIENT_SECRET at
   # runtime -- this allows signing into Chromium without baked-in values
-  patch -Np1 -i ../use-oauth2-client-switches-as-default.patch
+  _patch chromium-use-oauth2-client-switches-as-default.patch
+
+  # VAAPI
+  _patch chromium-enable-hardware-accelerated-mjpeg.patch
+  _patch chromium-vaapi-i686-fpermissive.patch
+  _patch chromium-fix-vaapi-on-intel.patch
 
   # Upstream fixes
-  patch -Np1 -i ../extend-enable-accelerated-video-decode-flag.patch
-  patch -Np1 -i ../linux-sandbox-syscall-broker-use-struct-kernel_stat.patch
-  patch -Np1 -i ../linux-sandbox-fix-fstatat-crash.patch
+  _patch extend-enable-accelerated-video-decode-flag.patch
+  _patch chromium-sandbox-syscall-broker-use-struct-kernel_stat.patch
+  _patch chromium-sandbox-fix-fstatat-crash.patch
+  _patch chromium-EnumTable-crash.patch
+  _patch chromium-std-max-fix.patch
+  _patch chromium-crashpad-consent.patch
+  _patch chromium-ruy-include.patch
+  _patch chromium-gcc11.patch
+  _patch chromium-py3-bootstrap.patch
+  _patch chromium-py3-fixes.patch
+  _patch chromium-libdav1d.patch
 
   # https://chromium-review.googlesource.com/c/chromium/src/+/2862724
-  patch -Np1 -i ../sql-make-VirtualCursor-standard-layout-type.patch
-
-  # Fix crash https://bugs.chromium.org/p/chromium/issues/detail?id=1221442
-  patch -Np1 -i ../GetUsableSize-handle-nullptr-gracefully.patch
-
-  # Fixes for building with libstdc++ instead of libc++
-  patch -Np1 -i ../patches/chromium-90-ruy-include.patch
-
-
-  # Fix error: use of undeclared identifier 'FT_COLR_PAINTFORMAT_TRANSFORMED';
-  # did you mean 'FT_COLR_PAINTFORMAT_TRANSFORM'?
-  sed -i -e 's/FT_COLR_PAINTFORMAT_TRANSFORMED/FT_COLR_PAINTFORMAT_TRANSFORM/g' \
-    third_party/skia/src/ports/SkFontHost_FreeType_common.cpp
-
-  sed -i -e 's/paint\.u\.transformed/paint.u.transform/g' \
-    third_party/skia/src/ports/SkFontHost_FreeType_common.cpp
+  _patch sql-make-VirtualCursor-standard-layout-type.patch
 
   # Fix build with system libpng
   sed -i -e "/USE_SYSTEM_LIBPNG/ a#include \"core/fxcodec/fx_codec_def.h\"" \
     third_party/pdfium/core/fxcodec/png/png_decoder.cpp
-  
+
+  # Fix build with glibc 3.34
+  # sandbox/linux/services/credentials.cc:101:16: error: variable-sized object may not be initialized
+  sed -i -e "s/char\stls_buf\[PTHREAD_STACK_MIN\]\s=\s{0};/char tls_buf[PTHREAD_STACK_MIN];for(size_t i=0;i<PTHREAD_STACK_MIN;i++) tls_buf[i]=0;/g" \
+    sandbox/linux/services/credentials.cc
+
   # Link to system tools required by the build
   mkdir -p third_party/node/linux/node-linux-x64/bin
   ln -sf /usr/bin/node third_party/node/linux/node-linux-x64/bin/
@@ -131,9 +187,9 @@ prepare() {
   # added benefit of not having to list all the remaining libraries
   local _lib
   for _lib in ${_unwanted_bundled_libs[@]}; do
-    find "third_party/$_lib" -type f \
-      \! -path "third_party/$_lib/chromium/*" \
-      \! -path "third_party/$_lib/google/*" \
+    find "third_party/${_lib}" -type f \
+      \! -path "third_party/${_lib}/chromium/*" \
+      \! -path "third_party/${_lib}/google/*" \
       \! -path "third_party/harfbuzz-ng/utils/hb_scoped.h" \
       \! -regex '.*\.\(gn\|gni\|isolate\)' \
       -delete
@@ -142,9 +198,13 @@ prepare() {
   ./build/linux/unbundle/replace_gn_files.py \
     --system-libraries "${!_system_libs[@]}"
 
+  rm -rf buildtools/third_party/libc++/BUILD.gn
+
 }
 
 build() {
+
+  ulimit -n 4096
 
   make -C "chromium-launcher-${_launcher_ver}" "-j$(nproc)"
 
@@ -153,7 +213,10 @@ build() {
   local _flags=(
     'custom_toolchain="//build/toolchain/linux/unbundle:default"'
     'host_toolchain="//build/toolchain/linux/unbundle:default"'
+    'v8_snapshot_toolchain="//build/toolchain/linux/unbundle:default"'
+    'is_clang=true'
     'clang_use_chrome_plugins=false'
+    'use_lld=true'
     'is_official_build=true' # implies is_cfi=true on x86_64
     'is_debug=false'
     'symbol_level=1'
@@ -168,14 +231,15 @@ build() {
     'use_sysroot=false'
     'use_custom_libcxx=false'
     'use_system_libpng=true'
+    'use_system_libjpeg=true'
     'use_system_zlib=true'
+    'use_system_harfbuzz=true'
     'use_partition_alloc=true'
+    'use_vaapi=true'
     'enable_hangout_services_extension=true'
     'enable_widevine=true'
     'enable_nacl=false'
-    "google_api_key=\"$_google_api_key\""
-    'is_clang=true'
-    'use_lld=true'
+    "google_api_key=\"${_google_api_key}\""
   )
 
   if [[ "${CFLAGS=}" =~ znver2 ]]; then
@@ -188,10 +252,14 @@ build() {
     _flags+=('icu_use_data_file=false')
   fi
 
+  CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
+  CFLAGS=${CFLAGS/--param ssp-buffer-size=4 -fstack-clash-protection/}
+  CXXFLAGS=${CXXFLAGS/--param ssp-buffer-size=4 -fstack-clash-protection/}
+  LDFLAGS="${LDFLAGS=} -Wl,--thinlto-jobs=$(nproc)"
   # Facilitate deterministic builds (taken from build/config/compiler/BUILD.gn)
-  CFLAGS+='   -Wno-builtin-macro-redefined'
-  CXXFLAGS+=' -Wno-builtin-macro-redefined'
-  CPPFLAGS+=' -D__DATE__=  -D__TIME__=  -D__TIMESTAMP__='
+  #CFLAGS+='   -Wno-builtin-macro-redefined'
+  #CXXFLAGS+=' -Wno-builtin-macro-redefined'
+  #CPPFLAGS+=' -D__DATE__=  -D__TIME__=  -D__TIMESTAMP__='
 
   # Do not warn about unknown warning options
   CFLAGS+='   -Wno-unknown-warning-option'
@@ -241,11 +309,9 @@ package() {
     chrome_200_percent.pak
     resources.pak
     v8_context_snapshot.bin
-
     # ANGLE
     libEGL.so
     libGLESv2.so
-
     chromedriver
     crashpad_handler
   )
