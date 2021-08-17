@@ -1,5 +1,5 @@
 pkgname=chromium+clang
-pkgver=92.0.4515.131
+pkgver=92.0.4515.159
 pkgrel=1
 _launcher_ver=8
 pkgdesc="A web browser built for speed, simplicity, and security"
@@ -13,10 +13,12 @@ depends=('gtk3' 'nss' 'alsa-lib' 'xdg-utils' 'libxss' 'libcups' 'libgcrypt'
   'desktop-file-utils' 'hicolor-icon-theme')
 makedepends=('python' 'gn' 'ninja' 'clang' 'lld' 'gperf' 'nodejs' 'pipewire'
   'java-runtime-headless' 'python2')
-optdepends=('pipewire: WebRTC desktop sharing under Wayland'
+optdepends=(
+  'pipewire: WebRTC desktop sharing under Wayland'
   'kdialog: support for native dialogs in Plasma'
   'org.freedesktop.secrets: password storage backend on GNOME / Xfce'
-  'kwallet: support for storing passwords in KWallet on Plasma')
+  'kwallet: support for storing passwords in KWallet on Plasma'
+)
 source=(
   "https://commondatastorage.googleapis.com/chromium-browser-official/chromium-${pkgver}.tar.xz"
   "https://github.com/foutrelis/chromium-launcher/archive/v${_launcher_ver}/chromium-launcher-${_launcher_ver}.tar.gz"
@@ -44,31 +46,31 @@ source=(
   chromium-py3-fixes.patch
   chromium-libdav1d.patch
 )
-sha256sums=('b6ac840ed5390de69f962e922649bf1df895ff0f5db8e5f656b5191e0cf4ce3a'
-  '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
-  'e5b651b403e5b161bf9b5e049f8202c444d7f1700411f89d62c20303c80846e0'
-  '7ef689cd6b2f85f2b76b2a10ecede003cfa0c2da15acc998ecbc445f2c95ced6'
-  '70a2805a63df15817a3435e983c0350c5d04ff62deffd8214cbb040b904f54a5'
-  '15c93da644dbc533a6b74bd7f86a07dc59023c7b369298acd649715b9a9209a5'
-  'c162eafc1f128e616281e719d860ec8726eec89660f449ed0e9af7dfe07c8cc9'
-  '8b1956b539c91d71df6391f155dad26409a524047e752b860c2afe289e1d1a72'
-  'f8dcac3a18e20bee8c54912c1c931e723e97981cc88c8568bd05411812ff6204'
-  'e393174d7695d0bafed69e868c5fbfecf07aa6969f3b64596d0bae8b067e1711'
-  '043d83d22af1210c2dd7f3ef9e42e6f316556cb9ec3e377deded080025abf9c1'
-  '7a84822b25734547055c2aba265df50ab02f47515b3f7fa0ce821572d4d1f8cd'
-  'cfd35f512cd966a1566397c02897d3cb3d89e117b41b8629e2de11329a2c0b17'
-  '66db9132d6f5e06aa26e5de0924f814224a76a9bdf4b61afce161fb1d7643b22'
-  '2b36574144bb7135512b81f394e53ea80d931ac62148b28c17a70a2869cb501c'
-  '268e18ad56e5970157b51ec9fc8eb58ba93e313ea1e49c842a1ed0820d9c1fa3'
-  '253348550d54b8ae317fd250f772f506d2bae49fb5dc75fe15d872ea3d0e04a5'
-  '66691bc935062091c7570b973fa66e99990f549622fa9122cf52df6bb1b2a6fd'
-  '0589f73f37e39d7244c8aee15e0d4a52277929d77fe5c1b5d7506198012473a2'
-  '62543a39702bb2782ec844c189d8e0fc6909453648fd9e9ed907007e201e91d2'
-  '885e83c91fe29246f1d8abc62b70cb28348bf5eda722bd06b17663c86244106c'
-  '5690089b8bd6946dfa975b8022531213b882b3396a3c968eeef9836b131725b7'
-  '7d13de3735c434ae2568f5d5c4c79904b13f4e368d3e1b67691a1d3e7eec7dec'
-  'ff80a8fe749363ff91b063cf641d3527807c48b23efe62f8de1d0a6076b39b11'
-  '97c5c3551c19e5a9b77ac9db5dd3bd396f08acccf735ac5710274bd31e4ce08c')
+sha256sums=('d97d337d0d70e959a75f1f510f5d78d2b57b5bf24573b7ade9fff9f26a7cfd11'
+            '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
+            'e5b651b403e5b161bf9b5e049f8202c444d7f1700411f89d62c20303c80846e0'
+            '7ef689cd6b2f85f2b76b2a10ecede003cfa0c2da15acc998ecbc445f2c95ced6'
+            '70a2805a63df15817a3435e983c0350c5d04ff62deffd8214cbb040b904f54a5'
+            '15c93da644dbc533a6b74bd7f86a07dc59023c7b369298acd649715b9a9209a5'
+            'c162eafc1f128e616281e719d860ec8726eec89660f449ed0e9af7dfe07c8cc9'
+            '8b1956b539c91d71df6391f155dad26409a524047e752b860c2afe289e1d1a72'
+            'f8dcac3a18e20bee8c54912c1c931e723e97981cc88c8568bd05411812ff6204'
+            'e393174d7695d0bafed69e868c5fbfecf07aa6969f3b64596d0bae8b067e1711'
+            '043d83d22af1210c2dd7f3ef9e42e6f316556cb9ec3e377deded080025abf9c1'
+            '7a84822b25734547055c2aba265df50ab02f47515b3f7fa0ce821572d4d1f8cd'
+            'cfd35f512cd966a1566397c02897d3cb3d89e117b41b8629e2de11329a2c0b17'
+            '66db9132d6f5e06aa26e5de0924f814224a76a9bdf4b61afce161fb1d7643b22'
+            '2b36574144bb7135512b81f394e53ea80d931ac62148b28c17a70a2869cb501c'
+            '268e18ad56e5970157b51ec9fc8eb58ba93e313ea1e49c842a1ed0820d9c1fa3'
+            '253348550d54b8ae317fd250f772f506d2bae49fb5dc75fe15d872ea3d0e04a5'
+            '66691bc935062091c7570b973fa66e99990f549622fa9122cf52df6bb1b2a6fd'
+            '0589f73f37e39d7244c8aee15e0d4a52277929d77fe5c1b5d7506198012473a2'
+            '62543a39702bb2782ec844c189d8e0fc6909453648fd9e9ed907007e201e91d2'
+            '885e83c91fe29246f1d8abc62b70cb28348bf5eda722bd06b17663c86244106c'
+            '5690089b8bd6946dfa975b8022531213b882b3396a3c968eeef9836b131725b7'
+            '7d13de3735c434ae2568f5d5c4c79904b13f4e368d3e1b67691a1d3e7eec7dec'
+            'ff80a8fe749363ff91b063cf641d3527807c48b23efe62f8de1d0a6076b39b11'
+            '97c5c3551c19e5a9b77ac9db5dd3bd396f08acccf735ac5710274bd31e4ce08c')
 #noextract=("${source[@]##*/}")
 # Possible replacements are listed in build/linux/unbundle/replace_gn_files.py
 # Keys are the names in the above script; values are the dependencies in Arch
@@ -128,7 +130,7 @@ prepare() {
   #  third_party/libxml/chromium/*.cc
 
   # Add pie build flags to sandbox
-  _patch chromium-sandbox-pie.patch
+  #_patch chromium-sandbox-pie.patch
   # Fix build with Freetype 2.11
   _patch chromium-freetype-2.11.patch
   # Do not prefix libpng functions
@@ -220,7 +222,11 @@ build() {
     'is_official_build=true' # implies is_cfi=true on x86_64
     'is_debug=false'
     'symbol_level=1'
-    'blink_symbol_level=0'
+    'blink_symbol_level=1'
+    #'is_cfi=false'
+    #'chrome_pgo_phase=0'
+    #'thin_lto_enable_optimizations=false'
+    #'use_thin_lto=false'
     'treat_warnings_as_errors=false'
     'fieldtrial_testing_like_official_build=true'
     'ffmpeg_branding="Chrome"'
@@ -255,14 +261,14 @@ build() {
   CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
   CFLAGS=${CFLAGS/--param ssp-buffer-size=4 -fstack-clash-protection/}
   CXXFLAGS=${CXXFLAGS/--param ssp-buffer-size=4 -fstack-clash-protection/}
-  LDFLAGS="${LDFLAGS=} -Wl,--thinlto-jobs=$(nproc)"
+  #LDFLAGS="${LDFLAGS=} -Wl,--thinlto-jobs=$(nproc)"
   # Facilitate deterministic builds (taken from build/config/compiler/BUILD.gn)
-  #CFLAGS+='   -Wno-builtin-macro-redefined'
-  #CXXFLAGS+=' -Wno-builtin-macro-redefined'
+  CFLAGS+=' -Wno-builtin-macro-redefined'
+  CXXFLAGS+=' -Wno-builtin-macro-redefined'
   #CPPFLAGS+=' -D__DATE__=  -D__TIME__=  -D__TIMESTAMP__='
 
   # Do not warn about unknown warning options
-  CFLAGS+='   -Wno-unknown-warning-option'
+  CFLAGS+=' -Wno-unknown-warning-option'
   CXXFLAGS+=' -Wno-unknown-warning-option'
 
   gn gen out/Release --args="${_flags[*]}"
