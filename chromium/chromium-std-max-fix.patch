@@ -7,7 +7,7 @@ diff -up chromium-92.0.4515.107/third_party/breakpad/breakpad/src/client/linux/h
    // the alternative stack. Ensure that the size of the alternative stack is
    // large enough.
 -  static const unsigned kSigStackSize = std::max(16384, SIGSTKSZ);
-+  static const unsigned kSigStackSize = std::max(static_cast<long>(16384), SIGSTKSZ);
++  static const unsigned kSigStackSize = std::max<size_t>(16384L, SIGSTKSZ);
  
    // Only set an alternative stack if there isn't already one, or if the current
    // one is too small.
