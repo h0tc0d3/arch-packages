@@ -1,9 +1,9 @@
 pkgbase=util-linux+clang
 pkgname=(util-linux+clang util-linux-libs+clang)
 _pkgmajor=2.37
-_realver=${_pkgmajor}.1
+_realver=${_pkgmajor}.2
 pkgver=${_realver/-/}
-pkgrel=3
+pkgrel=1
 pkgdesc='Miscellaneous system utilities for Linux'
 url='https://github.com/karelzak/util-linux'
 arch=('x86_64')
@@ -18,10 +18,8 @@ source=(
   '60-rfkill.rules'
   'rfkill-unblock_.service'
   'rfkill-block_.service'
-  '0001-sulogin-fix-getpasswd.patch'
-  '0002-libmount-fix-setgroups-use.patch'
 )
-sha256sums=('8e4bd42053b726cf86eb4d13a73bc1d9225a2c2e1a2e0d2a891f1020f83e6b76'
+sha256sums=('6a0764c1aae7fb607ef8a6dd2c0f6c47d5e5fd27aa08820abaad9ec14e28e9d9'
   'SKIP'
   '99cd77f21ee44a0c5e57b0f3670f711a00496f198fc5704d7e44f5d817c81a0f'
   '57e057758944f4557762c6def939410c04ca5803cbdd2bfa2153ce47ffe7a4af'
@@ -30,9 +28,7 @@ sha256sums=('8e4bd42053b726cf86eb4d13a73bc1d9225a2c2e1a2e0d2a891f1020f83e6b76'
   '10b0505351263a099163c0d928132706e501dd0a008dac2835b052167b14abe3'
   '7423aaaa09fee7f47baa83df9ea6fef525ff9aec395c8cbd9fe848ceb2643f37'
   '8ccec10a22523f6b9d55e0d6cbf91905a39881446710aa083e935e8073323376'
-  'a22e0a037e702170c7d88460cc9c9c2ab1d3e5c54a6985cd4a164ea7beff1b36'
-  '00d526cfaca8979e433c7379c634cf14e700322f0ed0c5a7996af1c900147268'
-  '56fbc491b999aa18113237f28d399045a6d66678353b3619ab8da2f8518d2a4d')
+  'a22e0a037e702170c7d88460cc9c9c2ab1d3e5c54a6985cd4a164ea7beff1b36')
 
 _llvm=0
 
@@ -46,9 +42,6 @@ prepare() {
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/util-linux-${_realver} directory! Prepare Failed! \E[0m"
     exit 1
   )
-
-  patch -Np1 <../0001-sulogin-fix-getpasswd.patch
-  patch -Np1 <../0002-libmount-fix-setgroups-use.patch
 
 }
 
