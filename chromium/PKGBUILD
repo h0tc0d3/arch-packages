@@ -1,6 +1,6 @@
 pkgname=chromium+clang
 pkgver=92.0.4515.159
-pkgrel=1
+pkgrel=2
 _launcher_ver=8
 pkgdesc="A web browser built for speed, simplicity, and security"
 arch=('x86_64')
@@ -29,12 +29,14 @@ source=(
   chromium-no-zlib-mangle.patch
   chromium-norar.patch
   chromium-unbundle-zlib.patch
+  chromium-compiler.patch
   chromium-use-oauth2-client-switches-as-default.patch
   chromium-enable-hardware-accelerated-mjpeg.patch
   chromium-vaapi-i686-fpermissive.patch
   chromium-fix-vaapi-on-intel.patch
   extend-enable-accelerated-video-decode-flag.patch
   sql-make-VirtualCursor-standard-layout-type.patch
+  chromium-protobuf-RepeatedPtrField-export.patch
   chromium-sandbox-syscall-broker-use-struct-kernel_stat.patch
   chromium-sandbox-fix-fstatat-crash.patch
   chromium-sandbox-update-syscall-numbers.patch
@@ -47,6 +49,7 @@ source=(
   chromium-py3-bootstrap.patch
   chromium-py3-fixes.patch
   chromium-libdav1d.patch
+  chromium-InkDropHost-crash.patch
 )
 sha256sums=('d97d337d0d70e959a75f1f510f5d78d2b57b5bf24573b7ade9fff9f26a7cfd11'
   '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
@@ -57,12 +60,14 @@ sha256sums=('d97d337d0d70e959a75f1f510f5d78d2b57b5bf24573b7ade9fff9f26a7cfd11'
   'c162eafc1f128e616281e719d860ec8726eec89660f449ed0e9af7dfe07c8cc9'
   '8b1956b539c91d71df6391f155dad26409a524047e752b860c2afe289e1d1a72'
   'f8dcac3a18e20bee8c54912c1c931e723e97981cc88c8568bd05411812ff6204'
+  'fefc0f1a6e24e4322208dd32deffbe93de076e5382c9e80d0b41b9c05a134994'
   'e393174d7695d0bafed69e868c5fbfecf07aa6969f3b64596d0bae8b067e1711'
   '043d83d22af1210c2dd7f3ef9e42e6f316556cb9ec3e377deded080025abf9c1'
   '7a84822b25734547055c2aba265df50ab02f47515b3f7fa0ce821572d4d1f8cd'
   'cfd35f512cd966a1566397c02897d3cb3d89e117b41b8629e2de11329a2c0b17'
   '66db9132d6f5e06aa26e5de0924f814224a76a9bdf4b61afce161fb1d7643b22'
   '2b36574144bb7135512b81f394e53ea80d931ac62148b28c17a70a2869cb501c'
+  '5d5bfedbabdf3e05c8159afc2bf776b8f95212413ba44464b4d973ac5a127cf1'
   '268e18ad56e5970157b51ec9fc8eb58ba93e313ea1e49c842a1ed0820d9c1fa3'
   '253348550d54b8ae317fd250f772f506d2bae49fb5dc75fe15d872ea3d0e04a5'
   '4dfec5921364e05968db3be6b7d582f10479e8e887cbf3f5780e27ee27a78f90'
@@ -74,7 +79,8 @@ sha256sums=('d97d337d0d70e959a75f1f510f5d78d2b57b5bf24573b7ade9fff9f26a7cfd11'
   '5690089b8bd6946dfa975b8022531213b882b3396a3c968eeef9836b131725b7'
   '7d13de3735c434ae2568f5d5c4c79904b13f4e368d3e1b67691a1d3e7eec7dec'
   'ff80a8fe749363ff91b063cf641d3527807c48b23efe62f8de1d0a6076b39b11'
-  '97c5c3551c19e5a9b77ac9db5dd3bd396f08acccf735ac5710274bd31e4ce08c')
+  '97c5c3551c19e5a9b77ac9db5dd3bd396f08acccf735ac5710274bd31e4ce08c'
+  '04bba6fb19ea5a4ab3949b65f06c88728a00ab296f42022ece62ca2fa25ec2e7')
 #noextract=("${source[@]##*/}")
 # Possible replacements are listed in build/linux/unbundle/replace_gn_files.py
 # Keys are the names in the above script; values are the dependencies in Arch
@@ -147,6 +153,8 @@ prepare() {
   _patch chromium-unbundle-zlib.patch
   # Do not use unrar code, it is non-free
   _patch chromium-norar.patch
+  # Compiler debug info optimization
+  _patch chromium-compiler.patch
 
   # Use the --oauth2-client-id= and --oauth2-client-secret= switches for
   # setting GOOGLE_DEFAULT_CLIENT_ID and GOOGLE_DEFAULT_CLIENT_SECRET at
@@ -159,11 +167,12 @@ prepare() {
   _patch chromium-fix-vaapi-on-intel.patch
 
   # Upstream fixes
+  _patch chromium-protobuf-RepeatedPtrField-export.patch
   _patch extend-enable-accelerated-video-decode-flag.patch
   _patch chromium-sandbox-syscall-broker-use-struct-kernel_stat.patch # glibc 2.34
-  _patch chromium-sandbox-fix-fstatat-crash.patch # glibc 2.34
-  _patch chromium-sandbox-update-syscall-numbers.patch # glibc 2.34
-  _patch chromium-sandbox-return-ENOSYS-for-clone3.patch # glibc 2.34
+  _patch chromium-sandbox-fix-fstatat-crash.patch                     # glibc 2.34
+  _patch chromium-sandbox-update-syscall-numbers.patch                # glibc 2.34
+  _patch chromium-sandbox-return-ENOSYS-for-clone3.patch              # glibc 2.34
   _patch chromium-EnumTable-crash.patch
   _patch chromium-std-max-fix.patch # glibc 2.34
   _patch chromium-crashpad-consent.patch
@@ -172,6 +181,7 @@ prepare() {
   _patch chromium-py3-bootstrap.patch
   _patch chromium-py3-fixes.patch
   _patch chromium-libdav1d.patch
+  _patch chromium-InkDropHost-crash.patch
 
   # https://chromium-review.googlesource.com/c/chromium/src/+/2862724
   _patch sql-make-VirtualCursor-standard-layout-type.patch
@@ -229,10 +239,6 @@ build() {
     'is_debug=false'
     'symbol_level=0'
     'blink_symbol_level=0'
-    #'is_cfi=false'
-    #'chrome_pgo_phase=0'
-    #'thin_lto_enable_optimizations=false'
-    #'use_thin_lto=false'
     'treat_warnings_as_errors=false'
     'fieldtrial_testing_like_official_build=true'
     'ffmpeg_branding="Chrome"'
