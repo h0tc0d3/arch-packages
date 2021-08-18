@@ -1,7 +1,7 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
 pkgver=2.34
-pkgrel=4
+pkgrel=5
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
@@ -65,6 +65,11 @@ prepare() {
   git cherry-pick -n 08fc6df294ab7e10e14492094a99b7861ad7d77e # hurd mmap: Factorize MAP_SHARED flag check
   git cherry-pick -n 5a5358b749d0b153de6f6361342d06228d7270be # hurd mmap: Reduce the requested max vmprot
   git cherry-pick -n dc906e94f7033892dadbd91718349f19e1376391 # mtrace: Use a static buffer for printing [BZ #25947]
+  git cherry-pick -n 6e8a0aac2f883a23efb1683b120499138f9e6021 # time: Fix overflow itimer tests on 32-bit systems
+  git cherry-pick -n cbb2aa337bc3a5f1cb9936781c3a7f5036d4262e # hurd: Drop fmh kludge
+  git cherry-pick -n 33c50ef42878b07ee6ead8b3f1a81d8c2c74697c # elf: Drop elf/tls-macros.h in favor of __thread and tls_model attributes [BZ #28152] [BZ #28205]
+  git cherry-pick -n b37b75d269883a2c553bb7019a813094eb4e2dd1 # x86_64: Simplify elf_machine_{load_address,dynamic}
+  git cherry-pick -n 710ba420fd417a4a82e0ad2e998e5f3b972cb503 # Remove sysdeps/*/tls-macros.h
 
 }
 
