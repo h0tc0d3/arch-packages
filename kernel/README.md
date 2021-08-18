@@ -81,9 +81,57 @@ tc qdisc add dev your_network_device root fq_codel
 ## 0006-compat.patch
 
 For Kernel 5.14+
-Remove uneeded compatable code.
+Simplify and remove uneeded compatable code.
 
 ## 0007-string.patch
 
 For Kernel 5.14+
 Optimize performance of kernel code for working with strings.
+
+## 0008-remove-LightNVM.patch
+
+For Kernel 5.14+
+
+LightNVM was focused on features around predictable latency, I/O isolation, and better memory management. However, LightNVM has been effectively superseded by the Zoned Namespace (ZNS) command set with NVMe.
+
+There hasn't been much happening upstream with LightNVM in the past two years due to the zoned storage support in NVMe succeeding it and needless to say not any real kernel activity as a result. Thus this relatively short-lived LightNVM code is now expected to be removed next kernel merge window with the subsystem now removed in the block subsystem's "for-next" branch.
+
+## 0009-compiler-remove-stale-cc-option-checks.patch
+
+cc-option, cc-option-yn, and cc-disable-warning all invoke the compiler
+during build time, and can slow down the build when these checks become
+stale for our supported compilers, whose minimally supported versions
+increases over time.  See Documentation/process/changes.rst for the
+current supported minimal versions (GCC 4.9+, clang 10.0.1+). Compiler
+version support for these flags may be verified on godbolt.org.
+
+The following flags are GCC only and supported since at least GCC 4.9.
+Remove cc-option and cc-disable-warning tests.
+
+- **-fno-tree-loop-im**
+- **-Wno-maybe-uninitialized**
+- **-fno-reorder-blocks**
+- **-fno-ipa-cp-clone**
+- **-fno-partial-inlining**
+- **-femit-struct-debug-baseonly**
+- **-fno-inline-functions-called-once**
+- **-fconserve-stack**
+
+The following flags are supported by all supported versions of GCC and
+Clang. Remove their cc-option, cc-option-yn, and cc-disable-warning tests.
+
+- **-fno-delete-null-pointer-checks**
+- **-fno-var-tracking**
+- **-mfentry**
+- **-Wno-array-bounds**
+
+The following configs are made dependent on GCC, since they use GCC
+specific flags.
+**READABLE_ASM**
+**DEBUG_SECTION_MISMATCH**
+
+**--param=allow-store-data-races=0** was renamed to **--allow-store-data-races**
+in the GCC 10 release.
+
+Also, base **RETPOLINE_CFLAGS** and **RETPOLINE_VDSO_CFLAGS** on **CONFIC_CC_IS_\***
+then remove cc-option tests for Clang.
