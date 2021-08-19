@@ -1,7 +1,7 @@
 pkgname=mesa+clang
 pkgdesc="Mesa open-source implementation of the OpenGL specification"
 pkgver=21.2.1
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 makedepends=('git' 'python-mako' 'xorgproto' 'llvm'
   'libxml2' 'libx11' 'libvdpau' 'libva' 'elfutils' 'libxrandr'
@@ -22,7 +22,7 @@ source=(
 sha256sums=('2c65e6710b419b67456a48beefd0be827b32db416772e0e363d5f7d54dc01787'
             'SKIP'
             '7fdc119cf53c8ca65396ea73f6d10af641ba41ea1dd2bd44a824726e01c8b3f2'
-            '33e14140fbfca33b62fc83bfe062fe48f0539a239c0821118d55abfd7993ed3c')
+            '8548489a884dd1fdd20910f229798b5af8747218a072e373bd4cf77912b9cfd6')
 
 validpgpkeys=(
   '57551DE15B968F6341C248F68D8E31AFC32428A6' # Keith Packard <keithp@keithp.com>
@@ -30,8 +30,8 @@ validpgpkeys=(
 )
 
 DRI_DRIVERS="i915,i965,r200,r100,nouveau"
-GALLIUM_DRIVERS="r300,r600,radeonsi,nouveau,virgl,svga,swrast,swr,iris,zink"
-VULKAN_DRIVERS="amd,intel,swrast"
+GALLIUM_DRIVERS="r300,r600,radeonsi,nouveau,virgl,svga,swrast,swr,iris,zink,crocus"
+VULKAN_DRIVERS="amd,intel,swrast,virtio-experimental"
 VULKAN_LAYERS="device-select,intel-nullhw,overlay"
 
 _extra_lto_flag=""
