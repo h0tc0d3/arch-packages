@@ -135,3 +135,10 @@ in the GCC 10 release.
 
 Also, base **RETPOLINE_CFLAGS** and **RETPOLINE_VDSO_CFLAGS** on **CONFIC_CC_IS_\***
 then remove cc-option tests for Clang.
+
+## 0010-AMD-CPU-C3-cache.patch
+
+AMD CPU which support C3 shares cache. Its not necessary to flush the
+caches in software before entering C3. This will cause performance drop
+for the cores which share some caches. ARB_DIS is not used with current
+AMD C state implementation. So set related flags correctly.
