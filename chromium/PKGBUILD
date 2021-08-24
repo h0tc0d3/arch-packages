@@ -134,13 +134,13 @@ prepare() {
     tools/generate_shim_headers/generate_shim_headers.py
 
   # https://crbug.com/893950
-  #sed -i -e 's/\<xmlMalloc\>/malloc/' -e 's/\<xmlFree\>/free/' \
-  #  third_party/blink/renderer/core/xml/*.cc \
-  #  third_party/blink/renderer/core/xml/parser/xml_document_parser.cc \
-  #  third_party/libxml/chromium/*.cc
+  sed -i -e 's/\<xmlMalloc\>/malloc/' -e 's/\<xmlFree\>/free/' \
+    third_party/blink/renderer/core/xml/*.cc \
+    third_party/blink/renderer/core/xml/parser/xml_document_parser.cc \
+    third_party/libxml/chromium/*.cc
 
   # Add pie build flags to sandbox
-  #_patch chromium-sandbox-pie.patch
+  _patch chromium-sandbox-pie.patch
   # Fix build with Freetype 2.11
   _patch chromium-freetype-2.11.patch
   # Do not prefix libpng functions
@@ -270,14 +270,11 @@ build() {
     _flags+=('icu_use_data_file=false')
   fi
 
-  CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
-  CFLAGS=${CFLAGS/--param ssp-buffer-size=4 -fstack-clash-protection/}
-  CXXFLAGS=${CXXFLAGS/--param ssp-buffer-size=4 -fstack-clash-protection/}
-  #LDFLAGS="${LDFLAGS=} -Wl,--thinlto-jobs=$(nproc)"
+  LDFLAGS="${LDFLAGS=} -Wl,--thinlto-jobs=$(nproc)"
   # Facilitate deterministic builds (taken from build/config/compiler/BUILD.gn)
   CFLAGS+=' -Wno-builtin-macro-redefined'
   CXXFLAGS+=' -Wno-builtin-macro-redefined'
-  #CPPFLAGS+=' -D__DATE__=  -D__TIME__=  -D__TIMESTAMP__='
+  CPPFLAGS+=' -D__DATE__=  -D__TIME__=  -D__TIMESTAMP__='
 
   # Do not warn about unknown warning options
   CFLAGS+=' -Wno-unknown-warning-option'
