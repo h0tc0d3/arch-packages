@@ -1,14 +1,14 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
 pkgver=2.34
-pkgrel=5
+pkgrel=6
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
 makedepends=(git gd lib32-gcc-libs python)
 optdepends=('perl: for mtrace')
 options=(!strip staticlibs)
-_commit=79474303223c5665bec75ffbdb2a86ee04a2514b
+_commit=9acab0bba6a5a57323b1f94bf95b21618a9e5aa4
 source=("git+https://sourceware.org/git/glibc.git#commit=${_commit}"
   #source=("https://ftp.gnu.org/gnu/glibc/glibc-${pkgver}.tar.xz"
   locale-gen
@@ -70,6 +70,16 @@ prepare() {
   git cherry-pick -n 33c50ef42878b07ee6ead8b3f1a81d8c2c74697c # elf: Drop elf/tls-macros.h in favor of __thread and tls_model attributes [BZ #28152] [BZ #28205]
   git cherry-pick -n b37b75d269883a2c553bb7019a813094eb4e2dd1 # x86_64: Simplify elf_machine_{load_address,dynamic}
   git cherry-pick -n 710ba420fd417a4a82e0ad2e998e5f3b972cb503 # Remove sysdeps/*/tls-macros.h
+  git cherry-pick -n 0835c0f0bad351117154b815f34f8af19ea7e325 # x86: fix Autoconf caching of instruction support checks [BZ #27991]
+  git cherry-pick -n 78c9ec9000f873abe7a15a91b87080a2e4308260 # x86-64: Optimize load of all bits set into ZMM register [BZ #28252]
+  git cherry-pick -n f2e33c3268db9adf8e57e991676ed0d5ac74e8a8 # mtrace: Fix output with PIE and ASLR [BZ #22716]
+  git cherry-pick -n a4f5a3103fc3e7974dbe35b411cba9f670807cde # rtld: copy terminating null in tunables_strdup (bug 28256)
+  git cherry-pick -n c8126360dfa98024cc40bce915e126309993cdf9 # Fix iconv build with GCC mainline
+  git cherry-pick -n 5eb3e2c794c3fdd553833af5342740051221479c # hurd: Fix errlist error mapping
+  git cherry-pick -n 84a7eb1f87c1d01b58ad887a0ab5d87abbc1c772 # Use __executable_start as the lowest address for profiling [BZ #28153]
+  git cherry-pick -n 5359c3bc91cc509bcd30bbb8d951848e0280f325 # x86-64: Remove compiler -mavx512f check
+  git cherry-pick -n 528f9ff6bf69c2c0574a24ee475e31de38dcf060 # x86-64: Remove assembler AVX512DQ check
+  git cherry-pick -n 9926f6e2eeb374cf729d4bb3f092dd4b36a8f861 # elf: Skip tst-auditlogmod-* if the linker doesn't support --depaudit [BZ #28151]
 
 }
 
