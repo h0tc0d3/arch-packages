@@ -142,3 +142,57 @@ AMD CPU which support C3 shares cache. Its not necessary to flush the
 caches in software before entering C3. This will cause performance drop
 for the cores which share some caches. ARB_DIS is not used with current
 AMD C state implementation. So set related flags correctly.
+
+## 0011-pipe-FASYNC.patch
+
+pipe: do FASYNC notifications for every pipe IO, not just state changes
+
+It turns out that the SIGIO/FASYNC situation is almost exactly the same
+as the EPOLLET case was: user space really wants to be notified after
+every operation.
+
+Now, in a perfect world it should be sufficient to only notify user
+space on "state transitions" when the IO state changes (ie when a pipe
+goes from unreadable to readable, or from unwritable to writable).  User
+space should then do as much as possible - fully emptying the buffer or
+what not - and we'll notify it again the next time the state changes.
+
+But as with EPOLLET, we have at least one case (stress-ng) where the
+kernel sent SIGIO due to the pipe being marked for asynchronous
+notification, but the user space signal handler then didn't actually
+necessarily read it all before returning (it read more than what was
+written, but since there could be multiple writes, it could leave data
+pending).
+
+The user space code then expected to get another SIGIO for subsequent
+writes - even though the pipe had been readable the whole time - and
+would only then read more.
+
+This is arguably a user space bug - and Colin King already fixed the
+stress-ng code in question - but the kernel regression rules are clear:
+it doesn't matter if kernel people think that user space did something
+silly and wrong.  What matters is that it used to work.
+
+So if user space depends on specific historical kernel behavior, it's a
+regression when that behavior changes.  It's on us: we were silly to
+have that non-optimal historical behavior, and our old kernel behavior
+was what user space was tested against.
+
+Because of how the FASYNC notification was tied to wakeup behavior, this
+was first broken by commits f467a6a66419 and 1b6b26ae7053 ("pipe: fix
+and clarify pipe read/write wakeup logic"), but at the time it seems
+nobody noticed.  Probably because the stress-ng problem case ends up
+being timing-dependent too.
+
+It was then unwittingly fixed by commit 3a34b13a88ca ("pipe: make pipe
+writes always wake up readers") only to be broken again when by commit
+3b844826b6c6 ("pipe: avoid unnecessary EPOLLET wakeups under normal
+loads").
+
+And at that point the kernel test robot noticed the performance
+refression in the stress-ng.sigio.ops_per_sec case.  So the "Fixes" tag
+below is somewhat ad hoc, but it matches when the issue was noticed.
+
+Fix it for good (knock wood) by simply making the kill_fasync() case
+separate from the wakeup case.  FASYNC is quite rare, and we clearly
+shouldn't even try to use the "avoid unnecessary wakeups" logic for it.
