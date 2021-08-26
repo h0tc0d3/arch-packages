@@ -1,6 +1,6 @@
 pkgname=krita+clang
 pkgver=4.4.8
-pkgrel=1
+pkgrel=2
 pkgdesc='Edit and paint images'
 arch=(x86_64)
 url='https://krita.org'
@@ -69,7 +69,9 @@ build() {
   cmake -B build -S krita \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_TESTING=OFF \
-    -DBUILD_KRITA_QT_DESIGNER_PLUGINS=ON
+    -DKRITA_DEVS=OFF \
+    -DBUILD_KRITA_QT_DESIGNER_PLUGINS=ON \
+    -Wno-dev
 
   cmake --build build
 
