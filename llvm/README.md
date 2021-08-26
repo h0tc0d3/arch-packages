@@ -35,7 +35,6 @@ add strings:
 ```bash
 export CC=clang
 export CXX=clang++
-export LD=ld.lld
 export CC_LD=lld
 export CXX_LD=lld
 export AR=llvm-ar
@@ -48,7 +47,6 @@ export RANLIB=llvm-ranlib
 export HOSTCC=clang
 export HOSTCXX=clang++
 export HOSTAR=llvm-ar
-export HOSTLD=ld.lld
 ```
 
 Yours  **/etc/makepkg.conf** can be like this, -march=native can be replaced with [your cpu](https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html):
@@ -57,12 +55,8 @@ Yours  **/etc/makepkg.conf** can be like this, -march=native can be replaced wit
 CARCH="x86_64"
 CHOST="x86_64-pc-linux-gnu"
 
-CARCH="x86_64"
-CHOST="x86_64-pc-linux-gnu"
-#-- Compiler and Linker Flags
 export CC=clang
 export CXX=clang++
-export LD=ld.lld
 export CC_LD=lld
 export CXX_LD=lld
 export AR=llvm-ar
@@ -75,22 +69,19 @@ export RANLIB=llvm-ranlib
 export HOSTCC=clang
 export HOSTCXX=clang++
 export HOSTAR=llvm-ar
-export HOSTLD=ld.lld
 
 CPPFLAGS="-D_FORTIFY_SOURCE=2"
-CFLAGS="-fdiagnostics-color=always -pipe -O2 -march=native -fstack-protector-strong"
-CXXFLAGS="-fdiagnostics-color=always -pipe -O2 -march=native -fstack-protector-strong"
-LDFLAGS="-Wl,-O1,--sort-common,--as-needed,-z,relro,-z,now"
+CFLAGS="-fdiagnostics-color=always -pipe -O2 -march=native -fstack-protector-strong --param ssp-buffer-size=4 -fstack-clash-protection"
+CXXFLAGS="-fdiagnostics-color=always -pipe -O2 -march=native -fstack-protector-strong --param ssp-buffer-size=4 -fstack-clash-protection"
+LDFLAGS="-Wl,-O1 -Wl,-z,now -Wl,-z,relro -Wl,--as-needed -Wl,--no-copy-dt-needed-entries -Wl,--sort-common -Wl,--hash-style=gnu"
 RUSTFLAGS="-C opt-level=2"
-#-- Make Flags: change this for DistCC/SMP systems
+
 MAKEFLAGS="-j$(nproc)"
 NINJAFLAGS="-j$(nproc)"
-#-- Debugging flags
+
 DEBUG_CFLAGS="-g"
 DEBUG_CXXFLAGS="-g"
-#DEBUG_CFLAGS="-g -fvar-tracking-assignments"
-#DEBUG_CXXFLAGS="-g -fvar-tracking-assignments"
-#DEBUG_RUSTFLAGS="-C debuginfo=2"
+DEBUG_RUSTFLAGS="-C debuginfo=2"
 ```
 
 For build latest mesa you can use my [mesa build script](https://github.com/h0tc0d3/arch-packages/tree/master/mesa).

@@ -95,9 +95,6 @@ export HOSTCC=clang
 export HOSTCXX=clang++
 export HOSTAR=llvm-ar
 
-CARCH="x86_64"
-CHOST="x86_64-pc-linux-gnu"
-
 CPPFLAGS="-D_FORTIFY_SOURCE=2"
 CFLAGS="-fdiagnostics-color=always -pipe -O2 -march=native -fstack-protector-strong --param ssp-buffer-size=4 -fstack-clash-protection"
 CXXFLAGS="-fdiagnostics-color=always -pipe -O2 -march=native -fstack-protector-strong --param ssp-buffer-size=4 -fstack-clash-protection"
