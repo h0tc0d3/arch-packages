@@ -1,6 +1,6 @@
 pkgname=gwenview+clang
 pkgver=21.08.0
-pkgrel=1
+pkgrel=2
 pkgdesc='A fast and easy to use image viewer'
 url='https://apps.kde.org/gwenview/'
 arch=(x86_64)
@@ -43,6 +43,7 @@ build() {
   fi
 
   cmake -B build -S gwenview-${pkgver} \
+    -DCMAKE_BUILD_TYPE=Release \
     -DGWENVIEW_SEMANTICINFO_BACKEND="Baloo" \
     -DBUILD_TESTING=OFF
 

@@ -1,6 +1,6 @@
 pkgname=snappy+clang
 pkgver=1.1.9
-pkgrel=2
+pkgrel=3
 pkgdesc='A fast compressor/decompressor library'
 arch=('x86_64')
 url="https://google.github.io/snappy/"
@@ -65,6 +65,7 @@ build() {
   CXXFLAGS+=\ -DNDEBUG
 
   cmake \
+    -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_INSTALL_LIBDIR=/usr/lib \
     -DBUILD_SHARED_LIBS=yes \

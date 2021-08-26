@@ -1,6 +1,6 @@
 pkgname=plasma-desktop+clang
 pkgver=5.22.4
-pkgrel=1
+pkgrel=2
 pkgdesc='KDE Plasma Desktop'
 arch=(x86_64)
 url='https://kde.org/plasma-desktop/'
@@ -51,6 +51,7 @@ build() {
   fi
 
   cmake -B build -S plasma-desktop-${pkgver} \
+    -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_LIBEXECDIR=lib \
     -DBUILD_TESTING=OFF
 

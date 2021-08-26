@@ -1,6 +1,6 @@
 pkgname=libsamplerate+clang
 pkgver=0.2.1
-pkgrel=1
+pkgrel=2
 pkgdesc="An audio sample rate conversion library"
 arch=('x86_64')
 url="https://libsndfile.github.io/libsamplerate/"
@@ -41,7 +41,7 @@ build() {
 
   cmake -B build -S libsamplerate-${pkgver} \
     -DCMAKE_INSTALL_PREFIX=/usr \
-    -DCMAKE_BUILD_TYPE='None' \
+    -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_SHARED_LIBS=ON \
     -Wno-dev
 

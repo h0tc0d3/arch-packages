@@ -1,7 +1,7 @@
 pkgname=phonon-qt5-vlc+clang
 pkgdesc="Phonon VLC backend for Qt5"
 pkgver=0.11.3
-pkgrel=1
+pkgrel=2
 arch=(x86_64)
 url='https://community.kde.org/Phonon'
 license=(LGPL)
@@ -36,7 +36,8 @@ build() {
 
   fi
 
-  cmake -B build -S phonon-backend-vlc-${pkgver}
+  cmake -B build -S phonon-backend-vlc-${pkgver} \
+    -DCMAKE_BUILD_TYPE=Release
 
   cmake --build build
 

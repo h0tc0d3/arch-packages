@@ -1,6 +1,6 @@
 pkgname=libavif+clang
 pkgver=0.9.2
-pkgrel=1
+pkgrel=2
 pkgdesc="Library for encoding and decoding .avif files"
 arch=(x86_64)
 url="https://github.com/AOMediaCodec/libavif"
@@ -33,6 +33,7 @@ build() {
   fi
 
   cmake -B build -S libavif-${pkgver} \
+    -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_INSTALL_LIBDIR=lib \
     -DAVIF_BUILD_APPS=ON \

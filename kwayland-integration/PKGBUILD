@@ -1,6 +1,6 @@
 pkgname=kwayland-integration+clang
 pkgver=5.22.4
-pkgrel=1
+pkgrel=2
 pkgdesc='Provides integration plugins for various KDE frameworks for the wayland windowing system'
 arch=(x86_64)
 url='https://kde.org/plasma-desktop/'
@@ -44,6 +44,7 @@ build() {
   fi
 
   cmake -B build -S kwayland-integration-${pkgver} \
+    -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_TESTING=OFF
 
   cmake --build build

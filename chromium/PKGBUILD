@@ -1,6 +1,6 @@
 pkgname=chromium+clang
 pkgver=92.0.4515.159
-pkgrel=2
+pkgrel=3
 _launcher_ver=8
 pkgdesc="A web browser built for speed, simplicity, and security"
 arch=('x86_64')
@@ -140,7 +140,7 @@ prepare() {
     third_party/libxml/chromium/*.cc
 
   # Add pie build flags to sandbox
-  _patch chromium-sandbox-pie.patch
+  # _patch chromium-sandbox-pie.patch # Unstable
   # Fix build with Freetype 2.11
   _patch chromium-freetype-2.11.patch
   # Do not prefix libpng functions

@@ -1,7 +1,7 @@
 pkgname=phonon-qt5+clang
 pkgdesc="The multimedia framework by KDE"
 pkgver=4.11.1
-pkgrel=2
+pkgrel=3
 arch=(x86_64)
 url='https://community.kde.org/Phonon'
 license=(LGPL)
@@ -36,7 +36,8 @@ build() {
 
   fi
 
-  cmake -B build -S phonon-${pkgver}
+  cmake -B build -S phonon-${pkgver} \
+    -DCMAKE_BUILD_TYPE=Release
 
   cmake --build build
 

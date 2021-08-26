@@ -1,6 +1,6 @@
 pkgname=phonon-qt5-gstreamer+clang
 pkgver=4.10.0
-pkgrel=2
+pkgrel=3
 arch=(x86_64)
 pkgdesc="Phonon GStreamer backend for Qt5"
 url='https://community.kde.org/Phonon'
@@ -37,7 +37,8 @@ build() {
 
   fi
 
-  cmake -B build -S phonon-backend-gstreamer-${pkgver}
+  cmake -B build -S phonon-backend-gstreamer-${pkgver} \
+    -DCMAKE_BUILD_TYPE=Release
 
   cmake --build build
 

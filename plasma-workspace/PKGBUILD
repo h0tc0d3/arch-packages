@@ -1,7 +1,7 @@
 pkgbase=plasma-workspace+clang
 pkgname=(plasma-workspace+clang plasma-wayland-session+clang)
 pkgver=5.22.4
-pkgrel=3
+pkgrel=4
 pkgdesc='KDE Plasma Workspace'
 arch=(x86_64)
 url='https://kde.org/plasma-desktop/'
@@ -46,6 +46,7 @@ build() {
   fi
 
   cmake -B build -S plasma-workspace-${pkgver} \
+    -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_LIBEXECDIR=lib \
     -DBUILD_TESTING=OFF
 
