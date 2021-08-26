@@ -1,6 +1,6 @@
 pkgname=chromium+clang
 pkgver=92.0.4515.159
-pkgrel=3
+pkgrel=4
 _launcher_ver=8
 pkgdesc="A web browser built for speed, simplicity, and security"
 arch=('x86_64')
@@ -271,6 +271,8 @@ build() {
   fi
 
   LDFLAGS="${LDFLAGS=} -Wl,--thinlto-jobs=$(nproc)"
+  CFLAGS=${CFLAGS/--param ssp-buffer-size=4 -fstack-clash-protection/}     # Affects stability
+  CXXFLAGS=${CXXFLAGS/--param ssp-buffer-size=4 -fstack-clash-protection/} # Affects stability
   # Facilitate deterministic builds (taken from build/config/compiler/BUILD.gn)
   CFLAGS+=' -Wno-builtin-macro-redefined'
   CXXFLAGS+=' -Wno-builtin-macro-redefined'
