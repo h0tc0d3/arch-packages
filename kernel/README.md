@@ -196,3 +196,29 @@ below is somewhat ad hoc, but it matches when the issue was noticed.
 Fix it for good (knock wood) by simply making the kill_fasync() case
 separate from the wakeup case.  FASYNC is quite rare, and we clearly
 shouldn't even try to use the "avoid unnecessary wakeups" logic for it.
+
+## 0012-drm-fbdev.patch
+
+This patch series splits the fbdev core support in two different Kconfig
+symbols: FB and FB_CORE. The motivation for this is to allow CONFIG_FB to
+be disabled, while still using fbcon with the DRM fbdev emulation layer.
+
+The reason for doing this is that now with simpledrm we could just boot
+with simpledrm -> real DRM driver, without needing any legacy fbdev driver
+(e.g: efifb or simplefb) even for the early console.
+
+We want to do that in the Fedora kernel, but currently need to keep option
+CONFIG_FB enabled and all fbdev drivers explicitly disabled, which makes
+the configuration harder to maintain.
+
+It is a RFC because I'm not that familiar with the fbdev core, but I have
+tested and works with CONFIG_DRM_FBDEV_EMULATION=y and CONFIG_FB disabled.
+This config automatically disables all the fbdev drivers that is our goal.
+
+Patch 1/4 is just a clean up, patch 2/4 moves a couple of functions out of
+fbsysfs.o, that are not related to sysfs attributes creation and finally
+patch 3/4 makes the fbdev split that is mentioned above.
+
+Patch 4/4 makes the DRM fbdev emulation depend on the new FB_CORE symbol
+instead of FB. This could be done as a follow-up but for completeness is
+also included in this series.
