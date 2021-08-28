@@ -1,7 +1,7 @@
 pkgbase=alsa-plugins+clang
 pkgname=(alsa-plugins+clang pulseaudio-alsa+clang)
 pkgver=1.2.5
-pkgrel=2
+pkgrel=3
 epoch=1
 pkgdesc="Additional ALSA plugins"
 arch=(x86_64)
@@ -69,7 +69,7 @@ build() {
 
 package_alsa-plugins+clang() {
   depends=(glibc libasound.so)
-  provides=("alsa-plugins" "alsa-plugins=${pkgver}")
+  provides=("alsa-plugins" "alsa-plugins=${epoch}:${pkgver}")
   conflicts=("alsa-plugins")
   optdepends=('dbus: for maemo plugin'
     'jack: for pcm_jack plugin'
@@ -101,7 +101,7 @@ package_pulseaudio-alsa+clang() {
 
   pkgdesc="ALSA Configuration for PulseAudio"
   depends=('alsa-plugins+clang>=1.2.2-2' pulseaudio)
-  provides=("pulseaudio-alsa" "pulseaudio-alsa=${pkgver}")
+  provides=("pulseaudio-alsa" "pulseaudio-alsa=${epoch}:${pkgver}")
   conflicts=("pulseaudio-alsa")
 
   mkdir -p "${pkgdir:?}/etc/alsa/conf.d"
