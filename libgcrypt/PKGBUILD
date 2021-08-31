@@ -1,6 +1,6 @@
 pkgname=libgcrypt
-pkgver=1.9.3
-pkgrel=3
+pkgver=1.9.4
+pkgrel=1
 pkgdesc="General purpose cryptographic library based on the code from GnuPG"
 arch=(x86_64)
 url="https://www.gnupg.org"
@@ -27,14 +27,13 @@ source=(
   libgcrypt-1.8.3-md-fips-enforce.patch
   libgcrypt-1.8.5-intel-cet.patch
   libgcrypt-1.8.5-fips-module.patch
-  libgcrypt-1.9.3-CVE-2021-33560.patch
   ecc-curves.c
   curves.c
   t-mpi-point.c
   keygrip.c
   random.conf
 )
-sha256sums=('97ebe4f94e2f7e35b752194ce15a0f3c66324e0ff6af26659bbfb5ff2ec328fd'
+sha256sums=('ea849c83a72454e3ed4267697e8ca03390aee972ab421e7df69dfe42b65caaf7'
   'bc6647658e73aa3da5320691c1168e65e27cabf9ca1edc3c1e950108c1e82a71'
   '8228647193388addf5f689eed44f8cf81044b4e41f0a3c2a8626e80932853837'
   'b2fcf594b4c266bee50eb5d9fb2e20c10aa58e2c1f468a3b611291f26c80c694'
@@ -48,7 +47,6 @@ sha256sums=('97ebe4f94e2f7e35b752194ce15a0f3c66324e0ff6af26659bbfb5ff2ec328fd'
   'd039a5c509a8e36068478daf929a1992b58a5a2441bde16e5eb5b8b569d248a6'
   'b5abb963aaec5df9c9ff47e22a2079e23000d0c8361a3446378954b856603032'
   '47a946ffc43a80743958d56dc16d94e171f38cdcf59e8f164f5e7bf1c95f0a3f'
-  '911e6e4ec55f64f87d2309f83ba13a0aefc213289a35c296b3c97a04fa6e26ab'
   '188a7c6dbebf753e2729ffc2a4d79e7b01e247c28d4b914bf2739b94c671d055'
   '63f862837d815505d0dc8eeea3a12cea33f542b83137843e7cf3898c6905feff'
   'e952f5219c7095cb310da074079d154b8b638161a757dd8c8e01d6ae2bf3d4b3'
@@ -57,6 +55,13 @@ sha256sums=('97ebe4f94e2f7e35b752194ce15a0f3c66324e0ff6af26659bbfb5ff2ec328fd'
 validpgpkeys=('6DAA6E64A76D2840571B4902528897B826403ADA') # "Werner Koch (dist signing 2020)"
 
 _llvm=0
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
 
 prepare() {
 
@@ -71,33 +76,31 @@ prepare() {
 
   # make FIPS hmac compatible with fipscheck - non upstreamable
   # update on soname bump
-  patch -Np1 -i "${srcdir:?}/libgcrypt-1.8.5-use-fipscheck.patch"
+  _patch "libgcrypt-1.8.5-use-fipscheck.patch"
   # modify FIPS RSA and DSA keygen to comply with requirements
-  patch -Np1 -i "${srcdir:?}/libgcrypt-1.8.4-fips-keygen.patch"
+  _patch "libgcrypt-1.8.4-fips-keygen.patch"
   # fix the tests to work correctly in the FIPS mode
-  patch -Np1 -i "${srcdir:?}/libgcrypt-1.8.4-tests-fipsmode.patch"
+  _patch "libgcrypt-1.8.4-tests-fipsmode.patch"
   # update the CAVS tests
-  patch -Np1 -i "${srcdir:?}/libgcrypt-1.7.3-fips-cavs.patch"
+  _patch "libgcrypt-1.7.3-fips-cavs.patch"
   # use poll instead of select when gathering randomness
-  patch -Np1 -i "${srcdir:?}/libgcrypt-1.8.4-use-poll.patch"
+  _patch "libgcrypt-1.8.4-use-poll.patch"
   # slight optimalization of mpicoder.c to silence Valgrind (#968288)
-  patch -Np1 -i "${srcdir:?}/libgcrypt-1.6.1-mpicoder-gccopt.patch"
+  _patch "libgcrypt-1.6.1-mpicoder-gccopt.patch"
   # fix tests to work with approved ECC
-  patch -Np1 -i "${srcdir:?}/libgcrypt-1.7.3-ecc-test-fix.patch"
+  _patch "libgcrypt-1.7.3-ecc-test-fix.patch"
   # Run the FIPS mode initialization in the shared library constructor
-  patch -Np1 -i "${srcdir:?}/libgcrypt-1.8.3-fips-ctor.patch"
+  _patch "libgcrypt-1.8.3-fips-ctor.patch"
   # Do not try to open /dev/urandom if getrandom() works
-  patch -Np1 -i "${srcdir:?}/libgcrypt-1.8.5-getrandom.patch"
+  _patch "libgcrypt-1.8.5-getrandom.patch"
   # Continuous FIPS entropy test
-  patch -Np1 -i "${srcdir:?}/libgcrypt-1.8.3-fips-enttest.patch"
+  _patch "libgcrypt-1.8.3-fips-enttest.patch"
   # Disable non-approved FIPS hashes in the enforced FIPS mode
-  patch -Np1 -i "${srcdir:?}/libgcrypt-1.8.3-md-fips-enforce.patch"
+  _patch "libgcrypt-1.8.3-md-fips-enforce.patch"
   # Missing Intel CET support in the library (#1954049)
-  #patch -Np1 -i "${srcdir:?}/libgcrypt-1.8.5-intel-cet.patch"
+  #_patch "libgcrypt-1.8.5-intel-cet.patch"
   # FIPS module is redefined a little bit (implicit by kernel FIPS mode)
-  patch -Np1 -i "${srcdir:?}/libgcrypt-1.8.5-fips-module.patch"
-  # Fix for CVE-2021-33560
-  patch -Np1 -i "${srcdir:?}/libgcrypt-1.9.3-CVE-2021-33560.patch"
+  _patch "libgcrypt-1.8.5-fips-module.patch"
 
   cp "${srcdir:?}/ecc-curves.c" cipher/
   cp "${srcdir:?}/curves.c" tests/
