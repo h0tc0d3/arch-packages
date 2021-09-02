@@ -21,15 +21,15 @@ Cr-Commit-Position: refs/heads/master@{#888312}
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/chrome/browser/flag-metadata.json b/chrome/browser/flag-metadata.json
-index 67e0330436..34542671f2 100644
+index 551706d..4b71bb1 100644
 --- a/chrome/browser/flag-metadata.json
 +++ b/chrome/browser/flag-metadata.json
-@@ -1193,7 +1193,7 @@
+@@ -1306,7 +1306,7 @@
    {
      "name": "enable-accelerated-video-decode",
      "owners": [ "media-dev@chromium.org" ],
--    "expiry_milestone": 90
-+    "expiry_milestone": 93
+-    "expiry_milestone": 93
++    "expiry_milestone": 95
    },
    {
      "name": "enable-accessibility-live-caption",

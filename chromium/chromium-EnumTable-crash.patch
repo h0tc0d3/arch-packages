@@ -1,6 +1,16 @@
-diff -up chromium-92.0.4515.107/components/cast_channel/enum_table.h.EnumTable-crash chromium-92.0.4515.107/components/cast_channel/enum_table.h
---- chromium-92.0.4515.107/components/cast_channel/enum_table.h.EnumTable-crash	2021-07-19 14:45:12.000000000 -0400
-+++ chromium-92.0.4515.107/components/cast_channel/enum_table.h	2021-07-26 17:41:21.987375385 -0400
+diff --git a/components/cast_channel/enum_table.h b/components/cast_channel/enum_table.h
+index 6ca69aa..83ada65 100644
+--- a/components/cast_channel/enum_table.h
++++ b/components/cast_channel/enum_table.h
+@@ -8,6 +8,7 @@
+ #include <cstdint>
+ #include <cstring>
+ #include <ostream>
++#include <vector>
+ 
+ #include "base/check_op.h"
+ #include "base/macros.h"
+
 @@ -212,7 +212,7 @@ class
  
    template <typename E>
