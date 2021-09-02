@@ -120,6 +120,7 @@ kdegraphics-thumbnailers
 plasma-desktop
 konsole
 dolphin
+dolphin-plugins
 glib2
 gtk2
 gtk3

@@ -1,18 +1,19 @@
-pkgname=kdegraphics-thumbnailers+clang
+pkgname=dolphin-plugins+clang
 pkgver=21.08.1
 pkgrel=1
-pkgdesc='Thumbnailers for various graphics file formats'
-url='https://apps.kde.org/kdegraphics_thumbnailers/'
+pkgdesc='Extra Dolphin plugins'
 arch=(x86_64)
-license=(GPL LGPL FDL)
-provides=("kdegraphics-thumbnailers" "kdegraphics-thumbnailers=${pkgver}")
-conflicts=("kdegraphics-thumbnailers")
-depends=(libkexiv2 libkdcraw kio ghostscript)
-makedepends=(extra-cmake-modules)
-groups=(kde-applications kde-graphics)
-source=("https://download.kde.org/stable/release-service/${pkgver}/src/kdegraphics-thumbnailers-${pkgver}.tar.xz"{,.sig})
-sha256sums=('9ef6ece5dd587ba501a2c344479cc9f03fb7e01807436ba7f0fb75b3adee0d43'
-            'SKIP')
+url='https://apps.kde.org/dolphin_plugins/'
+license=(LGPL)
+provides=('dolphin-plugins' "dolphin-plugins=${pkgver}")
+conflicts=('dolphin-plugins')
+depends=(dolphin)
+makedepends=(extra-cmake-modules ktexteditor)
+optdepends=('ktexteditor: Mercurial plugin')
+groups=(kde-applications kdesdk)
+source=("https://download.kde.org/stable/release-service/${pkgver}/src/dolphin-plugins-${pkgver}.tar.xz"{,.sig})
+sha256sums=('39234026a703e7a1275950334ce31b924571ea27b1d538eeb3b2014fc7c9d53e'
+  'SKIP')
 validpgpkeys=(
   CA262C6C83DE4D2FB28A332A3A6A4DB839EAA6D7 # Albert Astals Cid <aacid@kde.org>
   F23275E4BF10AFC1DF6914A6DBD2CE893E2D1C87 # Christoph Feck <cfeck@kde.org>
@@ -39,7 +40,7 @@ build() {
 
   fi
 
-  cmake -B build -S kdegraphics-thumbnailers-${pkgver} \
+  cmake -B build -S dolphin-plugins-${pkgver} \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_TESTING=OFF
 
@@ -50,4 +51,5 @@ build() {
 package() {
 
   DESTDIR="${pkgdir:?}" cmake --install build
+
 }
