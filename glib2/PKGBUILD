@@ -1,9 +1,9 @@
 pkgbase=glib2+clang
 pkgname=(
   glib2+clang
-  #glib2-docs+clang
+  glib2-docs+clang
 )
-pkgver=2.69.1
+pkgver=2.69.2
 pkgrel=1
 pkgdesc="Low level core library"
 url="https://wiki.gnome.org/Projects/GLib"
@@ -74,7 +74,7 @@ build() {
     -D glib_debug=disabled \
     -D selinux=disabled \
     -D man=true \
-    -D gtk_doc=false
+    -D gtk_doc=true
 
   meson compile -C build
 
@@ -107,19 +107,19 @@ package_glib2+clang() {
     "${pkgdir:?}/usr/share/glib-2.0/codegen"
 
   # Split docs
-  #mkdir -p docs/usr/share
-  #mv {"${pkgdir:?}",docs}/usr/share/gtk-doc
+  mkdir -p docs/usr/share
+  mv {"${pkgdir:?}",docs}/usr/share/gtk-doc
 
 }
 
-#package_glib2-docs+clang() {
+package_glib2-docs+clang() {
 
-#pkgdesc="Documentation for GLib"
-#license+=(custom)
-#provides=('glib2-docs' "glib2-docs=${pkgver}")
-#conflicts=('glib2-docs')
+  pkgdesc="Documentation for GLib"
+  license+=(custom)
+  provides=('glib2-docs' "glib2-docs=${pkgver}")
+  conflicts=('glib2-docs')
 
-#mv -t "${pkgdir:?}" docs/*
-#install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 glib/docs/reference/COPYING
+  mv -t "${pkgdir:?}" docs/*
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 glib/docs/reference/COPYING
 
-#}
+}
