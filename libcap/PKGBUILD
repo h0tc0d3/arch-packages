@@ -1,5 +1,5 @@
 pkgname=libcap+clang
-pkgver=2.53
+pkgver=2.56
 pkgrel=1
 pkgdesc='POSIX 1003.1e capabilities'
 arch=('x86_64')
@@ -11,13 +11,9 @@ provides=('libcap' "libcap=${pkgver}" 'libcap.so' 'libpsx.so')
 conflicts=('libcap')
 source=(
   "https://kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-${pkgver}.tar."{xz,sign}
-  libcap-2.53-makefile.patch
-  libcap-2.53-progs_ldflags.patch
 )
-sha256sums=('9546b7e5358a67a6a4fb0f51715b628efdeff00ee0e629666847ed7de3c63571'
-  'SKIP'
-  '27ecb35658d3019ffb8c8c45ef18c987a761f98c4957febc5bfee954fedb8c7f'
-  '53bca36ca7b2fc7214d976e92079c8692d66f99f22970b7efb21626bad30234e')
+sha256sums=('d086e6b4641aa8024f6dd1cd284c93befdabc563f83dd08b15fc989c00b2c3ec'
+            'SKIP')
 
 validpgpkeys=(38A644698C69787344E954CE29EE848AE2CCF3F4) # Andrew G. Morgan <morgan@kernel.org>
 
@@ -34,12 +30,6 @@ prepare() {
     _llvm=1
     sed -i -e 's/\$(CROSS_COMPILE)gcc/clang/;s/\$(CROSS_COMPILE)ar/llvm-ar/;s/\$(CROSS_COMPILE)ranlib/llvm-ranlib/' Make.Rules
   fi
-
-  # SBINDIR is hardcoded to sbin. set to bin
-  # add CPPFLAGS
-  patch -Np1 -i "../libcap-2.53-makefile.patch"
-  # add back LDFLAGS, so that executables are built with them
-  patch -Np1 -i "../libcap-2.53-progs_ldflags.patch"
 
 }
 
@@ -58,7 +48,7 @@ build() {
 
   fi
 
-  make KERNEL_HEADERS='/usr/include' lib='lib' prefix='/usr' sbindir='bin'
+  make DYNAMIC=yes KERNEL_HEADERS='/usr/include' lib='lib' prefix='/usr' sbindir='bin'
 
 }
 
