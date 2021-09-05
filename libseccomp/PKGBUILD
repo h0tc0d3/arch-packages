@@ -1,0 +1,107 @@
+pkgbase=libseccomp+clang
+pkgname=(libseccomp+clang python-libseccomp+clang)
+pkgver=2.5.2
+pkgrel=1
+pkgdesc='Enhanced seccomp library'
+arch=('x86_64')
+license=('LGPL2.1')
+url="https://github.com/seccomp/libseccomp"
+depends=('glibc')
+checkdepends=('valgrind')
+makedepends=('gperf' 'cython' 'python-setuptools')
+source=("https://github.com/seccomp/libseccomp/releases/download/v${pkgver}/libseccomp-${pkgver}.tar.gz"{,.asc})
+sha256sums=('17a652dfb491d96be893960e9b791914936ee16c13b777a3caf562fe48cb87df'
+  'SKIP')
+b2sums=('b61214cb9a9a793d1f04ae1de3f62c578cfaec54fcc355947b4c71efb75072bf60497db8c8a0fd34a46764952349027df3f025ddbd276d58be93209170950e89'
+  'SKIP')
+validpgpkeys=(
+  '7100AADFAE6E6E940D2E0AD655E45A5AE8CA7C8A' # Paul Moore <paul@paul-moore.com>
+  '47A68FCE37C7D7024FD65E11356CE62C2B524099' # Tom Hromatka <tom.hromatka@oracle.com>
+)
+
+_llvm=0
+
+prepare() {
+
+  cd "${srcdir:?}/libseccomp-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libseccomp-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  autoreconf -fiv
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libseccomp-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libseccomp-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+  cd "src/python" || (
+    echo -e "\E[1;31mCan't cd to src/python directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  env VERSION_RELEASE="${pkgver}" python setup.py build
+
+}
+
+check() {
+
+  cd "${srcdir:?}/libseccomp-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libseccomp-${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make check
+
+}
+
+package_libseccomp+clang() {
+
+  provides=('libseccomp' "libseccomp=${pkgver}" 'libseccomp.so')
+  conflicts=('libseccomp')
+
+  cd "${srcdir:?}/libseccomp-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libseccomp-${pkgver} directory! Package libseccomp Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  install -Dm 644 CHANGELOG README.md SECURITY.md -t "${pkgdir:?}/usr/share/doc/libseccomp"
+
+}
+
+package_python-libseccomp+clang() {
+
+  provides=('python-libseccomp' "python-libseccomp=${pkgver}")
+  conflicts=('python-libseccomp')
+  depends=('python' 'libseccomp.so')
+
+  cd "${srcdir:?}/libseccomp-${pkgver}/src/python" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libseccomp-${pkgver}/src/python directory! Package python-libseccomp Failed! \E[0m"
+    exit 1
+  )
+
+  env VERSION_RELEASE="${pkgver}" python setup.py install --root="${pkgdir:?}" --prefix=/usr -O1 --skip-build
+
+}

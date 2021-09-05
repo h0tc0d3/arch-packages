@@ -2,6 +2,7 @@
 -libgcrypt
 -llvm
 libclc
+libseccomp
 libunistring
 libidn2
 ncurses
