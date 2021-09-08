@@ -1,14 +1,14 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
 pkgver=2.34
-pkgrel=6
+pkgrel=7
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
 makedepends=(git gd lib32-gcc-libs python)
 optdepends=('perl: for mtrace')
 options=(!strip staticlibs)
-_commit=9acab0bba6a5a57323b1f94bf95b21618a9e5aa4
+_commit=2738480a4b0866723fb8c633f36bdd34a8767581
 source=("git+https://sourceware.org/git/glibc.git#commit=${_commit}"
   #source=("https://ftp.gnu.org/gnu/glibc/glibc-${pkgver}.tar.xz"
   locale-gen
@@ -48,39 +48,6 @@ prepare() {
   _patch "glibc-newlocale-error.patch"
   _patch "glibc-cs-path.patch"
 
-  # C.UTF-8 Locale https://sourceware.org/git/?p=glibc.git;a=shortlog;h=refs/heads/codonell/c-utf8
-  git cherry-pick -n 52d5eb7e0678914f848cc3d7ac99f63d9d8359ef
-  git cherry-pick -n 7de41f96a172e5f15bc449ec3c09dbd0ae4cf2c6
-  git cherry-pick -n b2a77206b3c3bf4670acc069f6fdda76cf857d48
-
-  # Upstream patches
-  git cherry-pick -n 60698263122b7c54ded3f70a466176e17a529480 # nis: Fix leak on realloc failure in nis_getnames [BZ #28150]
-  git cherry-pick -n 2ee9b24f47db8d0a8d0ccadb999335a1d4cfc364 # Fix build of nptl/tst-thread_local1.cc with GCC 12
-  git cherry-pick -n df183287ff7ded9471205abfa59df27e5e5401da # hurd: Avoid spurious warning
-  git cherry-pick -n b17e842a60819098d2a203ecc8b8371b7e1d6c65 # gethosts: Remove unused argument _type
-  git cherry-pick -n 98149b16d645e9644a8e9b3d1f4b7932b9b193c5 # Add PTRACE_GET_RSEQ_CONFIGURATION from Linux 5.13 to sys/ptrace.h
-  git cherry-pick -n 1d7b32ee6145c46c4f4f8a208a6b72e0668d7cf3 # Use binutils 2.37 branch in build-many-glibcs.py
-  git cherry-pick -n 302247c89121e8d4c7629e589edbb4974fff6edb # elf: Unconditionally use __ehdr_start
-  git cherry-pick -n 13710e7e6af6c8965cc9a63a0660cb4ce1966557 # hurd: Add support for AT_NO_AUTOMOUNT
-  git cherry-pick -n 08fc6df294ab7e10e14492094a99b7861ad7d77e # hurd mmap: Factorize MAP_SHARED flag check
-  git cherry-pick -n 5a5358b749d0b153de6f6361342d06228d7270be # hurd mmap: Reduce the requested max vmprot
-  git cherry-pick -n dc906e94f7033892dadbd91718349f19e1376391 # mtrace: Use a static buffer for printing [BZ #25947]
-  git cherry-pick -n 6e8a0aac2f883a23efb1683b120499138f9e6021 # time: Fix overflow itimer tests on 32-bit systems
-  git cherry-pick -n cbb2aa337bc3a5f1cb9936781c3a7f5036d4262e # hurd: Drop fmh kludge
-  git cherry-pick -n 33c50ef42878b07ee6ead8b3f1a81d8c2c74697c # elf: Drop elf/tls-macros.h in favor of __thread and tls_model attributes [BZ #28152] [BZ #28205]
-  git cherry-pick -n b37b75d269883a2c553bb7019a813094eb4e2dd1 # x86_64: Simplify elf_machine_{load_address,dynamic}
-  git cherry-pick -n 710ba420fd417a4a82e0ad2e998e5f3b972cb503 # Remove sysdeps/*/tls-macros.h
-  git cherry-pick -n 0835c0f0bad351117154b815f34f8af19ea7e325 # x86: fix Autoconf caching of instruction support checks [BZ #27991]
-  git cherry-pick -n 78c9ec9000f873abe7a15a91b87080a2e4308260 # x86-64: Optimize load of all bits set into ZMM register [BZ #28252]
-  git cherry-pick -n f2e33c3268db9adf8e57e991676ed0d5ac74e8a8 # mtrace: Fix output with PIE and ASLR [BZ #22716]
-  git cherry-pick -n a4f5a3103fc3e7974dbe35b411cba9f670807cde # rtld: copy terminating null in tunables_strdup (bug 28256)
-  git cherry-pick -n c8126360dfa98024cc40bce915e126309993cdf9 # Fix iconv build with GCC mainline
-  git cherry-pick -n 5eb3e2c794c3fdd553833af5342740051221479c # hurd: Fix errlist error mapping
-  git cherry-pick -n 84a7eb1f87c1d01b58ad887a0ab5d87abbc1c772 # Use __executable_start as the lowest address for profiling [BZ #28153]
-  git cherry-pick -n 5359c3bc91cc509bcd30bbb8d951848e0280f325 # x86-64: Remove compiler -mavx512f check
-  git cherry-pick -n 528f9ff6bf69c2c0574a24ee475e31de38dcf060 # x86-64: Remove assembler AVX512DQ check
-  git cherry-pick -n 9926f6e2eeb374cf729d4bb3f092dd4b36a8f861 # elf: Skip tst-auditlogmod-* if the linker doesn't support --depaudit [BZ #28151]
-
 }
 
 build() {
@@ -103,7 +70,8 @@ build() {
     --disable-lock-elision
     --disable-profile
     --disable-werror
-    --without-cvs
+    --without-selinux
+    --disable-crypt
   )
 
   cd "${srcdir:?}/glibc-build" || exit 1
