@@ -1,0 +1,64 @@
+pkgname=libnsl+clang
+pkgver=2.0.0
+pkgrel=1
+pkgdesc="Public client interface library for NIS(YP)"
+arch=('x86_64')
+url="https://github.com/thkukuk/libnsl"
+license=('LGPL2.1')
+depends=('glibc' 'libtirpc')
+provides=('libnsl' "libnsl=${pkgver}" 'libnsl.so')
+conflicts=('libnsl')
+source=("libnsl-${pkgver}.tar.gz::${url}/archive/v${pkgver}.tar.gz")
+sha256sums=('eb37be57c1cf650b3a8a4fc7cd66c8b3dfc06215b41956a16325a9388171bc40')
+
+_llvm=0
+
+prepare() {
+
+  cd "${srcdir:?}/libnsl-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libnsl-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  autoreconf -fiv
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libnsl-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libnsl-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --disable-static
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libnsl-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libnsl-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  install -vDm 644 {AUTHORS,NEWS,README} -t "${pkgdir:?}/usr/share/doc/${pkgname}"
+
+}

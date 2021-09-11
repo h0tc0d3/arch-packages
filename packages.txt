@@ -143,6 +143,7 @@ openssl
 libsasl
 openldap
 libtirpc
+libnsl
 pam
 libcap
 krb5
