@@ -1,0 +1,88 @@
+pkgname=libuv+clang
+pkgver=1.42.0
+pkgrel=1
+pkgdesc="Multi-platform support library with a focus on asynchronous I/O"
+arch=('x86_64')
+url="https://github.com/libuv/libuv"
+license=('custom')
+provides=('libuv' "libuv=${pkgver}")
+conflicts=('libuv')
+depends=('glibc' 'libnsl')
+makedepends=('python-sphinx')
+source=("https://dist.libuv.org/dist/v${pkgver}/libuv-v${pkgver}.tar.gz"{,.sign})
+sha256sums=('43129625155a8aed796ebe90b8d4c990a73985ec717de2b2d5d3a23cfe4deb72'
+  'SKIP')
+# PGP key IDs are available from https://github.com/libuv/libuv/blob/v1.x/MAINTAINERS.md
+validpgpkeys=(
+  '57353E0DBDAAA7E839B66A1AFF47D5E4AD8B4FDC' # Colin Ihrig (@cjihrig)
+  'AEAD0A4B686767751A0E4AEF34A25FB128246514' # Jameson Nash (@vtjnash)
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cd "${srcdir:?}/libuv-v${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libuv-v${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./autogen.sh
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+  make man -C docs
+
+}
+
+check() {
+
+  cd "${srcdir:?}/libuv-v${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libuv-v${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make check
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libuv-v${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libuv-v${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -Dm644 LICENSE \
+    "${pkgdir:?}"/usr/share/licenses/${pkgname}/LICENSE
+  install -Dm644 AUTHORS \
+    "${pkgdir:?}"/usr/share/doc/${pkgname}/AUTHORS
+  install -Dm644 README.md \
+    "${pkgdir:?}"/usr/share/doc/${pkgname}/README.md
+  install -Dm644 ChangeLog \
+    "${pkgdir:?}"/usr/share/doc/${pkgname}/ChangeLog
+  install -Dm644 docs/build/man/libuv.1 \
+    "${pkgdir:?}"/usr/share/man/man1/libuv.1
+
+}
