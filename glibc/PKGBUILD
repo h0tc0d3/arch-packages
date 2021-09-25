@@ -1,14 +1,14 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
 pkgver=2.34
-pkgrel=7
+pkgrel=8
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
 makedepends=(git gd lib32-gcc-libs python)
 optdepends=('perl: for mtrace')
 options=(!strip staticlibs)
-_commit=2738480a4b0866723fb8c633f36bdd34a8767581
+_commit=a1c056c9d06a6aa184fa3c52a5bbd3562ac386e8
 source=("git+https://sourceware.org/git/glibc.git#commit=${_commit}"
   #source=("https://ftp.gnu.org/gnu/glibc/glibc-${pkgver}.tar.xz"
   locale-gen
@@ -70,8 +70,6 @@ build() {
     --disable-lock-elision
     --disable-profile
     --disable-werror
-    --without-selinux
-    --disable-crypt
   )
 
   cd "${srcdir:?}/glibc-build" || exit 1

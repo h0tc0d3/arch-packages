@@ -44,7 +44,6 @@ xorg-util-macros
 libxkbfile
 libxext
 libxres
-libxi
 libpciaccess
 libdrm
 xorg-font-util
@@ -97,6 +96,9 @@ dbus
 wayland
 xorg-xwayland
 qt5-wayland
+kcoreaddons
+kservice
+kded
 plasma-wayland-protocols
 kwayland
 kwindowsystem
@@ -107,6 +109,8 @@ breeze
 plasma-integration
 kio
 kio-extras
+kdeclarative
+kcmutils
 kinit
 libqalculate
 plasma-workspace
@@ -127,6 +131,7 @@ gtk2
 gtk3
 libinput
 xf86-input-libinput
+libxi
 gtk4
 xcb-proto
 libxcb

@@ -1,7 +1,7 @@
 pkgname=mpv+clang
 epoch=1
 pkgver=0.33.1
-pkgrel=2
+pkgrel=3
 pkgdesc='a free, open source, and cross-platform media player'
 arch=('x86_64')
 license=('GPL3')
@@ -9,7 +9,7 @@ url='https://mpv.io/'
 depends=('alsa-lib' 'libasound.so' 'desktop-file-utils' 'ffmpeg' 'libavcodec.so' 'libavdevice.so'
   'libavfilter.so' 'libavformat.so' 'libavutil.so' 'libswresample.so' 'libswscale.so'
   'glibc' 'hicolor-icon-theme' 'jack' 'libjack.so' 'lcms2' 'liblcms2.so' 'libarchive'
-  'libarchive.so' 'libass' 'libass.so' 'libbluray' 'libbluray.so' 'libcaca' 'libcdio'
+  'libarchive.so' 'libass' 'libass.so' 'libbluray' 'libbluray.so' 'libcdio'
   'libcdio-paranoia' 'libdrm' 'libdvdnav' 'libdvdread' 'libegl' 'libgl' 'libglvnd'
   'libjpeg' 'libjpeg.so' 'libplacebo' 'libplacebo.so' 'libpulse' 'libpulse.so'
   'libva' 'libva.so' 'libva-drm.so' 'libva-wayland.so' 'libva-x11.so' 'libvdpau' 'libx11'
@@ -79,7 +79,8 @@ build() {
     -D gl-x11=disabled \
     -D opengl32=disabled \
     -D gl-win32=disabled \
-    -D uwp=disabled
+    -D uwp=disabled \
+    -D caca=disabled
 
   meson compile -C build
 

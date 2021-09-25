@@ -1,5 +1,5 @@
 pkgname=telegram-desktop+clang
-pkgver=3.0.1
+pkgver=3.1.0
 pkgrel=1
 pkgdesc='Official Telegram Desktop client'
 arch=('x86_64')
@@ -18,7 +18,7 @@ optdepends=('gtk3: GTK environment integration'
 source=(
   "https://github.com/telegramdesktop/tdesktop/releases/download/v${pkgver}/tdesktop-${pkgver}-full.tar.gz"
 )
-sha256sums=('536b832ef395884e88e30cf7d8275f67de34581be84b6425a616ebfd3371c91c')
+sha256sums=('2250e2f12d415288e04c53699ab4556155f9be69bc21c78a5b2f139b8451f8f0')
 
 _llvm=0
 

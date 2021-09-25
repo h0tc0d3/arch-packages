@@ -1,5 +1,5 @@
 pkgname=linux-api-headers
-pkgver=5.13.9
+pkgver=5.14.5
 pkgrel=1
 pkgdesc='Kernel headers sanitized for use in userspace'
 arch=(any)
@@ -7,7 +7,7 @@ url='https://www.gnu.org/software/libc'
 license=(GPL2)
 makedepends=(rsync)
 source=("https://www.kernel.org/pub/linux/kernel/v${pkgver:0:1}.x/linux-${pkgver}.tar."{xz,sign})
-sha256sums=('72fe7cc1f0363523061659a21e24754697b27f405cb88a41a63038629636159a'
+sha256sums=('65168d1cd6cb6558ff57d9e3bc7507cbc722e1bb053cd80793b0ac804b546cfd'
             'SKIP')
 validpgpkeys=(
   'ABAF11C65A2970B130ABE3C479BE3E4300411886' # Linus Torvalds

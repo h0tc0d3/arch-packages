@@ -1,5 +1,5 @@
 pkgname=wayland-protocols+clang
-pkgver=1.22
+pkgver=1.23
 pkgrel=1
 pkgdesc='Specifications of extended Wayland protocols'
 arch=('any')
@@ -7,66 +7,53 @@ url='https://wayland.freedesktop.org/'
 license=('MIT')
 provides=('wayland-protocols' "wayland-protocols=${pkgver}")
 conflicts=('wayland-protocols')
-makedepends=('wayland')
+makedepends=('wayland' 'meson' 'ninja')
 validpgpkeys=(
   '8307C0A224BABDA1BABD0EB9A6EEEC9E0136164A' # Jonas Ådahl
   'A66D805F7C9329B4C5D82767CCC4F07FAC641EFF' # Daniel Stone
 )
 source=("https://wayland.freedesktop.org/releases/wayland-protocols-${pkgver}.tar.xz"{,.sig})
-sha256sums=('96e7cf03524995a47028236c6d6141c874e693cb80c0be8dabe15455cdd5a5a7'
-            'SKIP')
+sha256sums=('6c0af1915f96f615927a6270d025bd973ff1c58e521e4ca1fc9abfc914633f76'
+  'SKIP')
 
-_llvm=0
+_extra_lto_flag=""
 
 prepare() {
 
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
-    _llvm=1
+    _extra_lto_flag='-D b_lto_mode=thin'
   fi
 
 }
 
 build() {
 
-  cd "${srcdir:?}/wayland-protocols-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/wayland-protocols-${pkgver} directory! Build Failed! \E[0m"
-    exit 1
-  )
+  meson setup wayland-protocols-${pkgver} build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true
 
-  if [[ ${_llvm} -eq 1 ]]; then
-
-    CFLAGS="${CFLAGS} -flto=thin"
-    CXXFLAGS="${CXXFLAGS} -flto=thin"
-    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
-
-  fi
-
-  ./configure \
-    --prefix=/usr
-
-  make
+  meson compile -C build
 
 }
 
 check() {
 
-  cd "${srcdir:?}/wayland-protocols-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/wayland-protocols-${pkgver} directory! Check Failed! \E[0m"
-    exit 1
-  )
-
-  make check
+  meson test -C build --print-errorlogs
 
 }
 
 package() {
 
-  cd "${srcdir:?}/wayland-protocols-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/wayland-protocols-${pkgver} directory! Package Failed! \E[0m"
-    exit 1
-  )
-
-  make DESTDIR="${pkgdir:?}" install
-  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname}" -m 644 COPYING
+  DESTDIR="${pkgdir:?}" meson install -C build
+  set -x
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname}" -m 644 "wayland-protocols-${pkgver}/COPYING"
 
 }

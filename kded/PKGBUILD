@@ -1,0 +1,49 @@
+pkgname=kded+clang
+pkgver=5.86.0
+pkgrel=1
+pkgdesc='Extensible deamon for providing system level services'
+arch=(x86_64)
+url='https://community.kde.org/Frameworks'
+license=(LGPL)
+provides=('kded' "kded=${pkgver}")
+conflicts=('kded')
+depends=(kservice kcrash)
+makedepends=(extra-cmake-modules kdoctools)
+groups=(kf5)
+source=("https://download.kde.org/stable/frameworks/${pkgver%.*}/kded-${pkgver}.tar.xz"{,.sig})
+sha256sums=('dc77534c1612b1232bcc52431bbdc8a4a46b095c90ba60c09a01e6404118a36a'
+  'SKIP')
+validpgpkeys=(53E6B47B45CEA3E0D5B7457758D0EE648A48B3BB) # David Faure <faure@kde.org>
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -B build -S kded-${pkgver} \
+    -DBUILD_TESTING=OFF
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+}

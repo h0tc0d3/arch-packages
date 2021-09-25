@@ -1,5 +1,5 @@
 pkgname=libedit+clang
-_pkgver=20210714-3.1
+_pkgver=20210910-3.1
 pkgver=${_pkgver/-/_}
 pkgrel=1
 pkgdesc='Command line editor library providing generic line editing, history, and tokenization functions'
@@ -10,7 +10,7 @@ depends=('glibc' 'ncurses' 'libncursesw.so')
 provides=("libedit" "libedit=${pkgver}" 'libedit.so')
 conflicts=("libedit")
 source=("${url}/libedit-${_pkgver}.tar.gz")
-sha256sums=('3023b498ad593fd7745ae3b20abad546de506b67b8fbb5579637ca69ab82dbc9')
+sha256sums=('6792a6a992050762edcca28ff3318cdb7de37dccf7bc30db59fcd7017eed13c5')
 
 _llvm=0
 
