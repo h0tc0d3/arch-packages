@@ -5,8 +5,8 @@ Take care, patches only works with 5.13.3 version of kernel!
 ## 0001-compiler-march-kernel-5.8+.patch
 [graysky2/kernel_compiler_patch](https://github.com/graysky2/kernel_compiler_patch)
 
-Allow choose processor optimization. **Processor type and features*-  --->
-  **Processor family*- ---> **your processor**.
+Allow choose processor optimization. **Processor type and features**  --->
+  **Processor family** ---> **your processor**.
 
 ## 0002-clang_cfi.patch
 
@@ -87,10 +87,68 @@ net.ipv4.tcp_congestion_control=bbr2
 tc qdisc add dev your_network_device root fq_codel
 ```
 
-## 0006-compat.patch
+## 0006-amd-cppc.patch
 
-For Kernel 5.14+
-Simplify and remove uneeded compatable code.
+We would like to introduce a new AMD CPU frequency control mechanism as the
+"amd-pstate" driver for modern AMD Zen based CPU series in Linux Kernel.
+The new mechanism is based on Collaborative processor performance control
+(CPPC) which is finer grain frequency management than legacy ACPI hardware
+P-States. Current AMD CPU platforms are using the ACPI P-states driver to
+manage CPU frequency and clocks with switching only in 3 P-states. AMD
+P-States is to replace the ACPI P-states controls, allows a flexible,
+low-latency interface for the Linux kernel to directly communicate the
+performance hints to hardware.
+
+"amd-pstate" leverages the Linux kernel governors such as *schedutil*,
+*ondemand*, etc. to manage the performance hints which are provided by CPPC
+hardware functionality. The first version for amd-pstate is to support one
+of the Zen3 processors, and we will support more in future after we verify
+the hardware and SBIOS functionalities.
+
+There are two types of hardware implementations for amd-pstate: one is full
+MSR support and another is shared memory support. It can use
+X86_FEATURE_AMD_CPPC_EXT feature flag to distinguish the different types. 
+
+Using the new AMD P-States method + kernel governors (*schedutil*,
+*ondemand*, ...) to manage the frequency update is the most appropriate
+bridge between AMD Zen based hardware processor and Linux kernel, the
+processor is able to ajust to the most efficiency frequency according to
+the kernel scheduler loading.
+
+According to above average data, we can see this solution has shown better
+performance per watt scaling on mobile CPU benchmarks in most of cases.
+
+These patch series depends on a "hotplug capable" CPU fix below (Only few
+of CPU parts with "un-hotplug" core will encounter the issue and Mario is
+working on the fix):
+https://lore.kernel.org/linux-pm/20210813161842.222414-1-mario.limonciello@amd.com/
+
+And we can see patch series in below git repo:
+V1: https://git.kernel.org/pub/scm/linux/kernel/git/rui/linux.git/log/?h=amd-pstate-dev-v1
+V2: https://git.kernel.org/pub/scm/linux/kernel/git/rui/linux.git/log/?h=amd-pstate-dev-v2
+
+For details introduction, please see the patch 19.
+
+Changes from V1 -> V2:
+
+cpufreq:
+- Add detailed description in the commit log.
+- Clean up the "extension" postfix in the x86 feature flag.
+- Revise cppc_set_enable helper.
+- Add a fix to check online cpus in cppc_acpi.
+- Use static calls to avoid retpolines.
+- Revise the comment style.
+- Remove amd_pstate_boost_supported() function.
+- Revise the return value in syfs attribute functions.
+
+cpupower:
+- Refine the commit log for cpupower patches.
+- Expose a function to get the sysfs value from specific table.
+- Move amd-pstate sysfs definitions and functions into amd helper file.
+- Move the boost init function into amd helper file and explain the details in the commit log.
+- Remove the amd_pstate_get_data in the lib/cpufreq.c to keep the lib as common operations.
+- Move print_speed function into misc helper file.
+- Add amd_pstate_show_perf_and_freq() function in amd helper for cpufreq-info print.
 
 ## 0007-string.patch
 
@@ -152,31 +210,14 @@ caches in software before entering C3. This will cause performance drop
 for the cores which share some caches. ARB_DIS is not used with current
 AMD C state implementation. So set related flags correctly.
 
-## 0011-drm-fbdev.patch
+## 0011-amd-ptdma.patch
 
-This patch series splits the fbdev core support in two different Kconfig
-symbols: FB and FB_CORE. The motivation for this is to allow CONFIG_FB to
-be disabled, while still using fbcon with the DRM fbdev emulation layer.
+Add support for AMD PTDMA controller. It performs high-bandwidth
+memory to memory and IO copy operation. Device commands are managed
+via a circular queue of 'descriptors', each of which specifies source
+and destination addresses for copying a single buffer of data.
 
-The reason for doing this is that now with simpledrm we could just boot
-with simpledrm -> real DRM driver, without needing any legacy fbdev driver
-(e.g: efifb or simplefb) even for the early console.
-
-We want to do that in the Fedora kernel, but currently need to keep option
-CONFIG_FB enabled and all fbdev drivers explicitly disabled, which makes
-the configuration harder to maintain.
-
-It is a RFC because I'm not that familiar with the fbdev core, but I have
-tested and works with CONFIG_DRM_FBDEV_EMULATION=y and CONFIG_FB disabled.
-This config automatically disables all the fbdev drivers that is our goal.
-
-Patch 1/4 is just a clean up, patch 2/4 moves a couple of functions out of
-fbsysfs.o, that are not related to sysfs attributes creation and finally
-patch 3/4 makes the fbdev split that is mentioned above.
-
-Patch 4/4 makes the DRM fbdev emulation depend on the new FB_CORE symbol
-instead of FB. This could be done as a follow-up but for completeness is
-also included in this series.
+**Device Drivers** ---> **DMA Engine support** ---> **<*> AMD PassThru DMA Engine**
 
 ## 0012-amd-acpi-fix-suspend-resume.patch
 
