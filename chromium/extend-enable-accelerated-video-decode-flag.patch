@@ -29,7 +29,7 @@ index 551706d..4b71bb1 100644
      "name": "enable-accelerated-video-decode",
      "owners": [ "media-dev@chromium.org" ],
 -    "expiry_milestone": 93
-+    "expiry_milestone": 95
++    "expiry_milestone": 99
    },
    {
      "name": "enable-accessibility-live-caption",

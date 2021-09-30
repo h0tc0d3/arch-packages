@@ -1,13 +1,14 @@
 pkgname=egl-wayland+clang
 pkgver=1.1.7
 pkgrel=1
+epoch=1
 pkgdesc="EGLStream-based Wayland external platform"
 arch=(x86_64)
 url=https://github.com/NVIDIA/egl-wayland
 license=(MIT)
 provides=('egl-wayland' "egl-wayland=${pkgver}" libnvidia-egl-wayland.so)
 conflicts=('egl-wayland')
-depends=(wayland eglexternalplatform)
+depends=(wayland eglexternalplatform 'libglvnd>=1.3.4')
 makedepends=(meson git)
 _commit=db7f6d80aa4221d51088b0b70a730ce95ca42d6c # tags/1.1.7
 source=(

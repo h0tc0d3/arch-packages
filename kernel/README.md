@@ -219,22 +219,7 @@ and destination addresses for copying a single buffer of data.
 
 **Device Drivers** ---> **DMA Engine support** ---> **<*> AMD PassThru DMA Engine**
 
-## 0012-amd-acpi-fix-suspend-resume.patch
-
-These add ACPI support to the PCI VMD driver, improve suspend-to-idle
-support for AMD platforms and update documentation.
-
-Specifics:
-
-- Add ACPI support to the PCI VMD driver (Rafael Wysocki).
-
-- Rearrange suspend-to-idle support code to reflect the platform
-firmware expectations on some AMD platforms (Mario Limonciello).
-
-- Make SSDT overlays documentation follow the code documented by it
-more closely (Andy Shevchenko).
-
-## 0013-KASLR.patch
+## 0012-KASLR.patch
 
 This is a massive rework and a respin of Kristen Accardi's marvellous
 FG-KASLR series (v5).

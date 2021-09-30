@@ -1,8 +1,8 @@
 pkgname=chromium+clang
-pkgver=93.0.4577.63
-pkgrel=4
+pkgver=94.0.4606.61
+pkgrel=1
 _launcher_ver=8
-_gcc_patchset=6
+_gcc_patchset=3
 pkgdesc="A web browser built for speed, simplicity, and security"
 arch=('x86_64')
 url="https://www.chromium.org/Home"
@@ -29,7 +29,6 @@ source=(
   chromium-jpeg-nomangle.patch
   chromium-no-zlib-mangle.patch
   chromium-unbundle-zlib.patch
-  chromium-compiler.patch
   chromium-use-oauth2-client-switches-as-default.patch
   chromium-enable-hardware-accelerated-mjpeg.patch
   chromium-vaapi-i686-fpermissive.patch
@@ -37,45 +36,44 @@ source=(
   extend-enable-accelerated-video-decode-flag.patch
   sql-make-VirtualCursor-standard-layout-type.patch
   chromium-protobuf-RepeatedPtrField-export.patch
-  chromium-sandbox-syscall-broker-use-struct-kernel_stat.patch
-  chromium-sandbox-fix-fstatat-crash.patch
   chromium-EnumTable-crash.patch
   chromium-std-max-fix.patch
-  chromium-ruy-include.patch
   chromium-gcc11.patch
   chromium-py3-fixes.patch
   chromium-libdav1d.patch
   chromium-InkDropHost-crash.patch
   chromium-ffmpeg-4.4.patch
   chromium-replace-blacklist-with-ignorelist.patch
+  chromium-94-ffmpeg-roll.patch
+  chromium-add-a-TODO-about-a-missing-pnacl-flag.patch
+  chromium-use-ffile-compilation-dir.patch
 )
-sha256sums=('eaf34fa6c2f24054655fbb2376b6e3ddee4cf4868c1324c921e71a45cfc94853'
-            '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
-            'a44ffd9e25fcbd8b3cc778871890e4da6fe12600ad549c807e1d03f61f0cdf73'
-            'e5b651b403e5b161bf9b5e049f8202c444d7f1700411f89d62c20303c80846e0'
-            '70a2805a63df15817a3435e983c0350c5d04ff62deffd8214cbb040b904f54a5'
-            '15c93da644dbc533a6b74bd7f86a07dc59023c7b369298acd649715b9a9209a5'
-            'c162eafc1f128e616281e719d860ec8726eec89660f449ed0e9af7dfe07c8cc9'
-            'f8dcac3a18e20bee8c54912c1c931e723e97981cc88c8568bd05411812ff6204'
-            'fefc0f1a6e24e4322208dd32deffbe93de076e5382c9e80d0b41b9c05a134994'
-            'e393174d7695d0bafed69e868c5fbfecf07aa6969f3b64596d0bae8b067e1711'
-            '043d83d22af1210c2dd7f3ef9e42e6f316556cb9ec3e377deded080025abf9c1'
-            '7a84822b25734547055c2aba265df50ab02f47515b3f7fa0ce821572d4d1f8cd'
-            'cfd35f512cd966a1566397c02897d3cb3d89e117b41b8629e2de11329a2c0b17'
-            '40eb6184ba7f1860ec0c7fc88fd148c72cb6bc11383026e34809278789b7c4a9'
-            '2b36574144bb7135512b81f394e53ea80d931ac62148b28c17a70a2869cb501c'
-            '5d5bfedbabdf3e05c8159afc2bf776b8f95212413ba44464b4d973ac5a127cf1'
-            '268e18ad56e5970157b51ec9fc8eb58ba93e313ea1e49c842a1ed0820d9c1fa3'
-            '253348550d54b8ae317fd250f772f506d2bae49fb5dc75fe15d872ea3d0e04a5'
-            'bb4560e067eb6ff6d4c4a5c4f149d1cc1c9c705a14be4721ead2ebb8ec84ded1'
-            '7584ec20a3830f619d80d4bcbc432f6a5b7e733c00d397a5dc831ba093ffcc6b'
-            '885e83c91fe29246f1d8abc62b70cb28348bf5eda722bd06b17663c86244106c'
-            '5690089b8bd6946dfa975b8022531213b882b3396a3c968eeef9836b131725b7'
-            'ff80a8fe749363ff91b063cf641d3527807c48b23efe62f8de1d0a6076b39b11'
-            '97c5c3551c19e5a9b77ac9db5dd3bd396f08acccf735ac5710274bd31e4ce08c'
-            '04bba6fb19ea5a4ab3949b65f06c88728a00ab296f42022ece62ca2fa25ec2e7'
-            '1a9e074f417f8ffd78bcd6874d8e2e74a239905bf662f76a7755fa40dc476b57'
-            'd3344ba39b8c6ed202334ba7f441c70d81ddf8cdb15af1aa8c16e9a3a75fbb35')
+sha256sums=('6446db535c02c461c7e5c8d294a0300db03abba791f97f0c70bc52255aedb9bf'
+  '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
+  '22692bddaf2761c6ddf9ff0bc4722972bca4d4c5b2fd3e5dbdac7eb60d914320'
+  'e5b651b403e5b161bf9b5e049f8202c444d7f1700411f89d62c20303c80846e0'
+  '70a2805a63df15817a3435e983c0350c5d04ff62deffd8214cbb040b904f54a5'
+  '15c93da644dbc533a6b74bd7f86a07dc59023c7b369298acd649715b9a9209a5'
+  'c162eafc1f128e616281e719d860ec8726eec89660f449ed0e9af7dfe07c8cc9'
+  'f8dcac3a18e20bee8c54912c1c931e723e97981cc88c8568bd05411812ff6204'
+  'e393174d7695d0bafed69e868c5fbfecf07aa6969f3b64596d0bae8b067e1711'
+  '043d83d22af1210c2dd7f3ef9e42e6f316556cb9ec3e377deded080025abf9c1'
+  '7a84822b25734547055c2aba265df50ab02f47515b3f7fa0ce821572d4d1f8cd'
+  'cfd35f512cd966a1566397c02897d3cb3d89e117b41b8629e2de11329a2c0b17'
+  '83900524799e1976ac58ac76f1f9ad5686775aaf264a3f38034ba05e733dc588'
+  '2b36574144bb7135512b81f394e53ea80d931ac62148b28c17a70a2869cb501c'
+  '5d5bfedbabdf3e05c8159afc2bf776b8f95212413ba44464b4d973ac5a127cf1'
+  'bb4560e067eb6ff6d4c4a5c4f149d1cc1c9c705a14be4721ead2ebb8ec84ded1'
+  '7584ec20a3830f619d80d4bcbc432f6a5b7e733c00d397a5dc831ba093ffcc6b'
+  '5690089b8bd6946dfa975b8022531213b882b3396a3c968eeef9836b131725b7'
+  'ff80a8fe749363ff91b063cf641d3527807c48b23efe62f8de1d0a6076b39b11'
+  '97c5c3551c19e5a9b77ac9db5dd3bd396f08acccf735ac5710274bd31e4ce08c'
+  '04bba6fb19ea5a4ab3949b65f06c88728a00ab296f42022ece62ca2fa25ec2e7'
+  '1a9e074f417f8ffd78bcd6874d8e2e74a239905bf662f76a7755fa40dc476b57'
+  'd3344ba39b8c6ed202334ba7f441c70d81ddf8cdb15af1aa8c16e9a3a75fbb35'
+  '56acb6e743d2ab1ed9f3eb01700ade02521769978d03ac43226dec94659b3ace'
+  'd53da216538f2e741a6e048ed103964a91a98e9a3c10c27fdfa34d4692fdc455'
+  '921010cd8fab5f30be76c68b68c9b39fac9e21f4c4133bb709879592bbdf606e')
 #noextract=("${source[@]##*/}")
 # Possible replacements are listed in build/linux/unbundle/replace_gn_files.py
 # Keys are the names in the above script; values are the dependencies in Arch
@@ -120,6 +118,13 @@ _patch() {
 
 }
 
+_rpatch() {
+
+  echo -e "\E[1;33m Revert patch: ${1}\E[0m"
+  patch -Rp1 -i "${srcdir:?}/${1}"
+
+}
+
 prepare() {
 
   cd "${srcdir:?}/chromium-${pkgver}"
@@ -134,6 +139,11 @@ prepare() {
     third_party/blink/renderer/core/xml/parser/xml_document_parser.cc \
     third_party/libxml/chromium/*.cc
 
+  # Use the --oauth2-client-id= and --oauth2-client-secret= switches for
+  # setting GOOGLE_DEFAULT_CLIENT_ID and GOOGLE_DEFAULT_CLIENT_SECRET at
+  # runtime -- this allows signing into Chromium without baked-in values
+  _patch chromium-use-oauth2-client-switches-as-default.patch
+
   # Add pie build flags to sandbox
   # _patch chromium-sandbox-pie.patch # Unstable
   # Do not prefix libpng functions
@@ -144,13 +154,6 @@ prepare() {
   _patch chromium-no-zlib-mangle.patch
   # Unbundle zlib
   _patch chromium-unbundle-zlib.patch
-  # Compiler debug info optimization
-  _patch chromium-compiler.patch
-
-  # Use the --oauth2-client-id= and --oauth2-client-secret= switches for
-  # setting GOOGLE_DEFAULT_CLIENT_ID and GOOGLE_DEFAULT_CLIENT_SECRET at
-  # runtime -- this allows signing into Chromium without baked-in values
-  _patch chromium-use-oauth2-client-switches-as-default.patch
 
   # VAAPI
   _patch chromium-enable-hardware-accelerated-mjpeg.patch
@@ -158,28 +161,36 @@ prepare() {
   _patch chromium-vaapi-i686-fpermissive.patch
   _patch chromium-fix-vaapi-on-intel.patch
 
+  # Revert transition to -fsanitize-ignorelist (needs newer clang)
+  _rpatch chromium-replace-blacklist-with-ignorelist.patch
+
+  # Fixes for building with libstdc++ instead of libc++
+  _patch patches/chromium-90-ruy-include.patch
+  _patch patches/chromium-94-CustomSpaces-include.patch
+
+  # https://chromium-review.googlesource.com/c/chromium/src/+/2862724
+  _patch sql-make-VirtualCursor-standard-layout-type.patch
+
   # Upstream fixes
   _patch chromium-protobuf-RepeatedPtrField-export.patch
-  _patch chromium-sandbox-syscall-broker-use-struct-kernel_stat.patch # glibc 2.34
-  _patch chromium-sandbox-fix-fstatat-crash.patch                     # glibc 2.34
   _patch chromium-EnumTable-crash.patch
   _patch chromium-std-max-fix.patch # glibc 2.34
-  _patch chromium-ruy-include.patch
   _patch chromium-gcc11.patch
   _patch chromium-py3-fixes.patch
   _patch chromium-libdav1d.patch
   _patch chromium-InkDropHost-crash.patch
   _patch chromium-ffmpeg-4.4.patch
-  #_patch chromium-replace-blacklist-with-ignorelist.patch
-  _patch patches/chromium-93-pdfium-include.patch
-  _patch patches/chromium-93-HashPasswordManager-include.patch
-  _patch patches/chromium-93-BluetoothLowEnergyScanFilter-include.patch
-  _patch patches/chromium-93-ClassProperty-include.patch
-  _patch patches/chromium-93-DevToolsEmbedderMessageDispatcher-include.patch
-  _patch patches/chromium-93-ScopedTestDialogAutoConfirm-include.patch
 
-  # https://chromium-review.googlesource.com/c/chromium/src/+/2862724
-  _patch sql-make-VirtualCursor-standard-layout-type.patch
+  # Revert change to custom function av_stream_get_first_dts; will need to
+  # switch to bundled ffmpeg when we're no longer using ffmpeg 4.4 in Arch
+  # Upstream commit that made first_dts internal causing Chromium to add a
+  # custom function: https://github.com/FFmpeg/FFmpeg/commit/591b88e6787c4
+  # https://crbug.com/1251779
+  _rpatch chromium-94-ffmpeg-roll.patch
+
+  # Revert addition of -ffile-compilation-dir= (needs newer clang)
+  _rpatch chromium-add-a-TODO-about-a-missing-pnacl-flag.patch
+  _rpatch chromium-use-ffile-compilation-dir.patch
 
   # Fix build with system libpng
   sed -i -e "/USE_SYSTEM_LIBPNG/ a#include \"core/fxcodec/fx_codec_def.h\"" \
@@ -255,7 +266,7 @@ build() {
     'blink_symbol_level=0'
     'blink_enable_generated_code_formatting=false'
     'treat_warnings_as_errors=false'
-    'fieldtrial_testing_like_official_build=true'
+    'disable_fieldtrial_testing_config=true'
     'ffmpeg_branding="Chrome"'
     'proprietary_codecs=true'
     'rtc_use_pipewire=true'
@@ -345,7 +356,7 @@ package() {
     libEGL.so
     libGLESv2.so
     chromedriver
-    crashpad_handler
+    chrome_crashpad_handler
   )
 
   if [[ -z ${_system_libs[icu]+set} ]]; then
