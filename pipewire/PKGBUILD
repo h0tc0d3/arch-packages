@@ -3,7 +3,7 @@ pkgname=(pipewire+clang alsa-card-profiles+clang pipewire-docs+clang pipewire-me
   pipewire-alsa+clang pipewire-jack+clang pipewire-pulse+clang gst-plugin-pipewire+clang
   pipewire-zeroconf+clang)
 pkgver=0.3.38
-pkgrel=1
+pkgrel=2
 epoch=1
 pkgdesc="Low-latency audio/video router and processor"
 url="https://pipewire.org"
@@ -100,7 +100,7 @@ package_pipewire+clang() {
     'pipewire-pulse: PulseAudio replacement'
     'gst-plugin-pipewire: GStreamer support'
     'pipewire-zeroconf: Zeroconf support')
-  provides=("pipewire" "pipewire=${pkgver}" "pipewire+clang=${pkgver}" "libpipewire-${_ver}.so")
+  provides=("pipewire" "pipewire=${epoch}:${pkgver}" "libpipewire-${_ver}.so")
   conflicts=("pipewire")
   install=pipewire.install
 
@@ -145,9 +145,9 @@ package_alsa-card-profiles+clang() {
 
   pkgdesc+=" - ALSA card profiles"
   license=(LGPL)
-  provides=("alsa-card-profiles" "alsa-card-profiles=${pkgver}" "alsa-card-profiles+clang=${pkgver}")
+  provides=("alsa-card-profiles" "alsa-card-profiles=${epoch}:${pkgver}")
   conflicts=("alsa-card-profiles")
-  depends=("pipewire+clang=${pkgver}")
+  depends=("pipewire+clang=${epoch}:${pkgver}")
 
   mv acp/* "${pkgdir:?}"
 
@@ -156,9 +156,9 @@ package_alsa-card-profiles+clang() {
 package_pipewire-docs+clang() {
 
   pkgdesc+=" - documentation"
-  provides=("pipewire-docs" "pipewire-docs=${pkgver}" "pipewire-docs+clang=${pkgver}")
+  provides=("pipewire-docs" "pipewire-docs=${epoch}:${pkgver}")
   conflicts=("pipewire-docs")
-  depends=("pipewire+clang=${pkgver}")
+  depends=("pipewire+clang=${epoch}:${pkgver}")
 
   mv docs/* "${pkgdir:?}"
 
@@ -169,9 +169,9 @@ package_pipewire-docs+clang() {
 package_pipewire-media-session+clang() {
 
   pkgdesc+=" - Session manager"
-  provides=("pipewire-media-session" "pipewire-media-session=${pkgver}" "pipewire-media-session+clang=${pkgver}")
+  provides=("pipewire-media-session" "pipewire-media-session=${epoch}:${pkgver}")
   conflicts=("pipewire-media-session")
-  depends=("pipewire+clang=${pkgver}" "libpipewire-${_ver}.so")
+  depends=("pipewire+clang=${epoch}:${pkgver}" "libpipewire-${_ver}.so")
   install=pipewire-media-session.install
 
   mv pms/* "${pkgdir:?}"
@@ -183,10 +183,9 @@ package_pipewire-media-session+clang() {
 package_pipewire-alsa+clang() {
 
   pkgdesc+=" - ALSA configuration"
-  provides=("pipewire-alsa" "pipewire-alsa=${pkgver}" "pipewire-alsa+clang=${pkgver}")
+  provides=("pipewire-alsa" "pipewire-alsa=${epoch}:${pkgver}" pulseaudio-alsa)
   conflicts=("pipewire-alsa")
-  depends=("pipewire-media-session+clang=${pkgver}" "pipewire+clang=${pkgver}")
-  provides=(pulseaudio-alsa)
+  depends=("pipewire-media-session+clang=${epoch}:${pkgver}" "pipewire+clang=${epoch}:${pkgver}")
 
   mkdir -p "${pkgdir:?}/etc/alsa/conf.d"
   ln -st "${pkgdir:?}/etc/alsa/conf.d" \
@@ -203,9 +202,9 @@ package_pipewire-jack+clang() {
 
   pkgdesc+=" - JACK support"
   license+=(GPL2) # libjackserver
-  provides=("pipewire-jack" "pipewire-jack=${pkgver}" "pipewire-jack+clang=${pkgver}")
+  provides=("pipewire-jack" "pipewire-jack=${epoch}:${pkgver}")
   conflicts=("pipewire-jack")
-  depends=("pipewire-media-session+clang=${pkgver}" "libpipewire-${_ver}.so" "pipewire+clang=${pkgver}")
+  depends=("pipewire-media-session+clang=${epoch}:${pkgver}" "libpipewire-${_ver}.so" "pipewire+clang=${epoch}:${pkgver}")
 
   mv jack/* "${pkgdir:?}"
 
@@ -216,10 +215,10 @@ package_pipewire-jack+clang() {
 package_pipewire-pulse+clang() {
 
   pkgdesc+=" - PulseAudio replacement"
-  depends=("pipewire-media-session+clang=${pkgver}" "libpipewire-${_ver}.so"
-    "pipewire+clang=${pkgver}" libpulse.so
+  depends=("pipewire-media-session+clang=${epoch}:${pkgver}" "libpipewire-${_ver}.so"
+    "pipewire+clang=${epoch}:${pkgver}" libpulse.so
     libavahi-{client,common}.so)
-  provides=("pipewire-pulse" "pipewire-pulse=${pkgver}" "pipewire-pulse+clang=${pkgver}" pulseaudio pulseaudio-bluetooth)
+  provides=("pipewire-pulse" "pipewire-pulse=${epoch}:${pkgver}" pulseaudio pulseaudio-bluetooth)
   conflicts=("pipewire-pulse" pulseaudio pulseaudio-bluetooth)
   install=pipewire-pulse.install
 
@@ -232,10 +231,10 @@ package_pipewire-pulse+clang() {
 package_gst-plugin-pipewire+clang() {
 
   pkgdesc="Multimedia graph framework - pipewire plugin"
-  provides=("gst-plugin-pipewire" "gst-plugin-pipewire=${pkgver}" "gst-plugin-pipewire+clang=${pkgver}")
+  provides=("gst-plugin-pipewire" "gst-plugin-pipewire=${epoch}:${pkgver}")
   conflicts=("gst-plugin-pipewire")
-  depends=("pipewire-media-session+clang=${pkgver}" "libpipewire-${_ver}.so"
-    "pipewire+clang=${pkgver}" gst-plugins-base-libs)
+  depends=("pipewire-media-session+clang=${epoch}:${pkgver}" "libpipewire-${_ver}.so"
+    "pipewire+clang=${epoch}:${pkgver}" gst-plugins-base-libs)
 
   mv gst/* "${pkgdir:?}"
 
@@ -246,9 +245,9 @@ package_gst-plugin-pipewire+clang() {
 package_pipewire-zeroconf+clang() {
 
   pkgdesc+=" - Zeroconf support"
-  provides=("pipewire-zeroconf" "pipewire-zeroconf=${pkgver}" "pipewire-zeroconf+clang=${pkgver}")
+  provides=("pipewire-zeroconf" "pipewire-zeroconf=${epoch}:${pkgver}")
   conflicts=("pipewire-zeroconf")
-  depends=("libpipewire-${_ver}.so" "pipewire+clang=${pkgver}" libavahi-{client,common}.so)
+  depends=("libpipewire-${_ver}.so" "pipewire+clang=${epoch}:${pkgver}" libavahi-{client,common}.so)
 
   mv zeroconf/* "${pkgdir:?}"
 
