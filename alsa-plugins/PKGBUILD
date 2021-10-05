@@ -100,7 +100,7 @@ package_alsa-plugins+clang() {
 package_pulseaudio-alsa+clang() {
 
   pkgdesc="ALSA Configuration for PulseAudio"
-  depends=('alsa-plugins+clang>=1.2.2-2' pulseaudio)
+  depends=("alsa-plugins+clang=${epoch}:${pkgver}" pulseaudio)
   provides=("pulseaudio-alsa" "pulseaudio-alsa=${epoch}:${pkgver}")
   conflicts=("pulseaudio-alsa")
 

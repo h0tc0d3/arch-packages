@@ -1,6 +1,6 @@
 pkgname=libwebp+clang
 pkgver=1.2.1
-pkgrel=1
+pkgrel=2
 pkgdesc="WebP library and conversion tools"
 arch=(x86_64)
 url="https://developers.google.com/speed/webp/"
@@ -62,7 +62,6 @@ build() {
     --prefix=/usr \
     --disable-static \
     --enable-swap-16bit-csp \
-    --enable-experimental \
     --enable-libwebp{mux,demux,decoder,extras}
 
   make
