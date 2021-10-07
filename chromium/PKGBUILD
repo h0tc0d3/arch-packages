@@ -1,6 +1,6 @@
 pkgname=chromium+clang
 pkgver=94.0.4606.71
-pkgrel=1
+pkgrel=2
 _launcher_ver=8
 _gcc_patchset=3
 pkgdesc="A web browser built for speed, simplicity, and security"
@@ -47,33 +47,35 @@ source=(
   chromium-94-ffmpeg-roll.patch
   chromium-add-a-TODO-about-a-missing-pnacl-flag.patch
   chromium-use-ffile-compilation-dir.patch
+  chromium-pipewire-do-not-typecheck-the-portal-session_handle.patch
 )
 sha256sums=('cabbba2e608c5ec110850b14ee5fead2608c44447a52edb80e2ba8261be3dc5b'
-            '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
-            '22692bddaf2761c6ddf9ff0bc4722972bca4d4c5b2fd3e5dbdac7eb60d914320'
-            'e5b651b403e5b161bf9b5e049f8202c444d7f1700411f89d62c20303c80846e0'
-            '70a2805a63df15817a3435e983c0350c5d04ff62deffd8214cbb040b904f54a5'
-            '15c93da644dbc533a6b74bd7f86a07dc59023c7b369298acd649715b9a9209a5'
-            'c162eafc1f128e616281e719d860ec8726eec89660f449ed0e9af7dfe07c8cc9'
-            'f8dcac3a18e20bee8c54912c1c931e723e97981cc88c8568bd05411812ff6204'
-            'e393174d7695d0bafed69e868c5fbfecf07aa6969f3b64596d0bae8b067e1711'
-            '043d83d22af1210c2dd7f3ef9e42e6f316556cb9ec3e377deded080025abf9c1'
-            '7a84822b25734547055c2aba265df50ab02f47515b3f7fa0ce821572d4d1f8cd'
-            'cfd35f512cd966a1566397c02897d3cb3d89e117b41b8629e2de11329a2c0b17'
-            '83900524799e1976ac58ac76f1f9ad5686775aaf264a3f38034ba05e733dc588'
-            '2b36574144bb7135512b81f394e53ea80d931ac62148b28c17a70a2869cb501c'
-            '5d5bfedbabdf3e05c8159afc2bf776b8f95212413ba44464b4d973ac5a127cf1'
-            'bb4560e067eb6ff6d4c4a5c4f149d1cc1c9c705a14be4721ead2ebb8ec84ded1'
-            '7584ec20a3830f619d80d4bcbc432f6a5b7e733c00d397a5dc831ba093ffcc6b'
-            '5690089b8bd6946dfa975b8022531213b882b3396a3c968eeef9836b131725b7'
-            'ff80a8fe749363ff91b063cf641d3527807c48b23efe62f8de1d0a6076b39b11'
-            '97c5c3551c19e5a9b77ac9db5dd3bd396f08acccf735ac5710274bd31e4ce08c'
-            '04bba6fb19ea5a4ab3949b65f06c88728a00ab296f42022ece62ca2fa25ec2e7'
-            '1a9e074f417f8ffd78bcd6874d8e2e74a239905bf662f76a7755fa40dc476b57'
-            'd3344ba39b8c6ed202334ba7f441c70d81ddf8cdb15af1aa8c16e9a3a75fbb35'
-            '56acb6e743d2ab1ed9f3eb01700ade02521769978d03ac43226dec94659b3ace'
-            'd53da216538f2e741a6e048ed103964a91a98e9a3c10c27fdfa34d4692fdc455'
-            '921010cd8fab5f30be76c68b68c9b39fac9e21f4c4133bb709879592bbdf606e')
+  '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
+  '22692bddaf2761c6ddf9ff0bc4722972bca4d4c5b2fd3e5dbdac7eb60d914320'
+  'e5b651b403e5b161bf9b5e049f8202c444d7f1700411f89d62c20303c80846e0'
+  '70a2805a63df15817a3435e983c0350c5d04ff62deffd8214cbb040b904f54a5'
+  '15c93da644dbc533a6b74bd7f86a07dc59023c7b369298acd649715b9a9209a5'
+  'c162eafc1f128e616281e719d860ec8726eec89660f449ed0e9af7dfe07c8cc9'
+  'f8dcac3a18e20bee8c54912c1c931e723e97981cc88c8568bd05411812ff6204'
+  'e393174d7695d0bafed69e868c5fbfecf07aa6969f3b64596d0bae8b067e1711'
+  '043d83d22af1210c2dd7f3ef9e42e6f316556cb9ec3e377deded080025abf9c1'
+  '7a84822b25734547055c2aba265df50ab02f47515b3f7fa0ce821572d4d1f8cd'
+  'cfd35f512cd966a1566397c02897d3cb3d89e117b41b8629e2de11329a2c0b17'
+  '83900524799e1976ac58ac76f1f9ad5686775aaf264a3f38034ba05e733dc588'
+  '2b36574144bb7135512b81f394e53ea80d931ac62148b28c17a70a2869cb501c'
+  '5d5bfedbabdf3e05c8159afc2bf776b8f95212413ba44464b4d973ac5a127cf1'
+  'bb4560e067eb6ff6d4c4a5c4f149d1cc1c9c705a14be4721ead2ebb8ec84ded1'
+  '7584ec20a3830f619d80d4bcbc432f6a5b7e733c00d397a5dc831ba093ffcc6b'
+  '5690089b8bd6946dfa975b8022531213b882b3396a3c968eeef9836b131725b7'
+  'ff80a8fe749363ff91b063cf641d3527807c48b23efe62f8de1d0a6076b39b11'
+  '97c5c3551c19e5a9b77ac9db5dd3bd396f08acccf735ac5710274bd31e4ce08c'
+  '04bba6fb19ea5a4ab3949b65f06c88728a00ab296f42022ece62ca2fa25ec2e7'
+  '1a9e074f417f8ffd78bcd6874d8e2e74a239905bf662f76a7755fa40dc476b57'
+  'd3344ba39b8c6ed202334ba7f441c70d81ddf8cdb15af1aa8c16e9a3a75fbb35'
+  '56acb6e743d2ab1ed9f3eb01700ade02521769978d03ac43226dec94659b3ace'
+  'd53da216538f2e741a6e048ed103964a91a98e9a3c10c27fdfa34d4692fdc455'
+  '921010cd8fab5f30be76c68b68c9b39fac9e21f4c4133bb709879592bbdf606e'
+  '1889d890ff512a8b82a0f88972e78c78131177d8034750ff53577dfad99b3e3e')
 #noextract=("${source[@]##*/}")
 # Possible replacements are listed in build/linux/unbundle/replace_gn_files.py
 # Keys are the names in the above script; values are the dependencies in Arch
@@ -180,6 +182,7 @@ prepare() {
   _patch chromium-libdav1d.patch
   _patch chromium-InkDropHost-crash.patch
   _patch chromium-ffmpeg-4.4.patch
+  patch -Np1 -d third_party/webrtc <../chromium-pipewire-do-not-typecheck-the-portal-session_handle.patch
 
   # Revert change to custom function av_stream_get_first_dts; will need to
   # switch to bundled ffmpeg when we're no longer using ffmpeg 4.4 in Arch
