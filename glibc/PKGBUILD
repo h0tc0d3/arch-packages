@@ -1,14 +1,14 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
 pkgver=2.34
-pkgrel=9
+pkgrel=10
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
 makedepends=(git gd lib32-gcc-libs python)
 optdepends=('perl: for mtrace')
 options=(!strip staticlibs)
-_commit=27b6edbb090f736b101f569620d8ad0e7217ddf8
+_commit=349b0441dab375099b1d7f6909c1742286a67da9
 source=("git+https://sourceware.org/git/glibc.git#commit=${_commit}"
   #source=("https://ftp.gnu.org/gnu/glibc/glibc-${pkgver}.tar.xz"
   locale-gen
@@ -47,6 +47,10 @@ prepare() {
   _patch "glibc-fedora-linux-tcsetattr.patch"
   _patch "glibc-newlocale-error.patch"
   _patch "glibc-cs-path.patch"
+
+  if ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    sed -i -e 's/`$CC -print-prog-name=ld`/ld.lld/' configure
+  fi
 
 }
 
