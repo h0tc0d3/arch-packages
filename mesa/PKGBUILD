@@ -1,7 +1,7 @@
 pkgname=mesa+clang
 pkgdesc="Mesa open-source implementation of the OpenGL specification"
 pkgver=21.2.3
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 makedepends=('git' 'python-mako' 'xorgproto' 'llvm'
   'libxml2' 'libx11' 'libvdpau' 'libva' 'elfutils' 'libxrandr'
@@ -17,12 +17,14 @@ source=(
   "https://archive.mesa3d.org/mesa-${pkgver}.tar.xz"{,.sig}
   'LICENSE'
   'mesa.conf'
+  'mesa-fix-build-with-llvm-13.patch'
 )
 
 sha256sums=('7245284a159d2484770e1835a673e79e4322a9ddf43b17859668244946db7174'
-  'SKIP'
-  '7fdc119cf53c8ca65396ea73f6d10af641ba41ea1dd2bd44a824726e01c8b3f2'
-  '8548489a884dd1fdd20910f229798b5af8747218a072e373bd4cf77912b9cfd6')
+            'SKIP'
+            '7fdc119cf53c8ca65396ea73f6d10af641ba41ea1dd2bd44a824726e01c8b3f2'
+            '8548489a884dd1fdd20910f229798b5af8747218a072e373bd4cf77912b9cfd6'
+            '033a7c6789d6e1919eb8c42abf14679d37aa5f0815eebd6f4f34c1d1d1416300')
 
 validpgpkeys=(
   '57551DE15B968F6341C248F68D8E31AFC32428A6' # Keith Packard <keithp@keithp.com>
@@ -31,7 +33,7 @@ validpgpkeys=(
 
 DRI_DRIVERS="i915,i965,r200,r100,nouveau"
 GALLIUM_DRIVERS="r300,r600,radeonsi,nouveau,virgl,svga,swrast,swr,iris,zink,crocus"
-VULKAN_DRIVERS="amd,intel,swrast,virtio-experimental"
+VULKAN_DRIVERS="amd,intel,swrast"
 VULKAN_LAYERS="device-select,intel-nullhw,overlay"
 
 _extra_lto_flag=""
@@ -53,6 +55,8 @@ prepare() {
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/mesa-${pkgver} directory! Prepare Failed! \E[0m"
     exit 1
   )
+
+  _patch mesa-fix-build-with-llvm-13.patch
 
   if [[ -f "${srcdir:?}/mesa.conf" ]]; then
     # shellcheck disable=SC1091
