@@ -1,6 +1,6 @@
 pkgname=dolphin+clang
 pkgver=21.08.2
-pkgrel=1
+pkgrel=2
 pkgdesc='KDE File Manager'
 arch=(x86_64)
 url='https://apps.kde.org/dolphin/'
@@ -12,7 +12,6 @@ makedepends=(extra-cmake-modules kdoctools)
 optdepends=('kde-cli-tools: for editing file type options' 'ffmpegthumbs: video thumbnails' 'kdegraphics-thumbnailers: PDF and PS thumbnails'
   'konsole: terminal panel' 'purpose: share context menu')
 groups=(kde-applications kde-system)
-options=(!strip)
 source=(
   "https://download.kde.org/stable/release-service/${pkgver}/src/dolphin-${pkgver}.tar.xz"{,.sig}
   27bfcde4.patch
