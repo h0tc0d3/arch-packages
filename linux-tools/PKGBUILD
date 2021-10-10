@@ -11,12 +11,11 @@ pkgname=(
   'usbip+clang'
   'x86_energy_perf_policy+clang'
 )
-pkgver=5.14.2
+pkgver=5.14.11
 pkgrel=1
 license=('GPL2')
 arch=('x86_64')
 url='https://www.kernel.org'
-options=('!strip')
 makedepends=('git')
 # split packages need all package dependencies set manually in makedepends
 # kernel source deps
@@ -35,7 +34,7 @@ makedepends+=('readline' 'zlib' 'libelf' 'libcap' 'python-docutils')
 makedepends+=('libcap')
 groups=("${pkgbase}")
 source=(
-  "https://cdn.kernel.org/pub/linux-${pkgver}/kernel/v${pkgver:0:1}.x/linux-${pkgver}.tar"{.xz,.sign}
+  "https://cdn.kernel.org/pub/linux/kernel/v${pkgver:0:1}.x/linux-${pkgver}.tar"{.xz,.sign}
   'cpupower.default'
   'cpupower.systemd'
   'cpupower.service'
@@ -46,13 +45,13 @@ validpgpkeys=(
   'ABAF11C65A2970B130ABE3C479BE3E4300411886' # Linus Torvalds
   '647F28654894E3BD457199BE38DBBDC86092693E' # Greg Kroah-Hartman
 )
-sha256sums=('f419875d7b116c5d03fe64761fcbcb1341a21b30d3c3596c5baa05c1441cdc17'
-            'SKIP'
-            '4fa509949d6863d001075fa3e8671eff2599c046d20c98bb4a70778595cd1c3f'
-            'b692f4859ed3fd9831a058a450a84d8c409bf7e3e45aac1c2896a14bb83f3d7a'
-            '42d2ec9f1d9cc255ee7945a27301478364ef482f5a6ddfc960189f03725ccec2'
-            '2e187734d8aec58a3046d79883510d779aa93fb3ab20bd3132c1a607ebe5498f'
-            'c75a7ed4198dab166f1f6b1511515dbd69ef858917f3f914da06813dccc9666a')
+sha256sums=('93830a24df5342fb8fb857b7ca58d637f99d84b0ac54610fbf49743e3e8d5731'
+  'SKIP'
+  '4fa509949d6863d001075fa3e8671eff2599c046d20c98bb4a70778595cd1c3f'
+  'b692f4859ed3fd9831a058a450a84d8c409bf7e3e45aac1c2896a14bb83f3d7a'
+  '42d2ec9f1d9cc255ee7945a27301478364ef482f5a6ddfc960189f03725ccec2'
+  '2e187734d8aec58a3046d79883510d779aa93fb3ab20bd3132c1a607ebe5498f'
+  'c75a7ed4198dab166f1f6b1511515dbd69ef858917f3f914da06813dccc9666a')
 
 _llvm=0
 
