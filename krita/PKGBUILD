@@ -1,6 +1,6 @@
 pkgname=krita+clang
 pkgver=4.4.8
-pkgrel=2
+pkgrel=3
 pkgdesc='Edit and paint images'
 arch=(x86_64)
 url='https://krita.org'
@@ -52,6 +52,9 @@ prepare() {
   git cherry-pick -n 5ff49bc36763b599d1c58a80d86949695d541573
   sed -i -e 's/PATH_SUFFIXES\sOpenColorIO/PATH_SUFFIXES OpenColorIO1/;s/OCIO_LIBRARIES\sOpenColorIO/OCIO_LIBRARIES OpenColorIO1/' \
     cmake/modules/FindOCIO.cmake
+
+  # Remove git hash from version string
+  sed -i -e '/get_git_head_hash(GIT_SHA1)/,+12 d' CMakeLists.txt
 
 }
 
