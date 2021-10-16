@@ -1,6 +1,6 @@
 pkgname=libffi+clang
-pkgver=3.3
-pkgrel=4
+pkgver=3.4.2
+pkgrel=2
 pkgdesc='Portable foreign function interface library'
 arch=('x86_64')
 url='https://sourceware.org/libffi/'
@@ -9,9 +9,8 @@ depends=('glibc')
 checkdepends=('dejagnu')
 provides=(libffi "libffi=${pkgver}" 'libffi.so')
 conflicts=(libffi)
-source=("https://sourceware.org/pub/libffi/libffi-${pkgver}.tar.gz")
-sha256sums=('72fba7922703ddfa7a028d513ac15a85c8d54c8d67f55fa5a4802885dc652056')
-b2sums=('cddc40729a30a9bd34d675809f51f8d1b4ccaffa54bc6dd6f7e965f4e260edd34754719f9f6247c8957aeb7cf154d56ce1fe16a54c3f1ad39afbebdf41d23caa')
+source=("https://github.com/libffi/libffi/releases/download/v${pkgver}/libffi-${pkgver}.tar.gz")
+sha256sums=('540fb721619a6aba3bdeef7d940d8e9e0e6d2c193595bc243241b77ff9e93620')
 
 _llvm=0
 
@@ -48,6 +47,8 @@ build() {
   ./configure \
     --prefix=/usr \
     --disable-static \
+    --disable-multi-os-directory \
+    --disable-exec-static-tramp \
     --enable-pax_emutramp
 
   make
@@ -70,5 +71,9 @@ package() {
   make DESTDIR="${pkgdir:?}" install
   install -Dm 644 LICENSE -t "${pkgdir:?}/usr/share/licenses/${pkgname}"
   install -Dm 644 README.md -t "${pkgdir:?}/usr/share/doc/${pkgname}"
+
+  # Fallback for libffi 3.3
+  install -Dm644 "/usr/lib/libffi.so.7.1.0" "${pkgdir:?}/usr/lib/libffi.so.7.1.0"
+  ln -s "/usr/lib/libffi.so.7.1.0" "${pkgdir:?}/usr/lib/libffi.so.7"
 
 }
