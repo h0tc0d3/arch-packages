@@ -4,7 +4,7 @@ pkgname=(
   glib2-docs+clang
 )
 pkgver=2.70.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Low level core library"
 url="https://wiki.gnome.org/Projects/GLib"
 license=(LGPL)
@@ -85,7 +85,7 @@ check() {
 
 package_glib2+clang() {
 
-  depends+=(libmount.so libffi.so)
+  depends+=('libmount.so' 'libffi.so')
   provides+=(glib2 "glib2=${pkgver}" libgio-2.0.so libglib-2.0.so libgmodule-2.0.so libgobject-2.0.so
     libgthread-2.0.so)
   conflicts=(glib2)
