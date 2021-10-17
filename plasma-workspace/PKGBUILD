@@ -1,7 +1,7 @@
 pkgbase=plasma-workspace+clang
 pkgname=(plasma-workspace+clang plasma-wayland-session+clang)
-pkgver=5.22.5
-pkgrel=3
+pkgver=5.23.0
+pkgrel=2
 pkgdesc='KDE Plasma Workspace'
 arch=(x86_64)
 url='https://kde.org/plasma-desktop/'
@@ -14,18 +14,14 @@ groups=(plasma)
 source=(
   "https://download.kde.org/stable/plasma/${pkgver}/plasma-workspace-${pkgver}.tar.xz"{,.sig}
   kde.pam
-  https://invent.kde.org/plasma/plasma-workspace/-/commit/6379d1ec.patch
-  https://invent.kde.org/plasma/plasma-workspace/-/commit/26f848d4.patch
-  https://invent.kde.org/plasma/plasma-workspace/-/commit/fc32a7f8.patch
+  https://invent.kde.org/plasma/plasma-workspace/-/commit/d5a3e749.patch
 )
-sha256sums=('f22e12dea303478d949f69b88fcf30787ef7f5d098be55595ec562aee4b13606'
+sha256sums=('49abcb19639a72eb5ffa916d5eca0a925d32a36e4a02658cc73ab479dea39965'
   'SKIP'
   '00090291204baabe9d6857d3b1419832376dd2e279087d718b64792691e86739'
-  '7436b6ff6c8f7e85aa37d8c2db4ba5937e1d200194f1e9ce88ee6815ea5e6fe0'
-  '00db1439abb101eae4b24c00e430b17125f71c2b949d2bb76e352d90b6ad5923'
-  'a4b85a7ef9be3dee447a97db0fe0c1799f3faf18952fa928d382f8a612de517b')
+  'e6ecddf47b689c12349dc4e4fd108fa9dac7fb969e73c40a82e8a6e3a6dd18d5')
 validpgpkeys=(
-  '2D1D5B0588357787DE9EE225EC94D18F7F05997E' # Jonathan Riddell <jr@jriddell.org>
+  'E0A3EB202F8E57528E13E72FD7574483BB57B18D' # Jonathan Esk-Riddell <jr@jriddell.org>
   '0AAC775BB6437A8D9AF7A3ACFE0784117FBCE11D' # Bhushan Shah <bshah@kde.org>
   'D07BD8662C56CB291B316EB2F5675605C74E02CF' # David Edmundson <davidedmundson@kde.org>
   '1FA881591C26B276D7A5518EEAAF29B42A678C20' # Marco Martin <notmart@gmail.com>
@@ -39,21 +35,19 @@ prepare() {
     _llvm=1
   fi
 
-  patch -d plasma-workspace-${pkgver} -p1 <6379d1ec.patch # Fix power management inhibition
-  patch -d plasma-workspace-${pkgver} -p1 <26f848d4.patch # Fix systemd detection D-Bus calls
-  patch -d plasma-workspace-${pkgver} -p1 <fc32a7f8.patch # Fix build with gpsd 3.23.1
+  patch -d plasma-workspace-${pkgver} -p1 <d5a3e749.patch # Fix password field in SDDM theme
 
 }
 
 build() {
 
-  if [[ ${_llvm} -eq 1 ]]; then
+  #if [[ ${_llvm} -eq 1 ]]; then
 
-    CFLAGS="${CFLAGS} -flto=thin"
-    CXXFLAGS="${CXXFLAGS} -flto=thin"
-    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+    #CFLAGS="${CFLAGS} -flto=thin"
+    #CXXFLAGS="${CXXFLAGS} -flto=thin"
+    #LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
-  fi
+  #fi
 
   cmake -B build -S plasma-workspace-${pkgver} \
     -DCMAKE_BUILD_TYPE=Release \

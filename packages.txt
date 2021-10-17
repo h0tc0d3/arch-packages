@@ -89,6 +89,9 @@ libva
 libvdpau
 libva-vdpau-driver
 xorg-server
+kwayland
+kwayland-server
+kwayland-integration
 kwin
 libffi
 guile
@@ -101,10 +104,7 @@ kcoreaddons
 kservice
 kded
 plasma-wayland-protocols
-kwayland
 kwindowsystem
-kwayland-integration
-kwayland-server
 frameworkintegration
 breeze
 plasma-integration
