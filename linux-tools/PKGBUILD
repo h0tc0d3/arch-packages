@@ -11,11 +11,12 @@ pkgname=(
   'usbip+clang'
   'x86_energy_perf_policy+clang'
 )
-pkgver=5.14.11
+pkgver=5.14.12
 pkgrel=1
 license=('GPL2')
 arch=('x86_64')
 url='https://www.kernel.org'
+groups=("linux-tools")
 makedepends=('git')
 # split packages need all package dependencies set manually in makedepends
 # kernel source deps
@@ -32,7 +33,6 @@ makedepends+=('ncurses')
 makedepends+=('readline' 'zlib' 'libelf' 'libcap' 'python-docutils')
 # turbostat deps
 makedepends+=('libcap')
-groups=("${pkgbase}")
 source=(
   "https://cdn.kernel.org/pub/linux/kernel/v${pkgver:0:1}.x/linux-${pkgver}.tar"{.xz,.sign}
   'cpupower.default'
@@ -45,7 +45,7 @@ validpgpkeys=(
   'ABAF11C65A2970B130ABE3C479BE3E4300411886' # Linus Torvalds
   '647F28654894E3BD457199BE38DBBDC86092693E' # Greg Kroah-Hartman
 )
-sha256sums=('93830a24df5342fb8fb857b7ca58d637f99d84b0ac54610fbf49743e3e8d5731'
+sha256sums=('8d272679dc5285136bfe1f6d54548c7cf9f1ed8925c04b8bae149c8983eb5c37'
   'SKIP'
   '4fa509949d6863d001075fa3e8671eff2599c046d20c98bb4a70778595cd1c3f'
   'b692f4859ed3fd9831a058a450a84d8c409bf7e3e45aac1c2896a14bb83f3d7a'
