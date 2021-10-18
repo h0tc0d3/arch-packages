@@ -1,6 +1,6 @@
 pkgname=kwin+clang
 pkgver=5.23.0
-pkgrel=1
+pkgrel=2
 pkgdesc='An easy to use, but flexible, composited Window Manager'
 arch=(x86_64)
 url='https://kde.org/plasma-desktop/'
@@ -14,10 +14,12 @@ optdepends=('maliit-keyboard: virtual keyboard for kwin-wayland')
 groups=(plasma)
 source=(
   "https://download.kde.org/stable/plasma/${pkgver}/kwin-${pkgver}.tar.xz"{,.sig}
+  https://invent.kde.org/plasma/kwin/-/commit/85f8a533.patch
 )
 install=kwin.install
 sha256sums=('ba74f70648faa3c92c88e1b77916c6abd7fcad1af9e717a39dc9df278f1a551f'
-  'SKIP')
+            'SKIP'
+            '2c42a47dd1d62cde93d3d392d42056689d8fdbc24cd8497bd29adf113e16a7be')
 validpgpkeys=(
   'E0A3EB202F8E57528E13E72FD7574483BB57B18D' # Jonathan Riddell <jr@jriddell.org>
   '0AAC775BB6437A8D9AF7A3ACFE0784117FBCE11D' # Bhushan Shah <bshah@kde.org>
@@ -32,6 +34,8 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=1
   fi
+
+  patch -d kwin-${pkgver} -p1 <85f8a533.patch # Properly unredirect windows if compositing is not possible
 
 }
 
