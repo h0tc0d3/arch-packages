@@ -1,8 +1,8 @@
 pkgname=chromium+clang
-pkgver=94.0.4606.81
-pkgrel=1
+pkgver=95.0.4638.54
+pkgrel=2
 _launcher_ver=8
-_gcc_patchset=3
+_gcc_patchset=4
 pkgdesc="A web browser built for speed, simplicity, and security"
 arch=('x86_64')
 url="https://www.chromium.org/Home"
@@ -48,10 +48,13 @@ source=(
   chromium-add-a-TODO-about-a-missing-pnacl-flag.patch
   chromium-use-ffile-compilation-dir.patch
   chromium-pipewire-do-not-typecheck-the-portal-session_handle.patch
+  chromium-maldoca-depend-on-zlib-instead-of-headers-only.patch
+  chromium-ozone-x11-fix-VA-API.patch
+  chromium-95-harfbuzz-3.patch
 )
-sha256sums=('7071aa2b2caf48094c2ae816395948b4daec940606f4982ad5bbf68e5d2de598'
+sha256sums=('3eef88d745e6ddaeaf507358f1510482d6f399cf335061bb1226a5f7120061fd'
   '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
-  '22692bddaf2761c6ddf9ff0bc4722972bca4d4c5b2fd3e5dbdac7eb60d914320'
+  'bc6373f2470a9e6d947a4deaee0612f730112f69552b933c54bb6e60b82dd6f1'
   'e5b651b403e5b161bf9b5e049f8202c444d7f1700411f89d62c20303c80846e0'
   '70a2805a63df15817a3435e983c0350c5d04ff62deffd8214cbb040b904f54a5'
   '15c93da644dbc533a6b74bd7f86a07dc59023c7b369298acd649715b9a9209a5'
@@ -75,7 +78,10 @@ sha256sums=('7071aa2b2caf48094c2ae816395948b4daec940606f4982ad5bbf68e5d2de598'
   '56acb6e743d2ab1ed9f3eb01700ade02521769978d03ac43226dec94659b3ace'
   'd53da216538f2e741a6e048ed103964a91a98e9a3c10c27fdfa34d4692fdc455'
   '921010cd8fab5f30be76c68b68c9b39fac9e21f4c4133bb709879592bbdf606e'
-  '1889d890ff512a8b82a0f88972e78c78131177d8034750ff53577dfad99b3e3e')
+  '1889d890ff512a8b82a0f88972e78c78131177d8034750ff53577dfad99b3e3e'
+  '074b32078b9e53fd9b33709ce5785c120eb0346b015a93921897caed4f95f7b6'
+  '93c051af5cea76c196992454e82f6bc49a136e3af1d08ff6628d8034e343ad73'
+  'd9002f1e33390c3e770637773c81be6731584b18f68f086e955bcc3f66f4510d')
 #noextract=("${source[@]##*/}")
 # Possible replacements are listed in build/linux/unbundle/replace_gn_files.py
 # Keys are the names in the above script; values are the dependencies in Arch
@@ -167,8 +173,7 @@ prepare() {
   _rpatch chromium-replace-blacklist-with-ignorelist.patch
 
   # Fixes for building with libstdc++ instead of libc++
-  _patch patches/chromium-90-ruy-include.patch
-  _patch patches/chromium-94-CustomSpaces-include.patch
+  _patch patches/chromium-95-quiche-include.patch
 
   # https://chromium-review.googlesource.com/c/chromium/src/+/2862724
   _patch sql-make-VirtualCursor-standard-layout-type.patch
@@ -183,6 +188,9 @@ prepare() {
   _patch chromium-InkDropHost-crash.patch
   _patch chromium-ffmpeg-4.4.patch
   patch -Np1 -d third_party/webrtc <../chromium-pipewire-do-not-typecheck-the-portal-session_handle.patch
+  _patch chromium-maldoca-depend-on-zlib-instead-of-headers-only.patch
+  _patch chromium-ozone-x11-fix-VA-API.patch
+  _patch chromium-95-harfbuzz-3.patch
 
   # Revert change to custom function av_stream_get_first_dts; will need to
   # switch to bundled ffmpeg when we're no longer using ffmpeg 4.4 in Arch
