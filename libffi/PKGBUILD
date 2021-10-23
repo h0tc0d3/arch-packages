@@ -1,6 +1,6 @@
 pkgname=libffi+clang
 pkgver=3.4.2
-pkgrel=2
+pkgrel=4
 pkgdesc='Portable foreign function interface library'
 arch=('x86_64')
 url='https://sourceware.org/libffi/'
@@ -71,9 +71,5 @@ package() {
   make DESTDIR="${pkgdir:?}" install
   install -Dm 644 LICENSE -t "${pkgdir:?}/usr/share/licenses/${pkgname}"
   install -Dm 644 README.md -t "${pkgdir:?}/usr/share/doc/${pkgname}"
-
-  # Fallback for libffi 3.3
-  install -Dm644 "/usr/lib/libffi.so.7.1.0" "${pkgdir:?}/usr/lib/libffi.so.7.1.0"
-  ln -s "/usr/lib/libffi.so.7.1.0" "${pkgdir:?}/usr/lib/libffi.so.7"
 
 }
