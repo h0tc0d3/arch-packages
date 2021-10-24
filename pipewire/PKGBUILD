@@ -1,9 +1,9 @@
 pkgbase=pipewire+clang
-pkgname=(pipewire+clang alsa-card-profiles+clang pipewire-docs+clang pipewire-media-session+clang
+pkgname=(pipewire+clang alsa-card-profiles+clang pipewire-docs+clang
   pipewire-alsa+clang pipewire-jack+clang pipewire-pulse+clang gst-plugin-pipewire+clang
-  pipewire-zeroconf+clang)
-pkgver=0.3.38
-pkgrel=2
+  pipewire-zeroconf+clang pipewire-v4l2+clang)
+pkgver=0.3.39
+pkgrel=1
 epoch=1
 pkgdesc="Low-latency audio/video router and processor"
 url="https://pipewire.org"
@@ -14,7 +14,7 @@ makedepends=(git meson doxygen graphviz python-docutils valgrind libpulse
   bluez-libs sbc libldac libfreeaptx libfdk-aac avahi
   webrtc-audio-processing)
 checkdepends=(desktop-file-utils)
-_commit=47a294c5bf52656998a7f43b13068c02001add77 # tags/0.3.38
+_commit=5b7ef959d1fed35f6ddfcf94b6f57891fae23b31 # tags/0.3.39
 source=("git+https://gitlab.freedesktop.org/pipewire/pipewire.git#commit=${_commit}")
 sha256sums=('SKIP')
 
@@ -60,7 +60,8 @@ build() {
     -D jack=disabled \
     -D libcamera=disabled \
     -D udevrulesdir=/usr/lib/udev/rules.d \
-    -D roc=disabled
+    -D roc=disabled \
+    -D session-managers=[]
 
   meson compile -C build
 
@@ -94,12 +95,13 @@ package_pipewire+clang() {
     libsbc.so libldacBT_enc.so libfreeaptx.so libfdk-aac.so
     libwebrtc_audio_processing.so)
   optdepends=('pipewire-docs: Documentation'
-    'pipewire-media-session: Default session manager'
+    'pipewire-session-manager: Session manager'
     'pipewire-alsa: ALSA configuration'
     'pipewire-jack: JACK support'
     'pipewire-pulse: PulseAudio replacement'
     'gst-plugin-pipewire: GStreamer support'
-    'pipewire-zeroconf: Zeroconf support')
+    'pipewire-zeroconf: Zeroconf support'
+    'pipewire-v4l2: V4L2 interceptor')
   provides=("pipewire" "pipewire=${epoch}:${pkgver}" "libpipewire-${_ver}.so")
   conflicts=("pipewire")
   install=pipewire.install
@@ -114,23 +116,20 @@ package_pipewire+clang() {
 
     _pick docs usr/share/doc
 
-    _pick pms usr/bin/pipewire-media-session
-    _pick pms usr/lib/systemd/user/pipewire-media-session.service
-    _pick pms usr/share/pipewire/media-session.d/*.conf
-
     _pick jack usr/bin/pw-jack usr/lib/pipewire-${_ver}/jack
     _pick jack usr/share/man/man1/pw-jack.1
-    _pick jack usr/share/pipewire/{jack.conf,media-session.d/with-jack}
+    _pick jack usr/share/pipewire/jack.conf
 
     _pick pulse usr/bin/pipewire-pulse
     _pick pulse usr/lib/pipewire-${_ver}/libpipewire-module-protocol-pulse.so
     _pick pulse usr/lib/pipewire-${_ver}/libpipewire-module-pulse-tunnel.so
     _pick pulse usr/lib/systemd/user/pipewire-pulse.*
-    _pick pulse usr/share/pipewire/media-session.d/with-pulseaudio
 
     _pick gst usr/lib/gstreamer-1.0
 
     _pick zeroconf usr/lib/pipewire-${_ver}/libpipewire-module-zeroconf-discover.so
+
+    _pick v4l2 usr/bin/pw-v4l2 usr/lib/pipewire-${_ver}/v4l2
   )
 
   mkdir -p "${pkgdir:?}/etc/alsa/conf.d"
@@ -166,26 +165,12 @@ package_pipewire-docs+clang() {
 
 }
 
-package_pipewire-media-session+clang() {
-
-  pkgdesc+=" - Session manager"
-  provides=("pipewire-media-session" "pipewire-media-session=${epoch}:${pkgver}")
-  conflicts=("pipewire-media-session")
-  depends=("pipewire+clang=${epoch}:${pkgver}" "libpipewire-${_ver}.so")
-  install=pipewire-media-session.install
-
-  mv pms/* "${pkgdir:?}"
-
-  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 pipewire/COPYING
-
-}
-
 package_pipewire-alsa+clang() {
 
   pkgdesc+=" - ALSA configuration"
   provides=("pipewire-alsa" "pipewire-alsa=${epoch}:${pkgver}" pulseaudio-alsa)
   conflicts=("pipewire-alsa")
-  depends=("pipewire-media-session+clang=${epoch}:${pkgver}" "pipewire+clang=${epoch}:${pkgver}")
+  depends=("pipewire-session-manager" "pipewire+clang=${epoch}:${pkgver}")
 
   mkdir -p "${pkgdir:?}/etc/alsa/conf.d"
   ln -st "${pkgdir:?}/etc/alsa/conf.d" \
@@ -204,9 +189,12 @@ package_pipewire-jack+clang() {
   license+=(GPL2) # libjackserver
   provides=("pipewire-jack" "pipewire-jack=${epoch}:${pkgver}")
   conflicts=("pipewire-jack")
-  depends=("pipewire-media-session+clang=${epoch}:${pkgver}" "libpipewire-${_ver}.so" "pipewire+clang=${epoch}:${pkgver}")
+  depends=("pipewire-session-manager" "libpipewire-${_ver}.so" "pipewire+clang=${epoch}:${pkgver}")
 
   mv jack/* "${pkgdir:?}"
+
+  install -Dm644 /dev/null \
+    "${pkgdir:?}/usr/share/pipewire/media-session.d/with-jack"
 
   install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 pipewire/COPYING
 
@@ -215,7 +203,7 @@ package_pipewire-jack+clang() {
 package_pipewire-pulse+clang() {
 
   pkgdesc+=" - PulseAudio replacement"
-  depends=("pipewire-media-session+clang=${epoch}:${pkgver}" "libpipewire-${_ver}.so"
+  depends=("pipewire-session-manager" "libpipewire-${_ver}.so"
     "pipewire+clang=${epoch}:${pkgver}" libpulse.so
     libavahi-{client,common}.so)
   provides=("pipewire-pulse" "pipewire-pulse=${epoch}:${pkgver}" pulseaudio pulseaudio-bluetooth)
@@ -223,6 +211,9 @@ package_pipewire-pulse+clang() {
   install=pipewire-pulse.install
 
   mv pulse/* "${pkgdir:?}"
+
+  install -Dm644 /dev/null \
+    "${pkgdir:?}/usr/share/pipewire/media-session.d/with-pulseaudio"
 
   install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 pipewire/COPYING
 
@@ -233,7 +224,7 @@ package_gst-plugin-pipewire+clang() {
   pkgdesc="Multimedia graph framework - pipewire plugin"
   provides=("gst-plugin-pipewire" "gst-plugin-pipewire=${epoch}:${pkgver}")
   conflicts=("gst-plugin-pipewire")
-  depends=("pipewire-media-session+clang=${epoch}:${pkgver}" "libpipewire-${_ver}.so"
+  depends=("pipewire-session-manager" "libpipewire-${_ver}.so"
     "pipewire+clang=${epoch}:${pkgver}" gst-plugins-base-libs)
 
   mv gst/* "${pkgdir:?}"
@@ -250,6 +241,17 @@ package_pipewire-zeroconf+clang() {
   depends=("libpipewire-${_ver}.so" "pipewire+clang=${epoch}:${pkgver}" libavahi-{client,common}.so)
 
   mv zeroconf/* "${pkgdir:?}"
+
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 pipewire/COPYING
+
+}
+
+package_pipewire-v4l2+clang() {
+
+  pkgdesc+=" - V4L2 interceptor"
+  depends=("pipewire-session-manager" "libpipewire-${_ver}.so")
+
+  mv v4l2/* "${pkgdir:?}"
 
   install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 pipewire/COPYING
 
