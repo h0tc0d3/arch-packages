@@ -1,6 +1,6 @@
 pkgname=krita+clang
 pkgver=4.4.8
-pkgrel=3
+pkgrel=4
 pkgdesc='Edit and paint images'
 arch=(x86_64)
 url='https://krita.org'
@@ -8,7 +8,7 @@ license=(GPL3)
 provides=('krita' "krita=${pkgver}")
 conflicts=('krita')
 depends=(kitemviews kitemmodels ki18n kcompletion kguiaddons kcrash qt5-svg qt5-multimedia quazip
-  gsl libraw exiv2 openexr fftw giflib openjpeg2 opencolorio1 hicolor-icon-theme)
+  gsl libraw exiv2 openexr fftw giflib openjpeg2 opencolorio hicolor-icon-theme)
 makedepends=(extra-cmake-modules kdoctools boost eigen vc poppler-qt5 python-pyqt5 libheif
   qt5-tools sip4 python-sip4 kseexpr git)
 optdepends=('poppler-qt5: PDF filter' 'ffmpeg: to save animations'
@@ -17,8 +17,10 @@ optdepends=('poppler-qt5: PDF filter' 'ffmpeg: to save animations'
 _gitcommit="ec5bae0dad3ccad0c398459126203a87d965c5e0"
 source=(
   "krita::git+https://invent.kde.org/graphics/krita.git#commit=${_gitcommit}"
+  krita-OpenColorIO2.patch
 )
-sha256sums=('SKIP')
+sha256sums=('SKIP'
+  'ca24ada0e2bd620e8abe74eff7adda3526925a9b61a968849d3885084bc13816')
 validpgpkeys=(
   '05D00A8B73A686789E0A156858B9596C722EA3BD' # Boudewijn Rempt <foundation@krita.org>
   'E9FB29E74ADEACC5E3035B8AB69EB4CF7468332F' # Dmitry Kazakov (main key) <dimula73@gmail.com>
@@ -47,11 +49,8 @@ prepare() {
   # Fix build with OpenEXR 3
   git cherry-pick -n d66383f6c593d21463c658fbcc6adef28a7f570f
 
-  # Fix OCIO include dir detection
-  git cherry-pick -n 0c16f82fa2d0453d49561c27cb94b7fb88e9bc8f
-  git cherry-pick -n 5ff49bc36763b599d1c58a80d86949695d541573
-  sed -i -e 's/PATH_SUFFIXES\sOpenColorIO/PATH_SUFFIXES OpenColorIO1/;s/OCIO_LIBRARIES\sOpenColorIO/OCIO_LIBRARIES OpenColorIO1/' \
-    cmake/modules/FindOCIO.cmake
+  # OpenColorIO 2
+  _patch krita-OpenColorIO2.patch
 
   # Remove git hash from version string
   sed -i -e '/get_git_head_hash(GIT_SHA1)/,+12 d' CMakeLists.txt
