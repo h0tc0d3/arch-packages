@@ -7,8 +7,8 @@ pkgname=(
   'xorg-server-common+clang'
   'xorg-server-devel+clang'
 )
-pkgver=1.20.13
-pkgrel=2
+pkgver=21.1.0
+pkgrel=1
 arch=('x86_64')
 license=('custom')
 groups=('xorg')
@@ -19,14 +19,12 @@ makedepends=('xorgproto' 'pixman' 'libx11' 'mesa' 'mesa-libgl' 'xtrans'
   'xorg-xkbcomp' 'xorg-util-macros' 'xorg-font-util' 'libepoxy'
   'xcb-util' 'xcb-util-image' 'xcb-util-renderutil' 'xcb-util-wm' 'xcb-util-keysyms'
   'libxshmfence' 'libunwind' 'systemd' 'meson' 'git'
-  'wayland-protocols' 'egl-wayland')
+  'wayland' 'wayland-protocols' 'egl-wayland' 'libxcvt+clang'
+)
 source=(
   "https://xorg.freedesktop.org/releases/individual/xserver/xorg-server-${pkgver}.tar.xz"{,.sig}
-  xorg-fix-libshadow-2.patch
   xorg-use-intel-only-on-pre-gen4.diff
   xorg-xfree86-use-modesetting-driver-by-default-on-GeForce.patch
-  xorg-xf86-dri2-Use-va_gl-as-vdpau_driver-for-Intel-i965-G.patch
-  xorg-autobind-GPUs-to-the-screen.patch
   xvfb-run # with updates from FC master
   xvfb-run.1
 )
@@ -36,19 +34,24 @@ validpgpkeys=(
   'C383B778255613DFDB409D91DB221A6900000011'
   'DD38563A8A8224537D1F90E45B8A2D50A0ECD0D3'
   '3BB639E56F861FA2E86505690FDD682D974CA72A'
+  'FD0004A26EADFE43A4C3F249C6F7AE200374452D'
 )
 
-sha256sums=('40aa4e96a56a81a301f15a9b10e06a22700f12b42d9e0e453c7f11d354386300'
+sha256sums=('50c316dd8f4472cb60dfb285aa46ca6855d7626cecfd8330f6c51da743c1fe42'
   'SKIP'
-  'd07b2fe55828dad61517a80c77f6f183113916f5e1fce30ff43041550d58bd6e'
   'f8703466041a04428e68a77e1c07579679b07d15f8ec28934f1a65548007a756'
   '91b067753e823d6e3462d35be127f66e94e71a490c666e1aae41fe4e5b1ea47c'
-  '6b04d1f8e2fbe97627d2edd2c80d8aad0bd8513b1972a6e431f7c46311bdf2f2'
-  'cae1b7f296c18177de38f9b1215a4f916da2288b85f1fcb9e80373a42e2892b8'
   'd709078f5658576931655c7a46ff90b3586a2643a9124075d00ff3a567937845'
   '2460adccd3362fefd4cdc5f1c70f332d7b578091fb9167bf88b5f91265bbd776')
 
 _extra_lto_flag=""
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
 
 prepare() {
 
@@ -61,21 +64,27 @@ prepare() {
     exit 1
   )
 
-  # Fix libshadow.so: libfb.so => not found - merge in master
-  patch -Np1 -i ../xorg-fix-libshadow-2.patch
-
   # From Debian use intel ddx driver only for gen4 and older chipsets
-  patch -Np1 -i ../xorg-use-intel-only-on-pre-gen4.diff
+  _patch xorg-use-intel-only-on-pre-gen4.diff
 
   # Default to xf86-video-modesetting on GeForce 8 and newer
-  patch -Np1 -i ../xorg-xfree86-use-modesetting-driver-by-default-on-GeForce.patch
+  _patch xorg-xfree86-use-modesetting-driver-by-default-on-GeForce.patch
 
-  # Default to va_gl on intel i965 as we use the modesetting drv there
-  # va_gl should probably just be the default everywhere ?
-  patch -Np1 -i ../xorg-xf86-dri2-Use-va_gl-as-vdpau_driver-for-Intel-i965-G.patch
+  # Fix include/meson.build:416:0: ERROR: File Xserver.d does not exist.
+  touch include/Xserver.d
 
-  # Submitted upstream, but not going anywhere
-  patch -Np1 -i ../xorg-autobind-GPUs-to-the-screen.patch
+  # meson.build:729:0: ERROR: Non-existent build file 'doc/meson.build'
+  touch doc/meson.build
+
+  # Fix hw/xfree86/meson.build:138:4: ERROR: Non-existent build file 'hw/xfree86/drivers/inputtest/meson.build'
+  touch hw/xfree86/drivers/inputtest/meson.build
+
+  # Fix hw/xfree86/meson.build:234:0: ERROR: Non-existent build file 'hw/xfree86/doc/meson.build'
+  touch hw/xfree86/doc/meson.build
+
+  # Fix test/meson.build:104:0: ERROR: Non-existent build file 'test/damage/meson.build'
+  mkdir -p test/damage
+  touch test/damage/meson.build
 
 }
 
@@ -84,13 +93,11 @@ build() {
   # Since pacman 5.0.2-2, hardened flags are now enabled in makepkg.conf
   # With them, module fail to load with undefined symbol.
   # See https://bugs.archlinux.org/task/55102/ https://bugs.archlinux.org/task/54845
-  CFLAGS=${CFLAGS/-fno-plt/}
-  CXXFLAGS=${CXXFLAGS/-fno-plt/}
-  LDFLAGS=${LDFLAGS/,-z,now/}
+  #CFLAGS=${CFLAGS/-fno-plt/}
+  #CXXFLAGS=${CXXFLAGS/-fno-plt/}
+  #LDFLAGS=${LDFLAGS/,-z,now/}
 
-  CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
-  CFLAGS=${CFLAGS/-fuse-ld=lld -Wno-unused-command-line-argument/}
-  CXXFLAGS=${CXXFLAGS/-fuse-ld=lld -Wno-unused-command-line-argument/}
+  #CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
 
   meson setup xorg-server-${pkgver} build \
     --prefix /usr \
@@ -103,20 +110,17 @@ build() {
     -D b_ndebug=true \
     -D b_lto=true ${_extra_lto_flag} \
     -D b_pie=true \
-    -D os_vendor="Archlinux" \
     -D ipv6=true \
     -D xvfb=true \
     -D xnest=true \
     -D xcsecurity=true \
     -D xorg=true \
     -D xephyr=true \
-    -D xwayland=true \
-    -D xwayland_eglstream=true \
     -D glamor=true \
     -D udev=true \
     -D systemd_logind=true \
     -D suid_wrapper=true \
-    -D dtrace=true \
+    -D docs=false \
     -D xkb_dir=/usr/share/X11/xkb \
     -D xkb_output_dir=/var/lib/xkb
 
@@ -160,21 +164,21 @@ package_xorg-server-common+clang() {
 package_xorg-server+clang() {
 
   pkgdesc="Xorg X server"
-  depends=(libepoxy libxfont2 pixman xorg-server-common+clang libunwind
+  depends=('libxcvt+clang' libepoxy libxfont2 pixman xorg-server-common+clang libunwind
     dbus libgl xf86-input-libinput nettle
-    libpciaccess libdrm libxshmfence) # FS#52949
+    libpciaccess libdrm libxshmfence
+  ) # FS#52949
   # see xorg-server-*/hw/xfree86/common/xf86Module.h for ABI versions - we provide major numbers that drivers can depend on
   # and /usr/lib/pkgconfig/xorg-server.pc in xorg-server-devel pkg
-  provides=('xorg-server' "xorg-server=${pkgver}" 'X-ABI-VIDEODRV_VERSION=24.0' 'X-ABI-XINPUT_VERSION=24.1' 'X-ABI-EXTENSION_VERSION=10.0' 'x-server')
+  provides=('xorg-server' "xorg-server=${pkgver}" 'X-ABI-VIDEODRV_VERSION=25.2' 'X-ABI-XINPUT_VERSION=24.4' 'X-ABI-EXTENSION_VERSION=10.0' 'x-server')
   conflicts=('xorg-server' 'nvidia-utils<=331.20' 'glamor-egl' 'xf86-video-modesetting')
   replaces=('xorg-server' 'glamor-egl' 'xf86-video-modesetting')
 
-  _install fakeinstall/usr/bin/{Xorg,cvt,gtf}
-  ln -s /usr/bin/Xorg "${pkgdir}/usr/bin/X"
+  _install fakeinstall/usr/bin/{X,Xorg,gtf}
   _install fakeinstall/usr/lib/Xorg{,.wrap}
   _install fakeinstall/usr/lib/xorg/modules/*
   _install fakeinstall/usr/share/X11/xorg.conf.d/10-quirks.conf
-  _install fakeinstall/usr/share/man/man1/{Xorg,Xorg.wrap,cvt,gtf}.1
+  _install fakeinstall/usr/share/man/man1/{Xorg,Xorg.wrap,gtf}.1
   _install fakeinstall/usr/share/man/man4/{exa,fbdevhw,modesetting}.4
   _install fakeinstall/usr/share/man/man5/{Xwrapper.config,xorg.conf,xorg.conf.d}.5
 
@@ -254,7 +258,6 @@ package_xorg-server-devel+clang() {
   install -m644 -Dt "${pkgdir}/usr/share/licenses/${pkgname:?}" "xorg-server-${pkgver}/COPYING"
 
   # make sure there are no files left to install
-  rm fakeinstall/usr/bin/Xwayland
   find fakeinstall -depth -print0 | xargs -0 rmdir
 
 }
