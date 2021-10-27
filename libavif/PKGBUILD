@@ -9,8 +9,12 @@ provides=("libavif" "libavif=${pkgver}")
 conflicts=("libavif")
 depends=(glibc aom dav1d rav1e svt-av1 zlib libpng libjpeg libyuv)
 makedepends=(cmake nasm pkgconf gdk-pixbuf2)
-source=("${url}/archive/v${pkgver}/libavif-${pkgver}.tar.gz")
-sha256sums=('bcd9a1f57f982a9615eb7e2faf87236dc88eb1d0c886f3471c7440ead605060d')
+source=(
+  "https://github.com/AOMediaCodec/libavif/archive/v${pkgver}/libavif-${pkgver}.tar.gz"
+  fix-compilation-with-clang-13.patch
+)
+sha256sums=('bcd9a1f57f982a9615eb7e2faf87236dc88eb1d0c886f3471c7440ead605060d'
+  '8324dbaa34ccd9f213cd32e87e6a93b3434b395d7f5dd9370b7e0969119b8aa0')
 
 _llvm=0
 
@@ -20,8 +24,7 @@ prepare() {
     _llvm=1
   fi
 
-  sed -i -e '/-Weverything/ a\ \n        -Wno-reserved-identifier' \
-    "libavif-${pkgver}/CMakeLists.txt"
+  patch -d "libavif-${pkgver}" -p1 <fix-compilation-with-clang-13.patch
 
 }
 
