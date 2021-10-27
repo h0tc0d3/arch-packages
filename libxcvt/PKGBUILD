@@ -1,0 +1,58 @@
+pkgname=libxcvt+clang
+pkgver=0.1.1
+pkgrel=1
+pkgdesc="library providing a standalone version of the X server implementation of the VESA CVT standard timing modelines generator"
+arch=('x86_64')
+url="https://gitlab.freedesktop.org/xorg/lib/libxcvt"
+license=('custom')
+depends=('glibc')
+provides=(libxcvt "libxcvt=${pkgver}")
+conflicts=(libxcvt)
+makedepends=('meson')
+source=("https://xorg.freedesktop.org/releases/individual/lib/libxcvt-${pkgver}.tar.xz"{,.sig})
+sha256sums=('27ebce180d355f94c1992930bedb40a36f6d7312ee50bf7f0acbcd22f33e8c29'
+  'SKIP')
+validpgpkeys=(
+  '3BB639E56F861FA2E86505690FDD682D974CA72A' # "Matt Turner <mattst88@gmail.com>"
+  '67DC86F2623FC5FD4BB5225D14706DBE1E4B4540' # "Olivier Fourdan <fourdan@xfce.org>"
+)
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+}
+
+build() {
+
+  meson setup libxcvt-${pkgver} build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true
+
+  meson compile -C build
+
+}
+
+check() {
+
+  meson test -C build #--print-errorlogs
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" meson install -C build
+
+  install -m644 -Dt "${pkgdir}/usr/share/licenses/${pkgname}" "libxcvt-${pkgver}/COPYING"
+
+}
