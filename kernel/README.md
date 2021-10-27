@@ -1,8 +1,8 @@
 # Kernel Patches
 
-Take care, patches only works with 5.13.3 version of kernel!
+Take care, patches only works with 5.14 version of kernel!
 
-## 0001-compiler-march-kernel-5.8+.patch
+## 0001-compiler-march-kernel-5.8+.patch 0001-compiler-march-kernel-5.15+.patch
 [graysky2/kernel_compiler_patch](https://github.com/graysky2/kernel_compiler_patch)
 
 Allow choose processor optimization. **Processor type and features**  --->
@@ -11,6 +11,11 @@ Allow choose processor optimization. **Processor type and features**  --->
 ## 0002-pgo.patch
 
 Add PGO optimizations with clang.
+
+## 0003-amd-next.patch
+
+For Kernel 5.15+
+Next kernels AMD optimizations.
 
 ## 0004-folio-mm.patch
 
@@ -43,139 +48,7 @@ net.ipv4.tcp_congestion_control=bbr2
 tc qdisc add dev your_network_device root fq_codel
 ```
 
-## 0006-amd-cppc.patch
-
-We would like to introduce a new AMD CPU frequency control mechanism as the
-"amd-pstate" driver for modern AMD Zen based CPU series in Linux Kernel.
-The new mechanism is based on Collaborative processor performance control
-(CPPC) which is finer grain frequency management than legacy ACPI hardware
-P-States. Current AMD CPU platforms are using the ACPI P-states driver to
-manage CPU frequency and clocks with switching only in 3 P-states. AMD
-P-States is to replace the ACPI P-states controls, allows a flexible,
-low-latency interface for the Linux kernel to directly communicate the
-performance hints to hardware.
-
-"amd-pstate" leverages the Linux kernel governors such as *schedutil*,
-*ondemand*, etc. to manage the performance hints which are provided by CPPC
-hardware functionality. The first version for amd-pstate is to support one
-of the Zen3 processors, and we will support more in future after we verify
-the hardware and SBIOS functionalities.
-
-There are two types of hardware implementations for amd-pstate: one is full
-MSR support and another is shared memory support. It can use
-X86_FEATURE_AMD_CPPC_EXT feature flag to distinguish the different types. 
-
-Using the new AMD P-States method + kernel governors (*schedutil*,
-*ondemand*, ...) to manage the frequency update is the most appropriate
-bridge between AMD Zen based hardware processor and Linux kernel, the
-processor is able to ajust to the most efficiency frequency according to
-the kernel scheduler loading.
-
-According to above average data, we can see this solution has shown better
-performance per watt scaling on mobile CPU benchmarks in most of cases.
-
-These patch series depends on a "hotplug capable" CPU fix below (Only few
-of CPU parts with "un-hotplug" core will encounter the issue and Mario is
-working on the fix):
-https://lore.kernel.org/linux-pm/20210813161842.222414-1-mario.limonciello@amd.com/
-
-And we can see patch series in below git repo:
-V1: https://git.kernel.org/pub/scm/linux/kernel/git/rui/linux.git/log/?h=amd-pstate-dev-v1
-V2: https://git.kernel.org/pub/scm/linux/kernel/git/rui/linux.git/log/?h=amd-pstate-dev-v2
-
-For details introduction, please see the patch 19.
-
-Changes from V1 -> V2:
-
-cpufreq:
-- Add detailed description in the commit log.
-- Clean up the "extension" postfix in the x86 feature flag.
-- Revise cppc_set_enable helper.
-- Add a fix to check online cpus in cppc_acpi.
-- Use static calls to avoid retpolines.
-- Revise the comment style.
-- Remove amd_pstate_boost_supported() function.
-- Revise the return value in syfs attribute functions.
-
-cpupower:
-- Refine the commit log for cpupower patches.
-- Expose a function to get the sysfs value from specific table.
-- Move amd-pstate sysfs definitions and functions into amd helper file.
-- Move the boost init function into amd helper file and explain the details in the commit log.
-- Remove the amd_pstate_get_data in the lib/cpufreq.c to keep the lib as common operations.
-- Move print_speed function into misc helper file.
-- Add amd_pstate_show_perf_and_freq() function in amd helper for cpufreq-info print.
-
-## 0007-string.patch
-
-For Kernel 5.14+
-Optimize performance of kernel code for working with strings.
-
-## 0008-remove-LightNVM.patch
-
-For Kernel 5.14+
-
-LightNVM was focused on features around predictable latency, I/O isolation, and better memory management. However, LightNVM has been effectively superseded by the Zoned Namespace (ZNS) command set with NVMe.
-
-There hasn't been much happening upstream with LightNVM in the past two years due to the zoned storage support in NVMe succeeding it and needless to say not any real kernel activity as a result. Thus this relatively short-lived LightNVM code is now expected to be removed next kernel merge window with the subsystem now removed in the block subsystem's "for-next" branch.
-
-## 0009-compiler-remove-stale-cc-option-checks.patch
-
-cc-option, cc-option-yn, and cc-disable-warning all invoke the compiler
-during build time, and can slow down the build when these checks become
-stale for our supported compilers, whose minimally supported versions
-increases over time.  See Documentation/process/changes.rst for the
-current supported minimal versions (GCC 4.9+, clang 10.0.1+). Compiler
-version support for these flags may be verified on godbolt.org.
-
-The following flags are GCC only and supported since at least GCC 4.9.
-Remove cc-option and cc-disable-warning tests.
-
-- **-fno-tree-loop-im**
-- **-Wno-maybe-uninitialized**
-- **-fno-reorder-blocks**
-- **-fno-ipa-cp-clone**
-- **-fno-partial-inlining**
-- **-femit-struct-debug-baseonly**
-- **-fno-inline-functions-called-once**
-- **-fconserve-stack**
-
-The following flags are supported by all supported versions of GCC and
-Clang. Remove their cc-option, cc-option-yn, and cc-disable-warning tests.
-
-- **-fno-delete-null-pointer-checks**
-- **-fno-var-tracking**
-- **-mfentry**
-- **-Wno-array-bounds**
-
-The following configs are made dependent on GCC, since they use GCC
-specific flags.
-**READABLE_ASM**
-**DEBUG_SECTION_MISMATCH**
-
-**--param=allow-store-data-races=0*- was renamed to **--allow-store-data-races**
-in the GCC 10 release.
-
-Also, base **RETPOLINE_CFLAGS*- and **RETPOLINE_VDSO_CFLAGS*- on **CONFIC_CC_IS_\***
-then remove cc-option tests for Clang.
-
-## 0010-AMD-CPU-C3-cache.patch
-
-AMD CPU which support C3 shares cache. Its not necessary to flush the
-caches in software before entering C3. This will cause performance drop
-for the cores which share some caches. ARB_DIS is not used with current
-AMD C state implementation. So set related flags correctly.
-
-## 0011-amd-ptdma.patch
-
-Add support for AMD PTDMA controller. It performs high-bandwidth
-memory to memory and IO copy operation. Device commands are managed
-via a circular queue of 'descriptors', each of which specifies source
-and destination addresses for copying a single buffer of data.
-
-**Device Drivers** ---> **DMA Engine support** ---> **<*> AMD PassThru DMA Engine**
-
-## 0012-zstd.patch
+## 0006-zstd.patch
 
 Update to zstd-1.4.10
 
@@ -335,3 +208,8 @@ transition to a kernel style API, and hide zstd's upstream API behind that.
 This is because zstd's upstream API is supports many other use cases, and does
 not follow the kernel style guide, while the kernel API is focused on the
 kernel's use cases, and follows the kernel style guide.
+
+## 0007-string.patch
+
+For Kernel 5.14+
+Optimize performance of kernel code for working with strings.
