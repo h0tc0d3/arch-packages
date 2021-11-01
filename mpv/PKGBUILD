@@ -1,7 +1,7 @@
 pkgname=mpv+clang
 epoch=1
-pkgver=0.33.1
-pkgrel=3
+pkgver=0.34.0
+pkgrel=1
 pkgdesc='a free, open source, and cross-platform media player'
 arch=('x86_64')
 license=('GPL3')
@@ -17,83 +17,71 @@ depends=('alsa-lib' 'libasound.so' 'desktop-file-utils' 'ffmpeg' 'libavcodec.so'
   'libxv' 'lua52' 'mesa' 'mujs' 'rubberband' 'librubberband.so' 'shaderc'
   'libshaderc_shared.so' 'uchardet' 'vulkan-icd-loader' 'wayland' 'xdg-utils'
   'zlib')
-makedepends=('git' 'meson' 'python-docutils' 'ladspa' 'wayland-protocols'
+makedepends=('git' 'python-docutils' 'ladspa' 'wayland-protocols'
   'ffnvcodec-headers' 'vulkan-headers' 'waf')
 optdepends=('youtube-dl: for video-sharing websites playback')
 provides=('mpv' "mpv=${pkgver}" 'libmpv.so')
 conflicts=('mpv')
 options=('!emptydirs')
-_tag='4c9d3669a0f672e6754ac456acd324db570964d3' # git rev-parse v${pkgver}
-source=("git+https://github.com/mpv-player/mpv.git#tag=${_tag}")
+_tag='9ca9066d052acecb5b05369141a76993a753ee1e' # git rev-parse v${pkgver}
+source=(
+  "git+https://github.com/mpv-player/mpv.git#tag=${_tag}"
+)
 sha256sums=('SKIP')
 
-_extra_lto_flag=""
+_llvm=0
 
 prepare() {
 
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
-    _extra_lto_flag='-D b_lto_mode=thin'
+    _llvm=1
   fi
-
-  cd "${srcdir:?}/mpv" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/mpv directory! Prepare Failed! \E[0m"
-    exit 1
-  )
-
-  # vo_gpu: placebo: update for upstream API changes
-  git cherry-pick -n 7c4465cefb27d4e0d07535d368febdf77b579566
-
-  # Add meson build
-  git cherry-pick -n 94abf63f601d6c28350d6e92277072c4d18bafd9
-  #git cherry-pick -n f9ad8f07d99c1caa4be206f64964f722bc14b296
-  sed -ie "s/posix\s=\sfalse/posix = true/g;s/'video\/out\/vulkan\/context_display\.c',//g" meson.build
 
 }
 
 build() {
 
-  meson setup mpv build \
-    --prefix /usr \
-    --sysconfdir=/etc/mpv \
-    --libexecdir lib \
-    --sbindir bin \
-    --auto-features enabled \
-    --wrap-mode nodownload \
-    -D debug=false \
-    -D optimization=2 \
-    -D b_ndebug=true \
-    -D b_lto=true ${_extra_lto_flag} \
-    -D b_pie=true \
-    -D libplacebo=enabled \
-    -D cdda=enabled \
-    -D dvb=enabled \
-    -D dvdnav=enabled \
-    -D libarchive=enabled \
-    -D libmpv-shared=enbaled \
-    -D libmpv=enabled \
-    -D build-date=disabled \
-    -D opensles=disabled \
-    -D vapoursynth=disabled \
-    -D sixel=disabled \
-    -D spirv-cross=disabled \
-    -D gl-x11=disabled \
-    -D opengl32=disabled \
-    -D gl-win32=disabled \
-    -D uwp=disabled \
-    -D caca=disabled
+  cd "${srcdir:?}/mpv" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/mpv directory! Build Failed! \E[0m"
+    exit 1
+  )
 
-  meson compile -C build
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  waf configure \
+    --prefix=/usr \
+    --confdir=/etc/mpv \
+    --enable-cdda \
+    --enable-dvb \
+    --enable-dvdnav \
+    --enable-libarchive \
+    --enable-libmpv-shared \
+    --disable-build-date \
+    --disable-caca
+
+  waf build
 
 }
 
 package() {
 
-  DESTDIR="${pkgdir:?}" meson install -C build
+  cd "${srcdir:?}/mpv" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/mpv directory! Package Failed! \E[0m"
+    exit 1
+  )
 
-  install -m0644 "mpv/DOCS/"{encoding.rst,tech-overview.txt} \
+  waf install --destdir="${pkgdir:?}"
+
+  install -m0644 "DOCS/"{encoding.rst,tech-overview.txt} \
     "${pkgdir:?}/usr/share/doc/mpv"
 
-  install -m0644 "mpv/TOOLS/lua/"* \
+  install -m0644 "TOOLS/lua/"* \
     -D -t "${pkgdir:?}/usr/share/mpv/scripts"
 
 }
