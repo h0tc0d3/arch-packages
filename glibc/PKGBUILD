@@ -1,14 +1,14 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
 pkgver=2.34
-pkgrel=10
+pkgrel=11
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
 makedepends=(git gd lib32-gcc-libs python)
 optdepends=('perl: for mtrace')
 options=(!strip staticlibs)
-_commit=349b0441dab375099b1d7f6909c1742286a67da9
+_commit=d3bf2f5927d51258a51ac7fde04f4805f8ee294a
 source=("git+https://sourceware.org/git/glibc.git#commit=${_commit}"
   #source=("https://ftp.gnu.org/gnu/glibc/glibc-${pkgver}.tar.xz"
   locale-gen
@@ -36,6 +36,7 @@ _patch() {
 
 }
 
+_lld=0
 prepare() {
 
   mkdir -p glibc-build lib32-glibc-build
@@ -49,7 +50,7 @@ prepare() {
   _patch "glibc-cs-path.patch"
 
   if ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
-    sed -i -e 's/`$CC -print-prog-name=ld`/ld.lld/' configure
+    _lld=1
   fi
 
 }
@@ -89,6 +90,10 @@ build() {
   CXXFLAGS=${CXXFLAGS/-fno-plt/}
   #LDFLAGS=${LDFLAGS/,-z,now/}
 
+  if [[ ${_lld} -eq 1 ]]; then
+    CC="${CC} -fuse-ld=lld"
+  fi
+
   "${srcdir:?}/glibc/configure" \
     --libdir=/usr/lib \
     --libexecdir=/usr/lib \
@@ -101,14 +106,21 @@ build() {
   # re-enable fortify for programs
   sed -i "/build-programs=/s#no#yes#" configparms
 
-  echo "CC += -D_FORTIFY_SOURCE=2" >>configparms
-  echo "CXX += -D_FORTIFY_SOURCE=2" >>configparms
+  if [[ ${_lld} -eq 1 ]]; then
+    echo "CC += -D_FORTIFY_SOURCE=2 -fuse-ld=lld" >>configparms
+    echo "CXX += -D_FORTIFY_SOURCE=2 -fuse-ld=lld" >>configparms
+  else
+    echo "CC += -D_FORTIFY_SOURCE=2" >>configparms
+    echo "CXX += -D_FORTIFY_SOURCE=2" >>configparms
+  fi
+
   make
 
   # build info pages manually for reprducibility
   make info
 
   cd "${srcdir:?}/lib32-glibc-build" || exit 1
+
   export CC="gcc -m32 -mstackrealign"
   export CXX="g++ -m32 -mstackrealign"
 
@@ -137,6 +149,7 @@ build() {
 
   echo "CC += -D_FORTIFY_SOURCE=2" >>configparms
   echo "CXX += -D_FORTIFY_SOURCE=2" >>configparms
+
   make
 
   unset CC
