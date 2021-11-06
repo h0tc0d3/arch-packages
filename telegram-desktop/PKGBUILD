@@ -1,6 +1,6 @@
 pkgname=telegram-desktop+clang
-pkgver=3.1.11
-pkgrel=2
+pkgver=3.2.2
+pkgrel=1
 pkgdesc='Official Telegram Desktop client'
 arch=('x86_64')
 url="https://desktop.telegram.org/"
@@ -8,7 +8,7 @@ license=('GPL3')
 provides=('telegram-desktop' "telegram-desktop=${pkgver}")
 conflicts=('telegram-desktop')
 depends=('hunspell' 'ffmpeg' 'hicolor-icon-theme' 'lz4' 'minizip' 'openal' 'ttf-opensans'
-  'qt5-imageformats' 'qt5-svg' 'xxhash' 'libdbusmenu-qt5' 'kwayland' 'glibmm'
+  'qt5-imageformats' 'qt5-svg' 'qt5-wayland' 'libdbusmenu-qt5' 'xxhash' 'kwayland' 'glibmm'
   'rnnoise' 'pipewire' 'libxtst' 'libxrandr' 'jemalloc' 'libtg_owt')
 makedepends=('cmake' 'git' 'ninja' 'python' 'range-v3' 'tl-expected' 'microsoft-gsl'
   'extra-cmake-modules' 'gtk3' 'webkit2gtk')
@@ -18,7 +18,7 @@ optdepends=('gtk3: GTK environment integration'
 source=(
   "https://github.com/telegramdesktop/tdesktop/releases/download/v${pkgver}/tdesktop-${pkgver}-full.tar.gz"
 )
-sha256sums=('0f7ee7bd7c5746026744de2eb447b11f83e77eb30be49e9e894bc37008b49d4a')
+sha256sums=('f9b82a2133f8811ba465a54c70335b14c281eefe55668a7670522f3c5719fb9d')
 
 _llvm=0
 
@@ -44,6 +44,7 @@ build() {
     -G Ninja \
     -DCMAKE_INSTALL_PREFIX="/usr" \
     -DCMAKE_BUILD_TYPE=Release \
+    -DDESKTOP_APP_QT6=off \
     -DTDESKTOP_API_ID=611335 \
     -DTDESKTOP_API_HASH=d524b414d21f4d37f08684c1df41ac9c
 
