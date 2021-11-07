@@ -1,6 +1,6 @@
 pkgname=ncurses+clang
-pkgver=6.2
-pkgrel=2
+pkgver=6.3
+pkgrel=1
 pkgdesc='System V Release 4.0 curses emulation library'
 arch=(x86_64)
 url='https://invisible-island.net/ncurses/ncurses.html'
@@ -10,11 +10,18 @@ conflicts=('ncurses')
 replaces=('ncurses' 'alacritty-terminfo')
 depends=(glibc gcc-libs)
 optdepends=('bash: for ncursesw6-config')
-source=("https://ftp.gnu.org/pub/gnu/ncurses/ncurses-${pkgver}.tar.gz"{,.sig})
-sha256sums=('30306e0c76e0f9f1f0de987cf1c82a5c21e1ce6568b9227f7da5b71cbea86c9d'
-  'SKIP')
+makedepends=(autoconf-archive)
+source=(
+  "https://invisible-mirror.net/archives/ncurses/ncurses-${pkgver}.tar.gz"{,.asc}
+  ncurses-6.3-libs.patch
+  ncurses-6.3-pkgconfig.patch
+)
+sha256sums=('97fc51ac2b085d4cde31ef4d2c3122c21abc217e9090a43a30fc5ec21684e059'
+  'SKIP'
+  'dc4261b6642058a9df1c0945e2409b24f84673ddc3a665d8a15ed3580e51ee25'
+  'b8544a607dfbeffaba2b087f03b57ed1fa81286afca25df65f61b04b5f3b3738')
 # NOTE: contacted upstream signing key holder about unsafe key (2021-05-02)
-validpgpkeys=('C52048C0C0748FEE227D47A2702353E0F7E48EDB') # Thomas Dickey <dickey@invisible-island.net>
+validpgpkeys=('19882D92DDA4C400C22C0D56CC2AF4472167BE03') # Thomas Dickey <dickey@invisible-island.net>
 
 _llvm=0
 
@@ -29,7 +36,12 @@ prepare() {
     exit 1
   )
 
-  #autoreconf -vfi
+  # do not link against test libraries
+  patch -Np1 -i ../ncurses-6.3-libs.patch
+
+  # do not leak build-time LDFLAGS into the pkgconfig files:
+  # https://bugs.archlinux.org/task/68523
+  patch -Np1 -i ../ncurses-6.3-pkgconfig.patch
 
 }
 
@@ -48,18 +60,19 @@ build() {
 
   fi
 
-  ./configure --prefix=/usr \
-    --mandir=/usr/share/man \
-    --with-pkg-config-libdir=/usr/lib/pkgconfig \
-    --with-shared \
-    --with-normal \
-    --without-debug \
-    --without-ada \
+  ./configure \
+    --prefix=/usr \
     --enable-widec \
     --enable-pc-files \
+    --mandir=/usr/share/man \
     --with-cxx-binding \
     --with-cxx-shared \
-    --with-manpage-format=normal
+    --with-manpage-format=normal \
+    --with-pkg-config-libdir=/usr/lib/pkgconfig \
+    --with-shared \
+    --with-versioned-syms \
+    --without-ada \
+    --without-debug
 
   make
 
@@ -77,18 +90,20 @@ package() {
 
   # fool packages looking to link to non-wide-character ncurses libraries
   for lib in ncurses ncurses++ form panel menu; do
-    echo "INPUT(-l${lib}w)" >"${pkgdir:?}/usr/lib/lib${lib}.so"
+    printf "INPUT(-l%sw)\n" "${lib}" >"${pkgdir:?}/usr/lib/lib${lib}.so"
     ln -sv ${lib}w.pc "${pkgdir:?}/usr/lib/pkgconfig/${lib}.pc"
   done
 
+  # some packages look for -lcurses during build
+  printf 'INPUT(-lncursesw)\n' >"${pkgdir:?}/usr/lib/libcursesw.so"
+  ln -sv libncurses.so "${pkgdir:?}/usr/lib/libcurses.so"
+
+  # tic and ticinfo functionality is built in by default
+  # make sure that anything linking against it links against libncursesw.so instead
   for lib in tic tinfo; do
-    echo "INPUT(libncursesw.so.${pkgver:0:1})" >"${pkgdir:?}/usr/lib/lib${lib}.so"
+    printf "INPUT(libncursesw.so.%s)\n" "${pkgver:0:1}" >"${pkgdir:?}/usr/lib/lib${lib}.so"
     ln -sv libncursesw.so.${pkgver:0:1} "${pkgdir:?}/usr/lib/lib${lib}.so.${pkgver:0:1}"
     ln -sv ncursesw.pc "${pkgdir:?}/usr/lib/pkgconfig/${lib}.pc"
   done
-
-  # some packages look for -lcurses during build
-  echo 'INPUT(-lncursesw)' >"${pkgdir:?}/usr/lib/libcursesw.so"
-  ln -s libncurses.so "${pkgdir:?}/usr/lib/libcurses.so"
 
 }
