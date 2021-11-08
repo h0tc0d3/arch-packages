@@ -7,7 +7,7 @@ pkgname=(
   'xorg-server-common+clang'
   'xorg-server-devel+clang'
 )
-pkgver=21.1.0
+pkgver=21.1.1
 pkgrel=1
 arch=('x86_64')
 license=('custom')
@@ -37,7 +37,7 @@ validpgpkeys=(
   'FD0004A26EADFE43A4C3F249C6F7AE200374452D'
 )
 
-sha256sums=('50c316dd8f4472cb60dfb285aa46ca6855d7626cecfd8330f6c51da743c1fe42'
+sha256sums=('782e7fef2ca0c7cbe60a937b8bf42dac69c904fb841950fd0363e1c2346ea755'
   'SKIP'
   'f8703466041a04428e68a77e1c07579679b07d15f8ec28934f1a65548007a756'
   '91b067753e823d6e3462d35be127f66e94e71a490c666e1aae41fe4e5b1ea47c'
@@ -69,22 +69,6 @@ prepare() {
 
   # Default to xf86-video-modesetting on GeForce 8 and newer
   _patch xorg-xfree86-use-modesetting-driver-by-default-on-GeForce.patch
-
-  # Fix include/meson.build:416:0: ERROR: File Xserver.d does not exist.
-  touch include/Xserver.d
-
-  # meson.build:729:0: ERROR: Non-existent build file 'doc/meson.build'
-  touch doc/meson.build
-
-  # Fix hw/xfree86/meson.build:138:4: ERROR: Non-existent build file 'hw/xfree86/drivers/inputtest/meson.build'
-  touch hw/xfree86/drivers/inputtest/meson.build
-
-  # Fix hw/xfree86/meson.build:234:0: ERROR: Non-existent build file 'hw/xfree86/doc/meson.build'
-  touch hw/xfree86/doc/meson.build
-
-  # Fix test/meson.build:104:0: ERROR: Non-existent build file 'test/damage/meson.build'
-  mkdir -p test/damage
-  touch test/damage/meson.build
 
 }
 
@@ -179,7 +163,7 @@ package_xorg-server+clang() {
   _install fakeinstall/usr/lib/xorg/modules/*
   _install fakeinstall/usr/share/X11/xorg.conf.d/10-quirks.conf
   _install fakeinstall/usr/share/man/man1/{Xorg,Xorg.wrap,gtf}.1
-  _install fakeinstall/usr/share/man/man4/{exa,fbdevhw,modesetting}.4
+  _install fakeinstall/usr/share/man/man4/{exa,fbdevhw,modesetting,inputtestdrv}.4
   _install fakeinstall/usr/share/man/man5/{Xwrapper.config,xorg.conf,xorg.conf.d}.5
 
   # distro specific files must be installed in /usr/share/X11/xorg.conf.d
@@ -211,7 +195,7 @@ package_xorg-server-xvfb+clang() {
 
   pkgdesc="Virtual framebuffer X server"
   depends=(libxfont2 libunwind pixman xorg-server-common+clang xorg-xauth
-    libgl nettle libtirpc)
+    libgl nettle libtirpc systemd-libs)
   provides=('xorg-server-xvfb' "xorg-server-xvfb=${pkgver}")
   conflicts=('xorg-server-xvfb')
 
@@ -229,7 +213,7 @@ package_xorg-server-xvfb+clang() {
 package_xorg-server-xnest+clang() {
 
   pkgdesc="A nested X server that runs as an X application"
-  depends=(libxfont2 libxext pixman xorg-server-common+clang nettle libtirpc)
+  depends=(libxfont2 libxext pixman xorg-server-common+clang nettle libtirpc systemd-libs)
   provides=('xorg-server-xnest' "xorg-server-xnest=${pkgver}")
   conflicts=('xorg-server-xnest')
 
