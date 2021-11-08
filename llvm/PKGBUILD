@@ -3,7 +3,7 @@
 pkgname=llvm+clang
 pkgdesc="LLVM Toolchain with clang, clang-tools-extra, compiler-rt, openmp, polly, lldb, lld"
 pkgver=13.0.1
-pkgrel=4
+pkgrel=5
 arch=('x86_64')
 url="https://llvm.org/"
 license=('custom:Apache 2.0 with LLVM Exception')
@@ -20,17 +20,20 @@ makedepends=(
   'python-recommonmark'
 )
 makedepends_x86_64=('lib32-gcc-libs')
-_gitcommit="73daeb3d507f7c8da52a35311ec1799f161ac7a5"
+_gitcommit=d5159b99105d2019ae0930ed09dae2eed0fede81
 source=(
   "llvm-project::git+https://github.com/llvm/llvm-project.git#commit=${_gitcommit}"
   'llvm-config.h'
-  fix-scan-build-py-executable-lookup-path.patch
+  llvm-no-strict-aliasing-DwarfCompileUnit.patch
+  llvm-disable-bswap-for-spir.patch
+  llvm-fix-scan-build-py-executable-lookup-path.patch
 )
 
 sha256sums=('SKIP'
   '597dc5968c695bbdbb0eac9e8eb5117fcd2773bc91edf5ec103ecffffab8bc48'
-  '578b960121c42b8db80566dcb51558409d04455b618cdd608e41b35ded36c13e'
-)
+  'd1eff24508e35aae6c26a943dbaa3ef5acb60a145b008fd1ef9ac6f6c4faa662'
+  'af163392fbc19d65d11ab4b1510a2eae39b417d6228023b3ba5395b138bb41f5'
+  '578b960121c42b8db80566dcb51558409d04455b618cdd608e41b35ded36c13e')
 
 options=('staticlibs')
 
@@ -53,7 +56,9 @@ prepare() {
     exit 1
   )
 
-  _patch fix-scan-build-py-executable-lookup-path.patch
+  _patch llvm-no-strict-aliasing-DwarfCompileUnit.patch
+  _patch llvm-disable-bswap-for-spir.patch
+  _patch llvm-fix-scan-build-py-executable-lookup-path.patch
 
   # Attempt to convert script to Python 3
   2to3 -wn --no-diffs \
@@ -259,7 +264,9 @@ package() {
 
   mv "${pkgdir:?}"/usr/libexec/* "${pkgdir:?}/usr/lib/clang/"
   rm -fr "${pkgdir:?}/usr/libexec"
-  sed -i 's|libexec|lib/clang|' "${pkgdir:?}/${site_packages}/libscanbuild/analyze.py"
+  sed -i 's|libexec|lib/clang|' \
+    "${pkgdir:?}/usr/bin/scan-build" \
+    "${pkgdir:?}/${site_packages}/libscanbuild/analyze.py"
 
   _python_optimize "${pkgdir:?}/usr/share" "${pkgdir:?}/${site_packages}"
 
