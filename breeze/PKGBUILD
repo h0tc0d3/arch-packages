@@ -1,5 +1,5 @@
 pkgname=breeze+clang
-pkgver=5.23.2
+pkgver=5.23.3
 pkgrel=1
 arch=(x86_64)
 pkgdesc='Artwork, styles and assets for the Breeze visual style for the Plasma Desktop'
@@ -13,7 +13,7 @@ optdepends=('breeze-gtk: Breeze widget style for GTK applications'
   'kcmutils: for breeze-settings')
 groups=(plasma)
 source=("https://download.kde.org/stable/plasma/${pkgver}/breeze-${pkgver}.tar.xz"{,.sig})
-sha256sums=('4b0f10cd78d7136a33c9209f00cdbabbb7cd4ca614d5cacc99265dc7190756ac'
+sha256sums=('bb4af2a3221c5486bb90202213f2c662727d5a2946c228a90d872d5126f12494'
   'SKIP')
 validpgpkeys=(
   'E0A3EB202F8E57528E13E72FD7574483BB57B18D' # Jonathan Riddell <jr@jriddell.org>

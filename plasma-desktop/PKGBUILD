@@ -1,6 +1,6 @@
 pkgname=plasma-desktop+clang
-pkgver=5.23.2
-pkgrel=2
+pkgver=5.23.3
+pkgrel=1
 pkgdesc='KDE Plasma Desktop'
 arch=(x86_64)
 url='https://kde.org/plasma-desktop/'
@@ -9,7 +9,6 @@ provides=("plasma-desktop" "plasma-desktop=${pkgver}")
 conflicts=("plasma-desktop")
 source=(
   "https://download.kde.org/stable/plasma/${pkgver}/plasma-desktop-${pkgver}.tar.xz"{,.sig}
-  https://invent.kde.org/plasma/plasma-desktop/-/commit/af9aeecc.patch
 )
 depends=(gawk kdelibs4support polkit-kde-agent libxkbfile kmenuedit systemsettings baloo accountsservice xdg-user-dirs)
 optdepends=('plasma-nm: Network manager applet'
@@ -23,9 +22,8 @@ replaces=(user-manager knetattach)
 makedepends=(extra-cmake-modules kdoctools xf86-input-evdev xf86-input-synaptics xf86-input-libinput xorg-server-devel
   scim kdesignerplugin kaccounts-integration intltool packagekit-qt5 kinit)
 groups=(plasma)
-sha256sums=('bf3d8320edcb5b1b4040a5473e85a8d6c01a58951efb121b04b609c4cd01b96f'
-  'SKIP'
-  'a3c4a990866661e1de33c986d3d964c29c4be63fe29c77910fc4134d02aea785')
+sha256sums=('43435a514eb66965e52af49aa033ebc813db42a10ad66cd5656f7466f14d4504'
+  'SKIP')
 validpgpkeys=(
   'E0A3EB202F8E57528E13E72FD7574483BB57B18D' # Jonathan Riddell <jr@jriddell.org>
   '0AAC775BB6437A8D9AF7A3ACFE0784117FBCE11D' # Bhushan Shah <bshah@kde.org>
@@ -40,8 +38,6 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=1
   fi
-
-  patch -d plasma-desktop-${pkgver} -p1 <af9aeecc.patch # Fix drag and drop in kickoff
 
 }
 
