@@ -1,5 +1,5 @@
 pkgname=libcurl-gnutls+clang
-pkgver=7.79.1
+pkgver=7.80.0
 pkgrel=1
 pkgdesc='An URL retrieval library (linked against gnutls)'
 arch=('x86_64')
@@ -12,8 +12,8 @@ depends=('curl' 'glibc' 'gnutls' 'libidn2' 'libidn2.so' 'libnghttp2'
   'zlib' 'zstd')
 options=('strip')
 source=("https://curl.haxx.se/download/curl-${pkgver}.tar.gz"{,.asc})
-sha512sums=('0f9546285bef741f69d25f20bcd5b961d29fc88084d9f3ebe0c66a6674f4c69a531b41f8e3cc57474f528abdd90aa7981e653c339c5e8383353c36a82efaafc4'
-            'SKIP')
+sha256sums=('dab997c9b08cb4a636a03f2f7f985eaba33279c1c52692430018fae4a4878dc7'
+  'SKIP')
 validpgpkeys=('27EDEAF22F3ABCEB50DB9A125CC908FDB71E12C2') # Daniel Stenberg
 
 _llvm=0
