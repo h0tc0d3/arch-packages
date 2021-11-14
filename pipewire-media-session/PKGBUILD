@@ -1,5 +1,5 @@
 pkgname=pipewire-media-session+clang
-pkgver=0.4.0
+pkgver=0.4.1
 pkgrel=1
 epoch=1
 pkgdesc="Low-latency audio/video router and processor - Session manager"
@@ -13,7 +13,7 @@ depends=('pipewire>=0.3.39' libpipewire-0.3.so libsystemd.so libdbus-1.so
 optdepends=('pipewire-media-session-docs: Documentation')
 provides=(pipewire-session-manager pipewire-media-session "pipewire-media-session=${epoch}:${pkgver}")
 conflicts=(pipewire-media-session)
-_commit=5fd4b081fecbdb250e2f7f6deb8e6ffaf68f6dca # tags/0.4.0
+_commit=e5d5cf2404786af8bcc40bdb8a2962bef4ec18b6 # tags/0.4.1
 source=("pipewire-media-session::git+https://gitlab.freedesktop.org/pipewire/media-session.git#commit=${_commit}")
 sha256sums=('SKIP')
 
