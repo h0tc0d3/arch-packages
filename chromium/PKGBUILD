@@ -1,5 +1,5 @@
 pkgname=chromium+clang
-pkgver=95.0.4638.69
+pkgver=96.0.4664.45
 pkgrel=1
 _launcher_ver=8
 _gcc_patchset=4
@@ -31,7 +31,6 @@ source=(
   chromium-unbundle-zlib.patch
   chromium-use-oauth2-client-switches-as-default.patch
   chromium-enable-hardware-accelerated-mjpeg.patch
-  chromium-vaapi-i686-fpermissive.patch
   chromium-fix-vaapi-on-intel.patch
   extend-enable-accelerated-video-decode-flag.patch
   sql-make-VirtualCursor-standard-layout-type.patch
@@ -39,22 +38,15 @@ source=(
   chromium-EnumTable-crash.patch
   chromium-std-max-fix.patch
   chromium-gcc11.patch
-  chromium-py3-fixes.patch
-  chromium-libdav1d.patch
   chromium-InkDropHost-crash.patch
   chromium-ffmpeg-4.4.patch
-  chromium-replace-blacklist-with-ignorelist.patch
   chromium-94-ffmpeg-roll.patch
-  chromium-add-a-TODO-about-a-missing-pnacl-flag.patch
-  chromium-use-ffile-compilation-dir.patch
-  chromium-pipewire-do-not-typecheck-the-portal-session_handle.patch
-  chromium-maldoca-depend-on-zlib-instead-of-headers-only.patch
-  chromium-ozone-x11-fix-VA-API.patch
-  chromium-95-harfbuzz-3.patch
+  chromium-unbundle-fix-visibility-of-build-config-freetype.patch
+  chromium-96-xfce-maximize.patch
 )
-sha256sums=('38a37d737c6c9a7198402ca614746b2dbb7abbb793bb2cb02dc796b62a22efe7'
+sha256sums=('488c6ad983ebf7781cb4d704f70496e8aa2165611b46656d7aa62f269c760407'
   '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
-  'bc6373f2470a9e6d947a4deaee0612f730112f69552b933c54bb6e60b82dd6f1'
+  '090af7eab39aade15a1786273f2497d6b4abfaef24279fbf97ce0dd1c38c69aa'
   'e5b651b403e5b161bf9b5e049f8202c444d7f1700411f89d62c20303c80846e0'
   '70a2805a63df15817a3435e983c0350c5d04ff62deffd8214cbb040b904f54a5'
   '15c93da644dbc533a6b74bd7f86a07dc59023c7b369298acd649715b9a9209a5'
@@ -62,7 +54,6 @@ sha256sums=('38a37d737c6c9a7198402ca614746b2dbb7abbb793bb2cb02dc796b62a22efe7'
   'f8dcac3a18e20bee8c54912c1c931e723e97981cc88c8568bd05411812ff6204'
   'e393174d7695d0bafed69e868c5fbfecf07aa6969f3b64596d0bae8b067e1711'
   '043d83d22af1210c2dd7f3ef9e42e6f316556cb9ec3e377deded080025abf9c1'
-  '7a84822b25734547055c2aba265df50ab02f47515b3f7fa0ce821572d4d1f8cd'
   'cfd35f512cd966a1566397c02897d3cb3d89e117b41b8629e2de11329a2c0b17'
   '83900524799e1976ac58ac76f1f9ad5686775aaf264a3f38034ba05e733dc588'
   '2b36574144bb7135512b81f394e53ea80d931ac62148b28c17a70a2869cb501c'
@@ -70,18 +61,11 @@ sha256sums=('38a37d737c6c9a7198402ca614746b2dbb7abbb793bb2cb02dc796b62a22efe7'
   'bb4560e067eb6ff6d4c4a5c4f149d1cc1c9c705a14be4721ead2ebb8ec84ded1'
   '7584ec20a3830f619d80d4bcbc432f6a5b7e733c00d397a5dc831ba093ffcc6b'
   '5690089b8bd6946dfa975b8022531213b882b3396a3c968eeef9836b131725b7'
-  'ff80a8fe749363ff91b063cf641d3527807c48b23efe62f8de1d0a6076b39b11'
-  '97c5c3551c19e5a9b77ac9db5dd3bd396f08acccf735ac5710274bd31e4ce08c'
   '04bba6fb19ea5a4ab3949b65f06c88728a00ab296f42022ece62ca2fa25ec2e7'
   '1a9e074f417f8ffd78bcd6874d8e2e74a239905bf662f76a7755fa40dc476b57'
-  'd3344ba39b8c6ed202334ba7f441c70d81ddf8cdb15af1aa8c16e9a3a75fbb35'
   '56acb6e743d2ab1ed9f3eb01700ade02521769978d03ac43226dec94659b3ace'
-  'd53da216538f2e741a6e048ed103964a91a98e9a3c10c27fdfa34d4692fdc455'
-  '921010cd8fab5f30be76c68b68c9b39fac9e21f4c4133bb709879592bbdf606e'
-  '1889d890ff512a8b82a0f88972e78c78131177d8034750ff53577dfad99b3e3e'
-  '074b32078b9e53fd9b33709ce5785c120eb0346b015a93921897caed4f95f7b6'
-  '93c051af5cea76c196992454e82f6bc49a136e3af1d08ff6628d8034e343ad73'
-  'd9002f1e33390c3e770637773c81be6731584b18f68f086e955bcc3f66f4510d')
+  'd0b17162211dd49e3a58c16d1697e7d8c322dcfd3b7890f0c2f920b711f52293'
+  '849a70225c8ef25012123480227687b9baf6ce91724ca6da500767ec59a17761')
 #noextract=("${source[@]##*/}")
 # Possible replacements are listed in build/linux/unbundle/replace_gn_files.py
 # Keys are the names in the above script; values are the dependencies in Arch
@@ -166,14 +150,13 @@ prepare() {
   # VAAPI
   _patch chromium-enable-hardware-accelerated-mjpeg.patch
   _patch extend-enable-accelerated-video-decode-flag.patch
-  _patch chromium-vaapi-i686-fpermissive.patch
   _patch chromium-fix-vaapi-on-intel.patch
 
-  # Revert transition to -fsanitize-ignorelist (needs newer clang)
-  _rpatch chromium-replace-blacklist-with-ignorelist.patch
-
   # Fixes for building with libstdc++ instead of libc++
-  _patch patches/chromium-95-quiche-include.patch
+  _patch patches/chromium-96-CommandLine-include.patch
+  _patch patches/chromium-96-RestrictedCookieManager-tuple.patch
+  _patch patches/chromium-96-DrmRenderNodePathFinder-include.patch
+  _patch patches/chromium-96-CouponDB-include.patch
 
   # https://chromium-review.googlesource.com/c/chromium/src/+/2862724
   _patch sql-make-VirtualCursor-standard-layout-type.patch
@@ -183,14 +166,12 @@ prepare() {
   _patch chromium-EnumTable-crash.patch
   _patch chromium-std-max-fix.patch # glibc 2.34
   _patch chromium-gcc11.patch
-  _patch chromium-py3-fixes.patch
-  _patch chromium-libdav1d.patch
   _patch chromium-InkDropHost-crash.patch
   _patch chromium-ffmpeg-4.4.patch
-  patch -Np1 -d third_party/webrtc <../chromium-pipewire-do-not-typecheck-the-portal-session_handle.patch
-  _patch chromium-maldoca-depend-on-zlib-instead-of-headers-only.patch
-  _patch chromium-ozone-x11-fix-VA-API.patch
-  _patch chromium-95-harfbuzz-3.patch
+  _patch chromium-96-xfce-maximize.patch
+
+  # Fix desktop sharing via Pipewire with xdg-desktop-portal 1.10
+  _patch chromium-unbundle-fix-visibility-of-build-config-freetype.patch
 
   # Revert change to custom function av_stream_get_first_dts; will need to
   # switch to bundled ffmpeg when we're no longer using ffmpeg 4.4 in Arch
@@ -198,10 +179,6 @@ prepare() {
   # custom function: https://github.com/FFmpeg/FFmpeg/commit/591b88e6787c4
   # https://crbug.com/1251779
   _rpatch chromium-94-ffmpeg-roll.patch
-
-  # Revert addition of -ffile-compilation-dir= (needs newer clang)
-  _rpatch chromium-add-a-TODO-about-a-missing-pnacl-flag.patch
-  _rpatch chromium-use-ffile-compilation-dir.patch
 
   # Fix build with system libpng
   sed -i -e "/USE_SYSTEM_LIBPNG/ a#include \"core/fxcodec/fx_codec_def.h\"" \
@@ -362,12 +339,15 @@ package() {
     chrome_100_percent.pak
     chrome_200_percent.pak
     resources.pak
+    chromedriver
+    chrome_crashpad_handler
     v8_context_snapshot.bin
     # ANGLE
     libEGL.so
     libGLESv2.so
-    chromedriver
-    chrome_crashpad_handler
+    # SwiftShader ICD
+    libvk_swiftshader.so
+    vk_swiftshader_icd.json
   )
 
   if [[ -z ${_system_libs[icu]+set} ]]; then
