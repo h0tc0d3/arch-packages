@@ -8,27 +8,18 @@ Take care, patches only works with 5.14 version of kernel!
 Allow choose processor optimization. **Processor type and features**  --->
   **Processor family** ---> **your processor**.
 
-## 0002-pgo.patch
+## 0002-pgo-5.14.patch and 0002-pgo-5.15+.patch
 
 Add PGO optimizations with clang.
 
-## 0003-amd-next.patch
+## 0003-amd-pstate-dev-v4-and-kernel-next.patch
 
 For Kernel 5.15+
-Next kernels AMD optimizations.
+Add AMD P-States and next kernels AMD optimizations.
 
-## 0004-folio-mm.patch
+## 0004-tcp-optimizations.patch
 
-For Kernel 5.14+
-
-Memory folios is the work that can allow for better system performance like ~7% faster kernel builds as one beneficial metric. For those missing out on the earlier articles on Linux's memory folios, Wilcox sums it up as:
-Managing memory in 4KiB pages is a serious overhead. Many benchmarks benefit from a larger "page size". As an example, an earlier iteration of this idea which used compound pages (and wasn't particularly tuned) got a 7% performance boost when compiling the kernel.
-
-Using compound pages or THPs exposes a weakness of our type system. Functions are often unprepared for compound pages to be passed to them, and may only act on PAGE_SIZE chunks. Even functions which are aware of compound pages may expect a head page, and do the wrong thing if passed a tail page.
-
-We also waste a lot of instructions ensuring that we're not looking at a tail page. Almost every call to PageFoo() contains one or more hidden calls to compound_head(). This also happens for get_page(), put_page() and many more functions.
-
-This patch series uses a new type, the struct folio, to manage memory. It converts enough of the page cache, iomap and XFS to use folios instead of pages, and then adds support for multi-page folios. It passes xfstests (running on XFS) with no regressions compared to v5.14-rc1.
+Future TCP/IP performance optimizations.
 
 ## 0005-bbr2.patch
 
