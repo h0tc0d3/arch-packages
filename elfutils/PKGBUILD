@@ -1,6 +1,6 @@
 pkgbase=elfutils+clang
 pkgname=('debuginfod+clang' 'elfutils+clang' 'libelf+clang')
-pkgver=0.185
+pkgver=0.186
 pkgrel=1
 pkgdesc='Handle ELF object files and DWARF debugging information'
 arch=('x86_64')
@@ -11,11 +11,10 @@ makedepends=('bzip2' 'curl' 'gcc-libs' 'libarchive' 'libmicrohttpd' 'sqlite'
 options=('staticlibs')
 source=(
   "https://sourceware.org/elfutils/ftp/${pkgver}/elfutils-${pkgver}.tar.bz2"{,.sig}
-  clang.patch
 )
-sha256sums=('dc8d3e74ab209465e7f568e1b3bb9a5a142f8656e2b57d10049a73da2ae6b5a6'
+sha256sums=('7f6fb9149b1673d38d9178a0d3e0fb8a1ec4f53a9f4c2ff89469609879641177'
   'SKIP'
-  '674f0d2790ff29e0a477eceb9f62ff8fb287ecc3294d430215af349b5f26a014')
+)
 validpgpkeys=(
   '47CC0331081B8BC6D0FD4DA08370665B57816A6A' # Mark J. Wielaard <mark@klomp.org>
   'EC3CFE88F6CA0788774F5C1D1AA44BE649DE760A' # Mark Wielaard <mjw@gnu.org>
@@ -32,10 +31,11 @@ prepare() {
 
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=1
-    patch --forward --strip=1 --input="${srcdir:?}/clang.patch"
   fi
 
   autoreconf -fiv
+
+  cp -av "${srcdir:?}/elfutils-${pkgver}" "${srcdir:?}/elfutils-test-${pkgver}"
 
 }
 
@@ -49,13 +49,11 @@ build() {
   if [[ ${_llvm} -eq 1 ]]; then
 
     sed -i -e 's/ARGP_PROGRAM_BUG_ADDRESS_DEF\s=\sPACKAGE_BUGREPORT;//' debuginfod/debuginfod.cxx
-    CFLAGS="${CFLAGS} -Wno-xor-used-as-pow -Wno-gnu-variable-sized-type-not-at-end"
-    CXXFLAGS="${CXXFLAGS} -Wno-xor-used-as-pow -Wno-gnu-variable-sized-type-not-at-end"
+    CFLAGS="${CFLAGS} -Wno-xor-used-as-pow -Wno-gnu-variable-sized-type-not-at-end -Wno-unused-but-set-parameter -Wno-unused-const-variable"
+    CXXFLAGS="${CXXFLAGS} -Wno-xor-used-as-pow -Wno-gnu-variable-sized-type-not-at-end -Wno-unused-but-set-parameter -Wno-unused-const-variable"
     LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
-
-  CFLAGS="${CFLAGS} -g" # required for test-suite success
 
   ./configure \
     --prefix=/usr \
@@ -65,17 +63,28 @@ build() {
 
   make
 
+  cd "${srcdir:?}/elfutils-test-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/elfutils-test-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  CFLAGS="${CFLAGS} -g" # required for test-suite success
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --program-prefix="eu-" \
+    --enable-deterministic-archives
+
 }
 
 check() {
 
-  cd "${srcdir:?}/elfutils-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/elfutils-${pkgver} directory! Check Failed! \E[0m"
+  cd "${srcdir:?}/elfutils-test-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/elfutils-test-${pkgver} directory! Check Failed! \E[0m"
     exit 1
   )
 
-  # Some tests fail due to limited capabilities of build chroot
-  make check || echo "Known problem: The build environment might lack enough resources."
+ #make check
 
 }
 
@@ -122,6 +131,7 @@ package_elfutils+clang() {
   rm -rvf "${pkgdir:?}/usr/bin/debuginfod"* \
     "${pkgdir:?}/usr/share/man/man1/debuginfod"* \
     "${pkgdir:?}/usr/share/man/man3/debuginfod"* \
+    "${pkgdir}/usr/share/man/man7/" \
     "${pkgdir:?}/usr/share/man/man8/" \
     "${pkgdir:?}/etc"
 
