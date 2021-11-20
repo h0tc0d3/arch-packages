@@ -15,7 +15,6 @@ libxcrypt
 util-linux
 elfutils
 libedit
-audit
 musl
 snappy
 +zlib-ng
@@ -149,6 +148,7 @@ gperftools
 openssl
 libsasl
 openldap
+audit
 libtirpc
 libnsl
 libuv
