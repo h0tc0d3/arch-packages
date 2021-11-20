@@ -1,7 +1,7 @@
 pkgbase=audit+clang
 pkgname=('audit+clang' 'python-audit+clang')
 pkgver=3.0.6
-pkgrel=1
+pkgrel=2
 pkgdesc='Userspace components of the audit framework'
 url='https://people.redhat.com/sgrubb/audit'
 arch=('x86_64')
