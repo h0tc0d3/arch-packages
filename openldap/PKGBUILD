@@ -1,7 +1,7 @@
 pkgbase=openldap+clang
 pkgname=('openldap+clang' 'libldap+clang')
 pkgver=2.6.0
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 url="https://www.openldap.org/"
 license=('custom')
