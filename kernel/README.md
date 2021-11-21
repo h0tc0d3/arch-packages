@@ -17,6 +17,10 @@ Add PGO optimizations with clang.
 For Kernel 5.15+
 Add AMD P-States and next kernels AMD optimizations.
 
+## 0003-amd-perf.patch
+
+Add deep branch sampling for perf on AMD Fam19h.
+
 ## 0004-tcp-optimizations.patch
 
 Future TCP/IP performance optimizations.

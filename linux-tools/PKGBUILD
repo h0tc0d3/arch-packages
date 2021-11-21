@@ -12,7 +12,7 @@ pkgname=(
   'x86_energy_perf_policy+clang'
 )
 pkgver=5.15.3
-pkgrel=1
+pkgrel=2
 license=('GPL2')
 arch=('x86_64')
 url='https://www.kernel.org'
@@ -47,6 +47,7 @@ source=(
   'cpupower.service'
   'usbipd.service'
   0001-tools-perf-Use-long-running-addr2line-per-dso.patch
+  0002-amd-perf.patch
 )
 validpgpkeys=(
   'ABAF11C65A2970B130ABE3C479BE3E4300411886' # Linus Torvalds
@@ -58,7 +59,8 @@ sha256sums=('a9f3dae18387b5a315bda66004cd10777a7dc5da11517214e4fd016fd5fc05e6'
   'b692f4859ed3fd9831a058a450a84d8c409bf7e3e45aac1c2896a14bb83f3d7a'
   '42d2ec9f1d9cc255ee7945a27301478364ef482f5a6ddfc960189f03725ccec2'
   '2e187734d8aec58a3046d79883510d779aa93fb3ab20bd3132c1a607ebe5498f'
-  'c75a7ed4198dab166f1f6b1511515dbd69ef858917f3f914da06813dccc9666a')
+  'c75a7ed4198dab166f1f6b1511515dbd69ef858917f3f914da06813dccc9666a'
+  'a3464786fa020ab72d0c7b49f93a8784acb176d3fb72261ab17329bcfe10748a')
 
 _llvm=0
 
