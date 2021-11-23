@@ -1,7 +1,7 @@
-From 50f74b002b6ec7bcfce63f469ed4ac670c8338aa Mon Sep 17 00:00:00 2001
+From cf30f6a5f0c60ec98a637b836bef6915f602c6ab Mon Sep 17 00:00:00 2001
 From: Nick Terrell <terrelln@fb.com>
 Date: Fri, 11 Sep 2020 16:49:00 -0700
-Subject: [PATCH] lib: zstd: Add kernel-specific API
+Subject: lib: zstd: Add kernel-specific API
 
 This patch:
 - Moves `include/linux/zstd.h` -> `include/linux/zstd_lib.h`
@@ -22,23 +22,27 @@ zstd to version 1.4.10. Since the upstream zstd API is no longer exposed
 to callers, the update can happen transparently.
 
 Signed-off-by: Nick Terrell <terrelln@fb.com>
+Tested By: Paul Jones <paul@pauljones.id.au>
+Tested-by: Oleksandr Natalenko <oleksandr@natalenko.name>
+Tested-by: Sedat Dilek <sedat.dilek@gmail.com> # LLVM/Clang v13.0.0 on x86-64
+Tested-by: Jean-Denis Girard <jd.girard@sysnux.pf>
 ---
  crypto/zstd.c              |   28 +-
- fs/btrfs/zstd.c            |   68 +-
+ fs/btrfs/zstd.c            |   68 +--
  fs/f2fs/compress.c         |   56 +-
  fs/f2fs/super.c            |    2 +-
  fs/pstore/platform.c       |    2 +-
  fs/squashfs/zstd_wrapper.c |   16 +-
- include/linux/zstd.h       | 1243 ++++++++----------------------------
- include/linux/zstd_lib.h   | 1157 +++++++++++++++++++++++++++++++++
+ include/linux/zstd.h       | 1243 ++++++++++----------------------------------
+ include/linux/zstd_lib.h   | 1157 +++++++++++++++++++++++++++++++++++++++++
  lib/decompress_unzstd.c    |   42 +-
- lib/zstd/compress.c        |  123 ++--
+ lib/zstd/compress.c        |  123 +++--
  lib/zstd/decompress.c      |  112 ++--
  11 files changed, 1691 insertions(+), 1158 deletions(-)
  create mode 100644 include/linux/zstd_lib.h
 
 diff --git a/crypto/zstd.c b/crypto/zstd.c
-index 1a3309f066f7e7..154a969c83a822 100644
+index 1a3309f066f7e..154a969c83a82 100644
 --- a/crypto/zstd.c
 +++ b/crypto/zstd.c
 @@ -18,22 +18,22 @@
@@ -79,7 +83,7 @@ index 1a3309f066f7e7..154a969c83a822 100644
  	if (!ctx->cctx) {
  		ret = -EINVAL;
  		goto out_free;
-@@ -56,7 +56,7 @@ static int zstd_comp_init(struct zstd_ctx *ctx)
+@@ -56,7 +56,7 @@ out_free:
  static int zstd_decomp_init(struct zstd_ctx *ctx)
  {
  	int ret = 0;
@@ -123,7 +127,7 @@ index 1a3309f066f7e7..154a969c83a822 100644
  	*dlen = out_len;
  	return 0;
 diff --git a/fs/btrfs/zstd.c b/fs/btrfs/zstd.c
-index 56dce9f00988c7..38193b4a57dae4 100644
+index f06b68040352e..fc42dd0badd7c 100644
 --- a/fs/btrfs/zstd.c
 +++ b/fs/btrfs/zstd.c
 @@ -28,10 +28,10 @@
@@ -213,7 +217,7 @@ index 56dce9f00988c7..38193b4a57dae4 100644
  			ret = -EIO;
  			goto out;
  		}
-@@ -485,10 +485,10 @@ int zstd_compress_pages(struct list_head *ws, struct address_space *mapping,
+@@ -487,10 +487,10 @@ int zstd_compress_pages(struct list_head *ws, struct address_space *mapping,
  	while (1) {
  		size_t ret2;
  
@@ -228,7 +232,7 @@ index 56dce9f00988c7..38193b4a57dae4 100644
  			ret = -EIO;
  			goto out;
  		}
-@@ -541,17 +541,17 @@ int zstd_decompress_bio(struct list_head *ws, struct compressed_bio *cb)
+@@ -548,17 +548,17 @@ int zstd_decompress_bio(struct list_head *ws, struct compressed_bio *cb)
  	struct workspace *workspace = list_entry(ws, struct workspace, list);
  	struct page **pages_in = cb->compressed_pages;
  	size_t srclen = cb->compressed_len;
@@ -249,7 +253,7 @@ index 56dce9f00988c7..38193b4a57dae4 100644
  		ret = -EIO;
  		goto done;
  	}
-@@ -567,11 +567,11 @@ int zstd_decompress_bio(struct list_head *ws, struct compressed_bio *cb)
+@@ -574,11 +574,11 @@ int zstd_decompress_bio(struct list_head *ws, struct compressed_bio *cb)
  	while (1) {
  		size_t ret2;
  
@@ -265,7 +269,7 @@ index 56dce9f00988c7..38193b4a57dae4 100644
  			ret = -EIO;
  			goto done;
  		}
-@@ -615,16 +615,16 @@ int zstd_decompress(struct list_head *ws, unsigned char *data_in,
+@@ -624,16 +624,16 @@ int zstd_decompress(struct list_head *ws, unsigned char *data_in,
  		size_t destlen)
  {
  	struct workspace *workspace = list_entry(ws, struct workspace, list);
@@ -285,7 +289,7 @@ index 56dce9f00988c7..38193b4a57dae4 100644
  		ret = -EIO;
  		goto finish;
  	}
-@@ -648,15 +648,15 @@ int zstd_decompress(struct list_head *ws, unsigned char *data_in,
+@@ -657,15 +657,15 @@ int zstd_decompress(struct list_head *ws, unsigned char *data_in,
  
  		/* Check if the frame is over and we still need more input */
  		if (ret2 == 0) {
@@ -307,7 +311,7 @@ index 56dce9f00988c7..38193b4a57dae4 100644
  			goto finish;
  		}
 diff --git a/fs/f2fs/compress.c b/fs/f2fs/compress.c
-index 20a083dc904231..b8d70deddfb73b 100644
+index 20a083dc90423..b8d70deddfb73 100644
 --- a/fs/f2fs/compress.c
 +++ b/fs/f2fs/compress.c
 @@ -336,8 +336,8 @@ static const struct f2fs_compress_ops f2fs_lz4_ops = {
@@ -441,7 +445,7 @@ index 20a083dc904231..b8d70deddfb73b 100644
  	}
  
 diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index cf049a042482b9..78b64bf5e0f7c1 100644
+index cf049a042482b..78b64bf5e0f7c 100644
 --- a/fs/f2fs/super.c
 +++ b/fs/f2fs/super.c
 @@ -592,7 +592,7 @@ static int f2fs_set_zstd_level(struct f2fs_sb_info *sbi, const char *str)
@@ -454,7 +458,7 @@ index cf049a042482b9..78b64bf5e0f7c1 100644
  		return -EINVAL;
  	}
 diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index b9614db48b1def..f243cb5e6a4fb5 100644
+index b9614db48b1de..f243cb5e6a4fb 100644
 --- a/fs/pstore/platform.c
 +++ b/fs/pstore/platform.c
 @@ -218,7 +218,7 @@ static int zbufsize_842(size_t size)
@@ -467,7 +471,7 @@ index b9614db48b1def..f243cb5e6a4fb5 100644
  #endif
  
 diff --git a/fs/squashfs/zstd_wrapper.c b/fs/squashfs/zstd_wrapper.c
-index 0015cf8b55820b..c40445dbf38c77 100644
+index 0015cf8b55820..c40445dbf38c7 100644
 --- a/fs/squashfs/zstd_wrapper.c
 +++ b/fs/squashfs/zstd_wrapper.c
 @@ -34,7 +34,7 @@ static void *zstd_init(struct squashfs_sb_info *msblk, void *buff)
@@ -518,7 +522,7 @@ index 0015cf8b55820b..c40445dbf38c77 100644
  			break;
  		}
 diff --git a/include/linux/zstd.h b/include/linux/zstd.h
-index e87f78c9b19ccf..9fbc7729b0a0d6 100644
+index e87f78c9b19cc..9fbc7729b0a0d 100644
 --- a/include/linux/zstd.h
 +++ b/include/linux/zstd.h
 @@ -1,138 +1,96 @@
@@ -1943,7 +1947,7 @@ index e87f78c9b19ccf..9fbc7729b0a0d6 100644
 +#endif  /* LINUX_ZSTD_H */
 diff --git a/include/linux/zstd_lib.h b/include/linux/zstd_lib.h
 new file mode 100644
-index 00000000000000..13151c34f725f2
+index 0000000000000..13151c34f725f
 --- /dev/null
 +++ b/include/linux/zstd_lib.h
 @@ -0,0 +1,1157 @@
@@ -3105,7 +3109,7 @@ index 00000000000000..13151c34f725f2
 +
 +#endif  /* ZSTD_H */
 diff --git a/lib/decompress_unzstd.c b/lib/decompress_unzstd.c
-index 6b629ab31c1eb7..c076d6f050649f 100644
+index 6b629ab31c1eb..c076d6f050649 100644
 --- a/lib/decompress_unzstd.c
 +++ b/lib/decompress_unzstd.c
 @@ -91,11 +91,15 @@
@@ -3230,7 +3234,7 @@ index 6b629ab31c1eb7..c076d6f050649f 100644
  		if (err)
  			goto out;
 diff --git a/lib/zstd/compress.c b/lib/zstd/compress.c
-index b080264ed3adf3..57aaa64306a01d 100644
+index b080264ed3adf..57aaa64306a01 100644
 --- a/lib/zstd/compress.c
 +++ b/lib/zstd/compress.c
 @@ -3443,43 +3443,92 @@ ZSTD_parameters ZSTD_getParams(int compressionLevel, unsigned long long srcSize,
@@ -3364,7 +3368,7 @@ index b080264ed3adf3..57aaa64306a01d 100644
  MODULE_LICENSE("Dual BSD/GPL");
  MODULE_DESCRIPTION("Zstd Compressor");
 diff --git a/lib/zstd/decompress.c b/lib/zstd/decompress.c
-index 66cd487a326a81..02e92c2cbf4fc5 100644
+index 66cd487a326a8..02e92c2cbf4fc 100644
 --- a/lib/zstd/decompress.c
 +++ b/lib/zstd/decompress.c
 @@ -2490,42 +2490,82 @@ size_t ZSTD_decompressStream(ZSTD_DStream *zds, ZSTD_outBuffer *output, ZSTD_inB
@@ -3486,11 +3490,14 @@ index 66cd487a326a81..02e92c2cbf4fc5 100644
  
  MODULE_LICENSE("Dual BSD/GPL");
  MODULE_DESCRIPTION("Zstd Decompressor");
+-- 
+cgit 1.2.3-1.el7
 
- From bc6b1675dd70e651248071c407d4181e8fe7f681 Mon Sep 17 00:00:00 2001
+
+From 2479b523898633768e28796238534af31fbd6846 Mon Sep 17 00:00:00 2001
 From: Nick Terrell <terrelln@fb.com>
 Date: Mon, 14 Sep 2020 12:54:12 -0700
-Subject: [PATCH] lib: zstd: Add decompress_sources.h for decompress_unzstd
+Subject: lib: zstd: Add decompress_sources.h for decompress_unzstd
 
 Adds decompress_sources.h which includes every .c file necessary for
 zstd decompression. This is used in decompress_unzstd.c so the internal
@@ -3500,6 +3507,10 @@ This allows us to upgrade the zstd library version without modifying any
 callers. Instead we just need to update decompress_sources.h.
 
 Signed-off-by: Nick Terrell <terrelln@fb.com>
+Tested By: Paul Jones <paul@pauljones.id.au>
+Tested-by: Oleksandr Natalenko <oleksandr@natalenko.name>
+Tested-by: Sedat Dilek <sedat.dilek@gmail.com> # LLVM/Clang v13.0.0 on x86-64
+Tested-by: Jean-Denis Girard <jd.girard@sysnux.pf>
 ---
  lib/decompress_unzstd.c       |  6 +-----
  lib/zstd/decompress_sources.h | 23 +++++++++++++++++++++++
@@ -3507,7 +3518,7 @@ Signed-off-by: Nick Terrell <terrelln@fb.com>
  create mode 100644 lib/zstd/decompress_sources.h
 
 diff --git a/lib/decompress_unzstd.c b/lib/decompress_unzstd.c
-index c076d6f050649f..a512b99ae16a93 100644
+index c076d6f050649..a512b99ae16a9 100644
 --- a/lib/decompress_unzstd.c
 +++ b/lib/decompress_unzstd.c
 @@ -68,11 +68,7 @@
@@ -3525,7 +3536,7 @@ index c076d6f050649f..a512b99ae16a93 100644
  #include <linux/decompress/mm.h>
 diff --git a/lib/zstd/decompress_sources.h b/lib/zstd/decompress_sources.h
 new file mode 100644
-index 00000000000000..9ba367b4414934
+index 0000000000000..9ba367b441493
 --- /dev/null
 +++ b/lib/zstd/decompress_sources.h
 @@ -0,0 +1,23 @@
@@ -3552,11 +3563,14 @@ index 00000000000000..9ba367b4414934
 +#include "huf_decompress.c"
 +#include "zstd_common.c"
 +#include "decompress.c"
+-- 
+cgit 1.2.3-1.el7
 
-From 7ca74fdcd5ed5783b46ea2fca87cea3d36f1b68b Mon Sep 17 00:00:00 2001
+
+From e0c1b49f5b674cca7b10549c53b3791d0bbc90a8 Mon Sep 17 00:00:00 2001
 From: Nick Terrell <terrelln@fb.com>
 Date: Fri, 11 Sep 2020 16:37:08 -0700
-Subject: [PATCH] lib: zstd: Upgrade to latest upstream zstd version 1.4.10
+Subject: lib: zstd: Upgrade to latest upstream zstd version 1.4.10
 
 Upgrade to the latest upstream zstd version 1.4.10.
 
@@ -3625,76 +3639,80 @@ zstd_compress_module.c and zstd_decompress_module.c.
 [1] https://github.com/terrelln/linux/commit/e0fa481d0e3df26918da0a13749740a1f6777574
 
 Signed-off-by: Nick Terrell <terrelln@fb.com>
+Tested By: Paul Jones <paul@pauljones.id.au>
+Tested-by: Oleksandr Natalenko <oleksandr@natalenko.name>
+Tested-by: Sedat Dilek <sedat.dilek@gmail.com> # LLVM/Clang v13.0.0 on x86-64
+Tested-by: Jean-Denis Girard <jd.girard@sysnux.pf>
 ---
- include/linux/zstd.h                          |   13 +-
- include/linux/zstd_errors.h                   |   77 +
- include/linux/zstd_lib.h                      | 3367 +++++++----
- lib/zstd/Makefile                             |   46 +-
- lib/zstd/bitstream.h                          |  380 --
- lib/zstd/common/bitstream.h                   |  437 ++
- lib/zstd/common/compiler.h                    |  170 +
- lib/zstd/common/cpu.h                         |  194 +
- lib/zstd/common/debug.c                       |   24 +
- lib/zstd/common/debug.h                       |  101 +
- lib/zstd/common/entropy_common.c              |  357 ++
- lib/zstd/common/error_private.c               |   56 +
- lib/zstd/common/error_private.h               |   66 +
- lib/zstd/common/fse.h                         |  710 +++
- lib/zstd/common/fse_decompress.c              |  390 ++
- lib/zstd/common/huf.h                         |  356 ++
- lib/zstd/common/mem.h                         |  259 +
- lib/zstd/common/zstd_common.c                 |   83 +
- lib/zstd/common/zstd_deps.h                   |  125 +
- lib/zstd/common/zstd_internal.h               |  450 ++
- lib/zstd/compress.c                           | 3534 ------------
- lib/zstd/compress/fse_compress.c              |  625 ++
- lib/zstd/compress/hist.c                      |  165 +
- lib/zstd/compress/hist.h                      |   75 +
- lib/zstd/compress/huf_compress.c              |  905 +++
- lib/zstd/compress/zstd_compress.c             | 5109 +++++++++++++++++
- lib/zstd/compress/zstd_compress_internal.h    | 1188 ++++
- lib/zstd/compress/zstd_compress_literals.c    |  158 +
- lib/zstd/compress/zstd_compress_literals.h    |   29 +
- lib/zstd/compress/zstd_compress_sequences.c   |  439 ++
- lib/zstd/compress/zstd_compress_sequences.h   |   54 +
- lib/zstd/compress/zstd_compress_superblock.c  |  850 +++
- lib/zstd/compress/zstd_compress_superblock.h  |   32 +
- lib/zstd/compress/zstd_cwksp.h                |  482 ++
- lib/zstd/compress/zstd_double_fast.c          |  519 ++
- lib/zstd/compress/zstd_double_fast.h          |   32 +
- lib/zstd/compress/zstd_fast.c                 |  496 ++
- lib/zstd/compress/zstd_fast.h                 |   31 +
- lib/zstd/compress/zstd_lazy.c                 | 1412 +++++
- lib/zstd/compress/zstd_lazy.h                 |   81 +
- lib/zstd/compress/zstd_ldm.c                  |  686 +++
- lib/zstd/compress/zstd_ldm.h                  |  110 +
- lib/zstd/compress/zstd_ldm_geartab.h          |  103 +
- lib/zstd/compress/zstd_opt.c                  | 1345 +++++
- lib/zstd/compress/zstd_opt.h                  |   50 +
- lib/zstd/decompress.c                         | 2571 ---------
- lib/zstd/decompress/huf_decompress.c          | 1206 ++++
- lib/zstd/decompress/zstd_ddict.c              |  241 +
- lib/zstd/decompress/zstd_ddict.h              |   44 +
- lib/zstd/decompress/zstd_decompress.c         | 2082 +++++++
- lib/zstd/decompress/zstd_decompress_block.c   | 1540 +++++
- lib/zstd/decompress/zstd_decompress_block.h   |   62 +
- .../decompress/zstd_decompress_internal.h     |  202 +
- lib/zstd/decompress_sources.h                 |   15 +-
- lib/zstd/entropy_common.c                     |  243 -
- lib/zstd/error_private.h                      |   53 -
- lib/zstd/fse.h                                |  575 --
- lib/zstd/fse_compress.c                       |  795 ---
- lib/zstd/fse_decompress.c                     |  325 --
- lib/zstd/huf.h                                |  212 -
- lib/zstd/huf_compress.c                       |  773 ---
- lib/zstd/huf_decompress.c                     |  960 ----
- lib/zstd/mem.h                                |  151 -
- lib/zstd/zstd_common.c                        |   75 -
- lib/zstd/zstd_compress_module.c               |  160 +
- lib/zstd/zstd_decompress_module.c             |  105 +
- lib/zstd/zstd_internal.h                      |  273 -
- lib/zstd/zstd_opt.h                           | 1014 ----
- 68 files changed, 26855 insertions(+), 12993 deletions(-)
+ include/linux/zstd.h                           |   13 +-
+ include/linux/zstd_errors.h                    |   77 +
+ include/linux/zstd_lib.h                       | 3367 +++++++++++-----
+ lib/zstd/Makefile                              |   46 +-
+ lib/zstd/bitstream.h                           |  380 --
+ lib/zstd/common/bitstream.h                    |  437 ++
+ lib/zstd/common/compiler.h                     |  170 +
+ lib/zstd/common/cpu.h                          |  194 +
+ lib/zstd/common/debug.c                        |   24 +
+ lib/zstd/common/debug.h                        |  101 +
+ lib/zstd/common/entropy_common.c               |  357 ++
+ lib/zstd/common/error_private.c                |   56 +
+ lib/zstd/common/error_private.h                |   66 +
+ lib/zstd/common/fse.h                          |  710 ++++
+ lib/zstd/common/fse_decompress.c               |  390 ++
+ lib/zstd/common/huf.h                          |  356 ++
+ lib/zstd/common/mem.h                          |  259 ++
+ lib/zstd/common/zstd_common.c                  |   83 +
+ lib/zstd/common/zstd_deps.h                    |  125 +
+ lib/zstd/common/zstd_internal.h                |  450 +++
+ lib/zstd/compress.c                            | 3534 ----------------
+ lib/zstd/compress/fse_compress.c               |  625 +++
+ lib/zstd/compress/hist.c                       |  165 +
+ lib/zstd/compress/hist.h                       |   75 +
+ lib/zstd/compress/huf_compress.c               |  905 +++++
+ lib/zstd/compress/zstd_compress.c              | 5109 ++++++++++++++++++++++++
+ lib/zstd/compress/zstd_compress_internal.h     | 1188 ++++++
+ lib/zstd/compress/zstd_compress_literals.c     |  158 +
+ lib/zstd/compress/zstd_compress_literals.h     |   29 +
+ lib/zstd/compress/zstd_compress_sequences.c    |  439 ++
+ lib/zstd/compress/zstd_compress_sequences.h    |   54 +
+ lib/zstd/compress/zstd_compress_superblock.c   |  850 ++++
+ lib/zstd/compress/zstd_compress_superblock.h   |   32 +
+ lib/zstd/compress/zstd_cwksp.h                 |  482 +++
+ lib/zstd/compress/zstd_double_fast.c           |  519 +++
+ lib/zstd/compress/zstd_double_fast.h           |   32 +
+ lib/zstd/compress/zstd_fast.c                  |  496 +++
+ lib/zstd/compress/zstd_fast.h                  |   31 +
+ lib/zstd/compress/zstd_lazy.c                  | 1414 +++++++
+ lib/zstd/compress/zstd_lazy.h                  |   81 +
+ lib/zstd/compress/zstd_ldm.c                   |  686 ++++
+ lib/zstd/compress/zstd_ldm.h                   |  110 +
+ lib/zstd/compress/zstd_ldm_geartab.h           |  103 +
+ lib/zstd/compress/zstd_opt.c                   | 1346 +++++++
+ lib/zstd/compress/zstd_opt.h                   |   50 +
+ lib/zstd/decompress.c                          | 2571 ------------
+ lib/zstd/decompress/huf_decompress.c           | 1206 ++++++
+ lib/zstd/decompress/zstd_ddict.c               |  241 ++
+ lib/zstd/decompress/zstd_ddict.h               |   44 +
+ lib/zstd/decompress/zstd_decompress.c          | 2085 ++++++++++
+ lib/zstd/decompress/zstd_decompress_block.c    | 1540 +++++++
+ lib/zstd/decompress/zstd_decompress_block.h    |   62 +
+ lib/zstd/decompress/zstd_decompress_internal.h |  202 +
+ lib/zstd/decompress_sources.h                  |   15 +-
+ lib/zstd/entropy_common.c                      |  243 --
+ lib/zstd/error_private.h                       |   53 -
+ lib/zstd/fse.h                                 |  575 ---
+ lib/zstd/fse_compress.c                        |  795 ----
+ lib/zstd/fse_decompress.c                      |  325 --
+ lib/zstd/huf.h                                 |  212 -
+ lib/zstd/huf_compress.c                        |  773 ----
+ lib/zstd/huf_decompress.c                      |  960 -----
+ lib/zstd/mem.h                                 |  151 -
+ lib/zstd/zstd_common.c                         |   75 -
+ lib/zstd/zstd_compress_module.c                |  160 +
+ lib/zstd/zstd_decompress_module.c              |  105 +
+ lib/zstd/zstd_internal.h                       |  273 --
+ lib/zstd/zstd_opt.h                            | 1014 -----
+ 68 files changed, 26861 insertions(+), 12993 deletions(-)
  create mode 100644 include/linux/zstd_errors.h
  delete mode 100644 lib/zstd/bitstream.h
  create mode 100644 lib/zstd/common/bitstream.h
@@ -3761,7 +3779,7 @@ Signed-off-by: Nick Terrell <terrelln@fb.com>
  delete mode 100644 lib/zstd/zstd_opt.h
 
 diff --git a/include/linux/zstd.h b/include/linux/zstd.h
-index 9fbc7729b0a0d6..113408eef6ecef 100644
+index 9fbc7729b0a0d..113408eef6ece 100644
 --- a/include/linux/zstd.h
 +++ b/include/linux/zstd.h
 @@ -1,4 +1,4 @@
@@ -3801,7 +3819,7 @@ index 9fbc7729b0a0d6..113408eef6ecef 100644
   * zstd_get_frame_header() - extracts parameters from a zstd or skippable frame
 diff --git a/include/linux/zstd_errors.h b/include/linux/zstd_errors.h
 new file mode 100644
-index 00000000000000..58b6dd45a969f7
+index 0000000000000..58b6dd45a969f
 --- /dev/null
 +++ b/include/linux/zstd_errors.h
 @@ -0,0 +1,77 @@
@@ -3883,7 +3901,7 @@ index 00000000000000..58b6dd45a969f7
 +
 +#endif /* ZSTD_ERRORS_H_398273423 */
 diff --git a/include/linux/zstd_lib.h b/include/linux/zstd_lib.h
-index 13151c34f725f2..b8c7dbf98390fb 100644
+index 13151c34f725f..b8c7dbf98390f 100644
 --- a/include/linux/zstd_lib.h
 +++ b/include/linux/zstd_lib.h
 @@ -2,1156 +2,2431 @@
@@ -7365,7 +7383,7 @@ index 13151c34f725f2..b8c7dbf98390fb 100644
 -
 -#endif  /* ZSTD_H */
 diff --git a/lib/zstd/Makefile b/lib/zstd/Makefile
-index f5d778e7e5c72d..65218ec5b8f2a4 100644
+index f5d778e7e5c72..65218ec5b8f2a 100644
 --- a/lib/zstd/Makefile
 +++ b/lib/zstd/Makefile
 @@ -1,10 +1,46 @@
@@ -7422,7 +7440,7 @@ index f5d778e7e5c72d..65218ec5b8f2a4 100644
 +		decompress/zstd_decompress_block.o \
 diff --git a/lib/zstd/bitstream.h b/lib/zstd/bitstream.h
 deleted file mode 100644
-index 5d6343c1a909ed..00000000000000
+index 5d6343c1a909e..0000000000000
 --- a/lib/zstd/bitstream.h
 +++ /dev/null
 @@ -1,380 +0,0 @@
@@ -7808,7 +7826,7 @@ index 5d6343c1a909ed..00000000000000
 -#endif /* BITSTREAM_H_MODULE */
 diff --git a/lib/zstd/common/bitstream.h b/lib/zstd/common/bitstream.h
 new file mode 100644
-index 00000000000000..28248abe8612a9
+index 0000000000000..28248abe8612a
 --- /dev/null
 +++ b/lib/zstd/common/bitstream.h
 @@ -0,0 +1,437 @@
@@ -8251,7 +8269,7 @@ index 00000000000000..28248abe8612a9
 +#endif /* BITSTREAM_H_MODULE */
 diff --git a/lib/zstd/common/compiler.h b/lib/zstd/common/compiler.h
 new file mode 100644
-index 00000000000000..a1a051e4bce66c
+index 0000000000000..a1a051e4bce66
 --- /dev/null
 +++ b/lib/zstd/common/compiler.h
 @@ -0,0 +1,170 @@
@@ -8427,7 +8445,7 @@ index 00000000000000..a1a051e4bce66c
 +#endif /* ZSTD_COMPILER_H */
 diff --git a/lib/zstd/common/cpu.h b/lib/zstd/common/cpu.h
 new file mode 100644
-index 00000000000000..0db7b42407eea2
+index 0000000000000..0db7b42407eea
 --- /dev/null
 +++ b/lib/zstd/common/cpu.h
 @@ -0,0 +1,194 @@
@@ -8627,7 +8645,7 @@ index 00000000000000..0db7b42407eea2
 +#endif /* ZSTD_COMMON_CPU_H */
 diff --git a/lib/zstd/common/debug.c b/lib/zstd/common/debug.c
 new file mode 100644
-index 00000000000000..bb863c9ea61648
+index 0000000000000..bb863c9ea6164
 --- /dev/null
 +++ b/lib/zstd/common/debug.c
 @@ -0,0 +1,24 @@
@@ -8657,7 +8675,7 @@ index 00000000000000..bb863c9ea61648
 +int g_debuglevel = DEBUGLEVEL;
 diff --git a/lib/zstd/common/debug.h b/lib/zstd/common/debug.h
 new file mode 100644
-index 00000000000000..6dd88d1fbd02ca
+index 0000000000000..6dd88d1fbd02c
 --- /dev/null
 +++ b/lib/zstd/common/debug.h
 @@ -0,0 +1,101 @@
@@ -8764,7 +8782,7 @@ index 00000000000000..6dd88d1fbd02ca
 +#endif /* DEBUG_H_12987983217 */
 diff --git a/lib/zstd/common/entropy_common.c b/lib/zstd/common/entropy_common.c
 new file mode 100644
-index 00000000000000..53b47a2b52ff21
+index 0000000000000..53b47a2b52ff2
 --- /dev/null
 +++ b/lib/zstd/common/entropy_common.c
 @@ -0,0 +1,357 @@
@@ -9127,7 +9145,7 @@ index 00000000000000..53b47a2b52ff21
 +}
 diff --git a/lib/zstd/common/error_private.c b/lib/zstd/common/error_private.c
 new file mode 100644
-index 00000000000000..6d1135f8c37330
+index 0000000000000..6d1135f8c3733
 --- /dev/null
 +++ b/lib/zstd/common/error_private.c
 @@ -0,0 +1,56 @@
@@ -9189,7 +9207,7 @@ index 00000000000000..6d1135f8c37330
 +}
 diff --git a/lib/zstd/common/error_private.h b/lib/zstd/common/error_private.h
 new file mode 100644
-index 00000000000000..d14e686adf9514
+index 0000000000000..d14e686adf951
 --- /dev/null
 +++ b/lib/zstd/common/error_private.h
 @@ -0,0 +1,66 @@
@@ -9261,7 +9279,7 @@ index 00000000000000..d14e686adf9514
 +#endif /* ERROR_H_MODULE */
 diff --git a/lib/zstd/common/fse.h b/lib/zstd/common/fse.h
 new file mode 100644
-index 00000000000000..0bb174c2c36775
+index 0000000000000..0bb174c2c3677
 --- /dev/null
 +++ b/lib/zstd/common/fse.h
 @@ -0,0 +1,710 @@
@@ -9977,7 +9995,7 @@ index 00000000000000..0bb174c2c36775
 +
 diff --git a/lib/zstd/common/fse_decompress.c b/lib/zstd/common/fse_decompress.c
 new file mode 100644
-index 00000000000000..2c8bbe3e4c1489
+index 0000000000000..2c8bbe3e4c148
 --- /dev/null
 +++ b/lib/zstd/common/fse_decompress.c
 @@ -0,0 +1,390 @@
@@ -10373,7 +10391,7 @@ index 00000000000000..2c8bbe3e4c1489
 +#endif   /* FSE_COMMONDEFS_ONLY */
 diff --git a/lib/zstd/common/huf.h b/lib/zstd/common/huf.h
 new file mode 100644
-index 00000000000000..88c5586646aa51
+index 0000000000000..88c5586646aa5
 --- /dev/null
 +++ b/lib/zstd/common/huf.h
 @@ -0,0 +1,356 @@
@@ -10735,7 +10753,7 @@ index 00000000000000..88c5586646aa51
 +
 diff --git a/lib/zstd/common/mem.h b/lib/zstd/common/mem.h
 new file mode 100644
-index 00000000000000..dcdd586a9fd915
+index 0000000000000..dcdd586a9fd91
 --- /dev/null
 +++ b/lib/zstd/common/mem.h
 @@ -0,0 +1,259 @@
@@ -11000,7 +11018,7 @@ index 00000000000000..dcdd586a9fd915
 +#endif /* MEM_H_MODULE */
 diff --git a/lib/zstd/common/zstd_common.c b/lib/zstd/common/zstd_common.c
 new file mode 100644
-index 00000000000000..3d7e35b309b5d1
+index 0000000000000..3d7e35b309b5d
 --- /dev/null
 +++ b/lib/zstd/common/zstd_common.c
 @@ -0,0 +1,83 @@
@@ -11089,7 +11107,7 @@ index 00000000000000..3d7e35b309b5d1
 +}
 diff --git a/lib/zstd/common/zstd_deps.h b/lib/zstd/common/zstd_deps.h
 new file mode 100644
-index 00000000000000..7a5bf44839c9ce
+index 0000000000000..7a5bf44839c9c
 --- /dev/null
 +++ b/lib/zstd/common/zstd_deps.h
 @@ -0,0 +1,125 @@
@@ -11220,7 +11238,7 @@ index 00000000000000..7a5bf44839c9ce
 +#endif /* ZSTD_DEPS_NEED_STDINT */
 diff --git a/lib/zstd/common/zstd_internal.h b/lib/zstd/common/zstd_internal.h
 new file mode 100644
-index 00000000000000..fc6f3a9b40c075
+index 0000000000000..fc6f3a9b40c07
 --- /dev/null
 +++ b/lib/zstd/common/zstd_internal.h
 @@ -0,0 +1,450 @@
@@ -11676,7 +11694,7 @@ index 00000000000000..fc6f3a9b40c075
 +#endif   /* ZSTD_CCOMMON_H_MODULE */
 diff --git a/lib/zstd/compress.c b/lib/zstd/compress.c
 deleted file mode 100644
-index 57aaa64306a01d..00000000000000
+index 57aaa64306a01..0000000000000
 --- a/lib/zstd/compress.c
 +++ /dev/null
 @@ -1,3534 +0,0 @@
@@ -15216,7 +15234,7 @@ index 57aaa64306a01d..00000000000000
 -MODULE_DESCRIPTION("Zstd Compressor");
 diff --git a/lib/zstd/compress/fse_compress.c b/lib/zstd/compress/fse_compress.c
 new file mode 100644
-index 00000000000000..436985b620e51a
+index 0000000000000..436985b620e51
 --- /dev/null
 +++ b/lib/zstd/compress/fse_compress.c
 @@ -0,0 +1,625 @@
@@ -15847,7 +15865,7 @@ index 00000000000000..436985b620e51a
 +#endif   /* FSE_COMMONDEFS_ONLY */
 diff --git a/lib/zstd/compress/hist.c b/lib/zstd/compress/hist.c
 new file mode 100644
-index 00000000000000..3ddc6dfb689482
+index 0000000000000..3ddc6dfb68948
 --- /dev/null
 +++ b/lib/zstd/compress/hist.c
 @@ -0,0 +1,165 @@
@@ -16018,7 +16036,7 @@ index 00000000000000..3ddc6dfb689482
 +
 diff --git a/lib/zstd/compress/hist.h b/lib/zstd/compress/hist.h
 new file mode 100644
-index 00000000000000..fc1830abc9c63a
+index 0000000000000..fc1830abc9c63
 --- /dev/null
 +++ b/lib/zstd/compress/hist.h
 @@ -0,0 +1,75 @@
@@ -16099,7 +16117,7 @@ index 00000000000000..fc1830abc9c63a
 +                           const void* src, size_t srcSize);
 diff --git a/lib/zstd/compress/huf_compress.c b/lib/zstd/compress/huf_compress.c
 new file mode 100644
-index 00000000000000..f76a526bfa54b5
+index 0000000000000..f76a526bfa54b
 --- /dev/null
 +++ b/lib/zstd/compress/huf_compress.c
 @@ -0,0 +1,905 @@
@@ -17010,7 +17028,7 @@ index 00000000000000..f76a526bfa54b5
 +
 diff --git a/lib/zstd/compress/zstd_compress.c b/lib/zstd/compress/zstd_compress.c
 new file mode 100644
-index 00000000000000..59e5d10167eb23
+index 0000000000000..a4e916008b3a7
 --- /dev/null
 +++ b/lib/zstd/compress/zstd_compress.c
 @@ -0,0 +1,5109 @@
@@ -17737,8 +17755,8 @@ index 00000000000000..59e5d10167eb23
 +        return CCtxParams->ldmParams.bucketSizeLog;
 +
 +    case ZSTD_c_ldmHashRateLog :
-+        RETURN_ERROR_IF(value > ZSTD_WINDOWLOG_MAX - ZSTD_HASHLOG_MIN,
-+                        parameter_outOfBound, "Param out of bounds!");
++        if (value!=0)   /* 0 ==> default */
++            BOUNDCHECK(ZSTD_c_ldmHashRateLog, value);
 +        CCtxParams->ldmParams.hashRateLog = value;
 +        return CCtxParams->ldmParams.hashRateLog;
 +
@@ -22125,7 +22143,7 @@ index 00000000000000..59e5d10167eb23
 +}
 diff --git a/lib/zstd/compress/zstd_compress_internal.h b/lib/zstd/compress/zstd_compress_internal.h
 new file mode 100644
-index 00000000000000..685d2f996cc2a6
+index 0000000000000..685d2f996cc2a
 --- /dev/null
 +++ b/lib/zstd/compress/zstd_compress_internal.h
 @@ -0,0 +1,1188 @@
@@ -23319,7 +23337,7 @@ index 00000000000000..685d2f996cc2a6
 +#endif /* ZSTD_COMPRESS_H */
 diff --git a/lib/zstd/compress/zstd_compress_literals.c b/lib/zstd/compress/zstd_compress_literals.c
 new file mode 100644
-index 00000000000000..655bcda4d1f1c5
+index 0000000000000..655bcda4d1f1c
 --- /dev/null
 +++ b/lib/zstd/compress/zstd_compress_literals.c
 @@ -0,0 +1,158 @@
@@ -23483,7 +23501,7 @@ index 00000000000000..655bcda4d1f1c5
 +}
 diff --git a/lib/zstd/compress/zstd_compress_literals.h b/lib/zstd/compress/zstd_compress_literals.h
 new file mode 100644
-index 00000000000000..9904c0cd30a0a1
+index 0000000000000..9904c0cd30a0a
 --- /dev/null
 +++ b/lib/zstd/compress/zstd_compress_literals.h
 @@ -0,0 +1,29 @@
@@ -23518,7 +23536,7 @@ index 00000000000000..9904c0cd30a0a1
 +#endif /* ZSTD_COMPRESS_LITERALS_H */
 diff --git a/lib/zstd/compress/zstd_compress_sequences.c b/lib/zstd/compress/zstd_compress_sequences.c
 new file mode 100644
-index 00000000000000..dcfcdc9cc5e8da
+index 0000000000000..dcfcdc9cc5e8d
 --- /dev/null
 +++ b/lib/zstd/compress/zstd_compress_sequences.c
 @@ -0,0 +1,439 @@
@@ -23963,7 +23981,7 @@ index 00000000000000..dcfcdc9cc5e8da
 +}
 diff --git a/lib/zstd/compress/zstd_compress_sequences.h b/lib/zstd/compress/zstd_compress_sequences.h
 new file mode 100644
-index 00000000000000..7991364c2f71ff
+index 0000000000000..7991364c2f71f
 --- /dev/null
 +++ b/lib/zstd/compress/zstd_compress_sequences.h
 @@ -0,0 +1,54 @@
@@ -24023,7 +24041,7 @@ index 00000000000000..7991364c2f71ff
 +#endif /* ZSTD_COMPRESS_SEQUENCES_H */
 diff --git a/lib/zstd/compress/zstd_compress_superblock.c b/lib/zstd/compress/zstd_compress_superblock.c
 new file mode 100644
-index 00000000000000..ee03e0aedb0304
+index 0000000000000..ee03e0aedb030
 --- /dev/null
 +++ b/lib/zstd/compress/zstd_compress_superblock.c
 @@ -0,0 +1,850 @@
@@ -24879,7 +24897,7 @@ index 00000000000000..ee03e0aedb0304
 +}
 diff --git a/lib/zstd/compress/zstd_compress_superblock.h b/lib/zstd/compress/zstd_compress_superblock.h
 new file mode 100644
-index 00000000000000..224ece79546ebb
+index 0000000000000..224ece79546eb
 --- /dev/null
 +++ b/lib/zstd/compress/zstd_compress_superblock.h
 @@ -0,0 +1,32 @@
@@ -24917,7 +24935,7 @@ index 00000000000000..224ece79546ebb
 +#endif /* ZSTD_COMPRESS_ADVANCED_H */
 diff --git a/lib/zstd/compress/zstd_cwksp.h b/lib/zstd/compress/zstd_cwksp.h
 new file mode 100644
-index 00000000000000..98e359adf5d449
+index 0000000000000..98e359adf5d44
 --- /dev/null
 +++ b/lib/zstd/compress/zstd_cwksp.h
 @@ -0,0 +1,482 @@
@@ -25405,7 +25423,7 @@ index 00000000000000..98e359adf5d449
 +#endif /* ZSTD_CWKSP_H */
 diff --git a/lib/zstd/compress/zstd_double_fast.c b/lib/zstd/compress/zstd_double_fast.c
 new file mode 100644
-index 00000000000000..b0424d23ac57f0
+index 0000000000000..b0424d23ac57f
 --- /dev/null
 +++ b/lib/zstd/compress/zstd_double_fast.c
 @@ -0,0 +1,519 @@
@@ -25930,7 +25948,7 @@ index 00000000000000..b0424d23ac57f0
 +}
 diff --git a/lib/zstd/compress/zstd_double_fast.h b/lib/zstd/compress/zstd_double_fast.h
 new file mode 100644
-index 00000000000000..6822bde65a1d8d
+index 0000000000000..6822bde65a1d8
 --- /dev/null
 +++ b/lib/zstd/compress/zstd_double_fast.h
 @@ -0,0 +1,32 @@
@@ -25968,7 +25986,7 @@ index 00000000000000..6822bde65a1d8d
 +#endif /* ZSTD_DOUBLE_FAST_H */
 diff --git a/lib/zstd/compress/zstd_fast.c b/lib/zstd/compress/zstd_fast.c
 new file mode 100644
-index 00000000000000..96b7d48e2868ef
+index 0000000000000..96b7d48e2868e
 --- /dev/null
 +++ b/lib/zstd/compress/zstd_fast.c
 @@ -0,0 +1,496 @@
@@ -26470,7 +26488,7 @@ index 00000000000000..96b7d48e2868ef
 +}
 diff --git a/lib/zstd/compress/zstd_fast.h b/lib/zstd/compress/zstd_fast.h
 new file mode 100644
-index 00000000000000..fddc2f532d21d1
+index 0000000000000..fddc2f532d21d
 --- /dev/null
 +++ b/lib/zstd/compress/zstd_fast.h
 @@ -0,0 +1,31 @@
@@ -26507,10 +26525,10 @@ index 00000000000000..fddc2f532d21d1
 +#endif /* ZSTD_FAST_H */
 diff --git a/lib/zstd/compress/zstd_lazy.c b/lib/zstd/compress/zstd_lazy.c
 new file mode 100644
-index 00000000000000..87cfa353a693fa
+index 0000000000000..fb54d4e28a2bc
 --- /dev/null
 +++ b/lib/zstd/compress/zstd_lazy.c
-@@ -0,0 +1,1412 @@
+@@ -0,0 +1,1414 @@
 +/*
 + * Copyright (c) Yann Collet, Facebook, Inc.
 + * All rights reserved.
@@ -26606,7 +26624,7 @@ index 00000000000000..87cfa353a693fa
 +    assert(curr >= btLow);
 +    assert(ip < iend);   /* condition for ZSTD_count */
 +
-+    while (nbCompares-- && (matchIndex > windowLow)) {
++    for (; nbCompares && (matchIndex > windowLow); --nbCompares) {
 +        U32* const nextPtr = bt + 2*(matchIndex & btMask);
 +        size_t matchLength = MIN(commonLengthSmaller, commonLengthLarger);   /* guaranteed minimum nb of common bytes */
 +        assert(matchIndex < curr);
@@ -26698,7 +26716,7 @@ index 00000000000000..87cfa353a693fa
 +    (void)dictMode;
 +    assert(dictMode == ZSTD_dictMatchState);
 +
-+    while (nbCompares-- && (dictMatchIndex > dictLowLimit)) {
++    for (; nbCompares && (dictMatchIndex > dictLowLimit); --nbCompares) {
 +        U32* const nextPtr = dictBt + 2*(dictMatchIndex & btMask);
 +        size_t matchLength = MIN(commonLengthSmaller, commonLengthLarger);   /* guaranteed minimum nb of common bytes */
 +        const BYTE* match = dictBase + dictMatchIndex;
@@ -26822,7 +26840,7 @@ index 00000000000000..87cfa353a693fa
 +        matchIndex  = hashTable[h];
 +        hashTable[h] = curr;   /* Update Hash Table */
 +
-+        while (nbCompares-- && (matchIndex > windowLow)) {
++        for (; nbCompares && (matchIndex > windowLow); --nbCompares) {
 +            U32* const nextPtr = bt + 2*(matchIndex & btMask);
 +            size_t matchLength = MIN(commonLengthSmaller, commonLengthLarger);   /* guaranteed minimum nb of common bytes */
 +            const BYTE* match;
@@ -26870,6 +26888,7 @@ index 00000000000000..87cfa353a693fa
 +
 +        *smallerPtr = *largerPtr = 0;
 +
++        assert(nbCompares <= (1U << ZSTD_SEARCHLOG_MAX)); /* Check we haven't underflowed. */
 +        if (dictMode == ZSTD_dictMatchState && nbCompares) {
 +            bestLength = ZSTD_DUBT_findBetterDictMatch(
 +                    ms, ip, iend,
@@ -27173,6 +27192,7 @@ index 00000000000000..87cfa353a693fa
 +        matchIndex = NEXT_IN_CHAIN(matchIndex, chainMask);
 +    }
 +
++    assert(nbAttempts <= (1U << ZSTD_SEARCHLOG_MAX)); /* Check we haven't underflowed. */
 +    if (dictMode == ZSTD_dedicatedDictSearch) {
 +        const U32 ddsLowestIndex  = dms->window.dictLimit;
 +        const BYTE* const ddsBase = dms->window.base;
@@ -27777,7 +27797,7 @@ index 00000000000000..87cfa353a693fa
 +                matchLength = ml2, start = ip, offset=offsetFound;
 +        }
 +
-+         if (matchLength < 4) {
++        if (matchLength < 4) {
 +            ip += ((ip-anchor) >> kSearchStrength) + 1;   /* jump faster over incompressible sections */
 +            continue;
 +        }
@@ -27925,7 +27945,7 @@ index 00000000000000..87cfa353a693fa
 +}
 diff --git a/lib/zstd/compress/zstd_lazy.h b/lib/zstd/compress/zstd_lazy.h
 new file mode 100644
-index 00000000000000..2fc5a61821344c
+index 0000000000000..2fc5a61821344
 --- /dev/null
 +++ b/lib/zstd/compress/zstd_lazy.h
 @@ -0,0 +1,81 @@
@@ -28012,7 +28032,7 @@ index 00000000000000..2fc5a61821344c
 +#endif /* ZSTD_LAZY_H */
 diff --git a/lib/zstd/compress/zstd_ldm.c b/lib/zstd/compress/zstd_ldm.c
 new file mode 100644
-index 00000000000000..8ef7e88a5addea
+index 0000000000000..8ef7e88a5adde
 --- /dev/null
 +++ b/lib/zstd/compress/zstd_ldm.c
 @@ -0,0 +1,686 @@
@@ -28704,7 +28724,7 @@ index 00000000000000..8ef7e88a5addea
 +}
 diff --git a/lib/zstd/compress/zstd_ldm.h b/lib/zstd/compress/zstd_ldm.h
 new file mode 100644
-index 00000000000000..25b25270b72e22
+index 0000000000000..25b25270b72e2
 --- /dev/null
 +++ b/lib/zstd/compress/zstd_ldm.h
 @@ -0,0 +1,110 @@
@@ -28820,7 +28840,7 @@ index 00000000000000..25b25270b72e22
 +#endif /* ZSTD_FAST_H */
 diff --git a/lib/zstd/compress/zstd_ldm_geartab.h b/lib/zstd/compress/zstd_ldm_geartab.h
 new file mode 100644
-index 00000000000000..e5c24d856b0a83
+index 0000000000000..e5c24d856b0a8
 --- /dev/null
 +++ b/lib/zstd/compress/zstd_ldm_geartab.h
 @@ -0,0 +1,103 @@
@@ -28929,10 +28949,10 @@ index 00000000000000..e5c24d856b0a83
 +#endif /* ZSTD_LDM_GEARTAB_H */
 diff --git a/lib/zstd/compress/zstd_opt.c b/lib/zstd/compress/zstd_opt.c
 new file mode 100644
-index 00000000000000..956ee6b2ae613b
+index 0000000000000..04337050fe9a0
 --- /dev/null
 +++ b/lib/zstd/compress/zstd_opt.c
-@@ -0,0 +1,1345 @@
+@@ -0,0 +1,1346 @@
 +/*
 + * Copyright (c) Przemyslaw Skibinski, Yann Collet, Facebook, Inc.
 + * All rights reserved.
@@ -29343,7 +29363,7 @@ index 00000000000000..956ee6b2ae613b
 +    hashTable[h] = curr;   /* Update Hash Table */
 +
 +    assert(windowLow > 0);
-+    while (nbCompares-- && (matchIndex >= windowLow)) {
++    for (; nbCompares && (matchIndex >= windowLow); --nbCompares) {
 +        U32* const nextPtr = bt + 2*(matchIndex & btMask);
 +        size_t matchLength = MIN(commonLengthSmaller, commonLengthLarger);   /* guaranteed minimum nb of common bytes */
 +        assert(matchIndex < curr);
@@ -29574,7 +29594,7 @@ index 00000000000000..956ee6b2ae613b
 +
 +    hashTable[h] = curr;   /* Update Hash Table */
 +
-+    while (nbCompares-- && (matchIndex >= matchLow)) {
++    for (; nbCompares && (matchIndex >= matchLow); --nbCompares) {
 +        U32* const nextPtr = bt + 2*(matchIndex & btMask);
 +        const BYTE* match;
 +        size_t matchLength = MIN(commonLengthSmaller, commonLengthLarger);   /* guaranteed minimum nb of common bytes */
@@ -29627,12 +29647,13 @@ index 00000000000000..956ee6b2ae613b
 +
 +    *smallerPtr = *largerPtr = 0;
 +
++    assert(nbCompares <= (1U << ZSTD_SEARCHLOG_MAX)); /* Check we haven't underflowed. */
 +    if (dictMode == ZSTD_dictMatchState && nbCompares) {
 +        size_t const dmsH = ZSTD_hashPtr(ip, dmsHashLog, mls);
 +        U32 dictMatchIndex = dms->hashTable[dmsH];
 +        const U32* const dmsBt = dms->chainTable;
 +        commonLengthSmaller = commonLengthLarger = 0;
-+        while (nbCompares-- && (dictMatchIndex > dmsLowLimit)) {
++        for (; nbCompares && (dictMatchIndex > dmsLowLimit); --nbCompares) {
 +            const U32* const nextPtr = dmsBt + 2*(dictMatchIndex & dmsBtMask);
 +            size_t matchLength = MIN(commonLengthSmaller, commonLengthLarger);   /* guaranteed minimum nb of common bytes */
 +            const BYTE* match = dmsBase + dictMatchIndex;
@@ -30280,7 +30301,7 @@ index 00000000000000..956ee6b2ae613b
 + * and is only specific for the first block (no prefix) */
 diff --git a/lib/zstd/compress/zstd_opt.h b/lib/zstd/compress/zstd_opt.h
 new file mode 100644
-index 00000000000000..22b862858ba7a3
+index 0000000000000..22b862858ba7a
 --- /dev/null
 +++ b/lib/zstd/compress/zstd_opt.h
 @@ -0,0 +1,50 @@
@@ -30336,7 +30357,7 @@ index 00000000000000..22b862858ba7a3
 +#endif /* ZSTD_OPT_H */
 diff --git a/lib/zstd/decompress.c b/lib/zstd/decompress.c
 deleted file mode 100644
-index 02e92c2cbf4fc5..00000000000000
+index 02e92c2cbf4fc..0000000000000
 --- a/lib/zstd/decompress.c
 +++ /dev/null
 @@ -1,2571 +0,0 @@
@@ -32913,7 +32934,7 @@ index 02e92c2cbf4fc5..00000000000000
 -MODULE_DESCRIPTION("Zstd Decompressor");
 diff --git a/lib/zstd/decompress/huf_decompress.c b/lib/zstd/decompress/huf_decompress.c
 new file mode 100644
-index 00000000000000..05570ed5f8be21
+index 0000000000000..05570ed5f8be2
 --- /dev/null
 +++ b/lib/zstd/decompress/huf_decompress.c
 @@ -0,0 +1,1206 @@
@@ -34125,7 +34146,7 @@ index 00000000000000..05570ed5f8be21
 +
 diff --git a/lib/zstd/decompress/zstd_ddict.c b/lib/zstd/decompress/zstd_ddict.c
 new file mode 100644
-index 00000000000000..dbbc7919de534e
+index 0000000000000..dbbc7919de534
 --- /dev/null
 +++ b/lib/zstd/decompress/zstd_ddict.c
 @@ -0,0 +1,241 @@
@@ -34372,7 +34393,7 @@ index 00000000000000..dbbc7919de534e
 +}
 diff --git a/lib/zstd/decompress/zstd_ddict.h b/lib/zstd/decompress/zstd_ddict.h
 new file mode 100644
-index 00000000000000..8c1a79d666f89a
+index 0000000000000..8c1a79d666f89
 --- /dev/null
 +++ b/lib/zstd/decompress/zstd_ddict.h
 @@ -0,0 +1,44 @@
@@ -34422,10 +34443,10 @@ index 00000000000000..8c1a79d666f89a
 +#endif /* ZSTD_DDICT_H */
 diff --git a/lib/zstd/decompress/zstd_decompress.c b/lib/zstd/decompress/zstd_decompress.c
 new file mode 100644
-index 00000000000000..7a39dc799881a3
+index 0000000000000..b4d81d84479ac
 --- /dev/null
 +++ b/lib/zstd/decompress/zstd_decompress.c
-@@ -0,0 +1,2082 @@
+@@ -0,0 +1,2085 @@
 +/*
 + * Copyright (c) Yann Collet, Facebook, Inc.
 + * All rights reserved.
@@ -34599,12 +34620,15 @@ index 00000000000000..7a39dc799881a3
 +static ZSTD_DDictHashSet* ZSTD_createDDictHashSet(ZSTD_customMem customMem) {
 +    ZSTD_DDictHashSet* ret = (ZSTD_DDictHashSet*)ZSTD_customMalloc(sizeof(ZSTD_DDictHashSet), customMem);
 +    DEBUGLOG(4, "Allocating new hash set");
++    if (!ret)
++        return NULL;
 +    ret->ddictPtrTable = (const ZSTD_DDict**)ZSTD_customCalloc(DDICT_HASHSET_TABLE_BASE_SIZE * sizeof(ZSTD_DDict*), customMem);
-+    ret->ddictPtrTableSize = DDICT_HASHSET_TABLE_BASE_SIZE;
-+    ret->ddictPtrCount = 0;
-+    if (!ret || !ret->ddictPtrTable) {
++    if (!ret->ddictPtrTable) {
++        ZSTD_customFree(ret, customMem);
 +        return NULL;
 +    }
++    ret->ddictPtrTableSize = DDICT_HASHSET_TABLE_BASE_SIZE;
++    ret->ddictPtrCount = 0;
 +    return ret;
 +}
 +
@@ -36510,7 +36534,7 @@ index 00000000000000..7a39dc799881a3
 +}
 diff --git a/lib/zstd/decompress/zstd_decompress_block.c b/lib/zstd/decompress/zstd_decompress_block.c
 new file mode 100644
-index 00000000000000..2d101d9a842eca
+index 0000000000000..2d101d9a842ec
 --- /dev/null
 +++ b/lib/zstd/decompress/zstd_decompress_block.c
 @@ -0,0 +1,1540 @@
@@ -38056,7 +38080,7 @@ index 00000000000000..2d101d9a842eca
 +}
 diff --git a/lib/zstd/decompress/zstd_decompress_block.h b/lib/zstd/decompress/zstd_decompress_block.h
 new file mode 100644
-index 00000000000000..e7f5f6689459f7
+index 0000000000000..e7f5f6689459f
 --- /dev/null
 +++ b/lib/zstd/decompress/zstd_decompress_block.h
 @@ -0,0 +1,62 @@
@@ -38124,7 +38148,7 @@ index 00000000000000..e7f5f6689459f7
 +#endif /* ZSTD_DEC_BLOCK_H */
 diff --git a/lib/zstd/decompress/zstd_decompress_internal.h b/lib/zstd/decompress/zstd_decompress_internal.h
 new file mode 100644
-index 00000000000000..4b9052f687558a
+index 0000000000000..4b9052f687558
 --- /dev/null
 +++ b/lib/zstd/decompress/zstd_decompress_internal.h
 @@ -0,0 +1,202 @@
@@ -38331,7 +38355,7 @@ index 00000000000000..4b9052f687558a
 +
 +#endif /* ZSTD_DECOMPRESS_INTERNAL_H */
 diff --git a/lib/zstd/decompress_sources.h b/lib/zstd/decompress_sources.h
-index 9ba367b4414934..0fbec508f285e3 100644
+index 9ba367b441493..0fbec508f285e 100644
 --- a/lib/zstd/decompress_sources.h
 +++ b/lib/zstd/decompress_sources.h
 @@ -16,8 +16,13 @@
@@ -38355,7 +38379,7 @@ index 9ba367b4414934..0fbec508f285e3 100644
 +#include "zstd_decompress_module.c"
 diff --git a/lib/zstd/entropy_common.c b/lib/zstd/entropy_common.c
 deleted file mode 100644
-index 2b0a643c32c4b2..00000000000000
+index 2b0a643c32c4b..0000000000000
 --- a/lib/zstd/entropy_common.c
 +++ /dev/null
 @@ -1,243 +0,0 @@
@@ -38604,7 +38628,7 @@ index 2b0a643c32c4b2..00000000000000
 -}
 diff --git a/lib/zstd/error_private.h b/lib/zstd/error_private.h
 deleted file mode 100644
-index 1a60b31f706cb6..00000000000000
+index 1a60b31f706cb..0000000000000
 --- a/lib/zstd/error_private.h
 +++ /dev/null
 @@ -1,53 +0,0 @@
@@ -38663,7 +38687,7 @@ index 1a60b31f706cb6..00000000000000
 -#endif /* ERROR_H_MODULE */
 diff --git a/lib/zstd/fse.h b/lib/zstd/fse.h
 deleted file mode 100644
-index 7460ab04b1916d..00000000000000
+index 7460ab04b1916..0000000000000
 --- a/lib/zstd/fse.h
 +++ /dev/null
 @@ -1,575 +0,0 @@
@@ -39244,7 +39268,7 @@ index 7460ab04b1916d..00000000000000
 -#endif /* FSE_H */
 diff --git a/lib/zstd/fse_compress.c b/lib/zstd/fse_compress.c
 deleted file mode 100644
-index ef3d1741d53282..00000000000000
+index ef3d1741d5328..0000000000000
 --- a/lib/zstd/fse_compress.c
 +++ /dev/null
 @@ -1,795 +0,0 @@
@@ -40045,7 +40069,7 @@ index ef3d1741d53282..00000000000000
 -size_t FSE_compressBound(size_t size) { return FSE_COMPRESSBOUND(size); }
 diff --git a/lib/zstd/fse_decompress.c b/lib/zstd/fse_decompress.c
 deleted file mode 100644
-index 0b353530fb3f30..00000000000000
+index 0b353530fb3f3..0000000000000
 --- a/lib/zstd/fse_decompress.c
 +++ /dev/null
 @@ -1,325 +0,0 @@
@@ -40376,7 +40400,7 @@ index 0b353530fb3f30..00000000000000
 -}
 diff --git a/lib/zstd/huf.h b/lib/zstd/huf.h
 deleted file mode 100644
-index 923218d12e2893..00000000000000
+index 923218d12e289..0000000000000
 --- a/lib/zstd/huf.h
 +++ /dev/null
 @@ -1,212 +0,0 @@
@@ -40594,7 +40618,7 @@ index 923218d12e2893..00000000000000
 -#endif /* HUF_H_298734234 */
 diff --git a/lib/zstd/huf_compress.c b/lib/zstd/huf_compress.c
 deleted file mode 100644
-index fd32838c185f25..00000000000000
+index fd32838c185f2..0000000000000
 --- a/lib/zstd/huf_compress.c
 +++ /dev/null
 @@ -1,773 +0,0 @@
@@ -41373,7 +41397,7 @@ index fd32838c185f25..00000000000000
 -}
 diff --git a/lib/zstd/huf_decompress.c b/lib/zstd/huf_decompress.c
 deleted file mode 100644
-index 6526482047dce9..00000000000000
+index 6526482047dce..0000000000000
 --- a/lib/zstd/huf_decompress.c
 +++ /dev/null
 @@ -1,960 +0,0 @@
@@ -42339,7 +42363,7 @@ index 6526482047dce9..00000000000000
 -}
 diff --git a/lib/zstd/mem.h b/lib/zstd/mem.h
 deleted file mode 100644
-index 93d7a2c377fe3c..00000000000000
+index 93d7a2c377fe3..0000000000000
 --- a/lib/zstd/mem.h
 +++ /dev/null
 @@ -1,151 +0,0 @@
@@ -42496,7 +42520,7 @@ index 93d7a2c377fe3c..00000000000000
 -#endif /* MEM_H_MODULE */
 diff --git a/lib/zstd/zstd_common.c b/lib/zstd/zstd_common.c
 deleted file mode 100644
-index a282624ee1553c..00000000000000
+index a282624ee1553..0000000000000
 --- a/lib/zstd/zstd_common.c
 +++ /dev/null
 @@ -1,75 +0,0 @@
@@ -42577,7 +42601,7 @@ index a282624ee1553c..00000000000000
 -}
 diff --git a/lib/zstd/zstd_compress_module.c b/lib/zstd/zstd_compress_module.c
 new file mode 100644
-index 00000000000000..65548a4bb93410
+index 0000000000000..65548a4bb9341
 --- /dev/null
 +++ b/lib/zstd/zstd_compress_module.c
 @@ -0,0 +1,160 @@
@@ -42743,7 +42767,7 @@ index 00000000000000..65548a4bb93410
 +MODULE_DESCRIPTION("Zstd Compressor");
 diff --git a/lib/zstd/zstd_decompress_module.c b/lib/zstd/zstd_decompress_module.c
 new file mode 100644
-index 00000000000000..f4ed952ed4852a
+index 0000000000000..f4ed952ed4852
 --- /dev/null
 +++ b/lib/zstd/zstd_decompress_module.c
 @@ -0,0 +1,105 @@
@@ -42854,7 +42878,7 @@ index 00000000000000..f4ed952ed4852a
 +MODULE_DESCRIPTION("Zstd Decompressor");
 diff --git a/lib/zstd/zstd_internal.h b/lib/zstd/zstd_internal.h
 deleted file mode 100644
-index dac753397f868d..00000000000000
+index dac753397f868..0000000000000
 --- a/lib/zstd/zstd_internal.h
 +++ /dev/null
 @@ -1,273 +0,0 @@
@@ -43133,7 +43157,7 @@ index dac753397f868d..00000000000000
 -#endif /* ZSTD_CCOMMON_H_MODULE */
 diff --git a/lib/zstd/zstd_opt.h b/lib/zstd/zstd_opt.h
 deleted file mode 100644
-index 55e1b4cba8088c..00000000000000
+index 55e1b4cba8088..0000000000000
 --- a/lib/zstd/zstd_opt.h
 +++ /dev/null
 @@ -1,1014 +0,0 @@
@@ -44151,11 +44175,14 @@ index 55e1b4cba8088c..00000000000000
 -}
 -
 -#endif /* ZSTD_OPT_H_91842398743 */
+-- 
+cgit 1.2.3-1.el7
 
-From 5210ca33b09bed5e09f72e9b46a3220f64597f8c Mon Sep 17 00:00:00 2001
+
+From a99a65cfb92c68c48c761ec5e6383caf63124ce1 Mon Sep 17 00:00:00 2001
 From: Nick Terrell <terrelln@fb.com>
 Date: Mon, 26 Apr 2021 16:34:03 -0700
-Subject: [PATCH] MAINTAINERS: Add maintainer entry for zstd
+Subject: MAINTAINERS: Add maintainer entry for zstd
 
 Adds a maintainer entry for zstd listing myself as the maintainer for
 all zstd code, pointing to the upstream issues tracker for bugs, and
@@ -44167,10 +44194,10 @@ Signed-off-by: Nick Terrell <terrelln@fb.com>
  1 file changed, 12 insertions(+)
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 369a00af62c731..39cb848fed642e 100644
+index 170bbbeefc3f4..dc26f21f486f5 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -20899,6 +20899,18 @@ F:	Documentation/vm/zsmalloc.rst
+@@ -21053,6 +21053,18 @@ F:	Documentation/vm/zsmalloc.rst
  F:	include/linux/zsmalloc.h
  F:	mm/zsmalloc.c
  
@@ -44189,8 +44216,66 @@ index 369a00af62c731..39cb848fed642e 100644
  ZSWAP COMPRESSED SWAP CACHING
  M:	Seth Jennings <sjenning@redhat.com>
  M:	Dan Streetman <ddstreet@ieee.org>
+-- 
+cgit 1.2.3-1.el7
 
- From 6e7f9acbfa664d9e79369a5f4867e42126bc42d5 Mon Sep 17 00:00:00 2001
+
+From 0a8ea235837cc39f27c45689930aa97ae91d5953 Mon Sep 17 00:00:00 2001
+From: Nathan Chancellor <nathan@kernel.org>
+Date: Thu, 21 Oct 2021 13:23:53 -0700
+Subject: lib: zstd: Add cast to silence clang's -Wbitwise-instead-of-logical
+
+A new warning in clang warns that there is an instance where boolean
+expressions are being used with bitwise operators instead of logical
+ones:
+
+lib/zstd/decompress/huf_decompress.c:890:25: warning: use of bitwise '&' with boolean operands [-Wbitwise-instead-of-logical]
+                       (BIT_reloadDStreamFast(&bitD1) == BIT_DStream_unfinished)
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+zstd does this frequently to help with performance, as logical operators
+have branches whereas bitwise ones do not.
+
+To fix this warning in other cases, the expressions were placed on
+separate lines with the '&=' operator; however, this particular instance
+was moved away from that so that it could be surrounded by LIKELY, which
+is a macro for __builtin_expect(), to help with a performance
+regression, according to upstream zstd pull #1973.
+
+Aside from switching to logical operators, which is likely undesirable
+in this instance, or disabling the warning outright, the solution is
+casting one of the expressions to an integer type to make it clear to
+clang that the author knows what they are doing. Add a cast to U32 to
+silence the warning. The first U32 cast is to silence an instance of
+-Wshorten-64-to-32 because __builtin_expect() returns long so it cannot
+be moved.
+
+Link: https://github.com/ClangBuiltLinux/linux/issues/1486
+Link: https://github.com/facebook/zstd/pull/1973
+Reported-by: Nick Desaulniers <ndesaulniers@google.com>
+Signed-off-by: Nathan Chancellor <nathan@kernel.org>
+Signed-off-by: Nick Terrell <terrelln@fb.com>
+---
+ lib/zstd/decompress/huf_decompress.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/zstd/decompress/huf_decompress.c b/lib/zstd/decompress/huf_decompress.c
+index 05570ed5f8be2..5105e59ac04a8 100644
+--- a/lib/zstd/decompress/huf_decompress.c
++++ b/lib/zstd/decompress/huf_decompress.c
+@@ -886,7 +886,7 @@ HUF_decompress4X2_usingDTable_internal_body(
+             HUF_DECODE_SYMBOLX2_0(op2, &bitD2);
+             HUF_DECODE_SYMBOLX2_0(op3, &bitD3);
+             HUF_DECODE_SYMBOLX2_0(op4, &bitD4);
+-            endSignal = (U32)LIKELY(
++            endSignal = (U32)LIKELY((U32)
+                         (BIT_reloadDStreamFast(&bitD1) == BIT_DStream_unfinished)
+                       & (BIT_reloadDStreamFast(&bitD2) == BIT_DStream_unfinished)
+                       & (BIT_reloadDStreamFast(&bitD3) == BIT_DStream_unfinished)
+-- 
+cgit 1.2.3-1.el7
+
+From 6e7f9acbfa664d9e79369a5f4867e42126bc42d5 Mon Sep 17 00:00:00 2001
 From: Nick Terrell <terrelln@fb.com>
 Date: Mon, 15 Nov 2021 19:08:19 -0800
 Subject: lib: zstd: Fix unused variable warning

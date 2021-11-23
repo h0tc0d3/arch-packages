@@ -208,3 +208,7 @@ kernel's use cases, and follows the kernel style guide.
 
 For Kernel 5.14+
 Optimize performance of kernel code for working with strings.
+
+## 0008-clang-next.patch
+
+Add clang patches from kernel next.
