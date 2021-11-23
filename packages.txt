@@ -183,4 +183,5 @@ pipewire-media-session
 gsl
 lib2geom
 krita
+julia
 -chromium
