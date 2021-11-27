@@ -1,7 +1,7 @@
 pkgname=egl-wayland+clang
-pkgver=1.1.9+2+gdaab854
+pkgver=1.1.9+r3+g582b2d3
 pkgrel=1
-epoch=1
+epoch=2
 pkgdesc="EGLStream-based Wayland external platform"
 arch=(x86_64)
 url=https://github.com/NVIDIA/egl-wayland
@@ -10,7 +10,7 @@ provides=('egl-wayland' "egl-wayland=${pkgver}" libnvidia-egl-wayland.so)
 conflicts=('egl-wayland')
 depends=(wayland eglexternalplatform 'libglvnd>=1.3.4')
 makedepends=(meson git)
-_commit=daab8546eca8428543a4d958a2c53fc747f70672 # master
+_commit=582b2d345abaa0e313cf16c902e602084ea59551
 source=(
   "git+${url}#commit=${_commit}"
   10_nvidia_wayland.json
@@ -37,7 +37,7 @@ pkgver() {
     exit 1
   )
 
-  git describe --tags | sed 's/-/+/g'
+  git describe --tags | sed 's/[^-]*-g/r&/;s/-/+/g'
 
 }
 
