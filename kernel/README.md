@@ -212,3 +212,21 @@ Optimize performance of kernel code for working with strings.
 ## 0008-clang-next.patch
 
 Add clang patches from kernel next.
+
+## 0009-hwmon-asus-wmi.patch
+
+Add harware monitoring for Asus motherboards with AMD chipsets.
+
+## 0010-ELF.patch
+
+Fix overflow in total mapping size calculation
+
+Kernel assumes that ELF program headers are ordered by mapping address,
+but doesn't enforce it.  It is possible to make mapping size extremely
+huge by simply shuffling first and last PT_LOAD segments.
+
+As long as PT_LOAD segments do not overlap, it is silly to require sorting
+by v_addr anyway because mmap() doesn't care.
+
+Don't assume PT_LOAD segments are sorted and calculate min and max
+addresses correctly.

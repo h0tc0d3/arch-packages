@@ -1548,3 +1548,2168 @@ index e7925d668b680..5ec35626945b6 100644
 -
 -- 
 cgit 1.2.3-1.el7
+
+From 755662ce78d14c1a9118df921c528b1f992ded2e Mon Sep 17 00:00:00 2001
+From: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Date: Wed, 24 Nov 2021 11:14:19 +0900
+Subject: af_unix: Use offsetof() instead of sizeof().
+
+The length of the AF_UNIX socket address contains an offset to the member
+sun_path of struct sockaddr_un.
+
+Currently, the preceding member is just sun_family, and its type is
+sa_family_t and resolved to short.  Therefore, the offset is represented by
+sizeof(short).  However, it is not clear and fragile to changes in struct
+sockaddr_storage or sockaddr_un.
+
+This commit makes it clear and robust by rewriting sizeof() with
+offsetof().
+
+Signed-off-by: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+---
+ net/unix/af_unix.c | 19 ++++++++++++-------
+ net/unix/diag.c    |  3 ++-
+ 2 files changed, 14 insertions(+), 8 deletions(-)
+
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index b9ff1f31f3af6..31c085e3c1fa4 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -231,7 +231,8 @@ static int unix_mkname(struct sockaddr_un *sunaddr, int len, unsigned int *hashp
+ {
+ 	*hashp = 0;
+ 
+-	if (len <= sizeof(short) || len > sizeof(*sunaddr))
++	if (len <= offsetof(struct sockaddr_un, sun_path) ||
++	    len > sizeof(*sunaddr))
+ 		return -EINVAL;
+ 	if (!sunaddr || sunaddr->sun_family != AF_UNIX)
+ 		return -EINVAL;
+@@ -244,7 +245,8 @@ static int unix_mkname(struct sockaddr_un *sunaddr, int len, unsigned int *hashp
+ 		 * kernel address buffer.
+ 		 */
+ 		((char *)sunaddr)[len] = 0;
+-		len = strlen(sunaddr->sun_path)+1+sizeof(short);
++		len = strlen(sunaddr->sun_path) +
++			offsetof(struct sockaddr_un, sun_path) + 1;
+ 		return len;
+ 	}
+ 
+@@ -966,7 +968,8 @@ static int unix_autobind(struct socket *sock)
+ 		goto out;
+ 
+ 	err = -ENOMEM;
+-	addr = kzalloc(sizeof(*addr) + sizeof(short) + 16, GFP_KERNEL);
++	addr = kzalloc(sizeof(*addr) +
++		       offsetof(struct sockaddr_un, sun_path) + 16, GFP_KERNEL);
+ 	if (!addr)
+ 		goto out;
+ 
+@@ -974,7 +977,8 @@ static int unix_autobind(struct socket *sock)
+ 	refcount_set(&addr->refcnt, 1);
+ 
+ retry:
+-	addr->len = sprintf(addr->name->sun_path+1, "%05x", ordernum) + 1 + sizeof(short);
++	addr->len = sprintf(addr->name->sun_path + 1, "%05x", ordernum) +
++		offsetof(struct sockaddr_un, sun_path) + 1;
+ 	addr->hash = unix_hash_fold(csum_partial(addr->name, addr->len, 0));
+ 	addr->hash ^= sk->sk_type;
+ 
+@@ -1156,7 +1160,7 @@ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+ 	    sunaddr->sun_family != AF_UNIX)
+ 		return -EINVAL;
+ 
+-	if (addr_len == sizeof(short))
++	if (addr_len == offsetof(struct sockaddr_un, sun_path))
+ 		return unix_autobind(sock);
+ 
+ 	err = unix_mkname(sunaddr, addr_len, &hash);
+@@ -1600,7 +1604,7 @@ static int unix_getname(struct socket *sock, struct sockaddr *uaddr, int peer)
+ 	if (!addr) {
+ 		sunaddr->sun_family = AF_UNIX;
+ 		sunaddr->sun_path[0] = 0;
+-		err = sizeof(short);
++		err = offsetof(struct sockaddr_un, sun_path);
+ 	} else {
+ 		err = addr->len;
+ 		memcpy(sunaddr, addr->name, addr->len);
+@@ -3228,7 +3232,8 @@ static int unix_seq_show(struct seq_file *seq, void *v)
+ 			seq_putc(seq, ' ');
+ 
+ 			i = 0;
+-			len = u->addr->len - sizeof(short);
++			len = u->addr->len -
++				offsetof(struct sockaddr_un, sun_path);
+ 			if (!UNIX_ABSTRACT(s))
+ 				len--;
+ 			else {
+diff --git a/net/unix/diag.c b/net/unix/diag.c
+index 7e7d7f45685af..db555f267407a 100644
+--- a/net/unix/diag.c
++++ b/net/unix/diag.c
+@@ -19,7 +19,8 @@ static int sk_diag_dump_name(struct sock *sk, struct sk_buff *nlskb)
+ 	if (!addr)
+ 		return 0;
+ 
+-	return nla_put(nlskb, UNIX_DIAG_NAME, addr->len - sizeof(short),
++	return nla_put(nlskb, UNIX_DIAG_NAME,
++		       addr->len - offsetof(struct sockaddr_un, sun_path),
+ 		       addr->name->sun_path);
+ }
+ 
+-- 
+cgit 1.2.3-1.el7
+
+
+From f7ed31f4615f4e1d97c0e4325c5b8a240e10073c Mon Sep 17 00:00:00 2001
+From: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Date: Wed, 24 Nov 2021 11:14:20 +0900
+Subject: af_unix: Pass struct sock to unix_autobind().
+
+We do not use struct socket in unix_autobind() and pass struct sock to
+unix_bind_bsd() and unix_bind_abstract().  Let's pass it to unix_autobind()
+as well.
+
+Also, this patch fixes these errors by checkpatch.pl.
+
+  ERROR: do not use assignment in if condition
+  #1795: FILE: net/unix/af_unix.c:1795:
+  +	if (test_bit(SOCK_PASSCRED, &sock->flags) && !u->addr
+
+  CHECK: Logical continuations should be on the previous line
+  #1796: FILE: net/unix/af_unix.c:1796:
+  +	if (test_bit(SOCK_PASSCRED, &sock->flags) && !u->addr
+  +	    && (err = unix_autobind(sock)) != 0)
+
+Signed-off-by: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+---
+ net/unix/af_unix.c | 36 +++++++++++++++++++++---------------
+ 1 file changed, 21 insertions(+), 15 deletions(-)
+
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 31c085e3c1fa4..0fef54aed84e2 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -950,15 +950,13 @@ static int unix_release(struct socket *sock)
+ 	return 0;
+ }
+ 
+-static int unix_autobind(struct socket *sock)
++static int unix_autobind(struct sock *sk)
+ {
+-	struct sock *sk = sock->sk;
+-	struct net *net = sock_net(sk);
+ 	struct unix_sock *u = unix_sk(sk);
+-	static u32 ordernum = 1;
+ 	struct unix_address *addr;
+-	int err;
+ 	unsigned int retries = 0;
++	static u32 ordernum = 1;
++	int err;
+ 
+ 	err = mutex_lock_interruptible(&u->bindlock);
+ 	if (err)
+@@ -985,7 +983,8 @@ retry:
+ 	spin_lock(&unix_table_lock);
+ 	ordernum = (ordernum+1)&0xFFFFF;
+ 
+-	if (__unix_find_socket_byname(net, addr->name, addr->len, addr->hash)) {
++	if (__unix_find_socket_byname(sock_net(sk), addr->name, addr->len,
++				      addr->hash)) {
+ 		spin_unlock(&unix_table_lock);
+ 		/*
+ 		 * __unix_find_socket_byname() may take long time if many names
+@@ -1161,7 +1160,7 @@ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+ 		return -EINVAL;
+ 
+ 	if (addr_len == offsetof(struct sockaddr_un, sun_path))
+-		return unix_autobind(sock);
++		return unix_autobind(sk);
+ 
+ 	err = unix_mkname(sunaddr, addr_len, &hash);
+ 	if (err < 0)
+@@ -1231,8 +1230,11 @@ static int unix_dgram_connect(struct socket *sock, struct sockaddr *addr,
+ 		alen = err;
+ 
+ 		if (test_bit(SOCK_PASSCRED, &sock->flags) &&
+-		    !unix_sk(sk)->addr && (err = unix_autobind(sock)) != 0)
+-			goto out;
++		    !unix_sk(sk)->addr) {
++			err = unix_autobind(sk);
++			if (err)
++				goto out;
++		}
+ 
+ restart:
+ 		other = unix_find_other(net, sunaddr, alen, sock->type, hash, &err);
+@@ -1337,9 +1339,11 @@ static int unix_stream_connect(struct socket *sock, struct sockaddr *uaddr,
+ 		goto out;
+ 	addr_len = err;
+ 
+-	if (test_bit(SOCK_PASSCRED, &sock->flags) && !u->addr &&
+-	    (err = unix_autobind(sock)) != 0)
+-		goto out;
++	if (test_bit(SOCK_PASSCRED, &sock->flags) && !u->addr) {
++		err = unix_autobind(sk);
++		if (err)
++			goto out;
++	}
+ 
+ 	timeo = sock_sndtimeo(sk, flags & O_NONBLOCK);
+ 
+@@ -1791,9 +1795,11 @@ static int unix_dgram_sendmsg(struct socket *sock, struct msghdr *msg,
+ 			goto out;
+ 	}
+ 
+-	if (test_bit(SOCK_PASSCRED, &sock->flags) && !u->addr
+-	    && (err = unix_autobind(sock)) != 0)
+-		goto out;
++	if (test_bit(SOCK_PASSCRED, &sock->flags) && !u->addr) {
++		err = unix_autobind(sk);
++		if (err)
++			goto out;
++	}
+ 
+ 	err = -EMSGSIZE;
+ 	if (len > sk->sk_sndbuf - 32)
+-- 
+cgit 1.2.3-1.el7
+
+
+From fa39ef0e472961baef49ddb0e6f7b8ebb555bd8f Mon Sep 17 00:00:00 2001
+From: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Date: Wed, 24 Nov 2021 11:14:21 +0900
+Subject: af_unix: Factorise unix_find_other() based on address types.
+
+As done in the commit fa42d910a38e ("unix_bind(): take BSD and abstract
+address cases into new helpers"), this patch moves BSD and abstract address
+cases from unix_find_other() into unix_find_bsd() and unix_find_abstract().
+
+Signed-off-by: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+---
+ net/unix/af_unix.c | 136 +++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 81 insertions(+), 55 deletions(-)
+
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 0fef54aed84e2..d3cd33ba2923a 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -950,6 +950,87 @@ static int unix_release(struct socket *sock)
+ 	return 0;
+ }
+ 
++static struct sock *unix_find_bsd(struct net *net, struct sockaddr_un *sunaddr,
++				  int type, int *error)
++{
++	struct inode *inode;
++	struct path path;
++	struct sock *sk;
++	int err;
++
++	err = kern_path(sunaddr->sun_path, LOOKUP_FOLLOW, &path);
++	if (err)
++		goto fail;
++
++	err = path_permission(&path, MAY_WRITE);
++	if (err)
++		goto path_put;
++
++	err = -ECONNREFUSED;
++	inode = d_backing_inode(path.dentry);
++	if (!S_ISSOCK(inode->i_mode))
++		goto path_put;
++
++	sk = unix_find_socket_byinode(inode);
++	if (!sk)
++		goto path_put;
++
++	err = -EPROTOTYPE;
++	if (sk->sk_type == type)
++		touch_atime(&path);
++	else
++		goto sock_put;
++
++	path_put(&path);
++
++	return sk;
++
++sock_put:
++	sock_put(sk);
++path_put:
++	path_put(&path);
++fail:
++	*error = err;
++	return NULL;
++}
++
++static struct sock *unix_find_abstract(struct net *net,
++				       struct sockaddr_un *sunaddr,
++				       int addr_len, int type,
++				       unsigned int hash, int *error)
++{
++	struct dentry *dentry;
++	struct sock *sk;
++
++	sk = unix_find_socket_byname(net, sunaddr, addr_len, type ^ hash);
++	if (!sk) {
++		*error = -ECONNREFUSED;
++		return NULL;
++	}
++
++	dentry = unix_sk(sk)->path.dentry;
++	if (dentry)
++		touch_atime(&unix_sk(sk)->path);
++
++	return sk;
++}
++
++static struct sock *unix_find_other(struct net *net,
++				    struct sockaddr_un *sunaddr,
++				    int addr_len, int type,
++				    unsigned int hash, int *error)
++{
++	struct sock *sk;
++
++	if (sunaddr->sun_path[0])
++		sk = unix_find_bsd(net, sunaddr, type, error);
++	else
++		sk = unix_find_abstract(net, sunaddr, addr_len, type, hash,
++					error);
++
++	return sk;
++}
++
+ static int unix_autobind(struct sock *sk)
+ {
+ 	struct unix_sock *u = unix_sk(sk);
+@@ -1008,61 +1089,6 @@ out:	mutex_unlock(&u->bindlock);
+ 	return err;
+ }
+ 
+-static struct sock *unix_find_other(struct net *net,
+-				    struct sockaddr_un *sunname, int len,
+-				    int type, unsigned int hash, int *error)
+-{
+-	struct sock *u;
+-	struct path path;
+-	int err = 0;
+-
+-	if (sunname->sun_path[0]) {
+-		struct inode *inode;
+-		err = kern_path(sunname->sun_path, LOOKUP_FOLLOW, &path);
+-		if (err)
+-			goto fail;
+-		inode = d_backing_inode(path.dentry);
+-		err = path_permission(&path, MAY_WRITE);
+-		if (err)
+-			goto put_fail;
+-
+-		err = -ECONNREFUSED;
+-		if (!S_ISSOCK(inode->i_mode))
+-			goto put_fail;
+-		u = unix_find_socket_byinode(inode);
+-		if (!u)
+-			goto put_fail;
+-
+-		if (u->sk_type == type)
+-			touch_atime(&path);
+-
+-		path_put(&path);
+-
+-		err = -EPROTOTYPE;
+-		if (u->sk_type != type) {
+-			sock_put(u);
+-			goto fail;
+-		}
+-	} else {
+-		err = -ECONNREFUSED;
+-		u = unix_find_socket_byname(net, sunname, len, type ^ hash);
+-		if (u) {
+-			struct dentry *dentry;
+-			dentry = unix_sk(u)->path.dentry;
+-			if (dentry)
+-				touch_atime(&unix_sk(u)->path);
+-		} else
+-			goto fail;
+-	}
+-	return u;
+-
+-put_fail:
+-	path_put(&path);
+-fail:
+-	*error = err;
+-	return NULL;
+-}
+-
+ static int unix_bind_bsd(struct sock *sk, struct unix_address *addr)
+ {
+ 	struct unix_sock *u = unix_sk(sk);
+-- 
+cgit 1.2.3-1.el7
+
+
+From aed26f557bbc94f0c778f63d7dfe86af99208f68 Mon Sep 17 00:00:00 2001
+From: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Date: Wed, 24 Nov 2021 11:14:22 +0900
+Subject: af_unix: Return an error as a pointer in unix_find_other().
+
+We can return an error as a pointer and need not pass an additional
+argument to unix_find_other().
+
+Signed-off-by: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+---
+ net/unix/af_unix.c | 40 ++++++++++++++++++++++------------------
+ 1 file changed, 22 insertions(+), 18 deletions(-)
+
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index d3cd33ba2923a..3e60c1074f287 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -951,7 +951,7 @@ static int unix_release(struct socket *sock)
+ }
+ 
+ static struct sock *unix_find_bsd(struct net *net, struct sockaddr_un *sunaddr,
+-				  int type, int *error)
++				  int type)
+ {
+ 	struct inode *inode;
+ 	struct path path;
+@@ -990,23 +990,20 @@ sock_put:
+ path_put:
+ 	path_put(&path);
+ fail:
+-	*error = err;
+-	return NULL;
++	return ERR_PTR(err);
+ }
+ 
+ static struct sock *unix_find_abstract(struct net *net,
+ 				       struct sockaddr_un *sunaddr,
+ 				       int addr_len, int type,
+-				       unsigned int hash, int *error)
++				       unsigned int hash)
+ {
+ 	struct dentry *dentry;
+ 	struct sock *sk;
+ 
+ 	sk = unix_find_socket_byname(net, sunaddr, addr_len, type ^ hash);
+-	if (!sk) {
+-		*error = -ECONNREFUSED;
+-		return NULL;
+-	}
++	if (!sk)
++		return ERR_PTR(-ECONNREFUSED);
+ 
+ 	dentry = unix_sk(sk)->path.dentry;
+ 	if (dentry)
+@@ -1018,15 +1015,14 @@ static struct sock *unix_find_abstract(struct net *net,
+ static struct sock *unix_find_other(struct net *net,
+ 				    struct sockaddr_un *sunaddr,
+ 				    int addr_len, int type,
+-				    unsigned int hash, int *error)
++				    unsigned int hash)
+ {
+ 	struct sock *sk;
+ 
+ 	if (sunaddr->sun_path[0])
+-		sk = unix_find_bsd(net, sunaddr, type, error);
++		sk = unix_find_bsd(net, sunaddr, type);
+ 	else
+-		sk = unix_find_abstract(net, sunaddr, addr_len, type, hash,
+-					error);
++		sk = unix_find_abstract(net, sunaddr, addr_len, type, hash);
+ 
+ 	return sk;
+ }
+@@ -1263,9 +1259,11 @@ static int unix_dgram_connect(struct socket *sock, struct sockaddr *addr,
+ 		}
+ 
+ restart:
+-		other = unix_find_other(net, sunaddr, alen, sock->type, hash, &err);
+-		if (!other)
++		other = unix_find_other(net, sunaddr, alen, sock->type, hash);
++		if (IS_ERR(other)) {
++			err = PTR_ERR(other);
+ 			goto out;
++		}
+ 
+ 		unix_state_double_lock(sk, other);
+ 
+@@ -1395,9 +1393,12 @@ static int unix_stream_connect(struct socket *sock, struct sockaddr *uaddr,
+ 
+ restart:
+ 	/*  Find listening sock. */
+-	other = unix_find_other(net, sunaddr, addr_len, sk->sk_type, hash, &err);
+-	if (!other)
++	other = unix_find_other(net, sunaddr, addr_len, sk->sk_type, hash);
++	if (IS_ERR(other)) {
++		err = PTR_ERR(other);
++		other = NULL;
+ 		goto out;
++	}
+ 
+ 	/* Latch state of peer */
+ 	unix_state_lock(other);
+@@ -1866,9 +1867,12 @@ restart:
+ 			goto out_free;
+ 
+ 		other = unix_find_other(net, sunaddr, namelen, sk->sk_type,
+-					hash, &err);
+-		if (other == NULL)
++					hash);
++		if (IS_ERR(other)) {
++			err = PTR_ERR(other);
++			other = NULL;
+ 			goto out_free;
++		}
+ 	}
+ 
+ 	if (sk_filter(other, skb) < 0) {
+-- 
+cgit 1.2.3-1.el7
+
+
+From b8a58aa6fccc5b2940f0da18c7f02e8a1deb693a Mon Sep 17 00:00:00 2001
+From: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Date: Wed, 24 Nov 2021 11:14:23 +0900
+Subject: af_unix: Cut unix_validate_addr() out of unix_mkname().
+
+unix_mkname() tests socket address length and family and does some
+processing based on the address type.  It is called in the early stage,
+and therefore some instructions are redundant and can end up in vain.
+
+The address length/family tests are done twice in unix_bind().  Also, the
+address type is rechecked later in unix_bind() and unix_find_other(), where
+we can do the same processing.  Moreover, in the BSD address case, the hash
+is set to 0 but never used and confusing.
+
+This patch moves the address tests out of unix_mkname(), and the following
+patches move the other part into appropriate places and remove
+unix_mkname() finally.
+
+Signed-off-by: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+---
+ net/unix/af_unix.c | 40 ++++++++++++++++++++++++++++++----------
+ 1 file changed, 30 insertions(+), 10 deletions(-)
+
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 3e60c1074f287..e2413a65bdfca 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -227,15 +227,22 @@ static inline void unix_release_addr(struct unix_address *addr)
+  *		- if started by zero, it is abstract name.
+  */
+ 
++static int unix_validate_addr(struct sockaddr_un *sunaddr, int addr_len)
++{
++	if (addr_len <= offsetof(struct sockaddr_un, sun_path) ||
++	    addr_len > sizeof(*sunaddr))
++		return -EINVAL;
++
++	if (sunaddr->sun_family != AF_UNIX)
++		return -EINVAL;
++
++	return 0;
++}
++
+ static int unix_mkname(struct sockaddr_un *sunaddr, int len, unsigned int *hashp)
+ {
+ 	*hashp = 0;
+ 
+-	if (len <= offsetof(struct sockaddr_un, sun_path) ||
+-	    len > sizeof(*sunaddr))
+-		return -EINVAL;
+-	if (!sunaddr || sunaddr->sun_family != AF_UNIX)
+-		return -EINVAL;
+ 	if (sunaddr->sun_path[0]) {
+ 		/*
+ 		 * This may look like an off by one error but it is a bit more
+@@ -1177,13 +1184,14 @@ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+ 	unsigned int hash;
+ 	struct unix_address *addr;
+ 
+-	if (addr_len < offsetofend(struct sockaddr_un, sun_family) ||
+-	    sunaddr->sun_family != AF_UNIX)
+-		return -EINVAL;
+-
+-	if (addr_len == offsetof(struct sockaddr_un, sun_path))
++	if (addr_len == offsetof(struct sockaddr_un, sun_path) &&
++	    sunaddr->sun_family == AF_UNIX)
+ 		return unix_autobind(sk);
+ 
++	err = unix_validate_addr(sunaddr, addr_len);
++	if (err)
++		return err;
++
+ 	err = unix_mkname(sunaddr, addr_len, &hash);
+ 	if (err < 0)
+ 		return err;
+@@ -1246,6 +1254,10 @@ static int unix_dgram_connect(struct socket *sock, struct sockaddr *addr,
+ 		goto out;
+ 
+ 	if (addr->sa_family != AF_UNSPEC) {
++		err = unix_validate_addr(sunaddr, alen);
++		if (err)
++			goto out;
++
+ 		err = unix_mkname(sunaddr, alen, &hash);
+ 		if (err < 0)
+ 			goto out;
+@@ -1358,6 +1370,10 @@ static int unix_stream_connect(struct socket *sock, struct sockaddr *uaddr,
+ 	int err;
+ 	long timeo;
+ 
++	err = unix_validate_addr(sunaddr, addr_len);
++	if (err)
++		goto out;
++
+ 	err = unix_mkname(sunaddr, addr_len, &hash);
+ 	if (err < 0)
+ 		goto out;
+@@ -1810,6 +1826,10 @@ static int unix_dgram_sendmsg(struct socket *sock, struct msghdr *msg,
+ 		goto out;
+ 
+ 	if (msg->msg_namelen) {
++		err = unix_validate_addr(sunaddr, msg->msg_namelen);
++		if (err)
++			goto out;
++
+ 		err = unix_mkname(sunaddr, msg->msg_namelen, &hash);
+ 		if (err < 0)
+ 			goto out;
+-- 
+cgit 1.2.3-1.el7
+
+
+From d2d8c9fddb1c11ccfa73bf0ad2b1e6b4ea7afdaf Mon Sep 17 00:00:00 2001
+From: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Date: Wed, 24 Nov 2021 11:14:24 +0900
+Subject: af_unix: Copy unix_mkname() into unix_find_(bsd|abstract)().
+
+We should not call unix_mkname() before unix_find_other() and instead do
+the same thing where necessary based on the address type:
+
+  - terminating the address with '\0' in unix_find_bsd()
+  - calculating the hash in unix_find_abstract().
+
+Signed-off-by: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+---
+ net/unix/af_unix.c | 63 ++++++++++++++++++++++--------------------------------
+ 1 file changed, 25 insertions(+), 38 deletions(-)
+
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index e2413a65bdfca..b97b694cfe891 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -239,19 +239,25 @@ static int unix_validate_addr(struct sockaddr_un *sunaddr, int addr_len)
+ 	return 0;
+ }
+ 
++static void unix_mkname_bsd(struct sockaddr_un *sunaddr, int addr_len)
++{
++	/* This may look like an off by one error but it is a bit more
++	 * subtle.  108 is the longest valid AF_UNIX path for a binding.
++	 * sun_path[108] doesn't as such exist.  However in kernel space
++	 * we are guaranteed that it is a valid memory location in our
++	 * kernel address buffer because syscall functions always pass
++	 * a pointer of struct sockaddr_storage which has a bigger buffer
++	 * than 108.
++	 */
++	((char *)sunaddr)[addr_len] = 0;
++}
++
+ static int unix_mkname(struct sockaddr_un *sunaddr, int len, unsigned int *hashp)
+ {
+ 	*hashp = 0;
+ 
+ 	if (sunaddr->sun_path[0]) {
+-		/*
+-		 * This may look like an off by one error but it is a bit more
+-		 * subtle. 108 is the longest valid AF_UNIX path for a binding.
+-		 * sun_path[108] doesn't as such exist.  However in kernel space
+-		 * we are guaranteed that it is a valid memory location in our
+-		 * kernel address buffer.
+-		 */
+-		((char *)sunaddr)[len] = 0;
++		unix_mkname_bsd(sunaddr, len);
+ 		len = strlen(sunaddr->sun_path) +
+ 			offsetof(struct sockaddr_un, sun_path) + 1;
+ 		return len;
+@@ -958,13 +964,14 @@ static int unix_release(struct socket *sock)
+ }
+ 
+ static struct sock *unix_find_bsd(struct net *net, struct sockaddr_un *sunaddr,
+-				  int type)
++				  int addr_len, int type)
+ {
+ 	struct inode *inode;
+ 	struct path path;
+ 	struct sock *sk;
+ 	int err;
+ 
++	unix_mkname_bsd(sunaddr, addr_len);
+ 	err = kern_path(sunaddr->sun_path, LOOKUP_FOLLOW, &path);
+ 	if (err)
+ 		goto fail;
+@@ -1002,9 +1009,9 @@ fail:
+ 
+ static struct sock *unix_find_abstract(struct net *net,
+ 				       struct sockaddr_un *sunaddr,
+-				       int addr_len, int type,
+-				       unsigned int hash)
++				       int addr_len, int type)
+ {
++	unsigned int hash = unix_hash_fold(csum_partial(sunaddr, addr_len, 0));
+ 	struct dentry *dentry;
+ 	struct sock *sk;
+ 
+@@ -1021,15 +1028,14 @@ static struct sock *unix_find_abstract(struct net *net,
+ 
+ static struct sock *unix_find_other(struct net *net,
+ 				    struct sockaddr_un *sunaddr,
+-				    int addr_len, int type,
+-				    unsigned int hash)
++				    int addr_len, int type)
+ {
+ 	struct sock *sk;
+ 
+ 	if (sunaddr->sun_path[0])
+-		sk = unix_find_bsd(net, sunaddr, type);
++		sk = unix_find_bsd(net, sunaddr, addr_len, type);
+ 	else
+-		sk = unix_find_abstract(net, sunaddr, addr_len, type, hash);
++		sk = unix_find_abstract(net, sunaddr, addr_len, type);
+ 
+ 	return sk;
+ }
+@@ -1246,7 +1252,6 @@ static int unix_dgram_connect(struct socket *sock, struct sockaddr *addr,
+ 	struct net *net = sock_net(sk);
+ 	struct sockaddr_un *sunaddr = (struct sockaddr_un *)addr;
+ 	struct sock *other;
+-	unsigned int hash;
+ 	int err;
+ 
+ 	err = -EINVAL;
+@@ -1258,11 +1263,6 @@ static int unix_dgram_connect(struct socket *sock, struct sockaddr *addr,
+ 		if (err)
+ 			goto out;
+ 
+-		err = unix_mkname(sunaddr, alen, &hash);
+-		if (err < 0)
+-			goto out;
+-		alen = err;
+-
+ 		if (test_bit(SOCK_PASSCRED, &sock->flags) &&
+ 		    !unix_sk(sk)->addr) {
+ 			err = unix_autobind(sk);
+@@ -1271,7 +1271,7 @@ static int unix_dgram_connect(struct socket *sock, struct sockaddr *addr,
+ 		}
+ 
+ restart:
+-		other = unix_find_other(net, sunaddr, alen, sock->type, hash);
++		other = unix_find_other(net, sunaddr, alen, sock->type);
+ 		if (IS_ERR(other)) {
+ 			err = PTR_ERR(other);
+ 			goto out;
+@@ -1365,7 +1365,6 @@ static int unix_stream_connect(struct socket *sock, struct sockaddr *uaddr,
+ 	struct sock *newsk = NULL;
+ 	struct sock *other = NULL;
+ 	struct sk_buff *skb = NULL;
+-	unsigned int hash;
+ 	int st;
+ 	int err;
+ 	long timeo;
+@@ -1374,11 +1373,6 @@ static int unix_stream_connect(struct socket *sock, struct sockaddr *uaddr,
+ 	if (err)
+ 		goto out;
+ 
+-	err = unix_mkname(sunaddr, addr_len, &hash);
+-	if (err < 0)
+-		goto out;
+-	addr_len = err;
+-
+ 	if (test_bit(SOCK_PASSCRED, &sock->flags) && !u->addr) {
+ 		err = unix_autobind(sk);
+ 		if (err)
+@@ -1409,7 +1403,7 @@ static int unix_stream_connect(struct socket *sock, struct sockaddr *uaddr,
+ 
+ restart:
+ 	/*  Find listening sock. */
+-	other = unix_find_other(net, sunaddr, addr_len, sk->sk_type, hash);
++	other = unix_find_other(net, sunaddr, addr_len, sk->sk_type);
+ 	if (IS_ERR(other)) {
+ 		err = PTR_ERR(other);
+ 		other = NULL;
+@@ -1807,9 +1801,7 @@ static int unix_dgram_sendmsg(struct socket *sock, struct msghdr *msg,
+ 	struct unix_sock *u = unix_sk(sk);
+ 	DECLARE_SOCKADDR(struct sockaddr_un *, sunaddr, msg->msg_name);
+ 	struct sock *other = NULL;
+-	int namelen = 0; /* fake GCC */
+ 	int err;
+-	unsigned int hash;
+ 	struct sk_buff *skb;
+ 	long timeo;
+ 	struct scm_cookie scm;
+@@ -1829,11 +1821,6 @@ static int unix_dgram_sendmsg(struct socket *sock, struct msghdr *msg,
+ 		err = unix_validate_addr(sunaddr, msg->msg_namelen);
+ 		if (err)
+ 			goto out;
+-
+-		err = unix_mkname(sunaddr, msg->msg_namelen, &hash);
+-		if (err < 0)
+-			goto out;
+-		namelen = err;
+ 	} else {
+ 		sunaddr = NULL;
+ 		err = -ENOTCONN;
+@@ -1886,8 +1873,8 @@ restart:
+ 		if (sunaddr == NULL)
+ 			goto out_free;
+ 
+-		other = unix_find_other(net, sunaddr, namelen, sk->sk_type,
+-					hash);
++		other = unix_find_other(net, sunaddr, msg->msg_namelen,
++					sk->sk_type);
+ 		if (IS_ERR(other)) {
+ 			err = PTR_ERR(other);
+ 			other = NULL;
+-- 
+cgit 1.2.3-1.el7
+
+
+From 5c32a3ed64b4c87ed6d9978074db5f0a54c4cd20 Mon Sep 17 00:00:00 2001
+From: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Date: Wed, 24 Nov 2021 11:14:25 +0900
+Subject: af_unix: Remove unix_mkname().
+
+This patch removes unix_mkname() and postpones calculating a hash to
+unix_bind_abstract().  Some BSD stuffs still remain in unix_bind()
+though, the next patch packs them into unix_bind_bsd().
+
+Signed-off-by: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+---
+ net/unix/af_unix.c | 34 +++++++++++-----------------------
+ 1 file changed, 11 insertions(+), 23 deletions(-)
+
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index b97b694cfe891..69782e8e6ad37 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -252,21 +252,6 @@ static void unix_mkname_bsd(struct sockaddr_un *sunaddr, int addr_len)
+ 	((char *)sunaddr)[addr_len] = 0;
+ }
+ 
+-static int unix_mkname(struct sockaddr_un *sunaddr, int len, unsigned int *hashp)
+-{
+-	*hashp = 0;
+-
+-	if (sunaddr->sun_path[0]) {
+-		unix_mkname_bsd(sunaddr, len);
+-		len = strlen(sunaddr->sun_path) +
+-			offsetof(struct sockaddr_un, sun_path) + 1;
+-		return len;
+-	}
+-
+-	*hashp = unix_hash_fold(csum_partial(sunaddr, len, 0));
+-	return len;
+-}
+-
+ static void __unix_remove_socket(struct sock *sk)
+ {
+ 	sk_del_node_init(sk);
+@@ -1168,6 +1153,9 @@ static int unix_bind_abstract(struct sock *sk, struct unix_address *addr)
+ 		return -EINVAL;
+ 	}
+ 
++	addr->hash = unix_hash_fold(csum_partial(addr->name, addr->len, 0));
++	addr->hash ^= sk->sk_type;
++
+ 	spin_lock(&unix_table_lock);
+ 	if (__unix_find_socket_byname(sock_net(sk), addr->name, addr->len,
+ 				      addr->hash)) {
+@@ -1183,12 +1171,11 @@ static int unix_bind_abstract(struct sock *sk, struct unix_address *addr)
+ 
+ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+ {
+-	struct sock *sk = sock->sk;
+ 	struct sockaddr_un *sunaddr = (struct sockaddr_un *)uaddr;
+ 	char *sun_path = sunaddr->sun_path;
+-	int err;
+-	unsigned int hash;
++	struct sock *sk = sock->sk;
+ 	struct unix_address *addr;
++	int err;
+ 
+ 	if (addr_len == offsetof(struct sockaddr_un, sun_path) &&
+ 	    sunaddr->sun_family == AF_UNIX)
+@@ -1198,17 +1185,18 @@ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+ 	if (err)
+ 		return err;
+ 
+-	err = unix_mkname(sunaddr, addr_len, &hash);
+-	if (err < 0)
+-		return err;
+-	addr_len = err;
++	if (sun_path[0]) {
++		unix_mkname_bsd(sunaddr, addr_len);
++		addr_len = strlen(sunaddr->sun_path) +
++			offsetof(struct sockaddr_un, sun_path) + 1;
++	}
++
+ 	addr = kmalloc(sizeof(*addr)+addr_len, GFP_KERNEL);
+ 	if (!addr)
+ 		return -ENOMEM;
+ 
+ 	memcpy(addr->name, sunaddr, addr_len);
+ 	addr->len = addr_len;
+-	addr->hash = hash ^ sk->sk_type;
+ 	refcount_set(&addr->refcnt, 1);
+ 
+ 	if (sun_path[0])
+-- 
+cgit 1.2.3-1.el7
+
+
+From 12f21c49ad83eba93d0485b8c9edcc28201bee93 Mon Sep 17 00:00:00 2001
+From: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Date: Wed, 24 Nov 2021 11:14:26 +0900
+Subject: af_unix: Allocate unix_address in unix_bind_(bsd|abstract)().
+
+To terminate address with '\0' in unix_bind_bsd(), we add
+unix_create_addr() and call it in unix_bind_bsd() and unix_bind_abstract().
+
+Also, unix_bind_abstract() does not return -EEXIST.  Only
+kern_path_create() and vfs_mknod() in unix_bind_bsd() can return it,
+so we move the last error check in unix_bind() to unix_bind_bsd().
+
+Signed-off-by: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+---
+ net/unix/af_unix.c | 107 +++++++++++++++++++++++++++++++++--------------------
+ 1 file changed, 67 insertions(+), 40 deletions(-)
+
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 69782e8e6ad37..2710e7dfc6383 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -214,6 +214,22 @@ struct sock *unix_peer_get(struct sock *s)
+ }
+ EXPORT_SYMBOL_GPL(unix_peer_get);
+ 
++static struct unix_address *unix_create_addr(struct sockaddr_un *sunaddr,
++					     int addr_len)
++{
++	struct unix_address *addr;
++
++	addr = kmalloc(sizeof(*addr) + addr_len, GFP_KERNEL);
++	if (!addr)
++		return NULL;
++
++	refcount_set(&addr->refcnt, 1);
++	addr->len = addr_len;
++	memcpy(addr->name, sunaddr, addr_len);
++
++	return addr;
++}
++
+ static inline void unix_release_addr(struct unix_address *addr)
+ {
+ 	if (refcount_dec_and_test(&addr->refcnt))
+@@ -1083,34 +1099,46 @@ out:	mutex_unlock(&u->bindlock);
+ 	return err;
+ }
+ 
+-static int unix_bind_bsd(struct sock *sk, struct unix_address *addr)
++static int unix_bind_bsd(struct sock *sk, struct sockaddr_un *sunaddr,
++			 int addr_len)
+ {
+-	struct unix_sock *u = unix_sk(sk);
+ 	umode_t mode = S_IFSOCK |
+ 	       (SOCK_INODE(sk->sk_socket)->i_mode & ~current_umask());
++	struct unix_sock *u = unix_sk(sk);
+ 	struct user_namespace *ns; // barf...
+-	struct path parent;
++	struct unix_address *addr;
+ 	struct dentry *dentry;
++	struct path parent;
+ 	unsigned int hash;
+ 	int err;
+ 
++	unix_mkname_bsd(sunaddr, addr_len);
++	addr_len = strlen(sunaddr->sun_path) +
++		offsetof(struct sockaddr_un, sun_path) + 1;
++
++	addr = unix_create_addr(sunaddr, addr_len);
++	if (!addr)
++		return -ENOMEM;
++
+ 	/*
+ 	 * Get the parent directory, calculate the hash for last
+ 	 * component.
+ 	 */
+ 	dentry = kern_path_create(AT_FDCWD, addr->name->sun_path, &parent, 0);
+-	if (IS_ERR(dentry))
+-		return PTR_ERR(dentry);
+-	ns = mnt_user_ns(parent.mnt);
++	if (IS_ERR(dentry)) {
++		err = PTR_ERR(dentry);
++		goto out;
++	}
+ 
+ 	/*
+ 	 * All right, let's create it.
+ 	 */
++	ns = mnt_user_ns(parent.mnt);
+ 	err = security_path_mknod(&parent, dentry, mode, 0);
+ 	if (!err)
+ 		err = vfs_mknod(ns, d_inode(parent.dentry), dentry, mode, 0);
+ 	if (err)
+-		goto out;
++		goto out_path;
+ 	err = mutex_lock_interruptible(&u->bindlock);
+ 	if (err)
+ 		goto out_unlink;
+@@ -1134,47 +1162,61 @@ out_unlock:
+ out_unlink:
+ 	/* failed after successful mknod?  unlink what we'd created... */
+ 	vfs_unlink(ns, d_inode(parent.dentry), dentry, NULL);
+-out:
++out_path:
+ 	done_path_create(&parent, dentry);
+-	return err;
++out:
++	unix_release_addr(addr);
++	return err == -EEXIST ? -EADDRINUSE : err;
+ }
+ 
+-static int unix_bind_abstract(struct sock *sk, struct unix_address *addr)
++static int unix_bind_abstract(struct sock *sk, struct sockaddr_un *sunaddr,
++			      int addr_len)
+ {
+ 	struct unix_sock *u = unix_sk(sk);
++	struct unix_address *addr;
+ 	int err;
+ 
++	addr = unix_create_addr(sunaddr, addr_len);
++	if (!addr)
++		return -ENOMEM;
++
+ 	err = mutex_lock_interruptible(&u->bindlock);
+ 	if (err)
+-		return err;
++		goto out;
+ 
+ 	if (u->addr) {
+-		mutex_unlock(&u->bindlock);
+-		return -EINVAL;
++		err = -EINVAL;
++		goto out_mutex;
+ 	}
+ 
+ 	addr->hash = unix_hash_fold(csum_partial(addr->name, addr->len, 0));
+ 	addr->hash ^= sk->sk_type;
+ 
+ 	spin_lock(&unix_table_lock);
++
+ 	if (__unix_find_socket_byname(sock_net(sk), addr->name, addr->len,
+-				      addr->hash)) {
+-		spin_unlock(&unix_table_lock);
+-		mutex_unlock(&u->bindlock);
+-		return -EADDRINUSE;
+-	}
++				      addr->hash))
++		goto out_spin;
++
+ 	__unix_set_addr(sk, addr, addr->hash);
+ 	spin_unlock(&unix_table_lock);
+ 	mutex_unlock(&u->bindlock);
+ 	return 0;
++
++out_spin:
++	spin_unlock(&unix_table_lock);
++	err = -EADDRINUSE;
++out_mutex:
++	mutex_unlock(&u->bindlock);
++out:
++	unix_release_addr(addr);
++	return err;
+ }
+ 
+ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+ {
+ 	struct sockaddr_un *sunaddr = (struct sockaddr_un *)uaddr;
+-	char *sun_path = sunaddr->sun_path;
+ 	struct sock *sk = sock->sk;
+-	struct unix_address *addr;
+ 	int err;
+ 
+ 	if (addr_len == offsetof(struct sockaddr_un, sun_path) &&
+@@ -1185,27 +1227,12 @@ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+ 	if (err)
+ 		return err;
+ 
+-	if (sun_path[0]) {
+-		unix_mkname_bsd(sunaddr, addr_len);
+-		addr_len = strlen(sunaddr->sun_path) +
+-			offsetof(struct sockaddr_un, sun_path) + 1;
+-	}
+-
+-	addr = kmalloc(sizeof(*addr)+addr_len, GFP_KERNEL);
+-	if (!addr)
+-		return -ENOMEM;
+-
+-	memcpy(addr->name, sunaddr, addr_len);
+-	addr->len = addr_len;
+-	refcount_set(&addr->refcnt, 1);
+-
+-	if (sun_path[0])
+-		err = unix_bind_bsd(sk, addr);
++	if (sunaddr->sun_path[0])
++		err = unix_bind_bsd(sk, sunaddr, addr_len);
+ 	else
+-		err = unix_bind_abstract(sk, addr);
+-	if (err)
+-		unix_release_addr(addr);
+-	return err == -EEXIST ? -EADDRINUSE : err;
++		err = unix_bind_abstract(sk, sunaddr, addr_len);
++
++	return err;
+ }
+ 
+ static void unix_state_double_lock(struct sock *sk1, struct sock *sk2)
+-- 
+cgit 1.2.3-1.el7
+
+
+From 5ce7ab4961a9320ca0836e06849210d088723a56 Mon Sep 17 00:00:00 2001
+From: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Date: Wed, 24 Nov 2021 11:14:27 +0900
+Subject: af_unix: Remove UNIX_ABSTRACT() macro and test sun_path[0] instead.
+
+In BSD and abstract address cases, we store sockets in the hash table with
+keys between 0 and UNIX_HASH_SIZE - 1.  However, the hash saved in a socket
+varies depending on its address type; sockets with BSD addresses always
+have UNIX_HASH_SIZE in their unix_sk(sk)->addr->hash.
+
+This is just for the UNIX_ABSTRACT() macro used to check the address type.
+The difference of the saved hashes comes from the first byte of the address
+in the first place.  So, we can test it directly.
+
+Then we can keep a real hash in each socket and replace unix_table_lock
+with per-hash locks in the later patch.
+
+Signed-off-by: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+---
+ net/unix/af_unix.c                                        | 6 ++----
+ tools/testing/selftests/bpf/progs/bpf_iter_unix.c         | 2 +-
+ tools/testing/selftests/bpf/progs/bpf_tracing_net.h       | 2 --
+ tools/testing/selftests/bpf/progs/test_skc_to_unix_sock.c | 2 +-
+ 4 files changed, 4 insertions(+), 8 deletions(-)
+
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 2710e7dfc6383..80752ab9ed97b 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -134,8 +134,6 @@ static struct hlist_head *unix_sockets_unbound(void *addr)
+ 	return &unix_socket_table[UNIX_HASH_SIZE + hash];
+ }
+ 
+-#define UNIX_ABSTRACT(sk)	(unix_sk(sk)->addr->hash < UNIX_HASH_SIZE)
+-
+ #ifdef CONFIG_SECURITY_NETWORK
+ static void unix_get_secdata(struct scm_cookie *scm, struct sk_buff *skb)
+ {
+@@ -3292,9 +3290,9 @@ static int unix_seq_show(struct seq_file *seq, void *v)
+ 			i = 0;
+ 			len = u->addr->len -
+ 				offsetof(struct sockaddr_un, sun_path);
+-			if (!UNIX_ABSTRACT(s))
++			if (u->addr->name->sun_path[0]) {
+ 				len--;
+-			else {
++			} else {
+ 				seq_putc(seq, '@');
+ 				i++;
+ 			}
+diff --git a/tools/testing/selftests/bpf/progs/bpf_iter_unix.c b/tools/testing/selftests/bpf/progs/bpf_iter_unix.c
+index 94423902685dc..c21e3f545371f 100644
+--- a/tools/testing/selftests/bpf/progs/bpf_iter_unix.c
++++ b/tools/testing/selftests/bpf/progs/bpf_iter_unix.c
+@@ -49,7 +49,7 @@ int dump_unix(struct bpf_iter__unix *ctx)
+ 		       sock_i_ino(sk));
+ 
+ 	if (unix_sk->addr) {
+-		if (!UNIX_ABSTRACT(unix_sk)) {
++		if (unix_sk->addr->name->sun_path[0]) {
+ 			BPF_SEQ_PRINTF(seq, " %s", unix_sk->addr->name->sun_path);
+ 		} else {
+ 			/* The name of the abstract UNIX domain socket starts
+diff --git a/tools/testing/selftests/bpf/progs/bpf_tracing_net.h b/tools/testing/selftests/bpf/progs/bpf_tracing_net.h
+index eef5646ddb195..e0f42601be9b8 100644
+--- a/tools/testing/selftests/bpf/progs/bpf_tracing_net.h
++++ b/tools/testing/selftests/bpf/progs/bpf_tracing_net.h
+@@ -6,8 +6,6 @@
+ #define AF_INET6		10
+ 
+ #define __SO_ACCEPTCON		(1 << 16)
+-#define UNIX_HASH_SIZE		256
+-#define UNIX_ABSTRACT(unix_sk)	(unix_sk->addr->hash < UNIX_HASH_SIZE)
+ 
+ #define SOL_TCP			6
+ #define TCP_CONGESTION		13
+-- 
+cgit 1.2.3-1.el7
+
+
+From f452be496a5c8f58b1a67cde79e89b9f1cfde31c Mon Sep 17 00:00:00 2001
+From: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Date: Wed, 24 Nov 2021 11:14:28 +0900
+Subject: af_unix: Add helpers to calculate hashes.
+
+This patch adds three helper functions that calculate hashes for unbound
+sockets and bound sockets with BSD/abstract addresses.
+
+Signed-off-by: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+---
+ net/unix/af_unix.c | 64 +++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 35 insertions(+), 29 deletions(-)
+
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 80752ab9ed97b..076d0297450de 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -123,15 +123,38 @@ DEFINE_SPINLOCK(unix_table_lock);
+ EXPORT_SYMBOL_GPL(unix_table_lock);
+ static atomic_long_t unix_nr_socks;
+ 
++/* SMP locking strategy:
++ *    hash table is protected with spinlock unix_table_lock
++ *    each socket state is protected by separate spin lock.
++ */
+ 
+-static struct hlist_head *unix_sockets_unbound(void *addr)
++static unsigned int unix_unbound_hash(struct sock *sk)
+ {
+-	unsigned long hash = (unsigned long)addr;
++	unsigned long hash = (unsigned long)sk;
+ 
+ 	hash ^= hash >> 16;
+ 	hash ^= hash >> 8;
+-	hash %= UNIX_HASH_SIZE;
+-	return &unix_socket_table[UNIX_HASH_SIZE + hash];
++	hash ^= sk->sk_type;
++
++	return UNIX_HASH_SIZE + (hash & (UNIX_HASH_SIZE - 1));
++}
++
++static unsigned int unix_bsd_hash(struct inode *i)
++{
++	return i->i_ino & (UNIX_HASH_SIZE - 1);
++}
++
++static unsigned int unix_abstract_hash(struct sockaddr_un *sunaddr,
++				       int addr_len, int type)
++{
++	__wsum csum = csum_partial(sunaddr, addr_len, 0);
++	unsigned int hash;
++
++	hash = (__force unsigned int)csum_fold(csum);
++	hash ^= hash >> 8;
++	hash ^= type;
++
++	return hash & (UNIX_HASH_SIZE - 1);
+ }
+ 
+ #ifdef CONFIG_SECURITY_NETWORK
+@@ -162,20 +185,6 @@ static inline bool unix_secdata_eq(struct scm_cookie *scm, struct sk_buff *skb)
+ }
+ #endif /* CONFIG_SECURITY_NETWORK */
+ 
+-/*
+- *  SMP locking strategy:
+- *    hash table is protected with spinlock unix_table_lock
+- *    each socket state is protected by separate spin lock.
+- */
+-
+-static inline unsigned int unix_hash_fold(__wsum n)
+-{
+-	unsigned int hash = (__force unsigned int)csum_fold(n);
+-
+-	hash ^= hash>>8;
+-	return hash&(UNIX_HASH_SIZE-1);
+-}
+-
+ #define unix_peer(sk) (unix_sk(sk)->peer)
+ 
+ static inline int unix_our_peer(struct sock *sk, struct sock *osk)
+@@ -334,11 +343,11 @@ static inline struct sock *unix_find_socket_byname(struct net *net,
+ 
+ static struct sock *unix_find_socket_byinode(struct inode *i)
+ {
++	unsigned int hash = unix_bsd_hash(i);
+ 	struct sock *s;
+ 
+ 	spin_lock(&unix_table_lock);
+-	sk_for_each(s,
+-		    &unix_socket_table[i->i_ino & (UNIX_HASH_SIZE - 1)]) {
++	sk_for_each(s, &unix_socket_table[hash]) {
+ 		struct dentry *dentry = unix_sk(s)->path.dentry;
+ 
+ 		if (dentry && d_backing_inode(dentry) == i) {
+@@ -899,7 +908,7 @@ static struct sock *unix_create1(struct net *net, struct socket *sock, int kern,
+ 	init_waitqueue_head(&u->peer_wait);
+ 	init_waitqueue_func_entry(&u->peer_wake, unix_dgram_peer_wake_relay);
+ 	memset(&u->scm_stat, 0, sizeof(struct scm_stat));
+-	unix_insert_socket(unix_sockets_unbound(sk), sk);
++	unix_insert_socket(&unix_socket_table[unix_unbound_hash(sk)], sk);
+ 
+ 	sock_prot_inuse_add(sock_net(sk), sk->sk_prot, 1);
+ 
+@@ -1010,11 +1019,11 @@ static struct sock *unix_find_abstract(struct net *net,
+ 				       struct sockaddr_un *sunaddr,
+ 				       int addr_len, int type)
+ {
+-	unsigned int hash = unix_hash_fold(csum_partial(sunaddr, addr_len, 0));
++	unsigned int hash = unix_abstract_hash(sunaddr, addr_len, type);
+ 	struct dentry *dentry;
+ 	struct sock *sk;
+ 
+-	sk = unix_find_socket_byname(net, sunaddr, addr_len, type ^ hash);
++	sk = unix_find_socket_byname(net, sunaddr, addr_len, hash);
+ 	if (!sk)
+ 		return ERR_PTR(-ECONNREFUSED);
+ 
+@@ -1066,8 +1075,7 @@ static int unix_autobind(struct sock *sk)
+ retry:
+ 	addr->len = sprintf(addr->name->sun_path + 1, "%05x", ordernum) +
+ 		offsetof(struct sockaddr_un, sun_path) + 1;
+-	addr->hash = unix_hash_fold(csum_partial(addr->name, addr->len, 0));
+-	addr->hash ^= sk->sk_type;
++	addr->hash = unix_abstract_hash(addr->name, addr->len, sk->sk_type);
+ 
+ 	spin_lock(&unix_table_lock);
+ 	ordernum = (ordernum+1)&0xFFFFF;
+@@ -1144,7 +1152,7 @@ static int unix_bind_bsd(struct sock *sk, struct sockaddr_un *sunaddr,
+ 		goto out_unlock;
+ 
+ 	addr->hash = UNIX_HASH_SIZE;
+-	hash = d_backing_inode(dentry)->i_ino & (UNIX_HASH_SIZE - 1);
++	hash = unix_bsd_hash(d_backing_inode(dentry));
+ 	spin_lock(&unix_table_lock);
+ 	u->path.mnt = mntget(parent.mnt);
+ 	u->path.dentry = dget(dentry);
+@@ -1187,9 +1195,7 @@ static int unix_bind_abstract(struct sock *sk, struct sockaddr_un *sunaddr,
+ 		goto out_mutex;
+ 	}
+ 
+-	addr->hash = unix_hash_fold(csum_partial(addr->name, addr->len, 0));
+-	addr->hash ^= sk->sk_type;
+-
++	addr->hash = unix_abstract_hash(addr->name, addr->len, sk->sk_type);
+ 	spin_lock(&unix_table_lock);
+ 
+ 	if (__unix_find_socket_byname(sock_net(sk), addr->name, addr->len,
+-- 
+cgit 1.2.3-1.el7
+
+
+From e6b4b873896f0e9298f70d25726f4bb1e1b265ba Mon Sep 17 00:00:00 2001
+From: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Date: Wed, 24 Nov 2021 11:14:29 +0900
+Subject: af_unix: Save hash in sk_hash.
+
+To replace unix_table_lock with per-hash locks in the next patch, we need
+to save a hash in each socket because /proc/net/unix or BPF prog iterate
+sockets while holding a hash table lock and release it later in a different
+function.
+
+Currently, we store a real/pseudo hash in struct unix_address.  However, we
+do not allocate it to unbound sockets, nor should we do just for that.  For
+this purpose, we can use sk_hash.  Then, we no longer use the hash field in
+struct unix_address and can remove it.
+
+Also, this patch does
+  - rename unix_insert_socket() to unix_insert_unbound_socket()
+  - remove the redundant list argument from __unix_insert_socket() and
+     unix_insert_unbound_socket()
+  - use 'unsigned int' instead of 'unsigned' in __unix_set_addr_hash()
+  - remove 'inline' from unix_remove_socket() and
+     unix_insert_unbound_socket().
+
+Signed-off-by: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+---
+ include/net/af_unix.h |  1 -
+ net/unix/af_unix.c    | 42 +++++++++++++++++++++++-------------------
+ 2 files changed, 23 insertions(+), 20 deletions(-)
+
+diff --git a/include/net/af_unix.h b/include/net/af_unix.h
+index 7d142e8a05508..89049cc6c066a 100644
+--- a/include/net/af_unix.h
++++ b/include/net/af_unix.h
+@@ -26,7 +26,6 @@ extern struct hlist_head unix_socket_table[2 * UNIX_HASH_SIZE];
+ struct unix_address {
+ 	refcount_t	refcnt;
+ 	int		len;
+-	unsigned int	hash;
+ 	struct sockaddr_un name[];
+ };
+ 
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 076d0297450de..bd9fbfe0e7bbe 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -280,31 +280,33 @@ static void __unix_remove_socket(struct sock *sk)
+ 	sk_del_node_init(sk);
+ }
+ 
+-static void __unix_insert_socket(struct hlist_head *list, struct sock *sk)
++static void __unix_insert_socket(struct sock *sk)
+ {
+ 	WARN_ON(!sk_unhashed(sk));
+-	sk_add_node(sk, list);
++	sk_add_node(sk, &unix_socket_table[sk->sk_hash]);
+ }
+ 
+-static void __unix_set_addr(struct sock *sk, struct unix_address *addr,
+-			    unsigned hash)
++static void __unix_set_addr_hash(struct sock *sk, struct unix_address *addr,
++				 unsigned int hash)
+ {
+ 	__unix_remove_socket(sk);
+ 	smp_store_release(&unix_sk(sk)->addr, addr);
+-	__unix_insert_socket(&unix_socket_table[hash], sk);
++
++	sk->sk_hash = hash;
++	__unix_insert_socket(sk);
+ }
+ 
+-static inline void unix_remove_socket(struct sock *sk)
++static void unix_remove_socket(struct sock *sk)
+ {
+ 	spin_lock(&unix_table_lock);
+ 	__unix_remove_socket(sk);
+ 	spin_unlock(&unix_table_lock);
+ }
+ 
+-static inline void unix_insert_socket(struct hlist_head *list, struct sock *sk)
++static void unix_insert_unbound_socket(struct sock *sk)
+ {
+ 	spin_lock(&unix_table_lock);
+-	__unix_insert_socket(list, sk);
++	__unix_insert_socket(sk);
+ 	spin_unlock(&unix_table_lock);
+ }
+ 
+@@ -893,6 +895,7 @@ static struct sock *unix_create1(struct net *net, struct socket *sock, int kern,
+ 
+ 	sock_init_data(sock, sk);
+ 
++	sk->sk_hash		= unix_unbound_hash(sk);
+ 	sk->sk_allocation	= GFP_KERNEL_ACCOUNT;
+ 	sk->sk_write_space	= unix_write_space;
+ 	sk->sk_max_ack_backlog	= net->unx.sysctl_max_dgram_qlen;
+@@ -908,7 +911,7 @@ static struct sock *unix_create1(struct net *net, struct socket *sock, int kern,
+ 	init_waitqueue_head(&u->peer_wait);
+ 	init_waitqueue_func_entry(&u->peer_wake, unix_dgram_peer_wake_relay);
+ 	memset(&u->scm_stat, 0, sizeof(struct scm_stat));
+-	unix_insert_socket(&unix_socket_table[unix_unbound_hash(sk)], sk);
++	unix_insert_unbound_socket(sk);
+ 
+ 	sock_prot_inuse_add(sock_net(sk), sk->sk_prot, 1);
+ 
+@@ -1054,6 +1057,7 @@ static int unix_autobind(struct sock *sk)
+ 	struct unix_address *addr;
+ 	unsigned int retries = 0;
+ 	static u32 ordernum = 1;
++	unsigned int new_hash;
+ 	int err;
+ 
+ 	err = mutex_lock_interruptible(&u->bindlock);
+@@ -1075,13 +1079,13 @@ static int unix_autobind(struct sock *sk)
+ retry:
+ 	addr->len = sprintf(addr->name->sun_path + 1, "%05x", ordernum) +
+ 		offsetof(struct sockaddr_un, sun_path) + 1;
+-	addr->hash = unix_abstract_hash(addr->name, addr->len, sk->sk_type);
+ 
++	new_hash = unix_abstract_hash(addr->name, addr->len, sk->sk_type);
+ 	spin_lock(&unix_table_lock);
+ 	ordernum = (ordernum+1)&0xFFFFF;
+ 
+ 	if (__unix_find_socket_byname(sock_net(sk), addr->name, addr->len,
+-				      addr->hash)) {
++				      new_hash)) {
+ 		spin_unlock(&unix_table_lock);
+ 		/*
+ 		 * __unix_find_socket_byname() may take long time if many names
+@@ -1097,7 +1101,7 @@ retry:
+ 		goto retry;
+ 	}
+ 
+-	__unix_set_addr(sk, addr, addr->hash);
++	__unix_set_addr_hash(sk, addr, new_hash);
+ 	spin_unlock(&unix_table_lock);
+ 	err = 0;
+ 
+@@ -1113,9 +1117,9 @@ static int unix_bind_bsd(struct sock *sk, struct sockaddr_un *sunaddr,
+ 	struct unix_sock *u = unix_sk(sk);
+ 	struct user_namespace *ns; // barf...
+ 	struct unix_address *addr;
++	unsigned int new_hash;
+ 	struct dentry *dentry;
+ 	struct path parent;
+-	unsigned int hash;
+ 	int err;
+ 
+ 	unix_mkname_bsd(sunaddr, addr_len);
+@@ -1151,12 +1155,11 @@ static int unix_bind_bsd(struct sock *sk, struct sockaddr_un *sunaddr,
+ 	if (u->addr)
+ 		goto out_unlock;
+ 
+-	addr->hash = UNIX_HASH_SIZE;
+-	hash = unix_bsd_hash(d_backing_inode(dentry));
++	new_hash = unix_bsd_hash(d_backing_inode(dentry));
+ 	spin_lock(&unix_table_lock);
+ 	u->path.mnt = mntget(parent.mnt);
+ 	u->path.dentry = dget(dentry);
+-	__unix_set_addr(sk, addr, hash);
++	__unix_set_addr_hash(sk, addr, new_hash);
+ 	spin_unlock(&unix_table_lock);
+ 	mutex_unlock(&u->bindlock);
+ 	done_path_create(&parent, dentry);
+@@ -1180,6 +1183,7 @@ static int unix_bind_abstract(struct sock *sk, struct sockaddr_un *sunaddr,
+ {
+ 	struct unix_sock *u = unix_sk(sk);
+ 	struct unix_address *addr;
++	unsigned int new_hash;
+ 	int err;
+ 
+ 	addr = unix_create_addr(sunaddr, addr_len);
+@@ -1195,14 +1199,14 @@ static int unix_bind_abstract(struct sock *sk, struct sockaddr_un *sunaddr,
+ 		goto out_mutex;
+ 	}
+ 
+-	addr->hash = unix_abstract_hash(addr->name, addr->len, sk->sk_type);
++	new_hash = unix_abstract_hash(addr->name, addr->len, sk->sk_type);
+ 	spin_lock(&unix_table_lock);
+ 
+ 	if (__unix_find_socket_byname(sock_net(sk), addr->name, addr->len,
+-				      addr->hash))
++				      new_hash))
+ 		goto out_spin;
+ 
+-	__unix_set_addr(sk, addr, addr->hash);
++	__unix_set_addr_hash(sk, addr, new_hash);
+ 	spin_unlock(&unix_table_lock);
+ 	mutex_unlock(&u->bindlock);
+ 	return 0;
+-- 
+cgit 1.2.3-1.el7
+
+
+From afd20b9290e184c203fe22f2d6b80dc7127ba724 Mon Sep 17 00:00:00 2001
+From: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Date: Wed, 24 Nov 2021 11:14:30 +0900
+Subject: af_unix: Replace the big lock with small locks.
+
+The hash table of AF_UNIX sockets is protected by the single lock.  This
+patch replaces it with per-hash locks.
+
+The effect is noticeable when we handle multiple sockets simultaneously.
+Here is a test result on an EC2 c5.24xlarge instance.  It shows latency
+(under 10us only) in unix_insert_unbound_socket() while 64 CPUs creating
+1024 sockets for each in parallel.
+
+  Without this patch:
+
+     nsec          : count     distribution
+        0          : 179      |                                        |
+        500        : 3021     |*********                               |
+        1000       : 6271     |*******************                     |
+        1500       : 6318     |*******************                     |
+        2000       : 5828     |*****************                       |
+        2500       : 5124     |***************                         |
+        3000       : 4426     |*************                           |
+        3500       : 3672     |***********                             |
+        4000       : 3138     |*********                               |
+        4500       : 2811     |********                                |
+        5000       : 2384     |*******                                 |
+        5500       : 2023     |******                                  |
+        6000       : 1954     |*****                                   |
+        6500       : 1737     |*****                                   |
+        7000       : 1749     |*****                                   |
+        7500       : 1520     |****                                    |
+        8000       : 1469     |****                                    |
+        8500       : 1394     |****                                    |
+        9000       : 1232     |***                                     |
+        9500       : 1138     |***                                     |
+        10000      : 994      |***                                     |
+
+  With this patch:
+
+     nsec          : count     distribution
+        0          : 1634     |****                                    |
+        500        : 13170    |****************************************|
+        1000       : 13156    |*************************************** |
+        1500       : 9010     |***************************             |
+        2000       : 6363     |*******************                     |
+        2500       : 4443     |*************                           |
+        3000       : 3240     |*********                               |
+        3500       : 2549     |*******                                 |
+        4000       : 1872     |*****                                   |
+        4500       : 1504     |****                                    |
+        5000       : 1247     |***                                     |
+        5500       : 1035     |***                                     |
+        6000       : 889      |**                                      |
+        6500       : 744      |**                                      |
+        7000       : 634      |*                                       |
+        7500       : 498      |*                                       |
+        8000       : 433      |*                                       |
+        8500       : 355      |*                                       |
+        9000       : 336      |*                                       |
+        9500       : 284      |                                        |
+        10000      : 243      |                                        |
+
+Signed-off-by: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+---
+ include/net/af_unix.h |  2 +-
+ net/unix/af_unix.c    | 98 +++++++++++++++++++++++++++++++--------------------
+ net/unix/diag.c       | 20 +++++------
+ 3 files changed, 71 insertions(+), 49 deletions(-)
+
+diff --git a/include/net/af_unix.h b/include/net/af_unix.h
+index 89049cc6c066a..a7ef624ed7262 100644
+--- a/include/net/af_unix.h
++++ b/include/net/af_unix.h
+@@ -20,7 +20,7 @@ struct sock *unix_peer_get(struct sock *sk);
+ #define UNIX_HASH_BITS	8
+ 
+ extern unsigned int unix_tot_inflight;
+-extern spinlock_t unix_table_lock;
++extern spinlock_t unix_table_locks[2 * UNIX_HASH_SIZE];
+ extern struct hlist_head unix_socket_table[2 * UNIX_HASH_SIZE];
+ 
+ struct unix_address {
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index bd9fbfe0e7bbe..5c69f0d2aab10 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -117,14 +117,14 @@
+ 
+ #include "scm.h"
+ 
++spinlock_t unix_table_locks[2 * UNIX_HASH_SIZE];
++EXPORT_SYMBOL_GPL(unix_table_locks);
+ struct hlist_head unix_socket_table[2 * UNIX_HASH_SIZE];
+ EXPORT_SYMBOL_GPL(unix_socket_table);
+-DEFINE_SPINLOCK(unix_table_lock);
+-EXPORT_SYMBOL_GPL(unix_table_lock);
+ static atomic_long_t unix_nr_socks;
+ 
+ /* SMP locking strategy:
+- *    hash table is protected with spinlock unix_table_lock
++ *    hash table is protected with spinlock unix_table_locks
+  *    each socket state is protected by separate spin lock.
+  */
+ 
+@@ -157,6 +157,25 @@ static unsigned int unix_abstract_hash(struct sockaddr_un *sunaddr,
+ 	return hash & (UNIX_HASH_SIZE - 1);
+ }
+ 
++static void unix_table_double_lock(unsigned int hash1, unsigned int hash2)
++{
++	/* hash1 and hash2 is never the same because
++	 * one is between 0 and UNIX_HASH_SIZE - 1, and
++	 * another is between UNIX_HASH_SIZE and UNIX_HASH_SIZE * 2.
++	 */
++	if (hash1 > hash2)
++		swap(hash1, hash2);
++
++	spin_lock(&unix_table_locks[hash1]);
++	spin_lock_nested(&unix_table_locks[hash2], SINGLE_DEPTH_NESTING);
++}
++
++static void unix_table_double_unlock(unsigned int hash1, unsigned int hash2)
++{
++	spin_unlock(&unix_table_locks[hash1]);
++	spin_unlock(&unix_table_locks[hash2]);
++}
++
+ #ifdef CONFIG_SECURITY_NETWORK
+ static void unix_get_secdata(struct scm_cookie *scm, struct sk_buff *skb)
+ {
+@@ -298,16 +317,16 @@ static void __unix_set_addr_hash(struct sock *sk, struct unix_address *addr,
+ 
+ static void unix_remove_socket(struct sock *sk)
+ {
+-	spin_lock(&unix_table_lock);
++	spin_lock(&unix_table_locks[sk->sk_hash]);
+ 	__unix_remove_socket(sk);
+-	spin_unlock(&unix_table_lock);
++	spin_unlock(&unix_table_locks[sk->sk_hash]);
+ }
+ 
+ static void unix_insert_unbound_socket(struct sock *sk)
+ {
+-	spin_lock(&unix_table_lock);
++	spin_lock(&unix_table_locks[sk->sk_hash]);
+ 	__unix_insert_socket(sk);
+-	spin_unlock(&unix_table_lock);
++	spin_unlock(&unix_table_locks[sk->sk_hash]);
+ }
+ 
+ static struct sock *__unix_find_socket_byname(struct net *net,
+@@ -335,11 +354,11 @@ static inline struct sock *unix_find_socket_byname(struct net *net,
+ {
+ 	struct sock *s;
+ 
+-	spin_lock(&unix_table_lock);
++	spin_lock(&unix_table_locks[hash]);
+ 	s = __unix_find_socket_byname(net, sunname, len, hash);
+ 	if (s)
+ 		sock_hold(s);
+-	spin_unlock(&unix_table_lock);
++	spin_unlock(&unix_table_locks[hash]);
+ 	return s;
+ }
+ 
+@@ -348,19 +367,18 @@ static struct sock *unix_find_socket_byinode(struct inode *i)
+ 	unsigned int hash = unix_bsd_hash(i);
+ 	struct sock *s;
+ 
+-	spin_lock(&unix_table_lock);
++	spin_lock(&unix_table_locks[hash]);
+ 	sk_for_each(s, &unix_socket_table[hash]) {
+ 		struct dentry *dentry = unix_sk(s)->path.dentry;
+ 
+ 		if (dentry && d_backing_inode(dentry) == i) {
+ 			sock_hold(s);
+-			goto found;
++			spin_unlock(&unix_table_locks[hash]);
++			return s;
+ 		}
+ 	}
+-	s = NULL;
+-found:
+-	spin_unlock(&unix_table_lock);
+-	return s;
++	spin_unlock(&unix_table_locks[hash]);
++	return NULL;
+ }
+ 
+ /* Support code for asymmetrically connected dgram sockets
+@@ -1053,11 +1071,11 @@ static struct sock *unix_find_other(struct net *net,
+ 
+ static int unix_autobind(struct sock *sk)
+ {
++	unsigned int new_hash, old_hash = sk->sk_hash;
+ 	struct unix_sock *u = unix_sk(sk);
+ 	struct unix_address *addr;
+ 	unsigned int retries = 0;
+ 	static u32 ordernum = 1;
+-	unsigned int new_hash;
+ 	int err;
+ 
+ 	err = mutex_lock_interruptible(&u->bindlock);
+@@ -1081,12 +1099,13 @@ retry:
+ 		offsetof(struct sockaddr_un, sun_path) + 1;
+ 
+ 	new_hash = unix_abstract_hash(addr->name, addr->len, sk->sk_type);
+-	spin_lock(&unix_table_lock);
++	unix_table_double_lock(old_hash, new_hash);
+ 	ordernum = (ordernum+1)&0xFFFFF;
+ 
+ 	if (__unix_find_socket_byname(sock_net(sk), addr->name, addr->len,
+ 				      new_hash)) {
+-		spin_unlock(&unix_table_lock);
++		unix_table_double_unlock(old_hash, new_hash);
++
+ 		/*
+ 		 * __unix_find_socket_byname() may take long time if many names
+ 		 * are already in use.
+@@ -1102,7 +1121,7 @@ retry:
+ 	}
+ 
+ 	__unix_set_addr_hash(sk, addr, new_hash);
+-	spin_unlock(&unix_table_lock);
++	unix_table_double_unlock(old_hash, new_hash);
+ 	err = 0;
+ 
+ out:	mutex_unlock(&u->bindlock);
+@@ -1114,10 +1133,10 @@ static int unix_bind_bsd(struct sock *sk, struct sockaddr_un *sunaddr,
+ {
+ 	umode_t mode = S_IFSOCK |
+ 	       (SOCK_INODE(sk->sk_socket)->i_mode & ~current_umask());
++	unsigned int new_hash, old_hash = sk->sk_hash;
+ 	struct unix_sock *u = unix_sk(sk);
+ 	struct user_namespace *ns; // barf...
+ 	struct unix_address *addr;
+-	unsigned int new_hash;
+ 	struct dentry *dentry;
+ 	struct path parent;
+ 	int err;
+@@ -1156,11 +1175,11 @@ static int unix_bind_bsd(struct sock *sk, struct sockaddr_un *sunaddr,
+ 		goto out_unlock;
+ 
+ 	new_hash = unix_bsd_hash(d_backing_inode(dentry));
+-	spin_lock(&unix_table_lock);
++	unix_table_double_lock(old_hash, new_hash);
+ 	u->path.mnt = mntget(parent.mnt);
+ 	u->path.dentry = dget(dentry);
+ 	__unix_set_addr_hash(sk, addr, new_hash);
+-	spin_unlock(&unix_table_lock);
++	unix_table_double_unlock(old_hash, new_hash);
+ 	mutex_unlock(&u->bindlock);
+ 	done_path_create(&parent, dentry);
+ 	return 0;
+@@ -1181,9 +1200,9 @@ out:
+ static int unix_bind_abstract(struct sock *sk, struct sockaddr_un *sunaddr,
+ 			      int addr_len)
+ {
++	unsigned int new_hash, old_hash = sk->sk_hash;
+ 	struct unix_sock *u = unix_sk(sk);
+ 	struct unix_address *addr;
+-	unsigned int new_hash;
+ 	int err;
+ 
+ 	addr = unix_create_addr(sunaddr, addr_len);
+@@ -1200,19 +1219,19 @@ static int unix_bind_abstract(struct sock *sk, struct sockaddr_un *sunaddr,
+ 	}
+ 
+ 	new_hash = unix_abstract_hash(addr->name, addr->len, sk->sk_type);
+-	spin_lock(&unix_table_lock);
++	unix_table_double_lock(old_hash, new_hash);
+ 
+ 	if (__unix_find_socket_byname(sock_net(sk), addr->name, addr->len,
+ 				      new_hash))
+ 		goto out_spin;
+ 
+ 	__unix_set_addr_hash(sk, addr, new_hash);
+-	spin_unlock(&unix_table_lock);
++	unix_table_double_unlock(old_hash, new_hash);
+ 	mutex_unlock(&u->bindlock);
+ 	return 0;
+ 
+ out_spin:
+-	spin_unlock(&unix_table_lock);
++	unix_table_double_unlock(old_hash, new_hash);
+ 	err = -EADDRINUSE;
+ out_mutex:
+ 	mutex_unlock(&u->bindlock);
+@@ -1519,9 +1538,9 @@ restart:
+ 	 *
+ 	 * The contents of *(otheru->addr) and otheru->path
+ 	 * are seen fully set up here, since we have found
+-	 * otheru in hash under unix_table_lock.  Insertion
++	 * otheru in hash under unix_table_locks.  Insertion
+ 	 * into the hash chain we'd found it in had been done
+-	 * in an earlier critical area protected by unix_table_lock,
++	 * in an earlier critical area protected by unix_table_locks,
+ 	 * the same one where we'd set *(otheru->addr) contents,
+ 	 * as well as otheru->path and otheru->addr itself.
+ 	 *
+@@ -3198,7 +3217,7 @@ static __poll_t unix_dgram_poll(struct file *file, struct socket *sock,
+ #define BUCKET_SPACE (BITS_PER_LONG - (UNIX_HASH_BITS + 1) - 1)
+ 
+ #define get_bucket(x) ((x) >> BUCKET_SPACE)
+-#define get_offset(x) ((x) & ((1L << BUCKET_SPACE) - 1))
++#define get_offset(x) ((x) & ((1UL << BUCKET_SPACE) - 1))
+ #define set_bucket_offset(b, o) ((b) << BUCKET_SPACE | (o))
+ 
+ static struct sock *unix_from_bucket(struct seq_file *seq, loff_t *pos)
+@@ -3222,7 +3241,7 @@ static struct sock *unix_next_socket(struct seq_file *seq,
+ 				     struct sock *sk,
+ 				     loff_t *pos)
+ {
+-	unsigned long bucket;
++	unsigned long bucket = get_bucket(*pos);
+ 
+ 	while (sk > (struct sock *)SEQ_START_TOKEN) {
+ 		sk = sk_next(sk);
+@@ -3233,12 +3252,13 @@ static struct sock *unix_next_socket(struct seq_file *seq,
+ 	}
+ 
+ 	do {
++		spin_lock(&unix_table_locks[bucket]);
+ 		sk = unix_from_bucket(seq, pos);
+ 		if (sk)
+ 			return sk;
+ 
+ next_bucket:
+-		bucket = get_bucket(*pos) + 1;
++		spin_unlock(&unix_table_locks[bucket++]);
+ 		*pos = set_bucket_offset(bucket, 1);
+ 	} while (bucket < ARRAY_SIZE(unix_socket_table));
+ 
+@@ -3246,10 +3266,7 @@ next_bucket:
+ }
+ 
+ static void *unix_seq_start(struct seq_file *seq, loff_t *pos)
+-	__acquires(unix_table_lock)
+ {
+-	spin_lock(&unix_table_lock);
+-
+ 	if (!*pos)
+ 		return SEQ_START_TOKEN;
+ 
+@@ -3266,9 +3283,11 @@ static void *unix_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+ }
+ 
+ static void unix_seq_stop(struct seq_file *seq, void *v)
+-	__releases(unix_table_lock)
+ {
+-	spin_unlock(&unix_table_lock);
++	struct sock *sk = v;
++
++	if (sk)
++		spin_unlock(&unix_table_locks[sk->sk_hash]);
+ }
+ 
+ static int unix_seq_show(struct seq_file *seq, void *v)
+@@ -3293,7 +3312,7 @@ static int unix_seq_show(struct seq_file *seq, void *v)
+ 			(s->sk_state == TCP_ESTABLISHED ? SS_CONNECTING : SS_DISCONNECTING),
+ 			sock_i_ino(s));
+ 
+-		if (u->addr) {	// under unix_table_lock here
++		if (u->addr) {	// under unix_table_locks here
+ 			int i, len;
+ 			seq_putc(seq, ' ');
+ 
+@@ -3452,10 +3471,13 @@ static void __init bpf_iter_register(void)
+ 
+ static int __init af_unix_init(void)
+ {
+-	int rc = -1;
++	int i, rc = -1;
+ 
+ 	BUILD_BUG_ON(sizeof(struct unix_skb_parms) > sizeof_field(struct sk_buff, cb));
+ 
++	for (i = 0; i < 2 * UNIX_HASH_SIZE; i++)
++		spin_lock_init(&unix_table_locks[i]);
++
+ 	rc = proto_register(&unix_dgram_proto, 1);
+ 	if (rc != 0) {
+ 		pr_crit("%s: Cannot create unix_sock SLAB cache!\n", __func__);
+diff --git a/net/unix/diag.c b/net/unix/diag.c
+index db555f267407a..bb0b5ea1655f8 100644
+--- a/net/unix/diag.c
++++ b/net/unix/diag.c
+@@ -13,7 +13,7 @@
+ 
+ static int sk_diag_dump_name(struct sock *sk, struct sk_buff *nlskb)
+ {
+-	/* might or might not have unix_table_lock */
++	/* might or might not have unix_table_locks */
+ 	struct unix_address *addr = smp_load_acquire(&unix_sk(sk)->addr);
+ 
+ 	if (!addr)
+@@ -204,13 +204,13 @@ static int unix_diag_dump(struct sk_buff *skb, struct netlink_callback *cb)
+ 	s_slot = cb->args[0];
+ 	num = s_num = cb->args[1];
+ 
+-	spin_lock(&unix_table_lock);
+ 	for (slot = s_slot;
+ 	     slot < ARRAY_SIZE(unix_socket_table);
+ 	     s_num = 0, slot++) {
+ 		struct sock *sk;
+ 
+ 		num = 0;
++		spin_lock(&unix_table_locks[slot]);
+ 		sk_for_each(sk, &unix_socket_table[slot]) {
+ 			if (!net_eq(sock_net(sk), net))
+ 				continue;
+@@ -221,14 +221,16 @@ static int unix_diag_dump(struct sk_buff *skb, struct netlink_callback *cb)
+ 			if (sk_diag_dump(sk, skb, req,
+ 					 NETLINK_CB(cb->skb).portid,
+ 					 cb->nlh->nlmsg_seq,
+-					 NLM_F_MULTI) < 0)
++					 NLM_F_MULTI) < 0) {
++				spin_unlock(&unix_table_locks[slot]);
+ 				goto done;
++			}
+ next:
+ 			num++;
+ 		}
++		spin_unlock(&unix_table_locks[slot]);
+ 	}
+ done:
+-	spin_unlock(&unix_table_lock);
+ 	cb->args[0] = slot;
+ 	cb->args[1] = num;
+ 
+@@ -237,21 +239,19 @@ done:
+ 
+ static struct sock *unix_lookup_by_ino(unsigned int ino)
+ {
+-	int i;
+ 	struct sock *sk;
++	int i;
+ 
+-	spin_lock(&unix_table_lock);
+ 	for (i = 0; i < ARRAY_SIZE(unix_socket_table); i++) {
++		spin_lock(&unix_table_locks[i]);
+ 		sk_for_each(sk, &unix_socket_table[i])
+ 			if (ino == sock_i_ino(sk)) {
+ 				sock_hold(sk);
+-				spin_unlock(&unix_table_lock);
+-
++				spin_unlock(&unix_table_locks[i]);
+ 				return sk;
+ 			}
++		spin_unlock(&unix_table_locks[i]);
+ 	}
+-
+-	spin_unlock(&unix_table_lock);
+ 	return NULL;
+ }
+ 
+-- 
+cgit 1.2.3-1.el7
+
+
+From 9acbc584c3a4e9706703039708ec947ffc152c66 Mon Sep 17 00:00:00 2001
+From: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Date: Wed, 24 Nov 2021 11:14:31 +0900
+Subject: af_unix: Relax race in unix_autobind().
+
+When we bind an AF_UNIX socket without a name specified, the kernel selects
+an available one from 0x00000 to 0xFFFFF.  unix_autobind() starts searching
+from a number in the 'static' variable and increments it after acquiring
+two locks.
+
+If multiple processes try autobind, they obtain the same lock and check if
+a socket in the hash list has the same name.  If not, one process uses it,
+and all except one end up retrying the _next_ number (actually not, it may
+be incremented by the other processes).  The more we autobind sockets in
+parallel, the longer the latency gets.  We can avoid such a race by
+searching for a name from a random number.
+
+These show latency in unix_autobind() while 64 CPUs are simultaneously
+autobind-ing 1024 sockets for each.
+
+  Without this patch:
+
+     usec          : count     distribution
+        0          : 1176     |***                                     |
+        2          : 3655     |***********                             |
+        4          : 4094     |*************                           |
+        6          : 3831     |************                            |
+        8          : 3829     |************                            |
+        10         : 3844     |************                            |
+        12         : 3638     |***********                             |
+        14         : 2992     |*********                               |
+        16         : 2485     |*******                                 |
+        18         : 2230     |*******                                 |
+        20         : 2095     |******                                  |
+        22         : 1853     |*****                                   |
+        24         : 1827     |*****                                   |
+        26         : 1677     |*****                                   |
+        28         : 1473     |****                                    |
+        30         : 1573     |*****                                   |
+        32         : 1417     |****                                    |
+        34         : 1385     |****                                    |
+        36         : 1345     |****                                    |
+        38         : 1344     |****                                    |
+        40         : 1200     |***                                     |
+
+  With this patch:
+
+     usec          : count     distribution
+        0          : 1855     |******                                  |
+        2          : 6464     |*********************                   |
+        4          : 9936     |********************************        |
+        6          : 12107    |****************************************|
+        8          : 10441    |**********************************      |
+        10         : 7264     |***********************                 |
+        12         : 4254     |**************                          |
+        14         : 2538     |********                                |
+        16         : 1596     |*****                                   |
+        18         : 1088     |***                                     |
+        20         : 800      |**                                      |
+        22         : 670      |**                                      |
+        24         : 601      |*                                       |
+        26         : 562      |*                                       |
+        28         : 525      |*                                       |
+        30         : 446      |*                                       |
+        32         : 378      |*                                       |
+        34         : 337      |*                                       |
+        36         : 317      |*                                       |
+        38         : 314      |*                                       |
+        40         : 298      |                                        |
+
+Signed-off-by: Kuniyuki Iwashima <kuniyu@amazon.co.jp>
+Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+---
+ net/unix/af_unix.c | 22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
+
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 5c69f0d2aab10..4d6e33bbd446b 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -1074,8 +1074,7 @@ static int unix_autobind(struct sock *sk)
+ 	unsigned int new_hash, old_hash = sk->sk_hash;
+ 	struct unix_sock *u = unix_sk(sk);
+ 	struct unix_address *addr;
+-	unsigned int retries = 0;
+-	static u32 ordernum = 1;
++	u32 lastnum, ordernum;
+ 	int err;
+ 
+ 	err = mutex_lock_interruptible(&u->bindlock);
+@@ -1091,32 +1090,35 @@ static int unix_autobind(struct sock *sk)
+ 	if (!addr)
+ 		goto out;
+ 
++	addr->len = offsetof(struct sockaddr_un, sun_path) + 6;
+ 	addr->name->sun_family = AF_UNIX;
+ 	refcount_set(&addr->refcnt, 1);
+ 
++	ordernum = prandom_u32();
++	lastnum = ordernum & 0xFFFFF;
+ retry:
+-	addr->len = sprintf(addr->name->sun_path + 1, "%05x", ordernum) +
+-		offsetof(struct sockaddr_un, sun_path) + 1;
++	ordernum = (ordernum + 1) & 0xFFFFF;
++	sprintf(addr->name->sun_path + 1, "%05x", ordernum);
+ 
+ 	new_hash = unix_abstract_hash(addr->name, addr->len, sk->sk_type);
+ 	unix_table_double_lock(old_hash, new_hash);
+-	ordernum = (ordernum+1)&0xFFFFF;
+ 
+ 	if (__unix_find_socket_byname(sock_net(sk), addr->name, addr->len,
+ 				      new_hash)) {
+ 		unix_table_double_unlock(old_hash, new_hash);
+ 
+-		/*
+-		 * __unix_find_socket_byname() may take long time if many names
++		/* __unix_find_socket_byname() may take long time if many names
+ 		 * are already in use.
+ 		 */
+ 		cond_resched();
+-		/* Give up if all names seems to be in use. */
+-		if (retries++ == 0xFFFFF) {
++
++		if (ordernum == lastnum) {
++			/* Give up if all names seems to be in use. */
+ 			err = -ENOSPC;
+-			kfree(addr);
++			unix_release_addr(addr);
+ 			goto out;
+ 		}
++
+ 		goto retry;
+ 	}
+ 
+-- 
+cgit 1.2.3-1.el7
