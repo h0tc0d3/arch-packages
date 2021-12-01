@@ -12,7 +12,7 @@ Allow choose processor optimization. **Processor type and features**  --->
 
 Add PGO optimizations with clang.
 
-## 0003-amd-pstate-dev-v4-and-kernel-next.patch
+## 0003-amd-pstate-dev-v5-and-kernel-next.patch
 
 For Kernel 5.15+
 Add AMD P-States and next kernels AMD optimizations.
