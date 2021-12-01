@@ -1,5 +1,5 @@
 pkgname=plasma-integration+clang
-pkgver=5.23.3
+pkgver=5.23.4
 pkgrel=1
 pkgdesc='Qt Platform Theme integration plugins for the Plasma workspaces'
 arch=(x86_64)
@@ -13,7 +13,7 @@ groups=(plasma)
 source=(
   "https://download.kde.org/stable/plasma/${pkgver}/plasma-integration-${pkgver}.tar.xz"{,.sig}
 )
-sha256sums=('36c31a474bdbb1f7f37996236bcce4cac68251172cd68be9be4117ea0759a360'
+sha256sums=('63780f6a20bbe23c33a7332a6ac7319ccbdb9ec4e906b4d4dbaf03d2acdb992c'
   'SKIP')
 validpgpkeys=(
   'E0A3EB202F8E57528E13E72FD7574483BB57B18D' # Jonathan Riddell <jr@jriddell.org>
