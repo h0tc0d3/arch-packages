@@ -1,6 +1,6 @@
 pkgname=mesa+clang
 pkgdesc="Mesa open-source implementation of the OpenGL specification"
-pkgver=21.3.0
+pkgver=21.3.1
 pkgrel=1
 arch=('x86_64')
 makedepends=('git' 'python-mako' 'xorgproto' 'llvm'
@@ -20,7 +20,7 @@ source=(
   'mesa-fix-build-with-llvm-13.patch'
 )
 
-sha256sums=('a2753c09deef0ba14d35ae8a2ceff3fe5cd13698928c7bb62c2ec8736eb09ce1'
+sha256sums=('2b0dc2540cb192525741d00f706dbc4586349185dafc65729c7fda0800cc474d'
   'SKIP'
   '7fdc119cf53c8ca65396ea73f6d10af641ba41ea1dd2bd44a824726e01c8b3f2'
   '8548489a884dd1fdd20910f229798b5af8747218a072e373bd4cf77912b9cfd6'
