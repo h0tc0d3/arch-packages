@@ -117,3 +117,57 @@ index 39ad3854bfe44..34382d0acc976 100644
 -- 
 cgit 1.2.3-1.el7
 
+From aad102cc51173ded2de33a5cae26ace158de5617 Mon Sep 17 00:00:00 2001
+From: Hans de Goede <hdegoede@redhat.com>
+Date: Tue, 30 Nov 2021 14:51:04 +1100
+Subject: proc: Make the proc_create[_data]() stubs static inlines
+
+Change the proc_create[_data]() stubs which are used when CONFIG_PROC_FS
+is not set from #defines to a static inline stubs.
+
+Thix should fix clang -Werror builds failing due to errors like this:
+
+drivers/platform/x86/thinkpad_acpi.c:918:30: error: unused variable
+ 'dispatch_proc_ops' [-Werror,-Wunused-const-variable]
+
+Fixing this in include/linux/proc_fs.h should ensure that the same issue
+is also fixed in any other drivers hitting the same -Werror issue.
+
+Link: https://lkml.kernel.org/r/20211116131112.508304-1-hdegoede@redhat.com
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Reported-by: kernel test robot <lkp@intel.com>
+Acked-by: Christian Brauner <christian.brauner@ubuntu.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Hans de Goede <hdegoede@redhat.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Christoph Hellwig <hch@infradead.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ include/linux/proc_fs.h | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
+index 069c7fd953961..3d19453fb6b3f 100644
+--- a/include/linux/proc_fs.h
++++ b/include/linux/proc_fs.h
+@@ -178,8 +178,14 @@ static inline struct proc_dir_entry *proc_mkdir_mode(const char *name,
+ #define proc_create_seq(name, mode, parent, ops) ({NULL;})
+ #define proc_create_single(name, mode, parent, show) ({NULL;})
+ #define proc_create_single_data(name, mode, parent, show, data) ({NULL;})
+-#define proc_create(name, mode, parent, proc_ops) ({NULL;})
+-#define proc_create_data(name, mode, parent, proc_ops, data) ({NULL;})
++
++static inline struct proc_dir_entry *proc_create(
++	const char *, umode_t, struct proc_dir_entry *, const struct proc_ops *)
++{ return NULL; }
++
++static inline struct proc_dir_entry *proc_create_data(
++	const char *, umode_t, struct proc_dir_entry *, const struct proc_ops *, void *)
++{ return NULL; }
+ 
+ static inline void proc_set_size(struct proc_dir_entry *de, loff_t size) {}
+ static inline void proc_set_user(struct proc_dir_entry *de, kuid_t uid, kgid_t gid) {}
+-- 
+cgit 1.2.3-1.el7
+
