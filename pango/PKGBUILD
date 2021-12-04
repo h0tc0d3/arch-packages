@@ -1,6 +1,6 @@
 pkgbase=pango+clang
 pkgname=(pango+clang pango-docs+clang)
-pkgver=1.48.10
+pkgver=1.50.0
 pkgrel=1
 epoch=1
 pkgdesc="A library for layout and rendering of text"
@@ -9,14 +9,23 @@ arch=(x86_64)
 license=(LGPL)
 depends=(libthai cairo libxft harfbuzz fribidi)
 makedepends=(gobject-introspection help2man git meson gi-docgen)
-checkdepends=(ttf-dejavu cantarell-fonts noto-fonts noto-fonts-emoji)
-_commit=dc5bde2a20cbb025c9d0ed29ed687740a4d027da # tags/1.48.10^0
+checkdepends=(ttf-dejavu cantarell-fonts)
+_commit=e80e224baabc7bf22971d0a97c8b31d32fa8ca1c # tags/1.50.0^0
 source=(
   "git+https://gitlab.gnome.org/GNOME/pango.git#commit=${_commit}"
+  pango-test-fix.diff
 )
-sha256sums=('SKIP')
+sha256sums=('SKIP'
+  'e1c0638305c0f46653bd60b5dee0b3445dd6a6b9aff8cee70be7759c21ba1037')
 
 _extra_lto_flag=""
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
 
 prepare() {
 
@@ -28,6 +37,8 @@ prepare() {
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/pango directory! Prepare Failed! \E[0m"
     exit 1
   )
+
+  _patch pango-test-fix.diff
 
 }
 
