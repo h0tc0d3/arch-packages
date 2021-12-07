@@ -1,7 +1,7 @@
 pkgname=mesa+clang
 pkgdesc="Mesa open-source implementation of the OpenGL specification"
 pkgver=21.3.1
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 makedepends=('git' 'python-mako' 'xorgproto' 'llvm'
   'libxml2' 'libx11' 'libvdpau' 'libva' 'elfutils' 'libxrandr'
@@ -17,14 +17,14 @@ source=(
   "https://archive.mesa3d.org/mesa-${pkgver}.tar.xz"{,.sig}
   'LICENSE'
   'mesa.conf'
-  'mesa-fix-build-with-llvm-13.patch'
+  'mesa-remove-swr.patch'
 )
 
 sha256sums=('2b0dc2540cb192525741d00f706dbc4586349185dafc65729c7fda0800cc474d'
   'SKIP'
   '7fdc119cf53c8ca65396ea73f6d10af641ba41ea1dd2bd44a824726e01c8b3f2'
-  '8548489a884dd1fdd20910f229798b5af8747218a072e373bd4cf77912b9cfd6'
-  'c85b96f59d9c898f8fe2a86359736b2de13ba061f64174c6e37cd4b1fd4ed8cf')
+  '7efdb0171d5346f856ce1b2ff440fc0810938d4dd2ad196eed9c25143f9b4c63'
+  '078418721cf7fdae71bf05c8d979649925bebd026e2ecaf0c615d1133a1ce726')
 
 validpgpkeys=(
   '57551DE15B968F6341C248F68D8E31AFC32428A6' # Keith Packard <keithp@keithp.com>
@@ -32,7 +32,7 @@ validpgpkeys=(
 )
 
 DRI_DRIVERS="i915,i965,r200,r100,nouveau"
-GALLIUM_DRIVERS="r300,r600,radeonsi,nouveau,virgl,svga,swrast,swr,iris,zink,crocus"
+GALLIUM_DRIVERS="r300,r600,radeonsi,nouveau,virgl,svga,swrast,iris,zink,crocus"
 VULKAN_DRIVERS="amd,intel,swrast"
 VULKAN_LAYERS="device-select,intel-nullhw,overlay"
 
@@ -56,7 +56,8 @@ prepare() {
     exit 1
   )
 
-  _patch mesa-fix-build-with-llvm-13.patch
+  # Remove SWR driver. SWR already removed from main branch.
+  _patch mesa-remove-swr.patch
 
   if [[ -f "${srcdir:?}/mesa.conf" ]]; then
     # shellcheck disable=SC1091
@@ -84,7 +85,6 @@ build() {
     -D gallium-drivers="${GALLIUM_DRIVERS}" \
     -D vulkan-drivers="${VULKAN_DRIVERS}" \
     -D vulkan-layers="${VULKAN_LAYERS}" \
-    -D swr-arches=avx,avx2 \
     -D gallium-extra-hud=true \
     -D gallium-omx=bellagio \
     -D gallium-nine=true \
