@@ -3,7 +3,7 @@
 pkgname=llvm+clang
 pkgdesc="LLVM Toolchain with clang, clang-tools-extra, compiler-rt, openmp, polly, lldb, lld"
 pkgver=13.0.1
-pkgrel=8
+pkgrel=9
 arch=('x86_64')
 url="https://llvm.org/"
 license=('custom:Apache 2.0 with LLVM Exception')
@@ -27,6 +27,7 @@ source=(
   llvm-disable-bswap-for-spir.patch
   llvm-fix-scan-build-py-executable-lookup-path.patch
   llvm-don-t-accept-nullptr-as-GEP-element-type.patch
+  llvm-Hoist-LOAD-without-sinking-the-STORE.patch
 )
 
 sha256sums=('SKIP'
@@ -34,7 +35,8 @@ sha256sums=('SKIP'
   'd1eff24508e35aae6c26a943dbaa3ef5acb60a145b008fd1ef9ac6f6c4faa662'
   'af163392fbc19d65d11ab4b1510a2eae39b417d6228023b3ba5395b138bb41f5'
   '578b960121c42b8db80566dcb51558409d04455b618cdd608e41b35ded36c13e'
-  'a7e902a7612d0fdabe436a917468b043cc296bc89d8954bfc3126f737beb9ac4')
+  'a7e902a7612d0fdabe436a917468b043cc296bc89d8954bfc3126f737beb9ac4'
+  '531d1deb5d37f1f24b3936d88b2c9ed90e8670705d7251c130d924c2c4c05a12')
 
 options=('staticlibs')
 
@@ -72,6 +74,9 @@ prepare() {
   _patch llvm-disable-bswap-for-spir.patch
   # https://github.com/intel/intel-graphics-compiler/issues/204
   _rpatch llvm-don-t-accept-nullptr-as-GEP-element-type.patch
+
+  # Performance optimization https://bugs.llvm.org/show_bug.cgi?id=51193
+  _patch llvm-Hoist-LOAD-without-sinking-the-STORE.patch
 
   # Attempt to convert script to Python 3
   2to3 -wn --no-diffs \

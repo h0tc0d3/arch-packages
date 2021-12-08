@@ -1,0 +1,180 @@
+From 2cdc6f2ca62e83fec445114fbbe6276e9ab2a7d0 Mon Sep 17 00:00:00 2001
+From: Djordje Todorovic <djordje.todorovic@syrmia.com>
+Date: Thu, 2 Dec 2021 03:40:00 -0800
+Subject: [PATCH] Reland "[LICM] Hoist LOAD without sinking the STORE"
+
+When doing load/store promotion within LICM, if we
+cannot prove that it is safe to sink the store we won't
+hoist the load, even though we can prove the load could
+be dereferenced and moved outside the loop. This patch
+implements the load promotion by moving it in the loop
+preheader by inserting proper PHI in the loop. The store
+is kept as is in the loop. By doing this, we avoid doing
+the load from a memory location in each iteration.
+
+Please consider this small example:
+
+loop {
+  var = *ptr;
+  if (var) break;
+  *ptr= var + 1;
+}
+After this patch, it will be:
+
+var0 = *ptr;
+loop {
+  var1 = phi (var0, var2);
+  if (var1) break;
+  var2 = var1 + 1;
+  *ptr = var2;
+}
+This addresses some problems from [0].
+
+[0] https://bugs.llvm.org/show_bug.cgi?id=51193
+
+Differential revision: https://reviews.llvm.org/D113289
+
+diff --git a/llvm/include/llvm/Transforms/Utils/SSAUpdater.h b/llvm/include/llvm/Transforms/Utils/SSAUpdater.h
+index 22b2295c..c233e3dc 100644
+--- a/llvm/include/llvm/Transforms/Utils/SSAUpdater.h
++++ b/llvm/include/llvm/Transforms/Utils/SSAUpdater.h
+@@ -169,6 +169,10 @@ public:
+ 
+   /// Called to update debug info associated with the instruction.
+   virtual void updateDebugInfo(Instruction *I) const {}
++
++  /// Return false if a sub-class wants to keep one of the loads/stores
++  /// after the SSA construction.
++  virtual bool shouldDelete(Instruction *I) const { return true; }
+ };
+ 
+ } // end namespace llvm
+diff --git a/llvm/lib/Transforms/Scalar/LICM.cpp b/llvm/lib/Transforms/Scalar/LICM.cpp
+index 30058df3..ba9c4e24 100644
+--- a/llvm/lib/Transforms/Scalar/LICM.cpp
++++ b/llvm/lib/Transforms/Scalar/LICM.cpp
+@@ -1883,6 +1883,7 @@ class LoopPromoter : public LoadAndStorePromoter {
+   bool UnorderedAtomic;
+   AAMDNodes AATags;
+   ICFLoopSafetyInfo &SafetyInfo;
++  bool CanInsertStoresInExitBlocks;
+ 
+   // We're about to add a use of V in a loop exit block.  Insert an LCSSA phi
+   // (if legal) if doing so would add an out-of-loop use to an instruction
+@@ -1909,12 +1910,14 @@ public:
+                SmallVectorImpl<MemoryAccess *> &MSSAIP, PredIteratorCache &PIC,
+                AliasSetTracker *ast, MemorySSAUpdater *MSSAU, LoopInfo &li,
+                DebugLoc dl, int alignment, bool UnorderedAtomic,
+-               const AAMDNodes &AATags, ICFLoopSafetyInfo &SafetyInfo)
++               const AAMDNodes &AATags, ICFLoopSafetyInfo &SafetyInfo,
++               bool CanInsertStoresInExitBlocks)
+       : LoadAndStorePromoter(Insts, S), SomePtr(SP), PointerMustAliases(PMA),
+         LoopExitBlocks(LEB), LoopInsertPts(LIP), MSSAInsertPts(MSSAIP),
+         PredCache(PIC), AST(ast), MSSAU(MSSAU), LI(li), DL(std::move(dl)),
+         Alignment(alignment), UnorderedAtomic(UnorderedAtomic), AATags(AATags),
+-        SafetyInfo(SafetyInfo) {}
++        SafetyInfo(SafetyInfo),
++        CanInsertStoresInExitBlocks(CanInsertStoresInExitBlocks) {}
+ 
+   bool isInstInList(Instruction *I,
+                     const SmallVectorImpl<Instruction *> &) const override {
+@@ -1926,7 +1929,7 @@ public:
+     return PointerMustAliases.count(Ptr);
+   }
+ 
+-  void doExtraRewritesBeforeFinalDeletion() override {
++void insertStoresInLoopExitBlocks() {
+     // Insert stores after in the loop exit blocks.  Each exit block gets a
+     // store of the live-out values that feed them.  Since we've already told
+     // the SSA updater about the defs in the loop and the preheader
+@@ -1967,6 +1970,12 @@ public:
+     if (AST)
+       AST->copyValue(LI, V);
+   }
++
++  void doExtraRewritesBeforeFinalDeletion() override {
++    if (CanInsertStoresInExitBlocks)
++      insertStoresInLoopExitBlocks();
++  }
++
+   void instructionDeleted(Instruction *I) const override {
+     SafetyInfo.removeInstruction(I);
+     if (AST)
+@@ -1974,6 +1983,13 @@ public:
+     if (MSSAU)
+       MSSAU->removeMemoryAccess(I);
+   }
++
++  bool shouldDelete(Instruction *I) const override {
++    if (isa<StoreInst>(I))
++      return CanInsertStoresInExitBlocks;
++    return true;
++  }
++
+ };
+ 
+ bool isNotCapturedBeforeOrInLoop(const Value *V, const Loop *L,
+@@ -2072,6 +2088,7 @@ bool llvm::promoteLoopAccessesToScalars(
+ 
+   bool DereferenceableInPH = false;
+   bool SafeToInsertStore = false;
++  bool FoundLoadToPromote = false;
+ 
+   SmallVector<Instruction *, 64> LoopUses;
+ 
+@@ -2124,6 +2141,7 @@ bool llvm::promoteLoopAccessesToScalars(
+ 
+         SawUnorderedAtomic |= Load->isAtomic();
+         SawNotAtomic |= !Load->isAtomic();
++        FoundLoadToPromote = true;
+ 
+         Align InstAlignment = Load->getAlign();
+ 
+@@ -2232,13 +2250,20 @@ bool llvm::promoteLoopAccessesToScalars(
+     }
+   }
+ 
+-  // If we've still failed to prove we can sink the store, give up.
+-  if (!SafeToInsertStore)
++  // If we've still failed to prove we can sink the store, hoist the load
++  // only, if possible.
++  if (!SafeToInsertStore && !FoundLoadToPromote)
++    // If we cannot hoist the load either, give up.
+     return false;
+ 
+-  // Otherwise, this is safe to promote, lets do it!
+-  LLVM_DEBUG(dbgs() << "LICM: Promoting value stored to in loop: " << *SomePtr
+-                    << '\n');
++  // Lets do the promotion!
++  if (SafeToInsertStore)
++    LLVM_DEBUG(dbgs() << "LICM: Promoting load/store of the value: " << *SomePtr
++                      << '\n');
++  else
++    LLVM_DEBUG(dbgs() << "LICM: Promoting load of the value: " << *SomePtr
++                      << '\n');
++
+   ORE->emit([&]() {
+     return OptimizationRemark(DEBUG_TYPE, "PromoteLoopAccessesToScalar",
+                               LoopUses[0])
+@@ -2258,7 +2283,7 @@ bool llvm::promoteLoopAccessesToScalars(
+   LoopPromoter Promoter(SomePtr, LoopUses, SSA, PointerMustAliases, ExitBlocks,
+                         InsertPts, MSSAInsertPts, PIC, CurAST, MSSAU, *LI, DL,
+                         Alignment.value(), SawUnorderedAtomic, AATags,
+-                        *SafetyInfo);
++                        *SafetyInfo, SafeToInsertStore);
+ 
+   // Set up the preheader to have a definition of the value.  It is the live-out
+   // value from the preheader that uses in the loop will use.
+diff --git a/llvm/lib/Transforms/Utils/SSAUpdater.cpp b/llvm/lib/Transforms/Utils/SSAUpdater.cpp
+index 5893ce15..ab93d560 100644
+--- a/llvm/lib/Transforms/Utils/SSAUpdater.cpp
++++ b/llvm/lib/Transforms/Utils/SSAUpdater.cpp
+@@ -446,6 +446,8 @@ void LoadAndStorePromoter::run(const SmallVectorImpl<Instruction *> &Insts) {
+   // Now that everything is rewritten, delete the old instructions from the
+   // function.  They should all be dead now.
+   for (Instruction *User : Insts) {
++    if (!shouldDelete(User))
++      continue;
+     // If this is a load that still has uses, then the load must have been added
+     // as a live value in the SSAUpdate data structure for a block (e.g. because
+     // the loaded value was stored later).  In this case, we need to recursively
