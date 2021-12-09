@@ -16,8 +16,8 @@ source=(
   0001-Fixes-for-LTO-PGO-support.patch
 )
 sha256sums=('a4438d84d95171a6d4fea9c9f02c2edbf0475a9c614d968ebe2eedc25a672151'
-            'SKIP'
-            '926a573eabe3b6177363b795ed5e5641b4a4ebc6d7cfa093f11e1779ac0f897c')
+  'SKIP'
+  '926a573eabe3b6177363b795ed5e5641b4a4ebc6d7cfa093f11e1779ac0f897c')
 validpgpkeys=('14F26682D0916CDD81E37B6D61B7B526D98F0353') # Mozilla Software Releases <release@mozilla.com>
 
 # Make sure the duplication between bin and lib is found

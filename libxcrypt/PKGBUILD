@@ -1,7 +1,7 @@
 pkgname=libxcrypt+clang
-_commit='8ff7a8c5019cbd50419f7d0a8cd691eb99d6b086' # git rev-parse v${pkgver}
+_commit=a74a677eaf8a9a22a952f38a6ec8c06798585c79 # git rev-parse v${pkgver}
 pkgver=4.4.26
-pkgrel=1
+pkgrel=2
 pkgdesc='Modern library for one-way hashing of passwords'
 arch=('x86_64')
 url='https://github.com/besser82/libxcrypt/'
@@ -41,8 +41,8 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    CFLAGS="${CFLAGS} -flto=thin -Wno-gnu-statement-expression"
-    CXXFLAGS="${CXXFLAGS} -flto=thin -Wno-gnu-statement-expression"
+    CFLAGS="${CFLAGS} -Wno-gnu-statement-expression"
+    CXXFLAGS="${CXXFLAGS} -Wno-gnu-statement-expression"
     LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
@@ -50,9 +50,11 @@ build() {
   ./configure \
     --prefix=/usr \
     --disable-static \
-    --enable-hashes=strong,glibc \
+    --enable-hashes=all \
     --enable-obsolete-api=no \
-    --disable-failure-tokens
+    --disable-failure-tokens \
+    --disable-silent-rules \
+    --disable-valgrind
 
   make
 

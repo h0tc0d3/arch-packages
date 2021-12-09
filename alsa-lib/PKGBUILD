@@ -1,6 +1,6 @@
 pkgname=alsa-lib+clang
 pkgver=1.2.5.1
-pkgrel=3
+pkgrel=4
 pkgdesc="An alternative implementation of Linux sound support"
 arch=('x86_64')
 url="https://www.alsa-project.org"
@@ -42,8 +42,6 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    CFLAGS="${CFLAGS} -flto=thin"
-    CXXFLAGS="${CXXFLAGS} -flto=thin"
     LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
