@@ -1,7 +1,7 @@
 pkgbase=wayland+clang
 pkgname=(wayland+clang wayland-docs+clang)
-pkgver=1.19.0
-pkgrel=2
+pkgver=1.20.0
+pkgrel=1
 pkgdesc='A computer display server protocol'
 arch=('x86_64')
 url='https://wayland.freedesktop.org/'
@@ -14,7 +14,7 @@ validpgpkeys=(
   '34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48' # emersion <contact@emersion.fr>
 )
 source=("https://wayland.freedesktop.org/releases/wayland-${pkgver}.tar.xz"{,.sig})
-sha256sums=('baccd902300d354581cd5ad3cc49daa4921d55fb416a5883e218750fef166d15'
+sha256sums=('b8a034154c7059772e0fdbd27dbfcda6c732df29cae56a82274f6ec5d7cd8725'
   'SKIP')
 
 _extra_lto_flag=""
