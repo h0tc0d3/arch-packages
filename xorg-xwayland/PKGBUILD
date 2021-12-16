@@ -1,5 +1,5 @@
 pkgname=xorg-xwayland+clang
-pkgver=21.1.3
+pkgver=21.1.4
 pkgrel=1
 arch=('x86_64')
 license=('custom')
@@ -14,7 +14,7 @@ makedepends=('meson' 'xorgproto' 'xtrans' 'libxkbfile' 'dbus'
   'libdrm' 'mesa-libgl' 'systemd' 'egl-wayland'
 )
 source=("https://xorg.freedesktop.org/archive/individual/xserver/xwayland-${pkgver}.tar.xz"{,.sig})
-sha256sums=('ebc2757f39fd4c7db1654fd86591589c211aa20172d43a54f77ae567cedbf8a2'
+sha256sums=('19f6795f31cfa8eb352b1e5b3c379f22ee6020e98701ff2cc679da8c4f1159f7'
   'SKIP')
 provides=('xorg-xwayland' "xorg-xwayland=${pkgver}" 'xorg-server-xwayland')
 conflicts=('xorg-xwayland' 'xorg-server-xwayland')
