@@ -7,8 +7,8 @@ pkgname=(
   'xorg-server-common+clang'
   'xorg-server-devel+clang'
 )
-pkgver=21.1.1
-pkgrel=2
+pkgver=21.1.2
+pkgrel=1
 arch=('x86_64')
 license=('custom')
 groups=('xorg')
@@ -37,7 +37,7 @@ validpgpkeys=(
   'FD0004A26EADFE43A4C3F249C6F7AE200374452D'
 )
 
-sha256sums=('782e7fef2ca0c7cbe60a937b8bf42dac69c904fb841950fd0363e1c2346ea755'
+sha256sums=('c20bf46a9fe8e74bf4e75430637e58d49a02d806609dc161462bceb1ef7e8db0'
   'SKIP'
   'f8703466041a04428e68a77e1c07579679b07d15f8ec28934f1a65548007a756'
   '91b067753e823d6e3462d35be127f66e94e71a490c666e1aae41fe4e5b1ea47c'
