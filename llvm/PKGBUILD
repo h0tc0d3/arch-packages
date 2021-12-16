@@ -3,7 +3,7 @@
 pkgname=llvm+clang
 pkgdesc="LLVM Toolchain with clang, clang-tools-extra, compiler-rt, openmp, polly, lldb, lld"
 pkgver=13.0.1
-pkgrel=10
+pkgrel=11
 arch=('x86_64')
 url="https://llvm.org/"
 license=('custom:Apache 2.0 with LLVM Exception')
@@ -11,10 +11,10 @@ provides=('llvm' "llvm=${pkgver}" 'llvm-libs' 'llvm-ocaml' 'clang' "clang=${pkgv
 replaces=('llvm' 'llvm-libs' 'llvm-ocaml' 'clang' 'clang-analyzer' 'clang-tools-extra' 'openmp' 'polly' 'compiler-rt' 'lld' 'lldb')
 conflicts=('llvm' 'llvm-libs' 'llvm-ocaml' 'clang' 'clang-analyzer' 'clang-tools-extra' 'openmp' 'polly' 'compiler-rt' 'lld' 'lldb' 'llvm-git' 'llvm-libs-git' 'llvm-ocaml-git')
 depends=('libelf' 'libffi' 'libedit' 'libxml2' 'ncurses')
-_ocaml_ver=4.12.0
+_ocaml_ver=4.13.1
 makedepends=(
   'git' 'ninja' 'cmake'
-  "ocaml>=${_ocaml_ver}" 'ocaml-ctypes' 'ocaml-findlib' 'python2'
+  "ocaml>=${_ocaml_ver}" 'ocaml-ctypes' 'ocaml-findlib'
   'python-setuptools' 'python-psutil' 'python-sphinx'
   'python-recommonmark'
 )
