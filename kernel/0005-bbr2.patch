@@ -228,18 +228,7 @@ index b42b3e6731ed..f6fafd0adc92 100644
  static inline u32 tcp_skb_timestamp(const struct sk_buff *skb)
  {
  	return tcp_ns_to_ts(skb->skb_mstamp_ns);
-@@ -870,16 +876,22 @@ struct tcp_skb_cb {
- 	__u32		ack_seq;	/* Sequence number ACK'd	*/
- 	union {
- 		struct {
-+#define TCPCB_DELIVERED_CE_MASK ((1U<<20) - 1)
- 			/* There is space for up to 24 bytes */
--			__u32 in_flight:30,/* Bytes in flight at transmit */
--			      is_app_limited:1, /* cwnd not fully used? */
--			      unused:1;
-+			__u32 is_app_limited:1, /* cwnd not fully used? */
-+			      delivered_ce:20,
-+			      unused:11;
+@@ -889,9 +889,14 @@ struct tcp_skb_cb {
  			/* pkts S/ACKed so far upon tx of skb, incl retrans: */
  			__u32 delivered;
  			/* start of send pipeline phase */
@@ -269,20 +258,18 @@ index b42b3e6731ed..f6fafd0adc92 100644
  
  union tcp_cc_info;
  
-@@ -1024,8 +1040,13 @@ struct ack_sample {
+@@ -1041,8 +1046,11 @@ struct ack_sample {
   */
  struct rate_sample {
  	u64  prior_mstamp; /* starting timestamp for interval */
 +	u32  prior_lost;	/* tp->lost at "prior_mstamp" */
  	u32  prior_delivered;	/* tp->delivered at "prior_mstamp" */
-+	u32  prior_delivered_ce;/* tp->delivered_ce at "prior_mstamp" */
-+	u32 tx_in_flight;	/* packets in flight at starting timestamp */
+ 	u32  prior_delivered_ce;/* tp->delivered_ce at "prior_mstamp" */
++	u32  tx_in_flight;	/* packets in flight at starting timestamp */
 +	s32  lost;		/* number of packets lost over interval */
  	s32  delivered;		/* number of packets delivered over interval */
-+	s32  delivered_ce;	/* packets delivered w/ CE mark over interval */
+ 	s32  delivered_ce;	/* number of packets delivered w/ CE marks*/
  	long interval_us;	/* time for tp->delivered to incr "delivered" */
- 	u32 snd_interval_us;	/* snd interval for delivered packets */
- 	u32 rcv_interval_us;	/* rcv interval for delivered packets */
 @@ -1036,6 +1057,7 @@ struct rate_sample {
  	bool is_app_limited;	/* is sample from packet with bubble in pipe? */
  	bool is_retrans;	/* is sample from retransmission? */
@@ -3276,46 +3263,6 @@ index 0f1b4bfddfd4..a365f183bcc2 100644
  	/* When we're adding to gso_segs == 1, gso_size will be zero,
  	 * in theory this shouldn't be necessary but as long as DSACK
  	 * code can come after this skb later on it's better to keep
-@@ -3189,7 +3205,6 @@ static int tcp_clean_rtx_queue(struct sock *sk, const struct sk_buff *ack_skb,
- 	long seq_rtt_us = -1L;
- 	long ca_rtt_us = -1L;
- 	u32 pkts_acked = 0;
--	u32 last_in_flight = 0;
- 	bool rtt_update;
- 	int flag = 0;
- 
-@@ -3225,7 +3240,6 @@ static int tcp_clean_rtx_queue(struct sock *sk, const struct sk_buff *ack_skb,
- 			if (!first_ackt)
- 				first_ackt = last_ackt;
- 
--			last_in_flight = TCP_SKB_CB(skb)->tx.in_flight;
- 			if (before(start_seq, reord))
- 				reord = start_seq;
- 			if (!after(scb->end_seq, tp->high_seq))
-@@ -3291,8 +3305,8 @@ static int tcp_clean_rtx_queue(struct sock *sk, const struct sk_buff *ack_skb,
- 		seq_rtt_us = tcp_stamp_us_delta(tp->tcp_mstamp, first_ackt);
- 		ca_rtt_us = tcp_stamp_us_delta(tp->tcp_mstamp, last_ackt);
- 
--		if (pkts_acked == 1 && last_in_flight < tp->mss_cache &&
--		    last_in_flight && !prior_sacked && fully_acked &&
-+		if (pkts_acked == 1 && fully_acked && !prior_sacked &&
-+		    (tp->snd_una - prior_snd_una) < tp->mss_cache &&
- 		    sack->rate->prior_delivered + 1 == tp->delivered &&
- 		    !(flag & (FLAG_CA_ALERT | FLAG_SYN_ACKED))) {
- 			/* Conservatively mark a delayed ACK. It's typically
-@@ -3349,9 +3363,10 @@ static int tcp_clean_rtx_queue(struct sock *sk, const struct sk_buff *ack_skb,
- 
- 	if (icsk->icsk_ca_ops->pkts_acked) {
- 		struct ack_sample sample = { .pkts_acked = pkts_acked,
--					     .rtt_us = sack->rate->rtt_us,
--					     .in_flight = last_in_flight };
-+					     .rtt_us = sack->rate->rtt_us };
- 
-+		sample.in_flight = tp->mss_cache *
-+			(tp->delivered - sack->rate->prior_delivered);
- 		icsk->icsk_ca_ops->pkts_acked(sk, &sample);
- 	}
- 
 @@ -3749,6 +3764,7 @@ static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
  
  	prior_fack = tcp_is_sack(tp) ? tcp_highest_sack_seq(tp) : tp->snd_una;
@@ -3363,15 +3310,6 @@ index 29553fce8502..0eb462008718 100644
  			/* ACK or retransmitted segment: clear ECT|CE */
  			INET_ECN_dontxmit(sk);
  		}
-@@ -1256,8 +1257,6 @@ static int __tcp_transmit_skb(struct sock *sk, struct sk_buff *skb,
- 	tp->tcp_wstamp_ns = max(tp->tcp_wstamp_ns, tp->tcp_clock_cache);
- 	skb->skb_mstamp_ns = tp->tcp_wstamp_ns;
- 	if (clone_it) {
--		TCP_SKB_CB(skb)->tx.in_flight = TCP_SKB_CB(skb)->end_seq
--			- tp->snd_una;
- 		oskb = skb;
- 
- 		tcp_skb_tsorted_save(oskb) {
 @@ -1536,7 +1535,7 @@ int tcp_fragment(struct sock *sk, enum tcp_queue tcp_queue,
  {
  	struct tcp_sock *tp = tcp_sk(sk);
@@ -3453,23 +3391,22 @@ index 0de693565963..796fa6e5310c 100644
  /* Snapshot the current delivery information in the skb, to generate
   * a rate sample later when the skb is (s)acked in tcp_rate_skb_delivered().
   */
-@@ -65,7 +83,10 @@ void tcp_rate_skb_sent(struct sock *sk, struct sk_buff *skb)
- 	TCP_SKB_CB(skb)->tx.first_tx_mstamp	= tp->first_tx_mstamp;
+@@ -84,7 +84,9 @@ void tcp_rate_skb_sent(struct sock *sk, struct sk_buff *skb)
  	TCP_SKB_CB(skb)->tx.delivered_mstamp	= tp->delivered_mstamp;
  	TCP_SKB_CB(skb)->tx.delivered		= tp->delivered;
-+	TCP_SKB_CB(skb)->tx.delivered_ce	= tp->delivered_ce;
-+	TCP_SKB_CB(skb)->tx.lost		= tp->lost;
+ 	TCP_SKB_CB(skb)->tx.delivered_ce	= tp->delivered_ce;
++	TCP_SKB_CB(skb)->tx.lost			= tp->lost;
  	TCP_SKB_CB(skb)->tx.is_app_limited	= tp->app_limited ? 1 : 0;
 +	tcp_set_tx_in_flight(sk, skb);
  }
  
  /* When an skb is sacked or acked, we fill in the rate sample with the (prior)
-@@ -86,16 +107,20 @@ void tcp_rate_skb_delivered(struct sock *sk, struct sk_buff *skb,
+@@ -105,17 +107,20 @@ void tcp_rate_skb_delivered(struct sock *sk, struct sk_buff *skb,
  
  	if (!rs->prior_delivered ||
  	    after(scb->tx.delivered, rs->prior_delivered)) {
 +		rs->prior_lost	     = scb->tx.lost;
-+		rs->prior_delivered_ce  = scb->tx.delivered_ce;
+ 		rs->prior_delivered_ce  = scb->tx.delivered_ce;
  		rs->prior_delivered  = scb->tx.delivered;
  		rs->prior_mstamp     = scb->tx.delivered_mstamp;
  		rs->is_app_limited   = scb->tx.is_app_limited;
@@ -3487,6 +3424,7 @@ index 0de693565963..796fa6e5310c 100644
  
  	}
  	/* Mark off the skb delivered once it's sacked to avoid being
+
 @@ -137,6 +162,11 @@ void tcp_rate_gen(struct sock *sk, u32 delivered, u32 lost,
  		return;
  	}
