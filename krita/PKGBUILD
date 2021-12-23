@@ -1,6 +1,6 @@
 pkgname=krita+clang
-pkgver=4.4.8
-pkgrel=5
+pkgver=5.0.1
+pkgrel=1
 pkgdesc='Edit and paint images'
 arch=(x86_64)
 url='https://krita.org'
@@ -8,19 +8,19 @@ license=(GPL3)
 provides=('krita' "krita=${pkgver}")
 conflicts=('krita')
 depends=(kitemviews kitemmodels ki18n kcompletion kguiaddons kcrash qt5-svg qt5-multimedia quazip
-  gsl libraw exiv2 openexr fftw giflib openjpeg2 opencolorio hicolor-icon-theme)
+  gsl libraw exiv2 openexr fftw openjpeg2 opencolorio libwebp hicolor-icon-theme)
 makedepends=(extra-cmake-modules kdoctools boost eigen vc poppler-qt5 python-pyqt5 libheif
-  qt5-tools sip4 python-sip4 kseexpr git)
+  qt5-tools sip kseexpr libmypaint git)
 optdepends=('poppler-qt5: PDF filter' 'ffmpeg: to save animations'
   "krita-plugin-gmic: G'MIC plugin" 'python-pyqt5: for the Python plugins' 'libheif: HEIF filter'
-  'kseexpr: SeExpr generator layer' 'kimageformats: PSD support')
-_gitcommit="ec5bae0dad3ccad0c398459126203a87d965c5e0"
+  'kseexpr: SeExpr generator layer' 'kimageformats: PSD support' 'libmypaint: support for MyPaint brushes')
+
+_commit=51ba9495eccf7ba227323838c7748e6ea8eff774
 source=(
-  "krita::git+https://invent.kde.org/graphics/krita.git#commit=${_gitcommit}"
-  krita-OpenColorIO2.patch
+  "krita::git+https://invent.kde.org/graphics/krita.git#commit=${_commit}"
 )
-sha256sums=('SKIP'
-  'ca24ada0e2bd620e8abe74eff7adda3526925a9b61a968849d3885084bc13816')
+
+sha256sums=('SKIP')
 validpgpkeys=(
   '05D00A8B73A686789E0A156858B9596C722EA3BD' # Boudewijn Rempt <foundation@krita.org>
   'E9FB29E74ADEACC5E3035B8AB69EB4CF7468332F' # Dmitry Kazakov (main key) <dimula73@gmail.com>
@@ -46,12 +46,6 @@ prepare() {
     exit 1
   )
 
-  # Fix build with OpenEXR 3
-  git cherry-pick -n d66383f6c593d21463c658fbcc6adef28a7f570f
-
-  # OpenColorIO 2
-  _patch krita-OpenColorIO2.patch
-
   # Remove git hash from version string
   sed -i -e '/get_git_head_hash(GIT_SHA1)/,+12 d' CMakeLists.txt
 
@@ -62,8 +56,8 @@ build() {
   if [[ ${_llvm} -eq 1 ]]; then
 
     CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
-    CFLAGS="${CFLAGS} -flto=thin"
-    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    CFLAGS="${CFLAGS} -flto=thin -latomic -Wno-unused-command-line-argument"
+    CXXFLAGS="${CXXFLAGS} -flto=thin -latomic -Wno-unused-command-line-argument"
     #LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
@@ -71,9 +65,7 @@ build() {
   cmake -B build -S krita \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_TESTING=OFF \
-    -DKRITA_DEVS=OFF \
-    -DBUILD_KRITA_QT_DESIGNER_PLUGINS=ON \
-    -Wno-dev
+    -DBUILD_KRITA_QT_DESIGNER_PLUGINS=ON
 
   cmake --build build
 
