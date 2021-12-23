@@ -1,7 +1,7 @@
 pkgname=libxcrypt+clang
-_commit=a74a677eaf8a9a22a952f38a6ec8c06798585c79 # git rev-parse v${pkgver}
-pkgver=4.4.26
-pkgrel=2
+_commit=814e715dd8580ff00344112d7d8383a6a5a5b83d # git rev-parse v${pkgver}
+pkgver=4.4.27
+pkgrel=1
 pkgdesc='Modern library for one-way hashing of passwords'
 arch=('x86_64')
 url='https://github.com/besser82/libxcrypt/'

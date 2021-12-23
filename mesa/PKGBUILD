@@ -1,7 +1,7 @@
 pkgname=mesa+clang
 pkgdesc="Mesa open-source implementation of the OpenGL specification"
-pkgver=21.3.1
-pkgrel=2
+pkgver=21.3.2
+pkgrel=1
 arch=('x86_64')
 makedepends=('git' 'python-mako' 'xorgproto' 'llvm'
   'libxml2' 'libx11' 'libvdpau' 'libva' 'elfutils' 'libxrandr'
@@ -20,7 +20,7 @@ source=(
   'mesa-remove-swr.patch'
 )
 
-sha256sums=('2b0dc2540cb192525741d00f706dbc4586349185dafc65729c7fda0800cc474d'
+sha256sums=('e2e7bafb8307e7abc3bf982f39382fae3619c84b45504920a21504be52f126bd'
   'SKIP'
   '7fdc119cf53c8ca65396ea73f6d10af641ba41ea1dd2bd44a824726e01c8b3f2'
   '7efdb0171d5346f856ce1b2ff440fc0810938d4dd2ad196eed9c25143f9b4c63'

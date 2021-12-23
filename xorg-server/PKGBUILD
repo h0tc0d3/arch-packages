@@ -8,7 +8,7 @@ pkgname=(
   'xorg-server-devel+clang'
 )
 pkgver=21.1.2
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 license=('custom')
 groups=('xorg')
@@ -27,6 +27,8 @@ source=(
   xorg-xfree86-use-modesetting-driver-by-default-on-GeForce.patch
   xvfb-run # with updates from FC master
   xvfb-run.1
+  0001-xf86-logind-Fix-compilation-error-when-built-without.patch
+  0002-xf86-logind-fix-missing-call-to-vtenter-if-the-platf.patch
 )
 
 validpgpkeys=(
@@ -42,7 +44,9 @@ sha256sums=('c20bf46a9fe8e74bf4e75430637e58d49a02d806609dc161462bceb1ef7e8db0'
   'f8703466041a04428e68a77e1c07579679b07d15f8ec28934f1a65548007a756'
   '91b067753e823d6e3462d35be127f66e94e71a490c666e1aae41fe4e5b1ea47c'
   'd709078f5658576931655c7a46ff90b3586a2643a9124075d00ff3a567937845'
-  '2460adccd3362fefd4cdc5f1c70f332d7b578091fb9167bf88b5f91265bbd776')
+  '2460adccd3362fefd4cdc5f1c70f332d7b578091fb9167bf88b5f91265bbd776'
+  '938a3adad83fa1edadff21d3086f73a9647da4afe1e31fee2a9737dd04f3e259'
+  '1760701c57263a28ab2a9e80de84b0024105ab5f1a8760e939ce53a60eaf1641')
 
 _extra_lto_flag=""
 
@@ -69,6 +73,10 @@ prepare() {
 
   # Default to xf86-video-modesetting on GeForce 8 and newer
   _patch xorg-xfree86-use-modesetting-driver-by-default-on-GeForce.patch
+
+  # FS#73075 - merged in trunk
+  _patch 0001-xf86-logind-Fix-compilation-error-when-built-without.patch
+  _patch 0002-xf86-logind-fix-missing-call-to-vtenter-if-the-platf.patch
 
 }
 

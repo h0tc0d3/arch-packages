@@ -1,7 +1,7 @@
 pkgname=mpv+clang
 epoch=1
 pkgver=0.34.0
-pkgrel=2
+pkgrel=3
 pkgdesc='a free, open source, and cross-platform media player'
 arch=('x86_64')
 license=('GPL3')
@@ -37,6 +37,14 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=1
   fi
+
+  cd "${srcdir:?}/mpv" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/mpv directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  git cherry-pick -n 79bfcc672343ddbc348e040ad899d61a0bafc050
+  git cherry-pick -n fc94c8c365ebeb038af6052bf4ea0506c1220559
 
 }
 

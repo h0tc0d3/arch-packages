@@ -1,6 +1,6 @@
 pkgname=libxml2+clang
 pkgver=2.9.12
-pkgrel=5
+pkgrel=6
 pkgdesc='XML parsing library, version 2'
 url='http://www.xmlsoft.org/'
 arch=(x86_64)
@@ -8,19 +8,20 @@ license=(MIT)
 provides=("libxml2" "libxml2=${pkgver}")
 conflicts=("libxml2")
 depends=(zlib readline ncurses xz icu)
-makedepends=(python2 python git)
+makedepends=(python git)
 _commit=b48e77cf4f6fa0792c5f4b639707a2b0675e461b # tags/v2.9.12^0
 
 source=(
   "libxml2::git+https://gitlab.gnome.org/GNOME/libxml2.git#commit=${_commit}"
   "https://www.w3.org/XML/Test/xmlts20130923.tar.gz"
-  "libxml2-2.9.8-python3-unicode-errors.patch"
+  libxml2-2.9.8-python3-unicode-errors.patch
+  libxml2-disable-fuzz-tests.patch
 )
 
 sha256sums=('SKIP'
   '9b61db9f5dbffa545f4b8d78422167083a8568c59bd1129f94138f936cf6fc1f'
   '37eb81a8ec6929eed1514e891bff2dd05b450bcf0c712153880c485b7366c17c'
-)
+  '163655aba312c237a234a82d64b71a65bd9d1d901e176d443e3e3ac64f3b1b32')
 
 _llvm=0
 
@@ -35,13 +36,23 @@ pkgver() {
 
 }
 
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
+
 prepare() {
 
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=1
   fi
 
-  mkdir build-py{2,3}
+  mkdir build
+
+  # Use xmlconf from conformance test suite
+  ln -s xmlconf build/xmlconf
 
   cd "${srcdir:?}/libxml2" || (
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxml2 directory! Prepare Failed! \E[0m"
@@ -58,15 +69,16 @@ prepare() {
   # Fix whitespace when serializing empty HTML documents
   git cherry-pick -n 92d9ab4c28842a09ca2b76d3ff2f933e01b6cd6f
 
-  sed -e '/cd fuzz; /d' -e 's/fuzz //g' -i Makefile.am
+  _patch libxml2-disable-fuzz-tests.patch
+
   autoreconf -fiv
 
 }
 
-_build() (
+build() (
 
-  cd "build-py${1:?}" || (
-    echo -e "\E[1;31mCan't cd to build-py${1} directory! Build Failed! \E[0m"
+  cd "${srcdir:?}/build" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/build directory! Build Failed! \E[0m"
     exit 1
   )
 
@@ -82,7 +94,7 @@ _build() (
     --prefix=/usr \
     --with-threads \
     --with-history \
-    --with-python="/usr/bin/python${1:?}" \
+    --with-python="/usr/bin/python" \
     --with-icu
 
   make
@@ -91,34 +103,18 @@ _build() (
 
 )
 
-build() {
-
-  _build 2
-  _build 3
-
-}
-
 check() {
 
-  cd build-py3 || (
-    echo -e "\E[1;31mCan't cd to build-py3 directory! Check Failed! \E[0m"
-    exit 1
-  )
-
-  ln -s ../xmlconf .
-
-  make check
+  make -C build check
 
 }
 
 package() {
 
-  make -C build-py2 DESTDIR="${pkgdir:?}" install
-  make -C build-py3/python DESTDIR="${pkgdir:?}" install
-  install -Dm 644 build-py2/COPYING -t "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  make -C build DESTDIR="${pkgdir:?}" install
+  make -C build/python DESTDIR="${pkgdir:?}" install
+  install -Dm 644 build/COPYING -t "${pkgdir:?}/usr/share/licenses/${pkgname}"
 
-  python2 -m compileall -d /usr/lib "${pkgdir:?}/usr/lib"
-  python2 -O -m compileall -d /usr/lib "${pkgdir:?}/usr/lib"
   python -m compileall -d /usr/lib "${pkgdir:?}/usr/lib"
   python -O -m compileall -d /usr/lib "${pkgdir:?}/usr/lib"
 

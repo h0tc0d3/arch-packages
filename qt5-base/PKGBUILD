@@ -1,7 +1,7 @@
 pkgbase=qt5-base+clang
 pkgname=(qt5-base+clang qt5-xcb-private-headers+clang)
 pkgver=5.15.2+kde+r263
-pkgrel=1
+pkgrel=2
 _commit=7c6c0030cf80ef7b9ace42996b0e0c3a72f76860
 arch=('x86_64')
 url='https://www.qt.io'
@@ -175,6 +175,7 @@ package_qt5-base+clang() {
   pkgdesc='A cross-platform application and UI framework'
   conflicts=('qt5-base')
   provides=('qt5-base' "qt5-base=${pkgver}")
+  depends+=(qt5-translations)
 
   cd "${srcdir:?}/qtbase" || (
     echo -e "\E[1;31mCan't cd to {srcdir:?}/qtbase directory! Package Failed! \E[0m"
