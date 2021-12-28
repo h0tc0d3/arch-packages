@@ -5,7 +5,7 @@ pkgname=(gcc gcc-libs gcc-fortran gcc-objc gcc-ada gcc-go lib32-gcc-libs gcc-d)
 pkgver=11.2.1
 _majorver=${pkgver%%.*}
 _islver=0.24
-pkgrel=2
+pkgrel=3
 pkgdesc='The GNU Compiler Collection'
 arch=(x86_64)
 license=(GPL LGPL FDL custom)
@@ -14,7 +14,7 @@ makedepends=(binutils libmpc gcc-ada doxygen lib32-glibc lib32-gcc-libs python g
 checkdepends=(dejagnu inetutils)
 options=(!emptydirs)
 _libdir="usr/lib/gcc/${CHOST:?}/${pkgver%%+*}"
-_commit=b558c8e931f0c36cda40bd60f5cdeb92452e91b5
+_commit=e41308252e835ddedcabfd4a98240080c6583a43
 # source=(
 source=(
   "git://gcc.gnu.org/git/gcc.git#commit=${_commit}"
@@ -28,6 +28,7 @@ source=(
   gcc11-foffload-default.patch
   gcc11-generate-missing-build-notes.patch
   gcc11-stringify-__VA_OPT__.patch
+  gcc11-stringify-__VA_OPT__-2.patch
   gcc11-libgcc-link.patch
   gcc11-pr101786.patch
 )
@@ -48,6 +49,7 @@ sha256sums=('SKIP'
   '23897d6da54e392f09a9ed63fd45e3e656e465624bf83644f257dd7382980984'
   'f758e7bc1e013a96b00afc70354d0da81d15de75c98c1cb20df5158dda5d936d'
   'f5d5a0bd59fe61072a3d058c7184edfeefcc53592f7515e83b9558887227139f'
+  'e10989e95c14e612bc64fdbd9f1859e5696bca285cc8d17fa81322425692f730'
   '95a7ef8f98a5135a0071978d5a2927f7b4fe397355c9c8050fbf05b5683aeed6'
   'cbacb7c8e128e1722a379c295ef761a3a92563ebd614af3ceefc8f193fa04392')
 

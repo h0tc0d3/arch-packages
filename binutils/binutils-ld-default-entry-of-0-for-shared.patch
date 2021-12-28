@@ -1,0 +1,26 @@
+--- binutils.orig/ld/ldlang.c	2021-09-17 10:38:18.073366643 +0100
++++ binutils-2.37/ld/ldlang.c	2021-09-17 10:50:50.155450530 +0100
+@@ -6978,7 +6978,8 @@ lang_end (void)
+ 	  if (!bfd_set_start_address (link_info.output_bfd, val))
+ 	    einfo (_("%F%P: can't set start address\n"));
+ 	}
+-      else
++      /* BZ 2004952: Only use the start of the .text section for executables.  */
++      else if bfd_link_executable (&link_info)
+ 	{
+ 	  asection *ts;
+ 
+@@ -7004,6 +7005,13 @@ lang_end (void)
+ 		       entry_symbol.name);
+ 	    }
+ 	}
++      else
++	{
++	  if (warn)
++	    einfo (_("%P: warning: cannot find entry symbol %s;"
++		     " not setting start address\n"),
++		   entry_symbol.name);
++	}
+     }
+ }
+ 

@@ -1,0 +1,19 @@
+--- binutils.orig/bfd/linker.c	2021-10-13 13:21:03.125429867 +0100
++++ binutils-2.37/bfd/linker.c	2021-10-13 13:33:31.328554905 +0100
+@@ -1420,6 +1420,7 @@ _bfd_generic_link_add_one_symbol (struct
+     {
+       row = COMMON_ROW;
+       if (!bfd_link_relocatable (info)
++	  && name != NULL
+ 	  && name[0] == '_'
+ 	  && name[1] == '_'
+ 	  && strcmp (name + (name[2] == '_'), "__gnu_lto_slim") == 0)
+@@ -1682,7 +1683,7 @@ _bfd_generic_link_add_one_symbol (struct
+ 	      cycle = true;
+ 	      break;
+ 	    }
+-	  if (strcmp (h->u.i.link->root.string, string) == 0)
++	  if (string != NULL && strcmp (h->u.i.link->root.string, string) == 0)
+ 	    break;
+ 	  /* Fall through.  */
+ 	case MDEF:

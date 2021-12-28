@@ -1,6 +1,6 @@
 pkgname=binutils
 pkgver=2.37
-pkgrel=4
+pkgrel=5
 pkgdesc='A set of programs to assemble and manipulate binary and object files'
 arch=(x86_64)
 url='https://www.gnu.org/software/binutils/'
@@ -30,6 +30,16 @@ source=(
   binutils-ld-expression-parsing.patch
   binutil-opcodes-constify-and-local-meps-macros.patch
   binutils-bfd-close-file-descriptor.patch
+  binutils-dwarf-5-dir0.patch
+  binutils-autoconf-version.patch
+  binutils-ld-default-entry-of-0-for-shared.patch
+  binutils-empty-MIND-string.patch
+  binutils.unicode.patch
+  binutils-ld-read-only-script.patch
+  binutils-gas-multibyte-warnings.patch
+  binutils-readelf-other-sym-info.patch
+  binutils-readelf-recognize-FDO-Packaging-Metadata-ELF-note.patch
+  binutils-CVE-2021-45078.patch
 )
 sha256sums=('820d9724f020a3e69cb337893a0b63c2db161dadcb0e06fc11dc29eb1e84a32c'
   'SKIP'
@@ -48,7 +58,16 @@ sha256sums=('820d9724f020a3e69cb337893a0b63c2db161dadcb0e06fc11dc29eb1e84a32c'
   '2fcb5acbce65f2e0ecc6dac08ffa670041a57379430e9359804e957c2362cbc7'
   'ae485133cc4df1ff95b541ab893626b8bd2f3a1d9971de9b87228cc409a128f4'
   '37d2b543dc8d40d49aa6a9d7be004fda0a8ee6a191e5f63676843c83708bbac7'
-)
+  'fde5af6450d18a9db618b12d5f6a7ea572c9e05f502097c1ab9ba3f2a5af056d'
+  '915c02b0e5df3c6849e170304a2ee16f5741b74fdb6e5ad755a38364d06afc62'
+  'e6ffa1b8452ae74293523140a9eb767b3b30b73d9e466709fcf8c478a05bd455'
+  '100336b5a728f59b744da9ec571408e98d4d2541bae314630ebfd501f20770b3'
+  '4d7081d31800269e0e59594ccb9348d1023614e2aac96c3a3772e0ab626a2a36'
+  '9519ddd6b10f86c0ef26d941489c63e4a78424abc8684262cddb0e2962fcdd8e'
+  '596c8e6f12cbf317f7ccf6fdd7cde621141f8479772d94882c192d227c169acc'
+  '995f16f70b4b2be12f0c8dec4bdc5e074c831f35751b99de2c2f47053621745f'
+  '1839129c1e4daf6b6490d9db8749e64a2fc1a64e6c484ef7aae7639e72d694fe'
+  '590c914dd3f210c7cf509028febe1823ad64d979c288bcfb8a11d732ce25f1a8')
 validpgpkeys=(3A24BC1E8FB409FA9F14371813FCEF89DD9E3C4F)
 
 # toolchain build order: linux-api-headers->glibc->binutils->gcc->binutils->glibc
@@ -147,6 +166,52 @@ prepare() {
   #            linker for x86 binaries.
   # Lifetime: Fixed in 2.38 maybe
   _patch binutils-gold-i386-gnu-property-notes.patch
+
+  # Purpose:  Ensure that the 0'th entry in DWARF-5 directory tables generated
+  #            by gas contains the current working directory.
+  # Lifetime: Fixed in 2.38
+  _patch binutils-dwarf-5-dir0.patch
+
+  # Purpose: Allow the binutils to be configured with any (recent) version of
+  #          autoconf.
+  # Lifetime: Fixed in 2.38 (maybe ?)
+  _patch binutils-autoconf-version.patch
+
+  # Purpose:  Set the entry address of shared libraries to 0, so that they can
+  #           be detected by the loader and not run as an executable.
+  # Lifetime: Permanent.
+  _patch binutils-ld-default-entry-of-0-for-shared.patch
+
+  # Purpose:  Fix a seg-fault compiling the efivar libraries.
+  # Lifetime: Fixed in 2.38.
+  _patch binutils-empty-MIND-string.patch
+
+  # Purpose:  Add ability to show unicode characters to display tools
+  # Lifetime: Fixed in 2.38.
+  _patch binutils.unicode.patch
+
+  # Purpose:  Add ability to create read-only notes via linker scripts
+  # Lifetime: Fixed in 2.38.
+  _patch binutils-ld-read-only-script.patch
+
+  # Purpose:  Add ability to warn about unicode characters in the assembler
+  # Lifetime: Fixed in 2.38.
+  _patch binutils-gas-multibyte-warnings.patch
+
+  # Purpose:  Changes readelf so that when it displays extra information about
+  #           a symbol, this information is placed at the end of the line.
+  # Lifetime: Permanent.
+  # FIXME:    The proper fix would be to update the scripts that are expecting
+  #           a fixed output from readelf.  But it seems that some of them are
+  #           no longer being maintained.
+  _patch binutils-readelf-other-sym-info.patch
+  # Purpose:  Recognize FDO Packaging Metadata ELF note in readelf.
+  # Lifetime: Fixed in 2.38.
+  _patch binutils-readelf-recognize-FDO-Packaging-Metadata-ELF-note.patch
+
+  # Purpose:  Fix a potential illegal memory access parsing a corrupt COFF file.
+  # Lifetime: Fixed in 2.38.
+  _patch binutils-CVE-2021-45078.patch
 
   # Turn off development mode (-Werror, gas run-time checks, date in sonames)
   sed -i '/^development=/s/true/false/' bfd/development.sh

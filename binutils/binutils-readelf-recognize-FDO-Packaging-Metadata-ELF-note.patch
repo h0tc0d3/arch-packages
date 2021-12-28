@@ -1,0 +1,78 @@
+From 92608c3a98e943bb0d43408e84d4f419f87b5f1f Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Wed, 1 Dec 2021 14:44:25 +0000
+Subject: [PATCH] readelf: recognize FDO Packaging Metadata ELF note
+
+As defined on: https://systemd.io/COREDUMP_PACKAGE_METADATA/
+this note will be used starting from Fedora 36. Allow
+readelf --notes to pretty print it:
+
+Displaying notes found in: .note.package
+  Owner                Data size 	Description
+  FDO                  0x00000039	FDO_PACKAGING_METADATA
+    Packaging Metadata: {"type":"deb","name":"fsverity-utils","version":"1.3-1"}
+
+Signed-off-by: Luca Boccassi <luca.boccassi@microsoft.com>
+(cherry picked from commit e5382207cdddea07c6456fc1c0e6bea73b3d9947)
+---
+ binutils/readelf.c   | 15 +++++++++++++++
+ include/elf/common.h |  3 +++
+ 2 files changed, 18 insertions(+)
+
+diff --git a/binutils/readelf.c b/binutils/readelf.c
+index a6073f7ec80..a92dce3114f 100644
+--- a/binutils/readelf.c
++++ b/binutils/readelf.c
+@@ -18861,6 +18861,8 @@ get_note_type (Filedata * filedata, unsigned e_type)
+ 	return _("func");
+       case NT_GO_BUILDID:
+ 	return _("GO BUILDID");
++      case FDO_PACKAGING_METADATA:
++	return _("FDO_PACKAGING_METADATA");
+       default:
+ 	break;
+       }
+@@ -20012,6 +20014,17 @@ print_stapsdt_note (Elf_Internal_Note *pnote)
+   return false;
+ }
+ 
++static bool
++print_fdo_note (Elf_Internal_Note * pnote)
++{
++  if (pnote->descsz > 0 && pnote->type == FDO_PACKAGING_METADATA)
++    {
++      printf (_("    Packaging Metadata: %.*s\n"), (int) pnote->descsz, pnote->descdata);
++      return true;
++    }
++  return false;
++}
++
+ static const char *
+ get_ia64_vms_note_type (unsigned e_type)
+ {
+@@ -20741,6 +20754,8 @@ process_note (Elf_Internal_Note *  pnote,
+     return print_stapsdt_note (pnote);
+   else if (startswith (pnote->namedata, "CORE"))
+     return print_core_note (pnote);
++  else if (startswith (pnote->namedata, "FDO"))
++    return print_fdo_note (pnote);
+   else if (((startswith (pnote->namedata, "GA")
+ 	     && strchr ("*$!+", pnote->namedata[2]) != NULL)
+ 	    || strchr ("*$!+", pnote->namedata[0]) != NULL)
+diff --git a/include/elf/common.h b/include/elf/common.h
+index 0cca28673dd..8ee17c84a97 100644
+--- a/include/elf/common.h
++++ b/include/elf/common.h
+@@ -953,6 +953,9 @@
+ 
+ #define NT_FREEBSD_ABI_TAG	1
+ 
++/* Values for FDO .note.package notes as defined on https://systemd.io/COREDUMP_PACKAGE_METADATA/  */
++#define FDO_PACKAGING_METADATA	0xcafe1a7e
++
+ /* These three macros disassemble and assemble a symbol table st_info field,
+    which contains the symbol binding and symbol type.  The STB_ and STT_
+    defines identify the binding and type.  */
+-- 
+2.30.2
+

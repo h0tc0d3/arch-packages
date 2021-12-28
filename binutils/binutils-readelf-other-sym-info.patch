@@ -1,0 +1,35 @@
+--- binutils.orig/binutils/readelf.c	2020-07-24 15:08:30.317597020 +0100
++++ binutils-2.35/binutils/readelf.c	2020-07-24 15:09:39.029155552 +0100
+@@ -12069,11 +12069,13 @@ print_dynamic_symbol (Filedata *filedata
+       unsigned int vis = ELF_ST_VISIBILITY (psym->st_other);
+ 
+       printf (" %-7s", get_symbol_visibility (vis));
++#if 0
+       /* Check to see if any other bits in the st_other field are set.
+ 	 Note - displaying this information disrupts the layout of the
+ 	 table being generated, but for the moment this case is very rare.  */
+       if (psym->st_other ^ vis)
+ 	printf (" [%s] ", get_symbol_other (filedata, psym->st_other ^ vis));
++#endif
+     }
+   printf (" %4s ", get_symbol_index_type (filedata, psym->st_shndx));
+ 
+@@ -12112,7 +12114,17 @@ print_dynamic_symbol (Filedata *filedata
+ 		version_string);
+     }
+ 
+-  putchar ('\n');
++#if 1
++    {
++      unsigned int vis = ELF_ST_VISIBILITY (psym->st_other);
++
++      /* Check to see if any other bits in the st_other field are set.  */
++      if (psym->st_other ^ vis)
++	printf (" \t[%s]", get_symbol_other (filedata, psym->st_other ^ vis));
++    }
++#endif
++
++    putchar ('\n');
+ 
+   if (ELF_ST_BIND (psym->st_info) == STB_LOCAL
+       && section != NULL

@@ -1,0 +1,197 @@
+libcpp: Fix up #__VA_OPT__ handling [PR103415]
+
+stringify_arg uses pfile->u_buff to create the string literal.
+Unfortunately, paste_tokens -> _cpp_lex_direct -> lex_number -> _cpp_unaligned_alloc
+can in some cases use pfile->u_buff too, which results in losing everything
+prepared for the string literal until the token pasting.
+
+The following patch fixes that by not calling paste_token during the
+construction of the string literal, but doing that before.  All the tokens
+we are processing have been pushed into a token buffer using
+tokens_buff_add_token so it is fine if we paste some of them in that buffer
+(successful pasting creates a new token in that buffer), move following
+tokens if any to make it contiguous, pop (throw away) the extra tokens at
+the end and then do stringify_arg.
+
+Also, paste_tokens now copies over PREV_WHITE and PREV_FALLTHROUGH flags
+from the original lhs token to the replacement token.  Copying that way
+the PREV_WHITE flag is needed for the #__VA_OPT__ handling and copying
+over PREV_FALLTHROUGH fixes the new Wimplicit-fallthrough-38.c test.
+
+2021-12-01  Jakub Jelinek  <jakub@redhat.com>
+
+	PR preprocessor/103415
+libcpp/
+	* macro.c (stringify_arg): Remove va_opt argument and va_opt handling.
+	(paste_tokens): On successful paste or in PREV_WHITE and
+	PREV_FALLTHROUGH flags from the *plhs token to the new token.
+	(replace_args): Adjust stringify_arg callers.  For #__VA_OPT__,
+	perform token pasting in a separate loop before stringify_arg call.
+gcc/testsuite/
+	* c-c++-common/cpp/va-opt-8.c: New test.
+	* c-c++-common/Wimplicit-fallthrough-38.c: New test.
+
+--- libcpp/macro.c.jj
++++ libcpp/macro.c
+@@ -295,7 +295,7 @@ static cpp_context *next_context (cpp_reader *);
+ static const cpp_token *padding_token (cpp_reader *, const cpp_token *);
+ static const cpp_token *new_string_token (cpp_reader *, uchar *, unsigned int);
+ static const cpp_token *stringify_arg (cpp_reader *, const cpp_token **,
+-				       unsigned int, bool);
++				       unsigned int);
+ static void paste_all_tokens (cpp_reader *, const cpp_token *);
+ static bool paste_tokens (cpp_reader *, location_t,
+ 			  const cpp_token **, const cpp_token *);
+@@ -834,8 +834,7 @@ cpp_quote_string (uchar *dest, const uchar *src, unsigned int len)
+ /* Convert a token sequence FIRST to FIRST+COUNT-1 to a single string token
+    according to the rules of the ISO C #-operator.  */
+ static const cpp_token *
+-stringify_arg (cpp_reader *pfile, const cpp_token **first, unsigned int count,
+-	       bool va_opt)
++stringify_arg (cpp_reader *pfile, const cpp_token **first, unsigned int count)
+ {
+   unsigned char *dest;
+   unsigned int i, escape_it, backslash_count = 0;
+@@ -852,24 +851,6 @@ stringify_arg (cpp_reader *pfile, const cpp_token **first, unsigned int count,
+     {
+       const cpp_token *token = first[i];
+ 
+-      if (va_opt && (token->flags & PASTE_LEFT))
+-	{
+-	  location_t virt_loc = pfile->invocation_location;
+-	  const cpp_token *rhs;
+-	  do
+-	    {
+-	      if (i == count)
+-		abort ();
+-	      rhs = first[++i];
+-	      if (!paste_tokens (pfile, virt_loc, &token, rhs))
+-		{
+-		  --i;
+-		  break;
+-		}
+-	    }
+-	  while (rhs->flags & PASTE_LEFT);
+-	}
+-
+       if (token->type == CPP_PADDING)
+ 	{
+ 	  if (source == NULL
+@@ -1003,6 +984,7 @@ paste_tokens (cpp_reader *pfile, location_t location,
+       return false;
+     }
+ 
++  lhs->flags |= (*plhs)->flags & (PREV_WHITE | PREV_FALLTHROUGH);
+   *plhs = lhs;
+   _cpp_pop_buffer (pfile);
+   return true;
+@@ -1945,8 +1927,7 @@ replace_args (cpp_reader *pfile, cpp_hashnode *node, cpp_macro *macro,
+ 	if (src->flags & STRINGIFY_ARG)
+ 	  {
+ 	    if (!arg->stringified)
+-	      arg->stringified = stringify_arg (pfile, arg->first, arg->count,
+-						false);
++	      arg->stringified = stringify_arg (pfile, arg->first, arg->count);
+ 	  }
+ 	else if ((src->flags & PASTE_LEFT)
+ 		 || (src != macro->exp.tokens && (src[-1].flags & PASTE_LEFT)))
+@@ -2066,11 +2047,46 @@ replace_args (cpp_reader *pfile, cpp_hashnode *node, cpp_macro *macro,
+ 		{
+ 		  unsigned int count
+ 		    = start ? paste_flag - start : tokens_buff_count (buff);
+-		  const cpp_token *t
+-		    = stringify_arg (pfile,
+-				     start ? start + 1
+-				     : (const cpp_token **) (buff->base),
+-				     count, true);
++		  const cpp_token **first
++		    = start ? start + 1
++			    : (const cpp_token **) (buff->base);
++		  unsigned int i, j;
++
++		  /* Paste any tokens that need to be pasted before calling
++		     stringify_arg, because stringify_arg uses pfile->u_buff
++		     which paste_tokens can use as well.  */
++		  for (i = 0, j = 0; i < count; i++, j++)
++		    {
++		      const cpp_token *token = first[i];
++
++		      if (token->flags & PASTE_LEFT)
++			{
++			  location_t virt_loc = pfile->invocation_location;
++			  const cpp_token *rhs;
++			  do
++			    {
++			      if (i == count)
++				abort ();
++			      rhs = first[++i];
++			      if (!paste_tokens (pfile, virt_loc, &token, rhs))
++				{
++				  --i;
++				  break;
++				}
++			    }
++			  while (rhs->flags & PASTE_LEFT);
++			}
++
++		      first[j] = token;
++		    }
++		  if (j != i)
++		    {
++		      while (i-- != j)
++			tokens_buff_remove_last_token (buff);
++		      count = j;
++		    }
++
++		  const cpp_token *t = stringify_arg (pfile, first, count);
+ 		  while (count--)
+ 		    tokens_buff_remove_last_token (buff);
+ 		  if (src->flags & PASTE_LEFT)
+--- gcc/testsuite/c-c++-common/cpp/va-opt-8.c.jj
++++ gcc/testsuite/c-c++-common/cpp/va-opt-8.c
+@@ -0,0 +1,18 @@
++/* PR preprocessor/103415 */
++/* { dg-do run } */
++/* { dg-options "-std=gnu99" { target c } } */
++/* { dg-options "-std=c++20" { target c++ } } */
++
++#define n(x, ...) = #__VA_OPT__(x##3)
++#define o(x, ...) #__VA_OPT__(x##__VA_ARGS__##9)
++const char *c n(1 2, 4);
++const char *d = o(5  6, 7	8);
++
++int
++main ()
++{
++  if (__builtin_strcmp (c, "1 23")
++      || __builtin_strcmp (d, "5 67 89"))
++    __builtin_abort ();
++  return 0;
++}
+--- gcc/testsuite/c-c++-common/Wimplicit-fallthrough-38.c.jj
++++ gcc/testsuite/c-c++-common/Wimplicit-fallthrough-38.c
+@@ -0,0 +1,24 @@
++/* { dg-do compile } */
++/* { dg-options "-Wimplicit-fallthrough=3" } */
++
++#define FOO \
++int				\
++foo (int a)			\
++{				\
++  switch (a)			\
++    {				\
++    case 1:			\
++      ++a;			\
++      /* FALLTHRU */		\
++    case 2:			\
++      ++a;			\
++      /* FALLTHRU */		\
++    ca##se 3:			\
++      ++a;			\
++    default:			\
++      break;			\
++    }				\
++  return a;			\
++}
++
++FOO
