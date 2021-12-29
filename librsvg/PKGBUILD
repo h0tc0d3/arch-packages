@@ -1,6 +1,6 @@
 pkgname=librsvg+clang
 pkgver=2.52.5
-pkgrel=1
+pkgrel=2
 epoch=2
 pkgdesc="SVG rendering library"
 url="https://wiki.gnome.org/Projects/LibRsvg"
@@ -46,9 +46,7 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    CFLAGS="${CFLAGS} -flto=thin"
-    CXXFLAGS="${CXXFLAGS} -flto=thin"
-    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+    RUSTFLAGS="${RUSTFLAGS} -C link-arg=-fuse-ld=lld"
 
   fi
 

@@ -7,7 +7,7 @@ makedepends=('git' 'python-mako' 'xorgproto' 'llvm'
   'libxml2' 'libx11' 'libvdpau' 'libva' 'elfutils' 'libxrandr'
   'ocl-icd' 'wayland-protocols' 'meson' 'ninja' 'glslang' 'valgrind')
 depends=('libdrm' 'libxxf86vm' 'libxdamage' 'libxshmfence' 'libelf'
-  'libomxil-bellagio' 'libunwind' 'libglvnd' 'wayland' 'lm_sensors' 'libclc' 'vulkan-icd-loader' 'zstd' 'expat')
+  'libomxil-bellagio' 'libglvnd' 'wayland' 'lm_sensors' 'libclc' 'vulkan-icd-loader' 'zstd' 'expat')
 optdepends=('opengl-man-pages: for the OpenGL API man pages')
 provides=('mesa' "mesa=${pkgver}" 'opencl-mesa' 'vulkan-intel' 'vulkan-radeon' 'vulkan-mesa-layer' 'libva-mesa-driver' 'mesa-vdpau' 'vulkan-swrast' 'vulkan-driver' 'opengl-driver' 'opencl-driver' 'mesa-libgl')
 conflicts=('mesa' 'opencl-mesa' 'vulkan-intel' 'vulkan-radeon' 'vulkan-mesa-layer' 'libva-mesa-driver' 'mesa-vdpau' 'vulkan-swrast')
@@ -16,14 +16,12 @@ license=('custom')
 source=(
   "https://archive.mesa3d.org/mesa-${pkgver}.tar.xz"{,.sig}
   'LICENSE'
-  'mesa.conf'
   'mesa-remove-swr.patch'
 )
 
 sha256sums=('e2e7bafb8307e7abc3bf982f39382fae3619c84b45504920a21504be52f126bd'
   'SKIP'
   '7fdc119cf53c8ca65396ea73f6d10af641ba41ea1dd2bd44a824726e01c8b3f2'
-  '7efdb0171d5346f856ce1b2ff440fc0810938d4dd2ad196eed9c25143f9b4c63'
   '078418721cf7fdae71bf05c8d979649925bebd026e2ecaf0c615d1133a1ce726')
 
 validpgpkeys=(
@@ -59,11 +57,6 @@ prepare() {
   # Remove SWR driver. SWR already removed from main branch.
   _patch mesa-remove-swr.patch
 
-  if [[ -f "${srcdir:?}/mesa.conf" ]]; then
-    # shellcheck disable=SC1091
-    source "${srcdir:?}/mesa.conf"
-  fi
-
 }
 
 build() {
@@ -81,6 +74,7 @@ build() {
     -D b_pie=true \
     -D sysconfdir=/etc \
     -D platforms=x11,wayland \
+    -D osmesa=true \
     -D dri-drivers="${DRI_DRIVERS}" \
     -D gallium-drivers="${GALLIUM_DRIVERS}" \
     -D vulkan-drivers="${VULKAN_DRIVERS}" \
@@ -101,12 +95,11 @@ build() {
     -D gles2=enabled \
     -D glvnd=true \
     -D glx=dri \
-    -D libunwind=enabled \
     -D lmsensors=enabled \
-    -D osmesa=true \
     -D shared-glapi=enabled \
     -D zstd=enabled \
     -D microsoft-clc=disabled \
+    -D libunwind=disabled \
     -D valgrind=disabled
 
   meson compile -C build

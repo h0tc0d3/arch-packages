@@ -1,0 +1,853 @@
+From 28274d3eaa20732971440c184af2860431c3d56f Mon Sep 17 00:00:00 2001
+From: Huang Rui <ray.huang@amd.com>
+Date: Mon, 14 Jun 2021 22:52:01 +0800
+Subject: cpupower: add AMD P-state capability flag
+
+Add AMD P-state capability flag in cpupower to indicate AMD new P-state
+kernel module support on Ryzen processors.
+
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+---
+ tools/power/cpupower/utils/helpers/helpers.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tools/power/cpupower/utils/helpers/helpers.h b/tools/power/cpupower/utils/helpers/helpers.h
+index 33ffacee7fcb9..b4813efdfb009 100644
+--- a/tools/power/cpupower/utils/helpers/helpers.h
++++ b/tools/power/cpupower/utils/helpers/helpers.h
+@@ -73,6 +73,7 @@ enum cpupower_cpu_vendor {X86_VENDOR_UNKNOWN = 0, X86_VENDOR_INTEL,
+ #define CPUPOWER_CAP_AMD_HW_PSTATE	0x00000100
+ #define CPUPOWER_CAP_AMD_PSTATEDEF	0x00000200
+ #define CPUPOWER_CAP_AMD_CPB_MSR	0x00000400
++#define CPUPOWER_CAP_AMD_PSTATE		0x00000800
+ 
+ #define CPUPOWER_AMD_CPBDIS		0x02000000
+ 
+-- 
+cgit 1.2.3-1.el7
+
+From 76c5800911b70f9d0977eccfbbad02f2c956298e Mon Sep 17 00:00:00 2001
+From: Huang Rui <ray.huang@amd.com>
+Date: Sun, 27 Jun 2021 22:25:39 +0800
+Subject: cpupower: add the function to check amd-pstate enabled
+
+The processor with amd-pstate function also supports legacy ACPI
+hardware P-States feature as well. Once driver sets amd-pstate eanbled,
+the processor will respond the finer grain amd-pstate feature instead of
+legacy ACPI P-States. So it introduces the cpupower_amd_pstate_enabled()
+to check whether the current kernel enables amd-pstate or acpi-cpufreq
+module.
+
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+---
+ tools/power/cpupower/utils/helpers/helpers.h | 10 ++++++++++
+ tools/power/cpupower/utils/helpers/misc.c    | 18 ++++++++++++++++++
+ 2 files changed, 28 insertions(+)
+
+diff --git a/tools/power/cpupower/utils/helpers/helpers.h b/tools/power/cpupower/utils/helpers/helpers.h
+index b4813efdfb009..e03cc97297aa9 100644
+--- a/tools/power/cpupower/utils/helpers/helpers.h
++++ b/tools/power/cpupower/utils/helpers/helpers.h
+@@ -11,6 +11,7 @@
+ 
+ #include <libintl.h>
+ #include <locale.h>
++#include <stdbool.h>
+ 
+ #include "helpers/bitmask.h"
+ #include <cpupower.h>
+@@ -136,6 +137,12 @@ extern int decode_pstates(unsigned int cpu, int boost_states,
+ 
+ extern int cpufreq_has_boost_support(unsigned int cpu, int *support,
+ 				     int *active, int * states);
++
++/* AMD P-States stuff **************************/
++extern bool cpupower_amd_pstate_enabled(void);
++
++/* AMD P-States stuff **************************/
++
+ /*
+  * CPUID functions returning a single datum
+  */
+@@ -168,6 +175,9 @@ static inline int cpufreq_has_boost_support(unsigned int cpu, int *support,
+ 					    int *active, int * states)
+ { return -1; }
+ 
++static inline bool cpupower_amd_pstate_enabled(void)
++{ return false; }
++
+ /* cpuid and cpuinfo helpers  **************************/
+ 
+ static inline unsigned int cpuid_eax(unsigned int op) { return 0; };
+diff --git a/tools/power/cpupower/utils/helpers/misc.c b/tools/power/cpupower/utils/helpers/misc.c
+index fc6e345117216..0c483cdefcc26 100644
+--- a/tools/power/cpupower/utils/helpers/misc.c
++++ b/tools/power/cpupower/utils/helpers/misc.c
+@@ -3,9 +3,11 @@
+ #include <stdio.h>
+ #include <errno.h>
+ #include <stdlib.h>
++#include <string.h>
+ 
+ #include "helpers/helpers.h"
+ #include "helpers/sysfs.h"
++#include "cpufreq.h"
+ 
+ #if defined(__i386__) || defined(__x86_64__)
+ 
+@@ -83,6 +85,22 @@ int cpupower_intel_set_perf_bias(unsigned int cpu, unsigned int val)
+ 	return 0;
+ }
+ 
++bool cpupower_amd_pstate_enabled(void)
++{
++	char *driver = cpufreq_get_driver(0);
++	bool ret = false;
++
++	if (!driver)
++		return ret;
++
++	if (!strcmp(driver, "amd-pstate"))
++		ret = true;
++
++	cpufreq_put_driver(driver);
++
++	return ret;
++}
++
+ #endif /* #if defined(__i386__) || defined(__x86_64__) */
+ 
+ /* get_cpustate
+-- 
+cgit 1.2.3-1.el7
+
+From 3a77076cb8a591e5b3507d6bc9b8d8ccbadd3a12 Mon Sep 17 00:00:00 2001
+From: Huang Rui <ray.huang@amd.com>
+Date: Sun, 27 Jun 2021 22:40:14 +0800
+Subject: cpupower: initial AMD P-state capability
+
+If kernel starts the amd-pstate module, the cpupower will initial the
+capability flag as CPUPOWER_CAP_AMD_PSTATE. And once amd-pstate
+capability is set, it won't need to set legacy ACPI relative
+capabilities anymore.
+
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+---
+ tools/power/cpupower/utils/helpers/cpuid.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/tools/power/cpupower/utils/helpers/cpuid.c b/tools/power/cpupower/utils/helpers/cpuid.c
+index 72eb435931803..2a6dc104e76bc 100644
+--- a/tools/power/cpupower/utils/helpers/cpuid.c
++++ b/tools/power/cpupower/utils/helpers/cpuid.c
+@@ -149,6 +149,19 @@ out:
+ 		if (ext_cpuid_level >= 0x80000008 &&
+ 		    cpuid_ebx(0x80000008) & (1 << 4))
+ 			cpu_info->caps |= CPUPOWER_CAP_AMD_RDPRU;
++
++		if (cpupower_amd_pstate_enabled()) {
++			cpu_info->caps |= CPUPOWER_CAP_AMD_PSTATE;
++
++			/*
++			 * If AMD P-state is enabled, the firmware will treat
++			 * AMD P-state function as high priority.
++			 */
++			cpu_info->caps &= ~CPUPOWER_CAP_AMD_CPB;
++			cpu_info->caps &= ~CPUPOWER_CAP_AMD_CPB_MSR;
++			cpu_info->caps &= ~CPUPOWER_CAP_AMD_HW_PSTATE;
++			cpu_info->caps &= ~CPUPOWER_CAP_AMD_PSTATEDEF;
++		}
+ 	}
+ 
+ 	if (cpu_info->vendor == X86_VENDOR_INTEL) {
+-- 
+cgit 1.2.3-1.el7
+
+From 426f93666545d8b3e06f10ac45e226049c22ac3f Mon Sep 17 00:00:00 2001
+From: Huang Rui <ray.huang@amd.com>
+Date: Sun, 26 Sep 2021 10:55:53 +0800
+Subject: cpupower: add the function to get the sysfs value from specific table
+
+Expose the helper into cpufreq header, then cpufreq driver can use this
+function to get the sysfs value if it has any specific sysfs interfaces.
+
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+---
+ tools/power/cpupower/lib/cpufreq.c | 21 +++++++++++++++------
+ tools/power/cpupower/lib/cpufreq.h | 12 ++++++++++++
+ 2 files changed, 27 insertions(+), 6 deletions(-)
+
+diff --git a/tools/power/cpupower/lib/cpufreq.c b/tools/power/cpupower/lib/cpufreq.c
+index c3b56db8b9214..c011bca27041c 100644
+--- a/tools/power/cpupower/lib/cpufreq.c
++++ b/tools/power/cpupower/lib/cpufreq.c
+@@ -83,20 +83,21 @@ static const char *cpufreq_value_files[MAX_CPUFREQ_VALUE_READ_FILES] = {
+ 	[STATS_NUM_TRANSITIONS] = "stats/total_trans"
+ };
+ 
+-
+-static unsigned long sysfs_cpufreq_get_one_value(unsigned int cpu,
+-						 enum cpufreq_value which)
++unsigned long cpufreq_get_sysfs_value_from_table(unsigned int cpu,
++						 const char **table,
++						 unsigned index,
++						 unsigned size)
+ {
+ 	unsigned long value;
+ 	unsigned int len;
+ 	char linebuf[MAX_LINE_LEN];
+ 	char *endp;
+ 
+-	if (which >= MAX_CPUFREQ_VALUE_READ_FILES)
++	if (!table || index >= size || !table[index])
+ 		return 0;
+ 
+-	len = sysfs_cpufreq_read_file(cpu, cpufreq_value_files[which],
+-				linebuf, sizeof(linebuf));
++	len = sysfs_cpufreq_read_file(cpu, table[index], linebuf,
++				      sizeof(linebuf));
+ 
+ 	if (len == 0)
+ 		return 0;
+@@ -109,6 +110,14 @@ static unsigned long sysfs_cpufreq_get_one_value(unsigned int cpu,
+ 	return value;
+ }
+ 
++static unsigned long sysfs_cpufreq_get_one_value(unsigned int cpu,
++						 enum cpufreq_value which)
++{
++	return cpufreq_get_sysfs_value_from_table(cpu, cpufreq_value_files,
++						  which,
++						  MAX_CPUFREQ_VALUE_READ_FILES);
++}
++
+ /* read access to files which contain one string */
+ 
+ enum cpufreq_string {
+diff --git a/tools/power/cpupower/lib/cpufreq.h b/tools/power/cpupower/lib/cpufreq.h
+index 95f4fd9e2656c..107668c0c4548 100644
+--- a/tools/power/cpupower/lib/cpufreq.h
++++ b/tools/power/cpupower/lib/cpufreq.h
+@@ -203,6 +203,18 @@ int cpufreq_modify_policy_governor(unsigned int cpu, char *governor);
+ int cpufreq_set_frequency(unsigned int cpu,
+ 				unsigned long target_frequency);
+ 
++/*
++ * get the sysfs value from specific table
++ *
++ * Read the value with the sysfs file name from specific table. Does
++ * only work if the cpufreq driver has the specific sysfs interfaces.
++ */
++
++unsigned long cpufreq_get_sysfs_value_from_table(unsigned int cpu,
++						 const char **table,
++						 unsigned index,
++						 unsigned size);
++
+ #ifdef __cplusplus
+ }
+ #endif
+-- 
+cgit 1.2.3-1.el7
+
+From e8c0ce875f191a0e0a13b87a0161cc9799c2aa39 Mon Sep 17 00:00:00 2001
+From: Huang Rui <ray.huang@amd.com>
+Date: Thu, 18 Nov 2021 20:32:20 +0800
+Subject: cpupower: introduce acpi cppc library
+
+Kernel ACPI subsytem introduced the sysfs attributes for acpi cppc
+library in below path:
+
+/sys/devices/system/cpu/cpuX/acpi_cppc/
+
+And these attributes will be used for amd-pstate driver to provide some
+performance and frequency values.
+
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+---
+ tools/power/cpupower/Makefile        |  6 ++--
+ tools/power/cpupower/lib/acpi_cppc.c | 59 ++++++++++++++++++++++++++++++++++++
+ tools/power/cpupower/lib/acpi_cppc.h | 21 +++++++++++++
+ 3 files changed, 83 insertions(+), 3 deletions(-)
+ create mode 100644 tools/power/cpupower/lib/acpi_cppc.c
+ create mode 100644 tools/power/cpupower/lib/acpi_cppc.h
+
+diff --git a/tools/power/cpupower/Makefile b/tools/power/cpupower/Makefile
+index 3b1594447f294..e9b6de314654f 100644
+--- a/tools/power/cpupower/Makefile
++++ b/tools/power/cpupower/Makefile
+@@ -143,9 +143,9 @@ UTIL_HEADERS = utils/helpers/helpers.h utils/idle_monitor/cpupower-monitor.h \
+ 	utils/helpers/bitmask.h \
+ 	utils/idle_monitor/idle_monitors.h utils/idle_monitor/idle_monitors.def
+ 
+-LIB_HEADERS = 	lib/cpufreq.h lib/cpupower.h lib/cpuidle.h
+-LIB_SRC = 	lib/cpufreq.c lib/cpupower.c lib/cpuidle.c
+-LIB_OBJS = 	lib/cpufreq.o lib/cpupower.o lib/cpuidle.o
++LIB_HEADERS = 	lib/cpufreq.h lib/cpupower.h lib/cpuidle.h lib/acpi_cppc.h
++LIB_SRC = 	lib/cpufreq.c lib/cpupower.c lib/cpuidle.c lib/acpi_cppc.c
++LIB_OBJS = 	lib/cpufreq.o lib/cpupower.o lib/cpuidle.o lib/acpi_cppc.o
+ LIB_OBJS :=	$(addprefix $(OUTPUT),$(LIB_OBJS))
+ 
+ override CFLAGS +=	-pipe
+diff --git a/tools/power/cpupower/lib/acpi_cppc.c b/tools/power/cpupower/lib/acpi_cppc.c
+new file mode 100644
+index 0000000000000..a07a8922eca27
+--- /dev/null
++++ b/tools/power/cpupower/lib/acpi_cppc.c
+@@ -0,0 +1,59 @@
++// SPDX-License-Identifier: GPL-2.0-only
++
++#include <stdio.h>
++#include <errno.h>
++#include <stdlib.h>
++#include <string.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#include <unistd.h>
++
++#include "cpupower_intern.h"
++#include "acpi_cppc.h"
++
++/* ACPI CPPC sysfs access ***********************************************/
++
++static int acpi_cppc_read_file(unsigned int cpu, const char *fname,
++			       char *buf, size_t buflen)
++{
++	char path[SYSFS_PATH_MAX];
++
++	snprintf(path, sizeof(path), PATH_TO_CPU "cpu%u/acpi_cppc/%s",
++		 cpu, fname);
++	return cpupower_read_sysfs(path, buf, buflen);
++}
++
++static const char *acpi_cppc_value_files[] = {
++	[HIGHEST_PERF] = "highest_perf",
++	[LOWEST_PERF] = "lowest_perf",
++	[NOMINAL_PERF] = "nominal_perf",
++	[LOWEST_NONLINEAR_PERF] = "lowest_nonlinear_perf",
++	[LOWEST_FREQ] = "lowest_freq",
++	[NOMINAL_FREQ] = "nominal_freq",
++	[REFERENCE_PERF] = "reference_perf",
++	[WRAPAROUND_TIME] = "wraparound_time"
++};
++
++unsigned long acpi_cppc_get_data(unsigned cpu, enum acpi_cppc_value which)
++{
++	unsigned long long value;
++	unsigned int len;
++	char linebuf[MAX_LINE_LEN];
++	char *endp;
++
++	if (which >= MAX_CPPC_VALUE_FILES)
++		return 0;
++
++	len = acpi_cppc_read_file(cpu, acpi_cppc_value_files[which],
++				  linebuf, sizeof(linebuf));
++	if (len == 0)
++		return 0;
++
++	value = strtoull(linebuf, &endp, 0);
++
++	if (endp == linebuf || errno == ERANGE)
++		return 0;
++
++	return value;
++}
+diff --git a/tools/power/cpupower/lib/acpi_cppc.h b/tools/power/cpupower/lib/acpi_cppc.h
+new file mode 100644
+index 0000000000000..576291155224a
+--- /dev/null
++++ b/tools/power/cpupower/lib/acpi_cppc.h
+@@ -0,0 +1,21 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++
++#ifndef __ACPI_CPPC_H__
++#define __ACPI_CPPC_H__
++
++enum acpi_cppc_value {
++	HIGHEST_PERF,
++	LOWEST_PERF,
++	NOMINAL_PERF,
++	LOWEST_NONLINEAR_PERF,
++	LOWEST_FREQ,
++	NOMINAL_FREQ,
++	REFERENCE_PERF,
++	WRAPAROUND_TIME,
++	MAX_CPPC_VALUE_FILES
++};
++
++extern unsigned long acpi_cppc_get_data(unsigned cpu,
++					enum acpi_cppc_value which);
++
++#endif /* _ACPI_CPPC_H */
+-- 
+cgit 1.2.3-1.el7
+
+From c8568e5fdca1da6f4cbe776d1d58ddc1dd3e6a73 Mon Sep 17 00:00:00 2001
+From: Huang Rui <ray.huang@amd.com>
+Date: Sun, 20 Jun 2021 17:07:25 +0800
+Subject: cpupower: add amd-pstate sysfs definition and access helper
+
+Introduce the marco definitions and access helper function for
+amd-pstate sysfs interfaces such as each performance goals and frequency
+levels in amd helper file. They will be used to read the sysfs attribute
+from amd-pstate cpufreq driver for cpupower utilities.
+
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+---
+ tools/power/cpupower/utils/helpers/amd.c | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/tools/power/cpupower/utils/helpers/amd.c b/tools/power/cpupower/utils/helpers/amd.c
+index 97f2c857048e1..14c658daba4b8 100644
+--- a/tools/power/cpupower/utils/helpers/amd.c
++++ b/tools/power/cpupower/utils/helpers/amd.c
+@@ -8,7 +8,10 @@
+ #include <pci/pci.h>
+ 
+ #include "helpers/helpers.h"
++#include "cpufreq.h"
++#include "acpi_cppc.h"
+ 
++/* ACPI P-States Helper Functions for AMD Processors ***************/
+ #define MSR_AMD_PSTATE_STATUS	0xc0010063
+ #define MSR_AMD_PSTATE		0xc0010064
+ #define MSR_AMD_PSTATE_LIMIT	0xc0010061
+@@ -146,4 +149,31 @@ int amd_pci_get_num_boost_states(int *active, int *states)
+ 	pci_cleanup(pci_acc);
+ 	return 0;
+ }
++
++/* ACPI P-States Helper Functions for AMD Processors ***************/
++
++/* AMD P-States Helper Functions ***************/
++enum amd_pstate_value {
++	AMD_PSTATE_HIGHEST_PERF,
++	AMD_PSTATE_MAX_FREQ,
++	AMD_PSTATE_LOWEST_NONLINEAR_FREQ,
++	MAX_AMD_PSTATE_VALUE_READ_FILES,
++};
++
++static const char *amd_pstate_value_files[MAX_AMD_PSTATE_VALUE_READ_FILES] = {
++	[AMD_PSTATE_HIGHEST_PERF] = "amd_pstate_highest_perf",
++	[AMD_PSTATE_MAX_FREQ] = "amd_pstate_max_freq",
++	[AMD_PSTATE_LOWEST_NONLINEAR_FREQ] = "amd_pstate_lowest_nonlinear_freq",
++};
++
++static unsigned long amd_pstate_get_data(unsigned int cpu,
++					 enum amd_pstate_value value)
++{
++	return cpufreq_get_sysfs_value_from_table(cpu,
++						  amd_pstate_value_files,
++						  value,
++						  MAX_AMD_PSTATE_VALUE_READ_FILES);
++}
++
++/* AMD P-States Helper Functions ***************/
+ #endif /* defined(__i386__) || defined(__x86_64__) */
+-- 
+cgit 1.2.3-1.el7
+
+From d4ece3d47471895f0734cfc36c5b21621c0120a9 Mon Sep 17 00:00:00 2001
+From: Huang Rui <ray.huang@amd.com>
+Date: Sun, 20 Jun 2021 17:35:45 +0800
+Subject: cpupower: enable boost state support for amd-pstate module
+
+The legacy ACPI hardware P-States function has 3 P-States on ACPI table,
+the CPU frequency only can be switched between the 3 P-States. While the
+processor supports the boost state, it will have another boost state
+that the frequency can be higher than P0 state, and the state can be
+decoded by the function of decode_pstates() and read by
+amd_pci_get_num_boost_states().
+
+However, the new AMD P-States function is different than legacy ACPI
+hardware P-State on AMD processors. That has a finer grain frequency
+range between the highest and lowest frequency. And boost frequency is
+actually the frequency which is mapped on highest performance ratio. The
+similiar previous P0 frequency is mapped on nominal performance ratio.
+If the highest performance on the processor is higher than nominal
+performance, then we think the current processor supports the boost
+state. And it uses amd_pstate_boost_init() to initialize boost for AMD
+P-States function.
+
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+---
+ tools/power/cpupower/utils/helpers/amd.c     | 18 ++++++++++++++++++
+ tools/power/cpupower/utils/helpers/helpers.h |  5 +++++
+ tools/power/cpupower/utils/helpers/misc.c    |  2 ++
+ 3 files changed, 25 insertions(+)
+
+diff --git a/tools/power/cpupower/utils/helpers/amd.c b/tools/power/cpupower/utils/helpers/amd.c
+index 14c658daba4b8..bde6065cabf44 100644
+--- a/tools/power/cpupower/utils/helpers/amd.c
++++ b/tools/power/cpupower/utils/helpers/amd.c
+@@ -175,5 +175,23 @@ static unsigned long amd_pstate_get_data(unsigned int cpu,
+ 						  MAX_AMD_PSTATE_VALUE_READ_FILES);
+ }
+ 
++void amd_pstate_boost_init(unsigned int cpu, int *support, int *active)
++{
++	unsigned long highest_perf, nominal_perf, cpuinfo_min,
++		      cpuinfo_max, amd_pstate_max;
++
++	highest_perf = amd_pstate_get_data(cpu, AMD_PSTATE_HIGHEST_PERF);
++	nominal_perf = acpi_cppc_get_data(cpu, NOMINAL_PERF);
++
++	*support = highest_perf > nominal_perf ? 1 : 0;
++	if (!(*support))
++		return;
++
++	cpufreq_get_hardware_limits(cpu, &cpuinfo_min, &cpuinfo_max);
++	amd_pstate_max = amd_pstate_get_data(cpu, AMD_PSTATE_MAX_FREQ);
++
++	*active = cpuinfo_max == amd_pstate_max ? 1 : 0;
++}
++
+ /* AMD P-States Helper Functions ***************/
+ #endif /* defined(__i386__) || defined(__x86_64__) */
+diff --git a/tools/power/cpupower/utils/helpers/helpers.h b/tools/power/cpupower/utils/helpers/helpers.h
+index e03cc97297aa9..c03925bea655c 100644
+--- a/tools/power/cpupower/utils/helpers/helpers.h
++++ b/tools/power/cpupower/utils/helpers/helpers.h
+@@ -140,6 +140,8 @@ extern int cpufreq_has_boost_support(unsigned int cpu, int *support,
+ 
+ /* AMD P-States stuff **************************/
+ extern bool cpupower_amd_pstate_enabled(void);
++extern void amd_pstate_boost_init(unsigned int cpu,
++				  int *support, int *active);
+ 
+ /* AMD P-States stuff **************************/
+ 
+@@ -177,6 +179,9 @@ static inline int cpufreq_has_boost_support(unsigned int cpu, int *support,
+ 
+ static inline bool cpupower_amd_pstate_enabled(void)
+ { return false; }
++static void amd_pstate_boost_init(unsigned int cpu,
++				  int *support, int *active)
++{ return; }
+ 
+ /* cpuid and cpuinfo helpers  **************************/
+ 
+diff --git a/tools/power/cpupower/utils/helpers/misc.c b/tools/power/cpupower/utils/helpers/misc.c
+index 0c483cdefcc26..e0d3145434d31 100644
+--- a/tools/power/cpupower/utils/helpers/misc.c
++++ b/tools/power/cpupower/utils/helpers/misc.c
+@@ -41,6 +41,8 @@ int cpufreq_has_boost_support(unsigned int cpu, int *support, int *active,
+ 			if (ret)
+ 				return ret;
+ 		}
++	} else if (cpupower_cpu_info.caps & CPUPOWER_CAP_AMD_PSTATE) {
++		amd_pstate_boost_init(cpu, support, active);
+ 	} else if (cpupower_cpu_info.caps & CPUPOWER_CAP_INTEL_IDA)
+ 		*support = *active = 1;
+ 	return 0;
+-- 
+cgit 1.2.3-1.el7
+
+From afaad14becf636457a3c49419734e95372a011b0 Mon Sep 17 00:00:00 2001
+From: Huang Rui <ray.huang@amd.com>
+Date: Sun, 26 Sep 2021 16:26:06 +0800
+Subject: cpupower: move print_speed function into misc helper
+
+The print_speed can be as a common function, and expose it into misc
+helper header. Then it can be used on other helper files as well.
+
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+---
+ tools/power/cpupower/utils/cpufreq-info.c    | 59 ++++++----------------------
+ tools/power/cpupower/utils/helpers/helpers.h |  1 +
+ tools/power/cpupower/utils/helpers/misc.c    | 42 ++++++++++++++++++++
+ 3 files changed, 54 insertions(+), 48 deletions(-)
+
+diff --git a/tools/power/cpupower/utils/cpufreq-info.c b/tools/power/cpupower/utils/cpufreq-info.c
+index f9895e31ff5ae..b429454bf3aef 100644
+--- a/tools/power/cpupower/utils/cpufreq-info.c
++++ b/tools/power/cpupower/utils/cpufreq-info.c
+@@ -84,43 +84,6 @@ static void proc_cpufreq_output(void)
+ }
+ 
+ static int no_rounding;
+-static void print_speed(unsigned long speed)
+-{
+-	unsigned long tmp;
+-
+-	if (no_rounding) {
+-		if (speed > 1000000)
+-			printf("%u.%06u GHz", ((unsigned int) speed/1000000),
+-				((unsigned int) speed%1000000));
+-		else if (speed > 1000)
+-			printf("%u.%03u MHz", ((unsigned int) speed/1000),
+-				(unsigned int) (speed%1000));
+-		else
+-			printf("%lu kHz", speed);
+-	} else {
+-		if (speed > 1000000) {
+-			tmp = speed%10000;
+-			if (tmp >= 5000)
+-				speed += 10000;
+-			printf("%u.%02u GHz", ((unsigned int) speed/1000000),
+-				((unsigned int) (speed%1000000)/10000));
+-		} else if (speed > 100000) {
+-			tmp = speed%1000;
+-			if (tmp >= 500)
+-				speed += 1000;
+-			printf("%u MHz", ((unsigned int) speed/1000));
+-		} else if (speed > 1000) {
+-			tmp = speed%100;
+-			if (tmp >= 50)
+-				speed += 100;
+-			printf("%u.%01u MHz", ((unsigned int) speed/1000),
+-				((unsigned int) (speed%1000)/100));
+-		}
+-	}
+-
+-	return;
+-}
+-
+ static void print_duration(unsigned long duration)
+ {
+ 	unsigned long tmp;
+@@ -254,11 +217,11 @@ static int get_boost_mode(unsigned int cpu)
+ 	if (freqs) {
+ 		printf(_("  boost frequency steps: "));
+ 		while (freqs->next) {
+-			print_speed(freqs->frequency);
++			print_speed(freqs->frequency, no_rounding);
+ 			printf(", ");
+ 			freqs = freqs->next;
+ 		}
+-		print_speed(freqs->frequency);
++		print_speed(freqs->frequency, no_rounding);
+ 		printf("\n");
+ 		cpufreq_put_available_frequencies(freqs);
+ 	}
+@@ -277,7 +240,7 @@ static int get_freq_kernel(unsigned int cpu, unsigned int human)
+ 		return -EINVAL;
+ 	}
+ 	if (human) {
+-		print_speed(freq);
++		print_speed(freq, no_rounding);
+ 	} else
+ 		printf("%lu", freq);
+ 	printf(_(" (asserted by call to kernel)\n"));
+@@ -296,7 +259,7 @@ static int get_freq_hardware(unsigned int cpu, unsigned int human)
+ 		return -EINVAL;
+ 	}
+ 	if (human) {
+-		print_speed(freq);
++		print_speed(freq, no_rounding);
+ 	} else
+ 		printf("%lu", freq);
+ 	printf(_(" (asserted by call to hardware)\n"));
+@@ -316,9 +279,9 @@ static int get_hardware_limits(unsigned int cpu, unsigned int human)
+ 
+ 	if (human) {
+ 		printf(_("  hardware limits: "));
+-		print_speed(min);
++		print_speed(min, no_rounding);
+ 		printf(" - ");
+-		print_speed(max);
++		print_speed(max, no_rounding);
+ 		printf("\n");
+ 	} else {
+ 		printf("%lu %lu\n", min, max);
+@@ -350,9 +313,9 @@ static int get_policy(unsigned int cpu)
+ 		return -EINVAL;
+ 	}
+ 	printf(_("  current policy: frequency should be within "));
+-	print_speed(policy->min);
++	print_speed(policy->min, no_rounding);
+ 	printf(_(" and "));
+-	print_speed(policy->max);
++	print_speed(policy->max, no_rounding);
+ 
+ 	printf(".\n                  ");
+ 	printf(_("The governor \"%s\" may decide which speed to use\n"
+@@ -436,7 +399,7 @@ static int get_freq_stats(unsigned int cpu, unsigned int human)
+ 	struct cpufreq_stats *stats = cpufreq_get_stats(cpu, &total_time);
+ 	while (stats) {
+ 		if (human) {
+-			print_speed(stats->frequency);
++			print_speed(stats->frequency, no_rounding);
+ 			printf(":%.2f%%",
+ 				(100.0 * stats->time_in_state) / total_time);
+ 		} else
+@@ -486,11 +449,11 @@ static void debug_output_one(unsigned int cpu)
+ 	if (freqs) {
+ 		printf(_("  available frequency steps:  "));
+ 		while (freqs->next) {
+-			print_speed(freqs->frequency);
++			print_speed(freqs->frequency, no_rounding);
+ 			printf(", ");
+ 			freqs = freqs->next;
+ 		}
+-		print_speed(freqs->frequency);
++		print_speed(freqs->frequency, no_rounding);
+ 		printf("\n");
+ 		cpufreq_put_available_frequencies(freqs);
+ 	}
+diff --git a/tools/power/cpupower/utils/helpers/helpers.h b/tools/power/cpupower/utils/helpers/helpers.h
+index c03925bea655c..fbbfa6047c838 100644
+--- a/tools/power/cpupower/utils/helpers/helpers.h
++++ b/tools/power/cpupower/utils/helpers/helpers.h
+@@ -200,5 +200,6 @@ extern struct bitmask *offline_cpus;
+ void get_cpustate(void);
+ void print_online_cpus(void);
+ void print_offline_cpus(void);
++void print_speed(unsigned long speed, int no_rounding);
+ 
+ #endif /* __CPUPOWERUTILS_HELPERS__ */
+diff --git a/tools/power/cpupower/utils/helpers/misc.c b/tools/power/cpupower/utils/helpers/misc.c
+index e0d3145434d31..d693c96cd09cb 100644
+--- a/tools/power/cpupower/utils/helpers/misc.c
++++ b/tools/power/cpupower/utils/helpers/misc.c
+@@ -164,3 +164,45 @@ void print_offline_cpus(void)
+ 		printf(_("cpupower set operation was not performed on them\n"));
+ 	}
+ }
++
++/*
++ * print_speed
++ *
++ * Print the exact CPU frequency with appropriate unit
++ */
++void print_speed(unsigned long speed, int no_rounding)
++{
++	unsigned long tmp;
++
++	if (no_rounding) {
++		if (speed > 1000000)
++			printf("%u.%06u GHz", ((unsigned int) speed/1000000),
++				((unsigned int) speed%1000000));
++		else if (speed > 1000)
++			printf("%u.%03u MHz", ((unsigned int) speed/1000),
++				(unsigned int) (speed%1000));
++		else
++			printf("%lu kHz", speed);
++	} else {
++		if (speed > 1000000) {
++			tmp = speed%10000;
++			if (tmp >= 5000)
++				speed += 10000;
++			printf("%u.%02u GHz", ((unsigned int) speed/1000000),
++				((unsigned int) (speed%1000000)/10000));
++		} else if (speed > 100000) {
++			tmp = speed%1000;
++			if (tmp >= 500)
++				speed += 1000;
++			printf("%u MHz", ((unsigned int) speed/1000));
++		} else if (speed > 1000) {
++			tmp = speed%100;
++			if (tmp >= 50)
++				speed += 100;
++			printf("%u.%01u MHz", ((unsigned int) speed/1000),
++				((unsigned int) (speed%1000)/100));
++		}
++	}
++
++	return;
++}
+-- 
+cgit 1.2.3-1.el7
+
+From 11a9cd731f61c3ade076e1b68aa5a579234daac5 Mon Sep 17 00:00:00 2001
+From: Huang Rui <ray.huang@amd.com>
+Date: Thu, 10 Jun 2021 23:48:03 +0800
+Subject: cpupower: print amd-pstate information on cpupower
+
+amd-pstate kernel module is using the fine grain frequency instead of
+acpi hardware pstate. So the performance and frequency values should be
+printed in frequency-info.
+
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+---
+ tools/power/cpupower/utils/cpufreq-info.c    |  9 ++++++---
+ tools/power/cpupower/utils/helpers/amd.c     | 28 ++++++++++++++++++++++++++++
+ tools/power/cpupower/utils/helpers/helpers.h |  5 +++++
+ 3 files changed, 39 insertions(+), 3 deletions(-)
+
+diff --git a/tools/power/cpupower/utils/cpufreq-info.c b/tools/power/cpupower/utils/cpufreq-info.c
+index b429454bf3aef..f828f3c35a6fb 100644
+--- a/tools/power/cpupower/utils/cpufreq-info.c
++++ b/tools/power/cpupower/utils/cpufreq-info.c
+@@ -146,9 +146,12 @@ static int get_boost_mode_x86(unsigned int cpu)
+ 	printf(_("    Supported: %s\n"), support ? _("yes") : _("no"));
+ 	printf(_("    Active: %s\n"), active ? _("yes") : _("no"));
+ 
+-	if ((cpupower_cpu_info.vendor == X86_VENDOR_AMD &&
+-	     cpupower_cpu_info.family >= 0x10) ||
+-	     cpupower_cpu_info.vendor == X86_VENDOR_HYGON) {
++	if (cpupower_cpu_info.vendor == X86_VENDOR_AMD &&
++	    cpupower_cpu_info.caps & CPUPOWER_CAP_AMD_PSTATE) {
++		amd_pstate_show_perf_and_freq(cpu, no_rounding);
++	} else if ((cpupower_cpu_info.vendor == X86_VENDOR_AMD &&
++		    cpupower_cpu_info.family >= 0x10) ||
++		   cpupower_cpu_info.vendor == X86_VENDOR_HYGON) {
+ 		ret = decode_pstates(cpu, b_states, pstates, &pstate_no);
+ 		if (ret)
+ 			return ret;
+diff --git a/tools/power/cpupower/utils/helpers/amd.c b/tools/power/cpupower/utils/helpers/amd.c
+index bde6065cabf44..a1115891d76dd 100644
+--- a/tools/power/cpupower/utils/helpers/amd.c
++++ b/tools/power/cpupower/utils/helpers/amd.c
+@@ -193,5 +193,33 @@ void amd_pstate_boost_init(unsigned int cpu, int *support, int *active)
+ 	*active = cpuinfo_max == amd_pstate_max ? 1 : 0;
+ }
+ 
++void amd_pstate_show_perf_and_freq(unsigned int cpu, int no_rounding)
++{
++	printf(_("    AMD PSTATE Highest Performance: %lu. Maximum Frequency: "),
++	       amd_pstate_get_data(cpu, AMD_PSTATE_HIGHEST_PERF));
++	/* If boost isn't active, the cpuinfo_max doesn't indicate real max
++	 * frequency. So we read it back from amd-pstate sysfs entry.
++	 */
++	print_speed(amd_pstate_get_data(cpu, AMD_PSTATE_MAX_FREQ), no_rounding);
++	printf(".\n");
++
++	printf(_("    AMD PSTATE Nominal Performance: %lu. Nominal Frequency: "),
++	       acpi_cppc_get_data(cpu, NOMINAL_PERF));
++	print_speed(acpi_cppc_get_data(cpu, NOMINAL_FREQ) * 1000,
++		    no_rounding);
++	printf(".\n");
++
++	printf(_("    AMD PSTATE Lowest Non-linear Performance: %lu. Lowest Non-linear Frequency: "),
++	       acpi_cppc_get_data(cpu, LOWEST_NONLINEAR_PERF));
++	print_speed(amd_pstate_get_data(cpu, AMD_PSTATE_LOWEST_NONLINEAR_FREQ),
++		    no_rounding);
++	printf(".\n");
++
++	printf(_("    AMD PSTATE Lowest Performance: %lu. Lowest Frequency: "),
++	       acpi_cppc_get_data(cpu, LOWEST_PERF));
++	print_speed(acpi_cppc_get_data(cpu, LOWEST_FREQ) * 1000, no_rounding);
++	printf(".\n");
++}
++
+ /* AMD P-States Helper Functions ***************/
+ #endif /* defined(__i386__) || defined(__x86_64__) */
+diff --git a/tools/power/cpupower/utils/helpers/helpers.h b/tools/power/cpupower/utils/helpers/helpers.h
+index fbbfa6047c838..5f6862502dbf2 100644
+--- a/tools/power/cpupower/utils/helpers/helpers.h
++++ b/tools/power/cpupower/utils/helpers/helpers.h
+@@ -142,6 +142,8 @@ extern int cpufreq_has_boost_support(unsigned int cpu, int *support,
+ extern bool cpupower_amd_pstate_enabled(void);
+ extern void amd_pstate_boost_init(unsigned int cpu,
+ 				  int *support, int *active);
++extern void amd_pstate_show_perf_and_freq(unsigned int cpu,
++					  int no_rounding);
+ 
+ /* AMD P-States stuff **************************/
+ 
+@@ -182,6 +184,9 @@ static inline bool cpupower_amd_pstate_enabled(void)
+ static void amd_pstate_boost_init(unsigned int cpu,
+ 				  int *support, int *active)
+ { return; }
++static inline void amd_pstate_show_perf_and_freq(unsigned int cpu,
++						 int no_rounding)
++{ return; }
+ 
+ /* cpuid and cpuinfo helpers  **************************/
+ 
+-- 
+cgit 1.2.3-1.el7
+

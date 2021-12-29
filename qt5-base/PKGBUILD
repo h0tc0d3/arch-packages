@@ -1,8 +1,8 @@
 pkgbase=qt5-base+clang
 pkgname=(qt5-base+clang qt5-xcb-private-headers+clang)
-pkgver=5.15.2+kde+r263
-pkgrel=2
-_commit=7c6c0030cf80ef7b9ace42996b0e0c3a72f76860
+pkgver=5.15.2+kde+r268
+pkgrel=1
+_commit=edb0f568ca1380623325cb18365b0af81cbf65bf
 arch=('x86_64')
 url='https://www.qt.io'
 license=('GPL3' 'LGPL3' 'FDL' 'custom')
@@ -37,7 +37,7 @@ source=(
 )
 
 sha256sums=('SKIP'
-  'cf707cd970650f8b60f8897692b36708ded9ba116723ec8fcd885576783fe85c'
+  '5411edbe215c24b30448fac69bd0ba7c882f545e8cf05027b2b6e2227abc5e78'
   '4b93f6a79039e676a56f9d6990a324a64a36f143916065973ded89adc621e094'
   'ad4dc439bc23826b7f165b1e897d8544adff593254cb03061be397358a7163b0'
   '9378afd071ad5c0ec8f7aef48421e4b9fab02f24c856bee9c0951143941913c5'
@@ -124,15 +124,11 @@ build() {
       -system-harfbuzz \
       -openssl-linked \
       -optimized-qmake \
-      -no-feature-relocatable \
       -no-rpath \
-      -no-separate-debug-info \
       -no-mimetype-database \
       -nomake examples \
       -dbus-linked \
       -journald
-
-    make
 
   else
 
@@ -147,26 +143,23 @@ build() {
       -sysconfdir /etc/xdg \
       -examplesdir /usr/share/doc/qt/examples \
       -plugin-sql-{psql,mysql,sqlite,odbc,ibase} \
-      -system-zlib \
-      -system-libjpeg \
-      -system-libpng \
       -system-sqlite \
-      -system-harfbuzz \
       -openssl-linked \
-      -optimized-qmake \
-      -no-reduce-relocations \
-      -no-feature-relocatable \
-      -no-rpath \
-      -no-separate-debug-info \
-      -no-mimetype-database \
-      -no-strip \
       -nomake examples \
+      -no-rpath \
       -dbus-linked \
-      -journald
-
-    make
+      -system-harfbuzz \
+      -journald \
+      -no-mimetype-database \
+      -no-use-gold-linker \
+      -reduce-relocations \
+      -no-strip \
+      -ltcg
 
   fi
+
+  bin/qmake CONFIG+=fat-static-lto -- -redo
+  make
 
 }
 

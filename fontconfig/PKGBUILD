@@ -1,39 +1,42 @@
 pkgname=fontconfig+clang
 pkgver=2.13.94
-pkgrel=3
+pkgrel=4
 epoch=2
 pkgdesc="Library for configuring and customizing font access"
 url=https://www.freedesktop.org/wiki/Software/fontconfig/
 arch=(x86_64)
 license=(custom)
-depends=(libexpat.so libfreetype.so)
-makedepends=(git meson gperf expat freetype2
+depends=(libxml2 libfreetype.so)
+makedepends=(git meson gperf freetype2
   docbook-utils docbook-sgml perl-sgmls)
 provides=(fontconfig "fontconfig=${pkgver}" libfontconfig.so fontconfig-docs)
 conflicts=(fontconfig fontconfig-docs)
 replaces=('fontconfig-docs<2:2.13.93-1')
 install=fontconfig.install
 backup=(etc/fonts/fonts.conf)
-_commit=e291fda7d42e5d64379555097a066d9c2c4efce3 # tags/2.13.94^0
+_commit=e474b380ffdb330eca7dd0f0fddacc7b19f3247d
 source=(
-  "git+https://gitlab.freedesktop.org/fontconfig/fontconfig.git#commit=$_commit"
+  "git+https://gitlab.freedesktop.org/fontconfig/fontconfig.git#commit=${_commit}"
   40-fontconfig-config.script
   40-fontconfig-config.hook
   fontconfig.hook
-  fontconfig-sleep-less.patch
-  fontconfig-score-fix.patch
-  fontconfig-lcdfilter.patch
+  fontconfig-meson-add-libxml2-parser.patch
 )
 
 sha256sums=('SKIP'
-            '7a9d50bccc709eb15db6ba8e13f69bc9d79b0bf354f1d17c1a5b2748edff3c33'
-            '44f12491c9fd7eff825853846a2b3b8df2b96fc6520be5cb31ce7f37a160ff02'
-            'fd7b6ce8ce178107f2e0b52462ebf186b6051c6eec945770107fda57048c9f34'
-            'b2bee567aab161615cf565a5a426ab2e93ab706f0913d4a3ff94b8f40766b574'
-            '35c4ec4a9c23d92442acc30e0b66a7571bc1763c26abd132b5e21c6881044394'
-            '0b5f6d92a677ae7a1bbdbe1edced998fbd241d415301b5af9e694daf5d19e308')
+  '7a9d50bccc709eb15db6ba8e13f69bc9d79b0bf354f1d17c1a5b2748edff3c33'
+  '44f12491c9fd7eff825853846a2b3b8df2b96fc6520be5cb31ce7f37a160ff02'
+  'fd7b6ce8ce178107f2e0b52462ebf186b6051c6eec945770107fda57048c9f34'
+  'bbbaf032d175b339fd39647e342d67455cd4a0df5f9435a918f3e758291fb0e6')
 
 _extra_lto_flag=""
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
 
 prepare() {
 
@@ -46,20 +49,7 @@ prepare() {
     exit 1
   )
 
-  patch --forward --strip=1 --input="${srcdir:?}/fontconfig-sleep-less.patch"
-  patch --forward --strip=1 --input="${srcdir:?}/fontconfig-score-fix.patch"
-  patch --forward --strip=1 --input="${srcdir:?}/fontconfig-lcdfilter.patch"
-
-}
-
-pkgver() {
-
-  cd "${srcdir:?}/fontconfig" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/fontconfig directory! PkgVer Failed! \E[0m"
-    exit 1
-  )
-
-  git describe --tags | sed 's/-/+/g'
+  _patch fontconfig-meson-add-libxml2-parser.patch
 
 }
 
@@ -78,7 +68,8 @@ build() {
     -D b_pie=true \
     -D doc-txt=disabled \
     -D doc-pdf=disabled \
-    -D doc-html=disabled
+    -D doc-html=enabled \
+    -D cache-build=disabled
 
   meson compile -C build
 
@@ -101,9 +92,9 @@ package() {
     rm "${_f}"
   done
 
-  install -Dt "${pkgdir:?}/usr/share/libalpm/hooks" -m644 *.hook
+  install -Dt "${pkgdir:?}/usr/share/libalpm/hooks" -m644 {40-fontconfig-config,fontconfig}.hook
   install -D 40-fontconfig-config.script \
     "${pkgdir:?}/usr/share/libalpm/scripts/40-fontconfig-config"
-  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname}" -m644 fontconfig/COPYING
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname}" -m644 "fontconfig/COPYING"
 
 }

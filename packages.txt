@@ -182,6 +182,7 @@ pipewire
 pipewire-media-session
 gsl
 lib2geom
+alacritty
 krita
 julia
 -chromium

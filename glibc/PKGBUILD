@@ -8,7 +8,7 @@ license=(GPL LGPL)
 makedepends=(git gd lib32-gcc-libs python)
 optdepends=('perl: for mtrace')
 options=(!strip staticlibs)
-_commit=c75aa9246a8cfc814d99cf5f58229177bd69fc4f
+_commit=e682d0157854955e4b5fc91731d24a854e810eee
 source=("git+https://sourceware.org/git/glibc.git#commit=${_commit}"
   #source=("https://ftp.gnu.org/gnu/glibc/glibc-${pkgver}.tar.xz"
   locale-gen
@@ -31,8 +31,7 @@ sha256sums=('SKIP'
   '733396588e1e7c356f8d33ba80f6c317963dd936f9039f3f77f0bcec81138159'
   'bdc28d5b5444e0ec35c98cb959635cf4f3bd23c47aa1b2f1c334a79db411b911'
   '73746aaa884f9c05ae423fc0e4bb9b9e735f4303569d078fb4092aa162b326e1'
-  '5e51cb3220a864c5502da78149c40a51079d6a90d479ad0bb51a25eb72b46096'
-)
+  '5abaf44c35e6bb6abd61469fb313630e2b27897fbf04fbb8cf9013349d7f72e5')
 
 _patch() {
 
