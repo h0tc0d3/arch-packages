@@ -1,13 +1,13 @@
 pkgbase=alsa-plugins+clang
 pkgname=(alsa-plugins+clang pulseaudio-alsa+clang)
 pkgver=1.2.6
-pkgrel=1
+pkgrel=2
 epoch=1
 pkgdesc="Additional ALSA plugins"
 arch=(x86_64)
 url="https://www.alsa-project.org"
 license=(LGPL2.1)
-makedepends=(alsa-lib dbus jack libavtp libpulse libsamplerate speexdsp)
+makedepends=(alsa-lib dbus jack libavtp libpulse libsamplerate speexdsp ffmpeg)
 source=("https://www.alsa-project.org/files/pub/plugins/alsa-plugins-${pkgver}.tar.bz2"{,.sig}
   pulse-sysdefault.diff)
 sha256sums=('068818a4b55d8c029daa00015d853d45113f56b224b7c64e1e117988c825b2a0'
@@ -32,9 +32,6 @@ prepare() {
   # Keeps parity with our old config from pulseaudio-alsa
   patch -Np1 -i ../pulse-sysdefault.diff
 
-  # a52, lavrate plugins not compatible with ffmpeg >= 4.0
-  # https://mailman.alsa-project.org/pipermail/alsa-devel/2019-December/159425.html
-  # https://bugs.archlinux.org/task/60586
   autoreconf -fvi
 
 }
@@ -73,7 +70,8 @@ package_alsa-plugins+clang() {
     'libavtp: for pcm_aaf plugin'
     'libsamplerate: for rate_samplerate plugin'
     'libpulse: for conf_pulse, ctl_pulse and pcm_pulse plugins'
-    'speexdsp: for pcm_speex and rate_speexrate plugins')
+    'speexdsp: for pcm_speex and rate_speexrate plugins'
+    'ffmpeg: for pcm_a52 plugin')
 
   cd "${srcdir:?}/alsa-plugins-${pkgver}" || (
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/alsa-plugins-${pkgver} directory! Package alsa-plugins Failed! \E[0m"

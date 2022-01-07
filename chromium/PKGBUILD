@@ -1,5 +1,5 @@
 pkgname=chromium+clang
-pkgver=96.0.4664.93
+pkgver=97.0.4692.77
 pkgrel=1
 _launcher_ver=8
 _gcc_patchset=4
@@ -40,12 +40,11 @@ source=(
   chromium-gcc11.patch
   chromium-InkDropHost-crash.patch
   chromium-ffmpeg-4.4.patch
-  chromium-94-ffmpeg-roll.patch
-  chromium-unbundle-fix-visibility-of-build-config-freetype.patch
+  chromium-unbundle-ffmpeg-av_stream_get_first_dts.patch
 )
-sha256sums=('7c7b1f8e4e0abc3453d40c60d6a70f30851db96e5d872cbaa1b4dd7f43aa3493'
+sha256sums=('2493923fa0139b4d829596066f87e4ac105c6435ca7cc43e92127b9f6be4b992'
   '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
-  '090af7eab39aade15a1786273f2497d6b4abfaef24279fbf97ce0dd1c38c69aa'
+  '7af5c0a55a20c0fb496b2f4448d89203a83bb1914754d864460e55e68731ef0b'
   'e5b651b403e5b161bf9b5e049f8202c444d7f1700411f89d62c20303c80846e0'
   '70a2805a63df15817a3435e983c0350c5d04ff62deffd8214cbb040b904f54a5'
   '15c93da644dbc533a6b74bd7f86a07dc59023c7b369298acd649715b9a9209a5'
@@ -62,9 +61,7 @@ sha256sums=('7c7b1f8e4e0abc3453d40c60d6a70f30851db96e5d872cbaa1b4dd7f43aa3493'
   '5690089b8bd6946dfa975b8022531213b882b3396a3c968eeef9836b131725b7'
   '04bba6fb19ea5a4ab3949b65f06c88728a00ab296f42022ece62ca2fa25ec2e7'
   '1a9e074f417f8ffd78bcd6874d8e2e74a239905bf662f76a7755fa40dc476b57'
-  '56acb6e743d2ab1ed9f3eb01700ade02521769978d03ac43226dec94659b3ace'
-  'd0b17162211dd49e3a58c16d1697e7d8c322dcfd3b7890f0c2f920b711f52293'
-)
+  '1f0c1a7a1eb67d91765c9f28df815f58e1c6dc7b37d0acd4d68cac8e5515786c')
 #noextract=("${source[@]##*/}")
 # Possible replacements are listed in build/linux/unbundle/replace_gn_files.py
 # Keys are the names in the above script; values are the dependencies in Arch
@@ -73,7 +70,7 @@ declare -gA _system_libs=(
   [flac]=flac
   [fontconfig]=fontconfig
   [freetype]=freetype2
-  [harfbuzz-ng]=harfbuzz
+  ['harfbuzz-ng']=harfbuzz
   [icu]=icu
   [libdrm]=libdrm
   [libjpeg]=libjpeg
@@ -128,7 +125,8 @@ prepare() {
   sed -i -e 's/\<xmlMalloc\>/malloc/' -e 's/\<xmlFree\>/free/' \
     third_party/blink/renderer/core/xml/*.cc \
     third_party/blink/renderer/core/xml/parser/xml_document_parser.cc \
-    third_party/libxml/chromium/*.cc
+    third_party/libxml/chromium/*.cc \
+    third_party/maldoca/src/maldoca/ole/oss_utils.h
 
   # Use the --oauth2-client-id= and --oauth2-client-secret= switches for
   # setting GOOGLE_DEFAULT_CLIENT_ID and GOOGLE_DEFAULT_CLIENT_SECRET at
@@ -152,10 +150,7 @@ prepare() {
   _patch chromium-fix-vaapi-on-intel.patch
 
   # Fixes for building with libstdc++ instead of libc++
-  _patch patches/chromium-96-CommandLine-include.patch
-  _patch patches/chromium-96-RestrictedCookieManager-tuple.patch
-  _patch patches/chromium-96-DrmRenderNodePathFinder-include.patch
-  _patch patches/chromium-96-CouponDB-include.patch
+  #_patch patches/
 
   # https://chromium-review.googlesource.com/c/chromium/src/+/2862724
   _patch sql-make-VirtualCursor-standard-layout-type.patch
@@ -168,15 +163,12 @@ prepare() {
   _patch chromium-InkDropHost-crash.patch
   _patch chromium-ffmpeg-4.4.patch
 
-  # Fix desktop sharing via Pipewire with xdg-desktop-portal 1.10
-  _patch chromium-unbundle-fix-visibility-of-build-config-freetype.patch
-
-  # Revert change to custom function av_stream_get_first_dts; will need to
+  # Substitute the custom function av_stream_get_first_dts; will need to
   # switch to bundled ffmpeg when we're no longer using ffmpeg 4.4 in Arch
   # Upstream commit that made first_dts internal causing Chromium to add a
   # custom function: https://github.com/FFmpeg/FFmpeg/commit/591b88e6787c4
   # https://crbug.com/1251779
-  _rpatch chromium-94-ffmpeg-roll.patch
+  _patch chromium-unbundle-ffmpeg-av_stream_get_first_dts.patch
 
   # Fix build with system libpng
   sed -i -e "/USE_SYSTEM_LIBPNG/ a#include \"core/fxcodec/fx_codec_def.h\"" \
@@ -293,6 +285,18 @@ build() {
   # Do not warn about unknown warning options
   CFLAGS+=' -Wno-unknown-warning-option'
   CXXFLAGS+=' -Wno-unknown-warning-option'
+
+  CFLAGS=${CFLAGS/-fexceptions/}
+  CFLAGS=${CFLAGS/-fcf-protection/}
+  CXXFLAGS=${CXXFLAGS/-fexceptions/}
+  CXXFLAGS=${CXXFLAGS/-fcf-protection/}
+
+  # This appears to cause random segfaults
+  CFLAGS=${CFLAGS/-fstack-clash-protection/}
+  CXXFLAGS=${CXXFLAGS/-fstack-clash-protection/}
+
+  # https://crbug.com/957519#c122
+  CXXFLAGS=${CXXFLAGS/-Wp,-D_GLIBCXX_ASSERTIONS/}
 
   gn gen out/Release --args="${_flags[*]}"
   ninja ${NINJAFLAGS} -C out/Release chrome chrome_sandbox chromedriver

@@ -1,6 +1,6 @@
 pkgname=krita+clang
-pkgver=5.0.1
-pkgrel=2
+pkgver=5.0.2
+pkgrel=1
 pkgdesc='Edit and paint images'
 arch=(x86_64)
 url='https://krita.org'
@@ -16,7 +16,7 @@ optdepends=('poppler-qt5: PDF filter' 'ffmpeg: to save animations'
   'kseexpr: SeExpr generator layer' 'kimageformats: PSD support'
   'libmypaint: support for MyPaint brushes')
 
-_commit=51ba9495eccf7ba227323838c7748e6ea8eff774
+_commit=498a836b01d949e23f177c753d9dfc6e3b83095e
 source=(
   "krita::git+https://invent.kde.org/graphics/krita.git#commit=${_commit}"
 )

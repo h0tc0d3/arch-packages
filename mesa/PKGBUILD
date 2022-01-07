@@ -1,6 +1,6 @@
 pkgname=mesa+clang
 pkgdesc="Mesa open-source implementation of the OpenGL specification"
-pkgver=21.3.2
+pkgver=21.3.3
 pkgrel=1
 arch=('x86_64')
 makedepends=('git' 'python-mako' 'xorgproto' 'llvm'
@@ -19,10 +19,10 @@ source=(
   'mesa-remove-swr.patch'
 )
 
-sha256sums=('e2e7bafb8307e7abc3bf982f39382fae3619c84b45504920a21504be52f126bd'
+sha256sums=('ad7f4613ea7c5d08d9fcb5025270199e6ceb9aa99fd72ee572b70342240a8121'
   'SKIP'
   '7fdc119cf53c8ca65396ea73f6d10af641ba41ea1dd2bd44a824726e01c8b3f2'
-  '078418721cf7fdae71bf05c8d979649925bebd026e2ecaf0c615d1133a1ce726')
+  'c7aadbec8859418503b97a4ff8080841772a93a6c881522e6ad035db2d43fb81')
 
 validpgpkeys=(
   '57551DE15B968F6341C248F68D8E31AFC32428A6' # Keith Packard <keithp@keithp.com>
@@ -55,6 +55,7 @@ prepare() {
   )
 
   # Remove SWR driver. SWR already removed from main branch.
+  rm -fr src/gallium/drivers/swr
   _patch mesa-remove-swr.patch
 
 }

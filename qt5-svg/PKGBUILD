@@ -1,5 +1,5 @@
 pkgname=qt5-svg+clang
-pkgver=5.15.2+kde+r13
+pkgver=5.15.2+kde+r15
 pkgrel=1
 arch=('x86_64')
 url='https://www.qt.io'
@@ -10,7 +10,7 @@ pkgdesc='Classes for displaying the contents of SVG files'
 depends=('qt5-base')
 makedepends=('git')
 groups=('qt' 'qt5')
-_commit=24128cdf8bef53eddf31a5709bbbc46293006b1c
+_commit=0cb681eacca0f757702fa409bb05d3d3650aba4e
 source=("git+https://invent.kde.org/qt/qt/qtsvg#commit=${_commit}")
 sha256sums=('SKIP')
 
