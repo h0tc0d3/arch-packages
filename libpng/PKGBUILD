@@ -1,6 +1,6 @@
 pkgname=libpng+clang
 pkgver=1.6.37
-pkgrel=3
+pkgrel=4
 pkgdesc="A collection of routines used to create PNG format graphics files"
 arch=('x86_64')
 url="http://www.libpng.org/pub/png/libpng.html"
@@ -12,10 +12,12 @@ validpgpkeys=('8048643BA2C840F4F92A195FF54984BFA16C640F') # Glenn Randers-Pehrso
 
 source=(
   "https://downloads.sourceforge.net/sourceforge/libpng/libpng-${pkgver}.tar.xz"
-  "72fa126446460347a504f3d9b90f24aed1365595.patch"
+  libpng-fix-tests.patch
+  pngusr.dfa
 )
 sha256sums=('505e70834d35383537b6491e7ae8641f1a4bed1876dbfe361201fc80868d88ca'
-  '84298548e43976265f414c53dfda1b035882f2bdcacb96ed1bc0a795e430e6a8')
+  '84298548e43976265f414c53dfda1b035882f2bdcacb96ed1bc0a795e430e6a8'
+  '2acab13a1c1334a9c620896778fe3d7a1793b8878954ec373417771daca8f087')
 
 _llvm=0
 
@@ -30,7 +32,8 @@ prepare() {
     exit 1
   )
 
-  patch --forward --strip=1 --input="${srcdir:?}/72fa126446460347a504f3d9b90f24aed1365595.patch"
+  autoreconf -vif
+  patch --forward --strip=1 --input="${srcdir:?}/libpng-fix-tests.patch"
 
 }
 
@@ -53,7 +56,7 @@ build() {
     --prefix=/usr \
     --disable-static
 
-  make
+  make DFA_XTRA="${srcdir:?}/pngusr.dfa"
 
 }
 

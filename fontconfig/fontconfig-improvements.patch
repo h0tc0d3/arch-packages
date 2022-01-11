@@ -1,0 +1,2581 @@
+From 505759faf3b56a34db9084eb4f8dced34fd7ed32 Mon Sep 17 00:00:00 2001
+From: Grigory Vasilyev <h0tc0d3@gmail.com>
+Date: Mon, 10 Jan 2022 07:30:38 +0300
+Subject: [PATCH] Fontconfig big improvement
+
+---
+ meson.build         |   9 ++
+ src/fccache.c       | 313 ++++++++++++++++++-----------------------
+ src/fccfg.c         |  95 +++++--------
+ src/fccharset.c     | 105 ++++++++------
+ src/fccompat.c      | 162 ++++++++++++---------
+ src/fcdefault.c     |  10 +-
+ src/fcdir.c         |  18 +--
+ src/fcfreetype.c    |  18 ++-
+ src/fcfs.c          |  25 ++--
+ src/fchash.c        |   6 +-
+ src/fcint.h         |  34 ++++-
+ src/fclang.c        |   6 +-
+ src/fclist.c        |   2 +-
+ src/fcmatch.c       |  52 +++----
+ src/fcmd5.h         | 255 ---------------------------------
+ src/fcmurmurhash3.h | 336 ++++++++++++++++++++++++++++++++++++++++++++
+ src/fcmutex.h       | 126 +++++++++++++++++
+ src/fcname.c        |   2 +-
+ src/fcpat.c         |  77 +++++-----
+ src/fcserialize.c   |   2 +-
+ src/fcstat.c        |  15 +-
+ src/fcstr.c         |  28 ++--
+ src/fcxml.c         |  61 ++++----
+ 23 files changed, 987 insertions(+), 770 deletions(-)
+ delete mode 100644 src/fcmd5.h
+ create mode 100644 src/fcmurmurhash3.h
+
+diff --git a/meson.build b/meson.build
+index 64cae44..5b2b073 100644
+--- a/meson.build
++++ b/meson.build
+@@ -244,6 +244,15 @@ conf.set_quoted('FC_CACHEDIR', fc_cachedir)
+ conf.set_quoted('FC_TEMPLATEDIR', fc_templatedir)
+ conf.set_quoted('FONTCONFIG_PATH', fc_baseconfigdir)
+ conf.set_quoted('FC_FONTPATH', '')
++prog_python = import('python').find_installation('python3')
++build_time = run_command(
++  prog_python, '-c',
++  '''
++from datetime import datetime
++print(int(datetime.now().timestamp()))
++  ''').stdout().strip()
++
++conf.set('FC_SEED', build_time)
+ 
+ fonts_conf.set('FC_FONTPATH', '')
+ fonts_conf.set('FC_CACHEDIR', fc_cachedir)
+diff --git a/src/fccache.c b/src/fccache.c
+index 4a6a752..30f4444 100644
+--- a/src/fccache.c
++++ b/src/fccache.c
+@@ -22,7 +22,7 @@
+  */
+ #include "fcint.h"
+ #include "fcarch.h"
+-#include "fcmd5.h"
++#include "fcmurmurhash3.h"
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <fcntl.h>
+@@ -145,73 +145,42 @@ FcCacheIsMmapSafe (int fd)
+ 
+ }
+ 
+-static const char bin2hex[] = { '0', '1', '2', '3',
+-				'4', '5', '6', '7',
+-				'8', '9', 'a', 'b',
+-				'c', 'd', 'e', 'f' };
+-
+ static FcChar8 *
+-FcDirCacheBasenameMD5 (FcConfig *config, const FcChar8 *dir, FcChar8 cache_base[CACHEBASE_LEN])
+-{
+-    FcChar8		*mapped_dir = NULL;
+-    unsigned char 	hash[16];
+-    FcChar8		*hex_hash, *key = NULL;
+-    int			cnt;
+-    struct MD5Context 	ctx;
+-    const FcChar8	*salt, *orig_dir = NULL;
+-
+-    salt = FcConfigMapSalt (config, dir);
+-    /* Obtain a path where "dir" is mapped to.
+-     * In case:
+-     * <remap-dir as-path="/usr/share/fonts">/run/host/fonts</remap-dir>
+-     *
++FcDirCacheBasenameMurmurHash3 (FcConfig *config, const FcChar8 *dir, FcChar8 cache_base[CACHEBASE_LEN]) {
++    
++    uint64_t hash[2] = {0};
++    const FcChar8 *orig_dir = NULL;
++    FcChar8 *mapped_dir = NULL;
++
++    /* 
++     * Obtain a path where "dir" is mapped to.
++     * In case: <remap-dir as-path="/usr/share/fonts">/run/host/fonts</remap-dir>
+      * FcConfigMapFontPath (config, "/run/host/fonts") will returns "/usr/share/fonts".
+      */
++
+     mapped_dir = FcConfigMapFontPath(config, dir);
+-    if (mapped_dir)
+-    {
+-	orig_dir = dir;
+-	dir = mapped_dir;
++    if (mapped_dir) {
++        orig_dir = dir;
++        dir = mapped_dir;
+     }
+-    if (salt)
+-    {
+-	size_t dl = strlen ((const char *) dir);
+-	size_t sl = strlen ((const char *) salt);
+-
+-	key = (FcChar8 *) malloc (dl + sl + 1);
+-	memcpy (key, dir, dl);
+-	memcpy (key + dl, salt, sl + 1);
+-	key[dl + sl] = 0;
+-	if (!orig_dir)
+-		orig_dir = dir;
+-	dir = key;
+-    }
+-    MD5Init (&ctx);
+-    MD5Update (&ctx, (const unsigned char *)dir, strlen ((const char *) dir));
+-
+-    MD5Final (hash, &ctx);
+ 
+-    if (key)
+-	FcStrFree (key);
+-
+-    cache_base[0] = '/';
+-    hex_hash = cache_base + 1;
+-    for (cnt = 0; cnt < 16; ++cnt)
+-    {
+-	hex_hash[2*cnt  ] = bin2hex[hash[cnt] >> 4];
+-	hex_hash[2*cnt+1] = bin2hex[hash[cnt] & 0xf];
+-    }
+-    hex_hash[2*cnt] = 0;
+-    strcat ((char *) cache_base, "-" FC_ARCHITECTURE FC_CACHE_SUFFIX);
++    MurmurHash3_128((const unsigned char *)dir, strlen ((const char *) dir), &hash);
++    snprintf((char *)cache_base, CACHEBASE_LEN, "/%lx%lx-%s%s", hash[0], hash[1], FC_ARCHITECTURE, FC_CACHE_SUFFIX);
++    
+     if (FcDebug() & FC_DBG_CACHE)
+     {
+-	printf ("cache: %s (dir: %s%s%s%s%s%s)\n", cache_base, orig_dir ? orig_dir : dir, mapped_dir ? " (mapped to " : "", mapped_dir ? (char *)mapped_dir : "", mapped_dir ? ")" : "", salt ? ", salt: " : "", salt ? (char *)salt : "");
++	printf ("cache: %s (dir: %s%s%s%s)\n", 
++            cache_base, orig_dir ? orig_dir : dir, 
++            mapped_dir ? " (mapped to " : "", 
++            mapped_dir ? (char *)mapped_dir : "", 
++            mapped_dir ? ")" : "");
+     }
+ 
+     if (mapped_dir)
+-	FcStrFree(mapped_dir);
++	    FcStrFree(mapped_dir);
+ 
+     return cache_base;
++
+ }
+ 
+ #ifndef _WIN32
+@@ -226,30 +195,28 @@ FcDirCacheBasenameUUID (FcConfig *config, const FcChar8 *dir, FcChar8 cache_base
+      * to determine the cache name no matter where it was mapped to.
+      */
+     cache_base[0] = 0;
++
+     if (sysroot)
+-	target = FcStrBuildFilename (sysroot, dir, NULL);
++	    target = FcStrBuildFilename (sysroot, dir, NULL);
+     else
+-	target = FcStrdup (dir);
++	    target = FcStrdup (dir);
++
+     fuuid = FcStrBuildFilename (target, ".uuid", NULL);
+     if ((fd = FcOpen ((char *) fuuid, O_RDONLY)) != -1)
+     {
+-	char suuid[37];
+-	ssize_t len;
+-
+-	memset (suuid, 0, sizeof (suuid));
+-	len = read (fd, suuid, 36);
+-	suuid[36] = 0;
+-	close (fd);
+-	if (len < 0)
+-	    goto bail;
+-	cache_base[0] = '/';
+-	strcpy ((char *)&cache_base[1], suuid);
+-	strcat ((char *) cache_base, "-" FC_ARCHITECTURE FC_CACHE_SUFFIX);
+-	if (FcDebug () & FC_DBG_CACHE)
+-	{
+-	    printf ("cache fallbacks to: %s (dir: %s)\n", cache_base, dir);
+-	}
++        char suuid[37] = {0};
++        ssize_t len = read (fd, suuid, 36);
++        close (fd);
++        if (len < 0){
++            goto bail;
++        }
++        snprintf((char *)cache_base, CACHEBASE_LEN, "/%s-%s%s", suuid, FC_ARCHITECTURE, FC_CACHE_SUFFIX);
++        if (FcDebug () & FC_DBG_CACHE)
++        {
++            printf ("cache fallbacks to: %s (dir: %s)\n", cache_base, dir);
++        }
+     }
++
+ bail:
+     FcStrFree (fuuid);
+     FcStrFree (target);
+@@ -276,7 +243,7 @@ FcDirCacheUnlink (const FcChar8 *dir, FcConfig *config)
+ 	return FcFalse;
+     sysroot = FcConfigGetSysRoot (config);
+ 
+-    FcDirCacheBasenameMD5 (config, dir, cache_base);
++    FcDirCacheBasenameMurmurHash3 (config, dir, cache_base);
+ #ifndef _WIN32
+     FcDirCacheBasenameUUID (config, dir, uuid_cache_base);
+ #endif
+@@ -376,7 +343,7 @@ FcDirCacheProcess (FcConfig *config, const FcChar8 *dir,
+     }
+     FcStrFree (d);
+ 
+-    FcDirCacheBasenameMD5 (config, dir, cache_base);
++    FcDirCacheBasenameMurmurHash3 (config, dir, cache_base);
+ 
+     list = FcStrListCreate (config->cacheDirs);
+     if (!list)
+@@ -481,53 +448,27 @@ struct _FcCacheSkip {
+ static FcCacheSkip	*fcCacheChains[FC_CACHE_MAX_LEVEL];
+ static int		fcCacheMaxLevel;
+ 
+-
++/* Cache Lock Mutex */
+ static FcMutex *cache_lock;
+ 
+-static void
++static inline void
+ lock_cache (void)
+ {
+-  FcMutex *lock;
+-retry:
+-  lock = fc_atomic_ptr_get (&cache_lock);
+-  if (!lock) {
+-    lock = (FcMutex *) malloc (sizeof (FcMutex));
+-    FcMutexInit (lock);
+-    if (!fc_atomic_ptr_cmpexch (&cache_lock, NULL, lock)) {
+-      FcMutexFinish (lock);
+-      free (lock);
+-      goto retry;
+-    }
+-
+-    FcMutexLock (lock);
+-    /* Initialize random state */
+-    FcRandom ();
+-    return;
+-  }
+-  FcMutexLock (lock);
++    FcMutexLockResource(&cache_lock);
+ }
+ 
+-static void
++static inline void
+ unlock_cache (void)
+ {
+-  FcMutex *lock;
+-  lock = fc_atomic_ptr_get (&cache_lock);
+-  FcMutexUnlock (lock);
++    FcMutexUnlockResource(&cache_lock);
+ }
+ 
+-static void
++static inline void
+ free_lock (void)
+ {
+-  FcMutex *lock;
+-  lock = fc_atomic_ptr_get (&cache_lock);
+-  if (lock && fc_atomic_ptr_cmpexch (&cache_lock, lock, NULL)) {
+-    FcMutexFinish (lock);
+-    free (lock);
+-  }
++    FcMutexFreeResource(&cache_lock);
+ }
+ 
+-
+-
+ /*
+  * Generate a random level number, distributed
+  * so that each level is 1/4 as likely as the one before
+@@ -538,14 +479,16 @@ static int
+ random_level (void)
+ {
+     /* tricky bit -- each bit is '1' 75% of the time */
+-    long int	bits = FcRandom () | FcRandom ();
++    int32_t numA = FcRandom ();
++    int32_t numB = FcRandom ();
++    int32_t	bits = numA | numB;
+     int	level = 0;
+ 
+     while (++level < FC_CACHE_MAX_LEVEL)
+     {
+-	if (bits & 1)
+-	    break;
+-	bits >>= 1;
++        if (bits & 1)
++            break;
++        bits >>= 1;
+     }
+     return level;
+ }
+@@ -585,9 +528,11 @@ FcCacheInsert (FcCache *cache, struct stat *cache_stat)
+ 	fcCacheMaxLevel = level;
+     }
+ 
+-    s = malloc (sizeof (FcCacheSkip) + (level - 1) * sizeof (FcCacheSkip *));
+-    if (!s)
+-	return FcFalse;
++    s = calloc (sizeof (FcCacheSkip) + (level - 1), sizeof (FcCacheSkip *));
++    if (!s) {
++        unlock_cache ();
++        return FcFalse;
++    }
+ 
+     s->cache = cache;
+     s->size = cache->size;
+@@ -680,13 +625,16 @@ FcCacheRemoveUnlocked (FcCache *cache)
+         update[i] = &next[i];
+     }
+     s = next[0];
++    
++    if (s) {
+     for (i = 0; i < fcCacheMaxLevel && *update[i] == s; i++)
+-	*update[i] = s->next[i];
+-    while (fcCacheMaxLevel > 0 && fcCacheChains[fcCacheMaxLevel - 1] == NULL)
+-	fcCacheMaxLevel--;
++	    *update[i] = s->next[i];
++    }
+ 
+-    if (s)
+-    {
++    while (fcCacheMaxLevel > 0 && fcCacheChains[fcCacheMaxLevel - 1] == NULL)
++	    fcCacheMaxLevel--;
++    
++    if (s) {
+ 	allocated = s->allocated;
+ 	while (allocated)
+ 	{
+@@ -942,16 +890,15 @@ FcDirCacheMapFd (FcConfig *config, int fd, struct stat *fd_stat, struct stat *di
+     FcCache	*cache;
+     FcBool	allocated = FcFalse;
+ 
+-    if (fd_stat->st_size > INTPTR_MAX ||
+-        fd_stat->st_size < (int) sizeof (FcCache))
+-	return NULL;
++    if (fd_stat->st_size < (int) sizeof (FcCache))
++	    return NULL;
++
+     cache = FcCacheFindByStat (fd_stat);
+-    if (cache)
+-    {
+-	if (FcCacheTimeValid (config, cache, dir_stat))
+-	    return cache;
+-	FcDirCacheUnload (cache);
+-	cache = NULL;
++    if (cache){
++        if (FcCacheTimeValid (config, cache, dir_stat))
++            return cache;
++        FcDirCacheUnload (cache);
++        cache = NULL;
+     }
+ 
+     /*
+@@ -960,65 +907,71 @@ FcDirCacheMapFd (FcConfig *config, int fd, struct stat *fd_stat, struct stat *di
+      */
+     if (FcCacheIsMmapSafe (fd) && fd_stat->st_size >= FC_CACHE_MIN_MMAP)
+     {
++
+ #if defined(HAVE_MMAP) || defined(__CYGWIN__)
+ 	cache = mmap (0, fd_stat->st_size, PROT_READ, MAP_SHARED, fd, 0);
+ #if defined(HAVE_POSIX_FADVISE) && defined(POSIX_FADV_WILLNEED)
+ 	posix_fadvise (fd, 0, fd_stat->st_size, POSIX_FADV_WILLNEED);
+ #endif
+-	if (cache == MAP_FAILED)
+-	    cache = NULL;
++
++    if (cache == MAP_FAILED)
++        cache = NULL;
++
+ #elif defined(_WIN32)
+-	{
+-	    HANDLE hFileMap;
+ 
+-	    cache = NULL;
+-	    hFileMap = CreateFileMapping((HANDLE) _get_osfhandle(fd), NULL,
+-					 PAGE_READONLY, 0, 0, NULL);
+-	    if (hFileMap != NULL)
+-	    {
+-		cache = MapViewOfFile (hFileMap, FILE_MAP_READ, 0, 0,
+-				       fd_stat->st_size);
+-		CloseHandle (hFileMap);
+-	    }
+-	}
++    HANDLE hFileMap;
++
++    cache = NULL;
++    hFileMap = CreateFileMapping((HANDLE) _get_osfhandle(fd), NULL,
++                PAGE_READONLY, 0, 0, NULL);
++    if (hFileMap != NULL)
++    {
++        cache = MapViewOfFile (hFileMap, FILE_MAP_READ, 0, 0,
++                    fd_stat->st_size);
++        CloseHandle (hFileMap);
++    }
++
+ #endif
+     }
++    
+     if (!cache)
+     {
+-	cache = malloc (fd_stat->st_size);
+-	if (!cache)
+-	    return NULL;
++        cache = calloc (1, fd_stat->st_size);
++        if (!cache)
++            return NULL;
+ 
+-	if (read (fd, cache, fd_stat->st_size) != fd_stat->st_size)
+-	{
+-	    free (cache);
+-	    return NULL;
+-	}
+-	allocated = FcTrue;
++        if (read (fd, cache, fd_stat->st_size) != fd_stat->st_size)
++        {
++            free (cache);
++            return NULL;
++        }
++	    allocated = FcTrue;
+     }
++
+     if (cache->magic != FC_CACHE_MAGIC_MMAP ||
+-	cache->version < FC_CACHE_VERSION_NUMBER ||
+-	cache->size != (intptr_t) fd_stat->st_size ||
+-        !FcCacheOffsetsValid (cache) ||
+-	!FcCacheTimeValid (config, cache, dir_stat) ||
+-	!FcCacheInsert (cache, fd_stat))
++    cache->version < FC_CACHE_VERSION_NUMBER ||
++    cache->size != (intptr_t) fd_stat->st_size ||
++    !FcCacheOffsetsValid (cache) ||
++    !FcCacheTimeValid (config, cache, dir_stat) ||
++    !FcCacheInsert (cache, fd_stat))
+     {
+-	if (allocated)
+-	    free (cache);
+-	else
+-	{
++        if (allocated){
++            free (cache);
++        } else {
++
+ #if defined(HAVE_MMAP) || defined(__CYGWIN__)
+-	    munmap (cache, fd_stat->st_size);
++            munmap (cache, fd_stat->st_size);
+ #elif defined(_WIN32)
+-	    UnmapViewOfFile (cache);
++            UnmapViewOfFile (cache);
+ #endif
+-	}
+-	return NULL;
++
++        }
++	    return NULL;
+     }
+ 
+     /* Mark allocated caches so they're freed rather than unmapped */
+     if (allocated)
+-	cache->magic = FC_CACHE_MAGIC_ALLOC;
++	    cache->magic = FC_CACHE_MAGIC_ALLOC;
+ 	
+     return cache;
+ }
+@@ -1272,11 +1225,9 @@ FcDirCacheBuild (FcFontSet *set, const FcChar8 *dir, struct stat *dir_stat, FcSt
+ 	goto bail1;
+ 
+     /* Serialize layout complete. Now allocate space and fill it */
+-    cache = malloc (serialize->size);
++    cache = calloc (1, serialize->size);
+     if (!cache)
+ 	goto bail1;
+-    /* shut up valgrind */
+-    memset (cache, 0, serialize->size);
+ 
+     serialize->linear = cache;
+ 
+@@ -1417,7 +1368,7 @@ FcDirCacheWrite (FcCache *cache, FcConfig *config)
+     if (!cache_dir)
+ 	return FcFalse;
+ 
+-    FcDirCacheBasenameMD5 (config, dir, cache_base);
++    FcDirCacheBasenameMurmurHash3 (config, dir, cache_base);
+     cache_hashed = FcStrBuildFilename (cache_dir, cache_base, NULL);
+     FcStrFree (cache_dir);
+     if (!cache_hashed)
+@@ -1621,7 +1572,7 @@ FcDirCacheLock (const FcChar8 *dir,
+     const FcChar8 *sysroot = FcConfigGetSysRoot (config);
+     int fd = -1;
+ 
+-    FcDirCacheBasenameMD5 (config, dir, cache_base);
++    FcDirCacheBasenameMurmurHash3 (config, dir, cache_base);
+     list = FcStrListCreate (config->cacheDirs);
+     if (!list)
+ 	return -1;
+@@ -1640,8 +1591,11 @@ FcDirCacheLock (const FcChar8 *dir,
+ 	if (fd != -1)
+ 	{
+ #if defined(_WIN32)
+-	    if (_locking (fd, _LK_LOCK, 1) == -1)
+-		goto bail;
++	    if (_locking (fd, _LK_LOCK, 1) == -1){
++            FcStrListDone (list);
++            close (fd);
++            return -1;
++        }
+ #else
+ 	    struct flock fl;
+ 
+@@ -1650,19 +1604,18 @@ FcDirCacheLock (const FcChar8 *dir,
+ 	    fl.l_start = 0;
+ 	    fl.l_len = 0;
+ 	    fl.l_pid = getpid ();
+-	    if (fcntl (fd, F_SETLKW, &fl) == -1)
+-		goto bail;
++	    if (fcntl (fd, F_SETLKW, &fl) == -1){
++            FcStrListDone (list);
++            close (fd);
++            return -1;
++        }
+ #endif
+ 	    break;
+ 	}
+     }
+     FcStrListDone (list);
+     return fd;
+-bail:
+-    FcStrListDone (list);
+-    if (fd != -1)
+-	close (fd);
+-    return -1;
++
+ }
+ 
+ void
+diff --git a/src/fccfg.c b/src/fccfg.c
+index eb174a4..68f0e6d 100644
+--- a/src/fccfg.c
++++ b/src/fccfg.c
+@@ -39,69 +39,56 @@
+ #endif
+ 
+ static FcConfig    *_fcConfig; /* MT-safe */
+-static FcMutex	   *_lock;
+ 
+-static void
++/* Config Lock Mutex */
++static FcMutex	   *config_lock;
++
++static inline void
+ lock_config (void)
+ {
+-    FcMutex *lock;
+-retry:
+-    lock = fc_atomic_ptr_get (&_lock);
+-    if (!lock)
+-    {
+-	lock = (FcMutex *) malloc (sizeof (FcMutex));
+-	FcMutexInit (lock);
+-	if (!fc_atomic_ptr_cmpexch (&_lock, NULL, lock))
+-	{
+-	    FcMutexFinish (lock);
+-	    free (lock);
+-	    goto retry;
+-	}
+-	FcMutexLock (lock);
+-	/* Initialize random state */
+-	FcRandom ();
+-	return;
+-    }
+-    FcMutexLock (lock);
++	FcMutexLockResource(&config_lock);
+ }
+ 
+-static void
++static inline void
+ unlock_config (void)
+ {
+-    FcMutex *lock;
+-    lock = fc_atomic_ptr_get (&_lock);
+-    FcMutexUnlock (lock);
++    FcMutexUnlockResource(&config_lock);
+ }
+ 
+-static void
++static inline void
+ free_lock (void)
+ {
+-    FcMutex *lock;
+-    lock = fc_atomic_ptr_get (&_lock);
+-    if (lock && fc_atomic_ptr_cmpexch (&_lock, lock, NULL))
+-    {
+-	FcMutexFinish (lock);
+-	free (lock);
+-    }
++	FcMutexFreeResource(&config_lock);
+ }
+ 
+ static FcConfig *
+ FcConfigEnsure (void)
+ {
+-    FcConfig	*config;
+-retry:
+-    config = fc_atomic_ptr_get (&_fcConfig);
+-    if (!config)
+-    {
+-	config = FcInitLoadConfigAndFonts ();
++    
++	FcConfig *config = NULL;
++	uint32_t attempts = 0;
++
++	retry:
++		if(attempts >= 1000) { // Protection against endless attempts.
++        	fprintf(stderr, "Error: The number of attempts for FcConfigEnsure has exceeded 1 000.");
++        	return NULL;
++    	}
++		attempts++;
++		config = fc_atomic_ptr_get (&_fcConfig);
++		if (!config)
++		{
++			config = FcInitLoadConfigAndFonts ();
++			if (config && !fc_atomic_ptr_cmpexch (&_fcConfig, NULL, config)) {
++				FcConfigDestroy (config);
++			}
++    	}
++		if (!config) {
++        	FcYield();
++			goto retry;
++    	}
+ 
+-	if (!config || !fc_atomic_ptr_cmpexch (&_fcConfig, NULL, config)) {
+-	    if (config)
+-		FcConfigDestroy (config);
+-	    goto retry;
+-	}
+-    }
+     return config;
++
+ }
+ 
+ static void
+@@ -632,7 +619,7 @@ FcConfigAddFontDir (FcConfig	    *config,
+ 	}
+ 	else if (salt)
+ 	{
+-	    printf ("%s%s%s%s\n", d, salt ? " (salt: " : "", salt ? (const char *)salt : "", salt ? ")" : "");
++	    printf ("%s%s%s%s\n", d,  " (salt: ", (const char *)salt, ")");
+ 	}
+     }
+     return FcStrSetAddFilenamePairWithSalt (config->fontDirs, d, m, salt);
+@@ -1603,7 +1590,7 @@ FamilyTableAdd (FamilyTable    *table,
+ 
+             if (!FcHashTableFind (table->family_hash, (const void *)s, (void **)&fe))
+             {
+-                fe = malloc (sizeof (FamilyTableEntry));
++                fe = FcSafeMalloc(sizeof (FamilyTableEntry));
+                 fe->count = 0;
+                 FcHashTableAdd (table->family_hash, (void *)s, fe);
+             }
+@@ -1611,7 +1598,7 @@ FamilyTableAdd (FamilyTable    *table,
+ 
+             if (!FcHashTableFind (table->family_blank_hash, (const void *)s, (void **)&fe))
+             {
+-                fe = malloc (sizeof (FamilyTableEntry));
++                fe = FcSafeMalloc(sizeof (FamilyTableEntry));
+                 fe->count = 0;
+                 FcHashTableAdd (table->family_blank_hash, (void *)s, fe);
+             }
+@@ -2048,19 +2035,19 @@ FcConfigSubstituteWithPat (FcConfig    *config,
+     }
+ 
+     nobjs = FC_MAX_BASE_OBJECT + config->maxObjects + 2;
+-    value = (FcValueList **) malloc (SIZEOF_VOID_P * nobjs);
++    value = (FcValueList **) calloc (nobjs, SIZEOF_VOID_P);
+     if (!value)
+     {
+ 	retval = FcFalse;
+ 	goto bail1;
+     }
+-    elt = (FcPatternElt **) malloc (SIZEOF_VOID_P * nobjs);
++    elt = (FcPatternElt **) calloc (nobjs, SIZEOF_VOID_P);
+     if (!elt)
+     {
+ 	retval = FcFalse;
+ 	goto bail1;
+     }
+-    tst = (FcTest **) malloc (SIZEOF_VOID_P * nobjs);
++    tst = (FcTest **) calloc (nobjs, SIZEOF_VOID_P);
+     if (!tst)
+     {
+ 	retval = FcFalse;
+@@ -2705,11 +2692,7 @@ FcConfigGetFilename (FcConfig      *config,
+ 	    if (sysroot)
+ 		FcStrFree (s);
+ 	}
+-	else
+-	    file = 0;
+-    }
+-    else
+-    {
++    } else {
+ 	path = FcConfigGetPath ();
+ 	if (!path)
+ 	{
+diff --git a/src/fccharset.c b/src/fccharset.c
+index 832649c..a3326ef 100644
+--- a/src/fccharset.c
++++ b/src/fccharset.c
+@@ -152,59 +152,74 @@ FcCharSetPutLeaf (FcCharSet	*fcs,
+ {
+     intptr_t	*leaves = FcCharSetLeaves (fcs);
+     FcChar16	*numbers = FcCharSetNumbers (fcs);
+-
+     ucs4 >>= 8;
+     if (ucs4 >= 0x10000)
+-	return FcFalse;
++		return FcFalse;
+ 
+     if (FC_IS_ZERO_OR_POWER_OF_TWO (fcs->num))
+     {
+       if (!fcs->num)
+       {
+         unsigned int alloced = 8;
+-	leaves = malloc (alloced * sizeof (*leaves));
+-	numbers = malloc (alloced * sizeof (*numbers));
+-	if (!leaves || !numbers)
+-	{
+-	    if (leaves)
+-		free (leaves);
+-	    if (numbers)
+-		free (numbers);
+-	    return FcFalse;
+-	}
+-      }
+-      else
+-      {
+-	int i;
+-        unsigned int alloced = fcs->num;
+-	intptr_t *new_leaves;
+-	ptrdiff_t distance;
++		leaves = calloc (alloced,  sizeof (*leaves));
++		numbers = calloc (alloced, sizeof (*numbers));
++		if (!leaves || !numbers)
++		{
++			if (leaves)
++				free (leaves);
++			if (numbers)
++				free (numbers);
++			return FcFalse;
++		}
++    } else {
+ 
+-	alloced *= 2;
+-	numbers = realloc (numbers, alloced * sizeof (*numbers));
+-	if (!numbers)
+-	    return FcFalse;
+-	new_leaves = realloc (leaves, alloced * sizeof (*leaves));
+-	if (!new_leaves)
+-	{
+-	    /*
+-	     * Revert the reallocation of numbers. We update numbers_offset
+-	     * first in case realloc() fails.
+-	     */
+-	    fcs->numbers_offset = FcPtrToOffset (fcs, numbers);
+-	    numbers = realloc (numbers, (alloced / 2) * sizeof (*numbers));
+-	    /* unlikely to fail though */
+-	    if (!numbers)
+-		return FcFalse;
+-	    fcs->numbers_offset = FcPtrToOffset (fcs, numbers);
+-	    return FcFalse;
+-	}
+-	distance = (char *) new_leaves - (char *) leaves;
+-	for (i = 0; i < fcs->num; i++) {
+-	    new_leaves[i] -= distance;
+-	}
+-	leaves = new_leaves;
+-      }
++		int i;
++		unsigned int alloced = fcs->num;
++
++		alloced *= 2;
++
++		FcChar16 *tmp_realloc = realloc (numbers, alloced * sizeof (*numbers));
++		if (!tmp_realloc) {
++			free(numbers);
++			return FcFalse;
++		}
++		
++		numbers = tmp_realloc;
++
++		intptr_t *save_leaves = leaves; // realloc can rewrite address
++		intptr_t *new_leaves = realloc (leaves, alloced * sizeof (*leaves));
++		
++		if (!new_leaves) {
++			/*
++			* Revert the reallocation of numbers. We update numbers_offset
++			* first in case realloc() fails.
++			*/
++			fcs->numbers_offset = FcPtrToOffset (fcs, numbers);
++
++			tmp_realloc = realloc (numbers, (alloced / 2) * sizeof (*numbers));
++			if (!tmp_realloc) {
++				free(numbers);
++				free(leaves);
++				return FcFalse;
++			}
++			
++			numbers = tmp_realloc;
++
++			fcs->numbers_offset = FcPtrToOffset (fcs, numbers);
++
++			free(leaves);
++			return FcFalse;
++
++		}
++
++		ptrdiff_t distance = (char *) new_leaves - (char *) save_leaves;
++		for (i = 0; i < fcs->num; i++) {
++			new_leaves[i] -= distance;
++		}
++
++		leaves = new_leaves;
++
++    }
+ 
+       fcs->leaves_offset = FcPtrToOffset (fcs, leaves);
+       fcs->numbers_offset = FcPtrToOffset (fcs, numbers);
+@@ -1061,7 +1076,7 @@ FcCharLeafEntCreate (FcCharSetFreezer *freezer)
+ 	if (!newBlocks)
+ 	    return 0;
+ 	freezer->leaf_blocks = newBlocks;
+-	freezer->current_block = freezer->leaf_blocks[freezer->leaf_block_count-1] = malloc (FC_CHAR_LEAF_BLOCK * sizeof (FcCharLeafEnt));
++	freezer->current_block = freezer->leaf_blocks[freezer->leaf_block_count-1] = calloc (FC_CHAR_LEAF_BLOCK, sizeof (FcCharLeafEnt));
+ 	if (!freezer->current_block)
+ 	    return 0;
+ 	freezer->leaf_remain = FC_CHAR_LEAF_BLOCK;
+diff --git a/src/fccompat.c b/src/fccompat.c
+index 65ac84c..9e054b8 100644
+--- a/src/fccompat.c
++++ b/src/fccompat.c
+@@ -86,6 +86,100 @@
+ typedef int mode_t;
+ #endif /* !HAVE_UNISTD_H */
+ 
++#if defined(FC_ARCH_X86_64)
++static inline uint32_t FC_CPUID_ECX(uint32_t eax_value) { 
++    uint32_t cpuid_ecx;
++#if defined(__GNUC__) || defined(__clang__)
++    __asm__ __volatile__ (
++        "mov %1, %%eax; cpuid; mov %%ecx, %0"
++        :"=m"(cpuid_ecx)
++        :"m"(eax_value)
++    );
++#else
++    __asm{
++        mov eax, eax_value
++        cpuid
++        mov cpuid_ecx, ecx
++    } 
++#endif   
++    return cpuid_ecx;
++}
++
++// https://en.wikipedia.org/wiki/RDRAND
++// Intel Digital Random Number Generator (DRNG): Software Implementation Guide, Revision 1.1
++// http://software.intel.com/sites/default/files/m/d/4/1/d/8/441_Intel_R__DRNG_Software_Implementation_Guide_final_Aug7.pdf
++FcBool FC_CPU_HasRDRAND() {    
++
++    uint32_t ecx = FC_CPUID_ECX(0);
++
++    if (ecx != 0x6c65746e &&  ecx != 0x444d4163) // CPU is not Intel or AMD
++        return FcFalse;
++
++    ecx = FC_CPUID_ECX(1);
++
++    const uint32_t RDRAND_FLAG = (1 << 30);
++    if ((ecx & RDRAND_FLAG) == RDRAND_FLAG)
++        return FcTrue;
++
++    return FcFalse;
++
++}
++
++static FcBool FcRandom_RDRAND = FcFalse;
++
++#endif
++
++static FcBool FcRandom_init = FcFalse;
++static uint64_t FcRandom_state = 0x4d595df4d0f33173;
++
++// https://en.wikipedia.org/wiki/Permuted_congruential_generator
++static inline uint32_t FcRandom_pcg32(void)
++{
++	uint64_t x = FcRandom_state;
++    uint32_t y = 0;
++	unsigned count = (unsigned)(x >> 59);
++	FcRandom_state = x * 6364136223846793005u + 1442695040888963407u;
++	x ^= x >> 18;
++    y = (uint32_t)(x >> 27);
++	return y >> count | y << (-count & 31);
++}
++
++uint32_t FcRandom(void){
++
++    uint32_t val = 0;
++
++    if(!FcRandom_init){
++#if defined(FC_ARCH_X86_64)
++        FcRandom_RDRAND = FC_CPU_HasRDRAND();
++#endif
++        FcRandom_state = time(NULL) + 1442695040888963407u;
++	    (void)FcRandom_pcg32();
++        FcRandom_init = FcTrue;
++    }
++#if defined(FC_ARCH_X86_64)
++    if(FcRandom_RDRAND){
++        uint32_t res = 0;
++#if defined(__GNUC__) || defined(__clang__)
++    __asm__ volatile(
++        "rdrand %0; setc %1"
++        : "=r" (val), "=qm" (res)
++    );
++#else
++    __asm{
++        rdrand val
++        setc res
++    }
++#endif
++        if(res == 1)
++            return val;
++    }
++#endif
++    val = FcRandom_pcg32();
++
++    return val;
++
++}
++
+ #if !defined (HAVE_MKOSTEMP) && !defined(HAVE_MKSTEMP) && !defined(HAVE__MKTEMP_S)
+ static int
+ mkstemp (char *template)
+@@ -179,74 +273,6 @@ FcMakeTempfile (char *template)
+     return fd;
+ }
+ 
+-int32_t
+-FcRandom(void)
+-{
+-    int32_t result;
+-
+-#if HAVE_RANDOM_R
+-    static struct random_data fcrandbuf;
+-    static char statebuf[256];
+-    static FcBool initialized = FcFalse;
+-#ifdef _AIX
+-    static char *retval;
+-    long res;
+-#endif
+-
+-    if (initialized != FcTrue)
+-    {
+-#ifdef _AIX
+-	initstate_r (time (NULL), statebuf, 256, &retval, &fcrandbuf);
+-#else
+-	initstate_r (time (NULL), statebuf, 256, &fcrandbuf);
+-#endif
+-	initialized = FcTrue;
+-    }
+-
+-#ifdef _AIX
+-    random_r (&res, &fcrandbuf);
+-    result = (int32_t)res;
+-#else
+-    random_r (&fcrandbuf, &result);
+-#endif
+-#elif HAVE_RANDOM
+-    static char statebuf[256];
+-    char *state;
+-    static FcBool initialized = FcFalse;
+-
+-    if (initialized != FcTrue)
+-    {
+-	state = initstate (time (NULL), statebuf, 256);
+-	initialized = FcTrue;
+-    }
+-    else
+-	state = setstate (statebuf);
+-
+-    result = random ();
+-
+-    setstate (state);
+-#elif HAVE_LRAND48
+-    result = lrand48 ();
+-#elif HAVE_RAND_R
+-    static unsigned int seed = time (NULL);
+-
+-    result = rand_r (&seed);
+-#elif HAVE_RAND
+-    static FcBool initialized = FcFalse;
+-
+-    if (initialized != FcTrue)
+-    {
+-	srand (time (NULL));
+-	initialized = FcTrue;
+-    }
+-    result = rand ();
+-#else
+-# error no random number generator function available.
+-#endif
+-
+-    return result;
+-}
+-
+ #ifdef _WIN32
+ #include <direct.h>
+ #define mkdir(path,mode) _mkdir(path)
+diff --git a/src/fcdefault.c b/src/fcdefault.c
+index a9a3b72..aff1417 100644
+--- a/src/fcdefault.c
++++ b/src/fcdefault.c
+@@ -91,7 +91,7 @@ FcGetDefaultLang (void)
+ {
+     FcChar8 *lang;
+ retry:
+-    lang = fc_atomic_ptr_get (&default_lang);
++    lang = (FcChar8 *)fc_atomic_ptr_get (&default_lang);
+     if (!lang)
+     {
+ 	FcStrSet *langs = FcGetDefaultLangs ();
+@@ -113,7 +113,7 @@ FcGetPrgname (void)
+ {
+     FcChar8 *prgname;
+ retry:
+-    prgname = fc_atomic_ptr_get (&default_prgname);
++    prgname = (FcChar8 *)fc_atomic_ptr_get (&default_prgname);
+     if (!prgname)
+     {
+ #ifdef _WIN32
+@@ -218,18 +218,18 @@ FcDefaultFini (void)
+     FcStrSet *langs;
+     FcChar8  *prgname;
+ 
+-    lang = fc_atomic_ptr_get (&default_lang);
++    lang = (FcChar8 *)fc_atomic_ptr_get (&default_lang);
+     if (lang && fc_atomic_ptr_cmpexch (&default_lang, lang, NULL)) {
+ 	free (lang);
+     }
+ 
+-    langs = fc_atomic_ptr_get (&default_langs);
++    langs = (FcStrSet *)fc_atomic_ptr_get (&default_langs);
+     if (langs && fc_atomic_ptr_cmpexch (&default_langs, langs, NULL)) {
+ 	FcRefInit (&langs->ref, 1);
+ 	FcStrSetDestroy (langs);
+     }
+ 
+-    prgname = fc_atomic_ptr_get (&default_prgname);
++    prgname = (FcChar8 *)fc_atomic_ptr_get (&default_prgname);
+     if (prgname && fc_atomic_ptr_cmpexch (&default_prgname, prgname, NULL)) {
+ 	free (prgname);
+     }
+diff --git a/src/fcdir.c b/src/fcdir.c
+index e332897..b5ca7ed 100644
+--- a/src/fcdir.c
++++ b/src/fcdir.c
+@@ -101,13 +101,15 @@ FcFileScanFontConfig (FcFontSet		*set,
+ 		strncmp ((const char *)f, (const char *)sysroot, len) == 0)
+ 	    {
+ 		FcChar8 *s = FcStrdup (f);
+-		FcPatternObjectDel (font, FC_FILE_OBJECT);
+-		if (s[len] != '/')
+-		    len--;
+-		else if (s[len+1] == '/')
+-		    len++;
+-		FcPatternObjectAddString (font, FC_FILE_OBJECT, &s[len]);
+-		FcStrFree (s);
++            if(s != NULL) {
++                FcPatternObjectDel (font, FC_FILE_OBJECT);
++                    if (s[len] != '/')
++                        len--;
++                    else if (s[len+1] == '/')
++                        len++;
++                FcPatternObjectAddString (font, FC_FILE_OBJECT, &s[len]);
++                FcStrFree (s);
++            }
+ 	    }
+ 	}
+ 
+@@ -252,7 +254,7 @@ FcDirScanConfig (FcFontSet	*set,
+     }
+     while ((e = readdir (d)))
+     {
+-	if (e->d_name[0] != '.' && strlen (e->d_name) < FC_MAX_FILE_LEN)
++	if (e->d_name[0] != '.')
+ 	{
+ 	    strcpy ((char *) base, (char *) e->d_name);
+ 	    if (!FcStrSetAdd (files, file_prefix)) {
+diff --git a/src/fcfreetype.c b/src/fcfreetype.c
+index cf923f2..973d091 100644
+--- a/src/fcfreetype.c
++++ b/src/fcfreetype.c
+@@ -759,7 +759,7 @@ FcSfntNameTranscode (FT_SfntName *sname)
+ 	/*
+ 	 * Allocate plenty of space.  Freed below
+ 	 */
+-	utf8 = malloc (len * FC_UTF8_MAX_LEN + 1);
++	utf8 = calloc (len, FC_UTF8_MAX_LEN + 1);
+ 	if (!utf8)
+ 	    return 0;
+ 
+@@ -786,7 +786,7 @@ FcSfntNameTranscode (FT_SfntName *sname)
+ 	/*
+ 	 * Convert Latin1 to Utf8. Freed below
+ 	 */
+-	utf8 = malloc (src_len * 2 + 1);
++	utf8 = calloc (2, src_len + 1);
+ 	if (!utf8)
+ 	    return 0;
+ 
+@@ -812,7 +812,7 @@ FcSfntNameTranscode (FT_SfntName *sname)
+ 	/*
+ 	 * Convert Latin1 to Utf8. Freed below
+ 	 */
+-	utf8 = malloc (src_len * 3 + 1);
++	utf8 = calloc (3, src_len + 1);
+ 	if (!utf8)
+ 	    return 0;
+ 
+@@ -1396,7 +1396,7 @@ FcFreeTypeQueryFaceInternal (const FT_Face  face,
+     {
+ 	if (os2->achVendID[0] != 0)
+ 	{
+-	    foundry_ = (FcChar8 *) malloc (sizeof (os2->achVendID) + 1);
++	    foundry_ = (FcChar8 *) FcSafeMalloc (sizeof (os2->achVendID) + 1);
+ 	    memcpy ((void *)foundry_, os2->achVendID, sizeof (os2->achVendID));
+ 	    foundry_[sizeof (os2->achVendID)] = 0;
+ 	    foundry = foundry_;
+@@ -1416,9 +1416,7 @@ FcFreeTypeQueryFaceInternal (const FT_Face  face,
+     if (!name_mapping)
+     {
+ 	int i = 0;
+-	name_mapping = malloc (name_count * sizeof (FcNameMapping));
+-	if (!name_mapping)
+-	    name_count = 0;
++	name_mapping = FcSafeCalloc (name_count, sizeof (FcNameMapping));
+ 	for (i = 0; i < name_count; i++)
+ 	{
+ 	    FcNameMapping *p = &name_mapping[i];
+@@ -1660,7 +1658,7 @@ FcFreeTypeQueryFaceInternal (const FT_Face  face,
+ 	if (!end)
+ 	    end = start + strlen ((char *) start);
+ 	/* freed below */
+-	family = malloc (end - start + 1);
++	family = FcSafeMalloc (end - start + 1);
+ 	strncpy ((char *) family, (char *) start, end - start);
+ 	family[end - start] = '\0';
+ 	if (FcDebug () & FC_DBG_SCANV)
+@@ -2733,7 +2731,7 @@ GetScriptTags(FT_Face face, FT_ULong tabletag, FT_ULong **stags)
+ 
+     ftglue_stream_frame_exit( stream );
+ 
+-    *stags = malloc(script_count * sizeof (FT_ULong));
++    *stags = calloc(script_count, sizeof (FT_ULong));
+     if (!*stags)
+ 	return 0;
+ 
+@@ -2795,7 +2793,7 @@ FcFontCapabilities(FT_Face face)
+ 
+     maxsize = (((FT_ULong) gpos_count + (FT_ULong) gsub_count) * OTLAYOUT_LEN +
+ 	       (issilgraphitefont ? 13 : 0));
+-    complex_ = malloc (sizeof (FcChar8) * maxsize);
++    complex_ = calloc (maxsize, sizeof (FcChar8) );
+     if (!complex_)
+ 	goto bail;
+ 
+diff --git a/src/fcfs.c b/src/fcfs.c
+index 21c6c7c..68b5ed1 100644
+--- a/src/fcfs.c
++++ b/src/fcfs.c
+@@ -28,27 +28,20 @@
+ FcFontSet *
+ FcFontSetCreate (void)
+ {
+-    FcFontSet	*s;
+-
+-    s = (FcFontSet *) malloc (sizeof (FcFontSet));
+-    if (!s)
+-	return 0;
+-    s->nfont = 0;
+-    s->sfont = 0;
+-    s->fonts = 0;
++    FcFontSet *s = (FcFontSet *) calloc (1, sizeof (FcFontSet));
+     return s;
+ }
+ 
+ void
+ FcFontSetDestroy (FcFontSet *s)
+ {
+-    int	    i;
+-
+-    for (i = 0; i < s->nfont; i++)
+-	FcPatternDestroy (s->fonts[i]);
+-    if (s->fonts)
+-	free (s->fonts);
+-    free (s);
++    if (s){
++        for (int i = 0; i < s->nfont; i++)
++            FcPatternDestroy (s->fonts[i]);
++        if (s->fonts)
++            free (s->fonts);
++        free (s);
++    }
+ }
+ 
+ FcBool
+@@ -63,7 +56,7 @@ FcFontSetAdd (FcFontSet *s, FcPattern *font)
+ 	if (s->fonts)
+ 	    f = (FcPattern **) realloc (s->fonts, sfont * sizeof (FcPattern *));
+ 	else
+-	    f = (FcPattern **) malloc (sfont * sizeof (FcPattern *));
++	    f = (FcPattern **) calloc (sfont, sizeof (FcPattern *));
+ 	if (!f)
+ 	    return FcFalse;
+ 	s->sfont = sfont;
+diff --git a/src/fchash.c b/src/fchash.c
+index e91c72f..693d52b 100644
+--- a/src/fchash.c
++++ b/src/fchash.c
+@@ -57,11 +57,10 @@ FcHashTableCreate (FcHashFunc    hash_func,
+ 		   FcDestroyFunc key_destroy_func,
+ 		   FcDestroyFunc value_destroy_func)
+ {
+-    FcHashTable *ret = malloc (sizeof (FcHashTable));
++    FcHashTable *ret = calloc (1, sizeof (FcHashTable));
+ 
+     if (ret)
+     {
+-	memset (ret->buckets, 0, sizeof (FcHashBucket *) * FC_HASH_SIZE);
+ 	ret->hash_func = hash_func;
+ 	ret->compare_func = compare_func;
+ 	ret->key_copy_func = key_copy_func;
+@@ -131,10 +130,9 @@ FcHashTableAddInternal (FcHashTable *table,
+     FcChar32 hash = table->hash_func (key);
+     FcBool ret = FcFalse;
+ 
+-    bucket = (FcHashBucket *) malloc (sizeof (FcHashBucket));
++    bucket = (FcHashBucket *) calloc (1, sizeof (FcHashBucket));
+     if (!bucket)
+ 	return FcFalse;
+-    memset (bucket, 0, sizeof (FcHashBucket));
+     if (table->key_copy_func)
+ 	ret |= !table->key_copy_func (key, &bucket->key);
+     else
+diff --git a/src/fcint.h b/src/fcint.h
+index c615b66..f033637 100644
+--- a/src/fcint.h
++++ b/src/fcint.h
+@@ -846,7 +846,7 @@ FcOpen(const char *pathname, int flags, ...);
+ FcPrivate int
+ FcMakeTempfile (char *template);
+ 
+-FcPrivate int32_t
++FcPrivate uint32_t
+ FcRandom (void);
+ 
+ FcPrivate FcBool
+@@ -1420,4 +1420,36 @@ FcPrivate FcBool
+ FcHashTableRemove (FcHashTable *table,
+ 		   void        *key);
+ 
++static inline void *FcSafeCalloc(size_t num, size_t size){
++
++    uint32_t attempts = 0;
++    void *ptr = NULL;
++
++    retry:
++
++        if(attempts >= 1000) { // Protection against endless attempts.
++            fprintf(stderr, "Error in FcSafeCalloc: The number of attempts to malloc a key has exceeded 1000.");
++            exit(1);
++        }
++
++        attempts++;
++
++        ptr = calloc(num, size);
++
++        if (!ptr) {
++            FcYield();
++            goto retry;
++        }
++
++
++    return ptr;
++
++}
++
++static inline void *FcSafeMalloc(size_t size){
++
++    return FcSafeCalloc(1, size);
++
++}
++
+ #endif /* _FC_INT_H_ */
+diff --git a/src/fclang.c b/src/fclang.c
+index 9f3e046..cce492c 100644
+--- a/src/fclang.c
++++ b/src/fclang.c
+@@ -472,13 +472,10 @@ FcLangSet *
+ FcLangSetCreate (void)
+ {
+     FcLangSet	*ls;
+-
+-    ls = malloc (sizeof (FcLangSet));
++    ls = calloc (1, sizeof (FcLangSet));
+     if (!ls)
+ 	return 0;
+-    memset (ls->map, '\0', sizeof (ls->map));
+     ls->map_size = NUM_LANG_SET_MAP;
+-    ls->extra = 0;
+     return ls;
+ }
+ 
+@@ -504,7 +501,6 @@ FcLangSetCopy (const FcLangSet *ls)
+     new = FcLangSetCreate ();
+     if (!new)
+ 	goto bail0;
+-    memset (new->map, '\0', sizeof (new->map));
+     memcpy (new->map, ls->map, FC_MIN (sizeof (new->map), ls->map_size * sizeof (ls->map[0])));
+     if (ls->extra)
+     {
+diff --git a/src/fclist.c b/src/fclist.c
+index 51634ce..b3310da 100644
+--- a/src/fclist.c
++++ b/src/fclist.c
+@@ -53,7 +53,7 @@ FcObjectSetAdd (FcObjectSet *os, const char *object)
+ 	    objects = (const char **) realloc ((void *) os->objects,
+ 					       s * sizeof (const char *));
+ 	else
+-	    objects = (const char **) malloc (s * sizeof (const char *));
++	    objects = (const char **) calloc (s,  sizeof (const char *));
+ 	if (!objects)
+ 	    return FcFalse;
+ 	os->objects = objects;
+diff --git a/src/fcmatch.c b/src/fcmatch.c
+index cf0876c..50e90f2 100644
+--- a/src/fcmatch.c
++++ b/src/fcmatch.c
+@@ -533,7 +533,7 @@ FcCompareDataInit (FcPattern     *pat,
+             key = FcValueString (&l->value);
+             if (!FcHashTableFind (table, key, (void **)&e))
+             {
+-                e = malloc (sizeof (FamilyEntry));
++                e = FcSafeMalloc(sizeof (FamilyEntry));
+                 e->strong_value = 1e99;
+                 e->weak_value = 1e99;
+                 FcHashTableAdd (table, (void *)key, e);
+@@ -987,32 +987,34 @@ FcFontSetMatchInternal (FcFontSet   **sets,
+ 	    FcBool f = FcTrue;
+ 
+ 	    ss = s = strdup (env);
+-	    os = FcObjectSetCreate ();
+-	    while (f)
+-	    {
+-		size_t len;
+-		char *x;
++		if(s) {
++			os = FcObjectSetCreate ();
++			while (f)
++			{
++			size_t len;
++			char *x;
+ 
+-		if (!(p = strchr (s, ',')))
+-		{
+-		    f = FcFalse;
+-		    len = strlen (s);
+-		}
+-		else
+-		{
+-		    len = (p - s);
+-		}
+-		x = malloc (sizeof (char) * (len + 1));
+-		if (x)
+-		{
+-		    strcpy (x, s);
+-		    if (FcObjectFromName (x) > 0)
+-			FcObjectSetAdd (os, x);
+-		    s = p + 1;
+-		    free (x);
++			if (!(p = strchr (s, ',')))
++			{
++				f = FcFalse;
++				len = strlen (s);
++			}
++			else
++			{
++				len = (p - s);
++			}
++			x = calloc (len + 1, sizeof (char) );
++			if (x)
++			{
++				strcpy (x, s);
++				if (FcObjectFromName (x) > 0)
++				FcObjectSetAdd (os, x);
++				s = p + 1;
++				free (x);
++			}
++			}
++			free (ss);
+ 		}
+-	    }
+-	    free (ss);
+ 	}
+ 	FcPatternPrint2 (p, pat, os);
+ 	if (os)
+diff --git a/src/fcmd5.h b/src/fcmd5.h
+deleted file mode 100644
+index 7e8a6e1..0000000
+--- a/src/fcmd5.h
++++ /dev/null
+@@ -1,255 +0,0 @@
+-/*
+- * This code implements the MD5 message-digest algorithm.
+- * The algorithm is due to Ron Rivest.	This code was
+- * written by Colin Plumb in 1993, no copyright is claimed.
+- * This code is in the public domain; do with it what you wish.
+- *
+- * Equivalent code is available from RSA Data Security, Inc.
+- * This code has been tested against that, and is equivalent,
+- * except that you don't need to include two pages of legalese
+- * with every copy.
+- *
+- * To compute the message digest of a chunk of bytes, declare an
+- * MD5Context structure, pass it to MD5Init, call MD5Update as
+- * needed on buffers full of bytes, and then call MD5Final, which
+- * will fill a supplied 16-byte array with the digest.
+- */
+-#include "fcint.h"
+-
+-struct MD5Context {
+-        FcChar32 buf[4];
+-        FcChar32 bits[2];
+-        unsigned char in[64];
+-};
+-
+-static void MD5Init(struct MD5Context *ctx);
+-static void MD5Update(struct MD5Context *ctx, const unsigned char *buf, unsigned len);
+-static void MD5Final(unsigned char digest[16], struct MD5Context *ctx);
+-static void MD5Transform(FcChar32 buf[4], FcChar32 in[16]);
+-
+-#ifndef WORDS_BIGENDIAN
+-#define byteReverse(buf, len)	/* Nothing */
+-#else
+-/*
+- * Note: this code is harmless on little-endian machines.
+- */
+-void byteReverse(unsigned char *buf, unsigned longs)
+-{
+-    FcChar32 t;
+-    do {
+-	t = (FcChar32) ((unsigned) buf[3] << 8 | buf[2]) << 16 |
+-	    ((unsigned) buf[1] << 8 | buf[0]);
+-	*(FcChar32 *) buf = t;
+-	buf += 4;
+-    } while (--longs);
+-}
+-#endif
+-
+-/*
+- * Start MD5 accumulation.  Set bit count to 0 and buffer to mysterious
+- * initialization constants.
+- */
+-static void MD5Init(struct MD5Context *ctx)
+-{
+-    ctx->buf[0] = 0x67452301;
+-    ctx->buf[1] = 0xefcdab89;
+-    ctx->buf[2] = 0x98badcfe;
+-    ctx->buf[3] = 0x10325476;
+-
+-    ctx->bits[0] = 0;
+-    ctx->bits[1] = 0;
+-}
+-
+-/*
+- * Update context to reflect the concatenation of another buffer full
+- * of bytes.
+- */
+-static void MD5Update(struct MD5Context *ctx, const unsigned char *buf, unsigned len)
+-{
+-    FcChar32 t;
+-
+-    /* Update bitcount */
+-
+-    t = ctx->bits[0];
+-    if ((ctx->bits[0] = t + ((FcChar32) len << 3)) < t)
+-	ctx->bits[1]++; 	/* Carry from low to high */
+-    ctx->bits[1] += len >> 29;
+-
+-    t = (t >> 3) & 0x3f;	/* Bytes already in shsInfo->data */
+-
+-    /* Handle any leading odd-sized chunks */
+-
+-    if (t) {
+-	unsigned char *p = (unsigned char *) ctx->in + t;
+-
+-	t = 64 - t;
+-	if (len < t) {
+-	    memcpy(p, buf, len);
+-	    return;
+-	}
+-	memcpy(p, buf, t);
+-	byteReverse(ctx->in, 16);
+-	MD5Transform(ctx->buf, (FcChar32 *) ctx->in);
+-	buf += t;
+-	len -= t;
+-    }
+-    /* Process data in 64-byte chunks */
+-
+-    while (len >= 64) {
+-	memcpy(ctx->in, buf, 64);
+-	byteReverse(ctx->in, 16);
+-	MD5Transform(ctx->buf, (FcChar32 *) ctx->in);
+-	buf += 64;
+-	len -= 64;
+-    }
+-
+-    /* Handle any remaining bytes of data. */
+-
+-    memcpy(ctx->in, buf, len);
+-}
+-
+-/*
+- * Final wrapup - pad to 64-byte boundary with the bit pattern
+- * 1 0* (64-bit count of bits processed, MSB-first)
+- */
+-static void MD5Final(unsigned char digest[16], struct MD5Context *ctx)
+-{
+-    unsigned count;
+-    unsigned char *p;
+-
+-    /* Compute number of bytes mod 64 */
+-    count = (ctx->bits[0] >> 3) & 0x3F;
+-
+-    /* Set the first char of padding to 0x80.  This is safe since there is
+-       always at least one byte free */
+-    p = ctx->in + count;
+-    *p++ = 0x80;
+-
+-    /* Bytes of padding needed to make 64 bytes */
+-    count = 64 - 1 - count;
+-
+-    /* Pad out to 56 mod 64 */
+-    if (count < 8) {
+-	/* Two lots of padding:  Pad the first block to 64 bytes */
+-	memset(p, 0, count);
+-	byteReverse(ctx->in, 16);
+-	MD5Transform(ctx->buf, (FcChar32 *) ctx->in);
+-
+-	/* Now fill the next block with 56 bytes */
+-	memset(ctx->in, 0, 56);
+-    } else {
+-	/* Pad block to 56 bytes */
+-	memset(p, 0, count - 8);
+-    }
+-    byteReverse(ctx->in, 14);
+-
+-    /* Append length in bits and transform */
+-    ((FcChar32 *) ctx->in)[14] = ctx->bits[0];
+-    ((FcChar32 *) ctx->in)[15] = ctx->bits[1];
+-
+-    MD5Transform(ctx->buf, (FcChar32 *) ctx->in);
+-    byteReverse((unsigned char *) ctx->buf, 4);
+-    memcpy(digest, ctx->buf, 16);
+-    memset(ctx, 0, sizeof(*ctx));        /* In case it's sensitive */
+-}
+-
+-
+-/* The four core functions - F1 is optimized somewhat */
+-
+-/* #define F1(x, y, z) (x & y | ~x & z) */
+-#define F1(x, y, z) (z ^ (x & (y ^ z)))
+-#define F2(x, y, z) F1(z, x, y)
+-#define F3(x, y, z) (x ^ y ^ z)
+-#define F4(x, y, z) (y ^ (x | ~z))
+-
+-/* This is the central step in the MD5 algorithm. */
+-#define MD5STEP(f, w, x, y, z, data, s) \
+-	( w += f(x, y, z) + data,  w = w<<s | w>>(32-s),  w += x )
+-
+-/*
+- * The core of the MD5 algorithm, this alters an existing MD5 hash to
+- * reflect the addition of 16 longwords of new data.  MD5Update blocks
+- * the data and converts bytes into longwords for this routine.
+- */
+-static void MD5Transform(FcChar32 buf[4], FcChar32 in[16])
+-{
+-    register FcChar32 a, b, c, d;
+-
+-    a = buf[0];
+-    b = buf[1];
+-    c = buf[2];
+-    d = buf[3];
+-
+-    MD5STEP(F1, a, b, c, d, in[0] + 0xd76aa478, 7);
+-    MD5STEP(F1, d, a, b, c, in[1] + 0xe8c7b756, 12);
+-    MD5STEP(F1, c, d, a, b, in[2] + 0x242070db, 17);
+-    MD5STEP(F1, b, c, d, a, in[3] + 0xc1bdceee, 22);
+-    MD5STEP(F1, a, b, c, d, in[4] + 0xf57c0faf, 7);
+-    MD5STEP(F1, d, a, b, c, in[5] + 0x4787c62a, 12);
+-    MD5STEP(F1, c, d, a, b, in[6] + 0xa8304613, 17);
+-    MD5STEP(F1, b, c, d, a, in[7] + 0xfd469501, 22);
+-    MD5STEP(F1, a, b, c, d, in[8] + 0x698098d8, 7);
+-    MD5STEP(F1, d, a, b, c, in[9] + 0x8b44f7af, 12);
+-    MD5STEP(F1, c, d, a, b, in[10] + 0xffff5bb1, 17);
+-    MD5STEP(F1, b, c, d, a, in[11] + 0x895cd7be, 22);
+-    MD5STEP(F1, a, b, c, d, in[12] + 0x6b901122, 7);
+-    MD5STEP(F1, d, a, b, c, in[13] + 0xfd987193, 12);
+-    MD5STEP(F1, c, d, a, b, in[14] + 0xa679438e, 17);
+-    MD5STEP(F1, b, c, d, a, in[15] + 0x49b40821, 22);
+-
+-    MD5STEP(F2, a, b, c, d, in[1] + 0xf61e2562, 5);
+-    MD5STEP(F2, d, a, b, c, in[6] + 0xc040b340, 9);
+-    MD5STEP(F2, c, d, a, b, in[11] + 0x265e5a51, 14);
+-    MD5STEP(F2, b, c, d, a, in[0] + 0xe9b6c7aa, 20);
+-    MD5STEP(F2, a, b, c, d, in[5] + 0xd62f105d, 5);
+-    MD5STEP(F2, d, a, b, c, in[10] + 0x02441453, 9);
+-    MD5STEP(F2, c, d, a, b, in[15] + 0xd8a1e681, 14);
+-    MD5STEP(F2, b, c, d, a, in[4] + 0xe7d3fbc8, 20);
+-    MD5STEP(F2, a, b, c, d, in[9] + 0x21e1cde6, 5);
+-    MD5STEP(F2, d, a, b, c, in[14] + 0xc33707d6, 9);
+-    MD5STEP(F2, c, d, a, b, in[3] + 0xf4d50d87, 14);
+-    MD5STEP(F2, b, c, d, a, in[8] + 0x455a14ed, 20);
+-    MD5STEP(F2, a, b, c, d, in[13] + 0xa9e3e905, 5);
+-    MD5STEP(F2, d, a, b, c, in[2] + 0xfcefa3f8, 9);
+-    MD5STEP(F2, c, d, a, b, in[7] + 0x676f02d9, 14);
+-    MD5STEP(F2, b, c, d, a, in[12] + 0x8d2a4c8a, 20);
+-
+-    MD5STEP(F3, a, b, c, d, in[5] + 0xfffa3942, 4);
+-    MD5STEP(F3, d, a, b, c, in[8] + 0x8771f681, 11);
+-    MD5STEP(F3, c, d, a, b, in[11] + 0x6d9d6122, 16);
+-    MD5STEP(F3, b, c, d, a, in[14] + 0xfde5380c, 23);
+-    MD5STEP(F3, a, b, c, d, in[1] + 0xa4beea44, 4);
+-    MD5STEP(F3, d, a, b, c, in[4] + 0x4bdecfa9, 11);
+-    MD5STEP(F3, c, d, a, b, in[7] + 0xf6bb4b60, 16);
+-    MD5STEP(F3, b, c, d, a, in[10] + 0xbebfbc70, 23);
+-    MD5STEP(F3, a, b, c, d, in[13] + 0x289b7ec6, 4);
+-    MD5STEP(F3, d, a, b, c, in[0] + 0xeaa127fa, 11);
+-    MD5STEP(F3, c, d, a, b, in[3] + 0xd4ef3085, 16);
+-    MD5STEP(F3, b, c, d, a, in[6] + 0x04881d05, 23);
+-    MD5STEP(F3, a, b, c, d, in[9] + 0xd9d4d039, 4);
+-    MD5STEP(F3, d, a, b, c, in[12] + 0xe6db99e5, 11);
+-    MD5STEP(F3, c, d, a, b, in[15] + 0x1fa27cf8, 16);
+-    MD5STEP(F3, b, c, d, a, in[2] + 0xc4ac5665, 23);
+-
+-    MD5STEP(F4, a, b, c, d, in[0] + 0xf4292244, 6);
+-    MD5STEP(F4, d, a, b, c, in[7] + 0x432aff97, 10);
+-    MD5STEP(F4, c, d, a, b, in[14] + 0xab9423a7, 15);
+-    MD5STEP(F4, b, c, d, a, in[5] + 0xfc93a039, 21);
+-    MD5STEP(F4, a, b, c, d, in[12] + 0x655b59c3, 6);
+-    MD5STEP(F4, d, a, b, c, in[3] + 0x8f0ccc92, 10);
+-    MD5STEP(F4, c, d, a, b, in[10] + 0xffeff47d, 15);
+-    MD5STEP(F4, b, c, d, a, in[1] + 0x85845dd1, 21);
+-    MD5STEP(F4, a, b, c, d, in[8] + 0x6fa87e4f, 6);
+-    MD5STEP(F4, d, a, b, c, in[15] + 0xfe2ce6e0, 10);
+-    MD5STEP(F4, c, d, a, b, in[6] + 0xa3014314, 15);
+-    MD5STEP(F4, b, c, d, a, in[13] + 0x4e0811a1, 21);
+-    MD5STEP(F4, a, b, c, d, in[4] + 0xf7537e82, 6);
+-    MD5STEP(F4, d, a, b, c, in[11] + 0xbd3af235, 10);
+-    MD5STEP(F4, c, d, a, b, in[2] + 0x2ad7d2bb, 15);
+-    MD5STEP(F4, b, c, d, a, in[9] + 0xeb86d391, 21);
+-
+-    buf[0] += a;
+-    buf[1] += b;
+-    buf[2] += c;
+-    buf[3] += d;
+-}
+diff --git a/src/fcmurmurhash3.h b/src/fcmurmurhash3.h
+new file mode 100644
+index 0000000..79c8b95
+--- /dev/null
++++ b/src/fcmurmurhash3.h
+@@ -0,0 +1,336 @@
++/**
++    MurmurHash3 was written by Austin Appleby, and is placed in the public
++    domain. The author hereby disclaims copyright to this source code.
++
++    Note - The x86 and x64 versions do _not_ produce the same results, as the
++    algorithms are optimized for their respective platforms. You can still
++    compile and run any of them on any platform, but your performance with the
++    non-native version will be less than optimal.
++
++    https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp
++*/
++
++#ifndef _FCMURMURHASH_H_
++#define _FCMURMURHASH_H_
++
++#ifndef FC_SEED
++#error "Error: FC_SEED not defined!"
++#endif
++
++#if defined(_MSC_VER) // Compiler MSVC
++
++#if (_MSC_VER < 1600)
++typedef unsigned char uint8_t;
++typedef unsigned int uint32_t;
++typedef unsigned __int64 uint64_t;
++#endif
++
++#define FORCE_INLINE __forceinline
++
++#include <stdlib.h>
++
++#define ROTL32(x, y) _rotl(x, y)
++#define ROTL64(x, y) _rotl64(x, y)
++
++#define BIG_CONSTANT(x) (x)
++
++#else // Other Compilers
++
++#include <stdint.h>
++
++#define FORCE_INLINE static inline __attribute__((always_inline))
++
++static inline uint32_t rotl32(uint32_t x, int8_t r) {
++  return (x << r) | (x >> (32 - r));
++}
++
++static inline uint64_t rotl64(uint64_t x, int8_t r) {
++  return (x << r) | (x >> (64 - r));
++}
++
++#define ROTL32(x, y) rotl32(x, y)
++#define ROTL64(x, y) rotl64(x, y)
++
++#define BIG_CONSTANT(x) (x##LLU)
++
++#endif
++
++#if SIZEOF_VOID_P == 8 // 64-bit version
++
++FORCE_INLINE uint64_t getblock64(const uint64_t *p, int i) { return p[i]; }
++
++FORCE_INLINE uint64_t fmix64(uint64_t k) {
++  k ^= k >> 33;
++  k *= BIG_CONSTANT(0xff51afd7ed558ccd);
++  k ^= k >> 33;
++  k *= BIG_CONSTANT(0xc4ceb9fe1a85ec53);
++  k ^= k >> 33;
++
++  return k;
++}
++
++static inline void MurmurHash3_128(const void *key, const int len, void *out) {
++  const uint8_t *data = (const uint8_t *)key;
++  const int nblocks = len / 16;
++
++  uint64_t h1 = FC_SEED;
++  uint64_t h2 = FC_SEED;
++
++  const uint64_t c1 = BIG_CONSTANT(0x87c37b91114253d5);
++  const uint64_t c2 = BIG_CONSTANT(0x4cf5ad432745937f);
++
++  const uint64_t *blocks = (const uint64_t *)(data);
++
++  for (int i = 0; i < nblocks; i++) {
++    uint64_t k1 = getblock64(blocks, i * 2 + 0);
++    uint64_t k2 = getblock64(blocks, i * 2 + 1);
++
++    k1 *= c1;
++    k1 = ROTL64(k1, 31);
++    k1 *= c2;
++    h1 ^= k1;
++
++    h1 = ROTL64(h1, 27);
++    h1 += h2;
++    h1 = h1 * 5 + 0x52dce729;
++
++    k2 *= c2;
++    k2 = ROTL64(k2, 33);
++    k2 *= c1;
++    h2 ^= k2;
++
++    h2 = ROTL64(h2, 31);
++    h2 += h1;
++    h2 = h2 * 5 + 0x38495ab5;
++  }
++
++  const uint8_t *tail = (const uint8_t *)(data + nblocks * 16);
++
++  uint64_t k1 = 0;
++  uint64_t k2 = 0;
++
++  switch (len & 15) {
++  case 15:
++    k2 ^= ((uint64_t)tail[14]) << 48;
++  case 14:
++    k2 ^= ((uint64_t)tail[13]) << 40;
++  case 13:
++    k2 ^= ((uint64_t)tail[12]) << 32;
++  case 12:
++    k2 ^= ((uint64_t)tail[11]) << 24;
++  case 11:
++    k2 ^= ((uint64_t)tail[10]) << 16;
++  case 10:
++    k2 ^= ((uint64_t)tail[9]) << 8;
++  case 9:
++    k2 ^= ((uint64_t)tail[8]) << 0;
++    k2 *= c2;
++    k2 = ROTL64(k2, 33);
++    k2 *= c1;
++    h2 ^= k2;
++
++  case 8:
++    k1 ^= ((uint64_t)tail[7]) << 56;
++  case 7:
++    k1 ^= ((uint64_t)tail[6]) << 48;
++  case 6:
++    k1 ^= ((uint64_t)tail[5]) << 40;
++  case 5:
++    k1 ^= ((uint64_t)tail[4]) << 32;
++  case 4:
++    k1 ^= ((uint64_t)tail[3]) << 24;
++  case 3:
++    k1 ^= ((uint64_t)tail[2]) << 16;
++  case 2:
++    k1 ^= ((uint64_t)tail[1]) << 8;
++  case 1:
++    k1 ^= ((uint64_t)tail[0]) << 0;
++    k1 *= c1;
++    k1 = ROTL64(k1, 31);
++    k1 *= c2;
++    h1 ^= k1;
++  };
++
++  h1 ^= len;
++  h2 ^= len;
++
++  h1 += h2;
++  h2 += h1;
++
++  h1 = fmix64(h1);
++  h2 = fmix64(h2);
++
++  h1 += h2;
++  h2 += h1;
++
++  ((uint64_t *)out)[0] = h1;
++  ((uint64_t *)out)[1] = h2;
++}
++
++#else // 32-bit version
++
++FORCE_INLINE uint32_t getblock32(const uint32_t *p, int i) { return p[i]; }
++
++FORCE_INLINE uint32_t fmix32(uint32_t h) {
++
++  h ^= h >> 16;
++  h *= 0x85ebca6b;
++  h ^= h >> 13;
++  h *= 0xc2b2ae35;
++  h ^= h >> 16;
++
++  return h;
++}
++
++static inline void MurmurHash3_128(const void *key, const int len, void *out) {
++
++  const uint8_t *data = (const uint8_t *)key;
++  const int nblocks = len / 16;
++
++  uint32_t h1 = FC_SEED;
++  uint32_t h2 = FC_SEED;
++  uint32_t h3 = FC_SEED;
++  uint32_t h4 = FC_SEED;
++
++  const uint32_t c1 = 0x239b961b;
++  const uint32_t c2 = 0xab0e9789;
++  const uint32_t c3 = 0x38b34ae5;
++  const uint32_t c4 = 0xa1e38b93;
++
++  const uint32_t *blocks = (const uint32_t *)(data + nblocks * 16);
++
++  for (int i = -nblocks; i; i++) {
++    uint32_t k1 = getblock32(blocks, i * 4 + 0);
++    uint32_t k2 = getblock32(blocks, i * 4 + 1);
++    uint32_t k3 = getblock32(blocks, i * 4 + 2);
++    uint32_t k4 = getblock32(blocks, i * 4 + 3);
++
++    k1 *= c1;
++    k1 = ROTL32(k1, 15);
++    k1 *= c2;
++    h1 ^= k1;
++
++    h1 = ROTL32(h1, 19);
++    h1 += h2;
++    h1 = h1 * 5 + 0x561ccd1b;
++
++    k2 *= c2;
++    k2 = ROTL32(k2, 16);
++    k2 *= c3;
++    h2 ^= k2;
++
++    h2 = ROTL32(h2, 17);
++    h2 += h3;
++    h2 = h2 * 5 + 0x0bcaa747;
++
++    k3 *= c3;
++    k3 = ROTL32(k3, 17);
++    k3 *= c4;
++    h3 ^= k3;
++
++    h3 = ROTL32(h3, 15);
++    h3 += h4;
++    h3 = h3 * 5 + 0x96cd1c35;
++
++    k4 *= c4;
++    k4 = ROTL32(k4, 18);
++    k4 *= c1;
++    h4 ^= k4;
++
++    h4 = ROTL32(h4, 13);
++    h4 += h1;
++    h4 = h4 * 5 + 0x32ac3b17;
++  }
++
++  const uint8_t *tail = (const uint8_t *)(data + nblocks * 16);
++
++  uint32_t k1 = 0;
++  uint32_t k2 = 0;
++  uint32_t k3 = 0;
++  uint32_t k4 = 0;
++
++  switch (len & 15) {
++  case 15:
++    k4 ^= tail[14] << 16;
++  case 14:
++    k4 ^= tail[13] << 8;
++  case 13:
++    k4 ^= tail[12] << 0;
++    k4 *= c4;
++    k4 = ROTL32(k4, 18);
++    k4 *= c1;
++    h4 ^= k4;
++
++  case 12:
++    k3 ^= tail[11] << 24;
++  case 11:
++    k3 ^= tail[10] << 16;
++  case 10:
++    k3 ^= tail[9] << 8;
++  case 9:
++    k3 ^= tail[8] << 0;
++    k3 *= c3;
++    k3 = ROTL32(k3, 17);
++    k3 *= c4;
++    h3 ^= k3;
++
++  case 8:
++    k2 ^= tail[7] << 24;
++  case 7:
++    k2 ^= tail[6] << 16;
++  case 6:
++    k2 ^= tail[5] << 8;
++  case 5:
++    k2 ^= tail[4] << 0;
++    k2 *= c2;
++    k2 = ROTL32(k2, 16);
++    k2 *= c3;
++    h2 ^= k2;
++
++  case 4:
++    k1 ^= tail[3] << 24;
++  case 3:
++    k1 ^= tail[2] << 16;
++  case 2:
++    k1 ^= tail[1] << 8;
++  case 1:
++    k1 ^= tail[0] << 0;
++    k1 *= c1;
++    k1 = ROTL32(k1, 15);
++    k1 *= c2;
++    h1 ^= k1;
++  };
++
++  h1 ^= len;
++  h2 ^= len;
++  h3 ^= len;
++  h4 ^= len;
++
++  h1 += h2;
++  h1 += h3;
++  h1 += h4;
++  h2 += h1;
++  h3 += h1;
++  h4 += h1;
++
++  h1 = fmix32(h1);
++  h2 = fmix32(h2);
++  h3 = fmix32(h3);
++  h4 = fmix32(h4);
++
++  h1 += h2;
++  h1 += h3;
++  h1 += h4;
++  h2 += h1;
++  h3 += h1;
++  h4 += h1;
++
++  ((uint32_t *)out)[0] = h1;
++  ((uint32_t *)out)[1] = h2;
++  ((uint32_t *)out)[2] = h3;
++  ((uint32_t *)out)[3] = h4;
++}
++
++#endif
++
++#endif // _FCMURMURHASH_H_
+\ No newline at end of file
+diff --git a/src/fcmutex.h b/src/fcmutex.h
+index 556a05e..d45ef07 100644
+--- a/src/fcmutex.h
++++ b/src/fcmutex.h
+@@ -36,6 +36,82 @@
+ #include <config.h>
+ #endif
+ 
++#include "fcatomic.h"
++
++#if defined(__x86_64__) || defined(__x86_64) || defined(_M_X64) ||             \
++    defined(_M_AMD64) || defined(__amd64__) || defined(__amd64)
++#define FC_ARCH_X86_64 1
++#elif defined(i386) || defined(__i386__) || defined(__i486__) ||               \
++    defined(__i586__) || defined(__i686__) || defined(__i386) ||               \
++    defined(_M_IX86) || defined(_X86_) || defined(__THW_INTEL__) ||            \
++    defined(__I86__) || defined(__INTEL__)
++#define FC_ARCH_X86 1
++#elif defined(__ARM_ARCH_6K__) || defined(__ARM_ARCH_6Z__) ||                  \
++    defined(__ARM_ARCH_6ZK__) || defined(__ARM_ARCH_6T2__) ||                  \
++    defined(__ARM_ARCH_7__) || defined(__ARM_ARCH_7A__) ||                     \
++    defined(__ARM_ARCH_7R__) || defined(__ARM_ARCH_7M__) ||                    \
++    defined(__ARM_ARCH_7S__) || defined(__ARM_ARCH_8A__) ||                    \
++    defined(__aarch64__))
++#define FC_ARCH_ARM 1
++#elif defined(__mips__) || defined(__mips) || defined(__MIPS__)
++#define FC_ARCH_MIPS 1
++#elif defined(__powerpc) || defined(__powerpc__) || defined(__POWERPC__) ||    \
++    defined(__ppc__) || defined(_M_PPC) || defined(_ARCH_PPC) ||               \
++    defined(__PPCGECKO__) || defined(__PPCBROADWAY__) || defined(_XENON)
++#define FC_ARCH_PPC 1
++#endif
++
++#if defined(_WIN32) || defined(_WIN64)
++#include <windows.h>
++#include <winnt.h>
++#else
++#include <sched.h>  // sched_yield()
++#include <time.h>   // for nanosleep
++#include <unistd.h> // _POSIX_PRIORITY_SCHEDULING
++#endif
++
++#if defined(_POSIX_PRIORITY_SCHEDULING)
++#define FcYield() sched_yield();
++
++#elif defined(_MSC_VER)
++
++#if defined(YieldProcessor)
++#define FcYield() YieldProcessor();
++
++#elif defined(FC_ARCH_X86_64) || defined(FC_ARCH_X86)
++#define FcYield() __asm pause;
++
++#elif defined(FC_ARCH_ARM)
++#define FcYield() __asm yield;
++
++#else
++#define FcYield() Sleep(1);
++
++#endif
++
++#elif defined(FC_ARCH_X86_64) || defined(FC_ARCH_X86)
++#define FcYield() asm volatile("pause" ::: "memory");
++
++#elif defined(FC_ARCH_ARM)
++#define FcYield() asm volatile("yield" ::: "memory");
++
++#elif defined(FC_ARCH_MIPS) && (((__mips_isa_rev > 1) && defined(__mips32)) || \
++                                ((__mips_isa_rev > 2) && defined(__mips64)))
++#define FcYield() asm volatile("pause" ::: "memory");
++
++#elif defined(FC_ARCH_PPC)
++#define FcYield() asm volatile("or 27,27,27" ::: "memory");
++
++#else
++#define FcYield()                                                              \
++  {                                                                            \
++    struct timespec ts;                                                        \
++    ts.tv_sec = 0;                                                             \
++    ts.tv_nsec = 1000000;                                                      \
++    nanosleep(&ts, NULL);                                                      \
++  }
++#endif
++
+ #define FC_STMT_START do
+ #define FC_STMT_END while (0)
+ 
+@@ -123,5 +199,55 @@ static inline void FcMutexLock   (FcMutex *m) { fc_mutex_impl_lock (m);   }
+ static inline void FcMutexUnlock (FcMutex *m) { fc_mutex_impl_unlock (m); }
+ static inline void FcMutexFinish (FcMutex *m) { fc_mutex_impl_finish (m); }
+ 
++static inline void FcMutexLockResource (FcMutex **res){
++
++    FcMutex *lock = NULL;
++    uint32_t attempts = 0;
++
++    while(!lock){
++  
++        if(attempts >= 1000) { // Protection against endless attempts to lock a resource.
++            fprintf(stderr, "Error: The number of attempts to lock a resource has exceeded 1000.");
++            exit(1);
++        }
++        
++        attempts++;
++        
++        lock = fc_atomic_ptr_get (res);
++    
++        if (!lock) {
++            lock = (FcMutex *) calloc (1, sizeof (FcMutex));
++            if(lock){
++                FcMutexInit (lock);
++                if (!fc_atomic_ptr_cmpexch (res, NULL, lock)) {
++                    FcMutexFinish (lock);
++                    free (lock);
++                }
++            }
++        }
++
++        if (!lock) {
++            FcYield();
++        }
++    }
++
++  FcMutexLock (lock);
++
++}
++
++static inline void FcMutexUnlockResource (FcMutex **res)
++{
++    FcMutex *lock = fc_atomic_ptr_get (res);
++    FcMutexUnlock (lock);
++}
++
++static inline void FcMutexFreeResource (FcMutex **res)
++{
++    FcMutex *lock = fc_atomic_ptr_get (res);
++    if (lock && fc_atomic_ptr_cmpexch (res, lock, NULL)) {
++        FcMutexFinish (lock);
++        free (lock);
++    }
++}
+ 
+ #endif /* _FCMUTEX_H_ */
+diff --git a/src/fcname.c b/src/fcname.c
+index 3567656..5d398ed 100644
+--- a/src/fcname.c
++++ b/src/fcname.c
+@@ -433,7 +433,7 @@ FcNameParse (const FcChar8 *name)
+     const FcConstant	*c;
+ 
+     /* freed below */
+-    save = malloc (strlen ((char *) name) + 1);
++    save = calloc (1, strlen ((char *) name) + 1);
+     if (!save)
+ 	goto bail0;
+     pat = FcPatternCreate ();
+diff --git a/src/fcpat.c b/src/fcpat.c
+index 5927be4..1cf6c0f 100644
+--- a/src/fcpat.c
++++ b/src/fcpat.c
+@@ -30,12 +30,10 @@ FcPatternCreate (void)
+ {
+     FcPattern	*p;
+ 
+-    p = (FcPattern *) malloc (sizeof (FcPattern));
++    p = (FcPattern *) calloc (1, sizeof (FcPattern));
+     if (!p)
+-	return 0;
+-    memset (p, 0, sizeof (FcPattern));
+-    p->num = 0;
+-    p->size = 0;
++	    return 0;
++
+     p->elts_offset = FcPtrToOffset (p, NULL);
+     FcRefInit (&p->ref, 1);
+     return p;
+@@ -225,19 +223,21 @@ FcValueListDuplicate(FcValueListPtr orig)
+ 
+     for (l = orig; l != NULL; l = FcValueListNext (l))
+     {
+-	if (!new)
+-	{
+-	    t = new = FcValueListCreate();
+-	}
+-	else
+-	{
+-	    t->next = FcValueListCreate();
+-	    t = FcValueListNext (t);
+-	}
+-	v = FcValueCanonicalize (&l->value);
+-	t->value = FcValueSave (v);
+-	t->binding = l->binding;
+-	t->next = NULL;
++        if (!new)
++        {
++            t = new = FcValueListCreate();
++        }
++        else
++        {
++            t->next = FcValueListCreate();
++            t = FcValueListNext (t); // can be NULL
++        }
++        if(t != NULL) {
++            v = FcValueCanonicalize (&l->value);
++            t->value = FcValueSave (v);
++            t->binding = l->binding;
++            t->next = NULL;
++        }
+     }
+ 
+     return new;
+@@ -519,7 +519,7 @@ FcPatternElt *
+ FcPatternObjectInsertElt (FcPattern *p, FcObject object)
+ {
+     int		    i;
+-    FcPatternElt   *e;
++    FcPatternElt *e = NULL;
+ 
+     i = FcPatternObjectPosition (p, object);
+     if (i < 0)
+@@ -532,25 +532,32 @@ FcPatternObjectInsertElt (FcPattern *p, FcObject object)
+ 	    int s = p->size + 16;
+ 	    if (p->size)
+ 	    {
+-		FcPatternElt *e0 = FcPatternElts(p);
+-		e = (FcPatternElt *) realloc (e0, s * sizeof (FcPatternElt));
+-		if (!e) /* maybe it was mmapped */
+-		{
+-		    e = malloc(s * sizeof (FcPatternElt));
+-		    if (e)
+-			memcpy(e, e0, FcPatternObjectCount (p) * sizeof (FcPatternElt));
+-		}
+-	    }
+-	    else
+-		e = (FcPatternElt *) malloc (s * sizeof (FcPatternElt));
++            e = FcPatternElts(p);
++            if(e) {
++                FcPatternElt *tmp_realloc = (FcPatternElt *) realloc (e, s * sizeof (FcPatternElt));
++                if (!tmp_realloc)
++                {
++                    tmp_realloc = (FcPatternElt *)calloc(s, sizeof (FcPatternElt));
++                    if (tmp_realloc) {
++                        memcpy(tmp_realloc, e, FcPatternObjectCount (p) * sizeof (FcPatternElt));
++                        free(e);
++                    }
++                }
++                e = tmp_realloc;
++            }
++	    } else {
++            e = (FcPatternElt *) calloc (s, sizeof (FcPatternElt));
++        }
++
+ 	    if (!e)
+-		return FcFalse;
+-	    p->elts_offset = FcPtrToOffset (p, e);
++		    return FcFalse;
++	    
++        p->elts_offset = FcPtrToOffset (p, e);
+ 	    while (p->size < s)
+ 	    {
+-		e[p->size].object = 0;
+-		e[p->size].values = NULL;
+-		p->size++;
++            e[p->size].object = 0;
++            e[p->size].values = NULL;
++            p->size++;
+ 	    }
+ 	}
+ 	
+diff --git a/src/fcserialize.c b/src/fcserialize.c
+index 2388dcd..af93395 100644
+--- a/src/fcserialize.c
++++ b/src/fcserialize.c
+@@ -165,7 +165,7 @@ FcSerializeResize (FcSerialize *serialize, size_t new_count)
+     FcSerializeBucket *old_buckets = serialize->buckets;
+     FcSerializeBucket *old_buckets_end = old_buckets + old_count;
+ 
+-    FcSerializeBucket *new_buckets = malloc (new_count * sizeof (*old_buckets));
++    FcSerializeBucket *new_buckets = calloc (new_count, sizeof (*old_buckets));
+     if (!new_buckets)
+ 	return FcFalse;
+     FcSerializeBucket *new_buckets_end = new_buckets + new_count;
+diff --git a/src/fcstat.c b/src/fcstat.c
+index 4f69eae..b619d59 100644
+--- a/src/fcstat.c
++++ b/src/fcstat.c
+@@ -204,7 +204,7 @@ FcScandir (const char		*dirp,
+     if (!d)
+ 	return -1;
+ 
+-    dlist = (struct dirent **) malloc (sizeof (struct dirent *) * lsize);
++    dlist = (struct dirent **) calloc (lsize, sizeof (struct dirent *));
+     if (!dlist)
+     {
+ 	closedir (d);
+@@ -359,12 +359,11 @@ FcFStatFs (int fd, FcStatFS *statb)
+     const char *p = NULL;
+     int ret = -1;
+     FcBool flag = FcFalse;
++	memset (statb, 0, sizeof (FcStatFS));
+ 
+ #if defined(HAVE_FSTATVFS) && (defined(HAVE_STRUCT_STATVFS_F_BASETYPE) || defined(HAVE_STRUCT_STATVFS_F_FSTYPENAME))
+-    struct statvfs buf;
+-
+-    memset (statb, 0, sizeof (FcStatFS));
+-
++    
++	struct statvfs buf;
+     if ((ret = fstatvfs (fd, &buf)) == 0)
+     {
+ #  if defined(HAVE_STRUCT_STATVFS_F_BASETYPE)
+@@ -374,10 +373,8 @@ FcFStatFs (int fd, FcStatFS *statb)
+ #  endif
+     }
+ #elif defined(HAVE_FSTATFS) && (defined(HAVE_STRUCT_STATFS_F_FLAGS) || defined(HAVE_STRUCT_STATFS_F_FSTYPENAME) || defined(__linux__))
+-    struct statfs buf;
+-
+-    memset (statb, 0, sizeof (FcStatFS));
+-
++    
++	struct statfs buf;
+     if ((ret = fstatfs (fd, &buf)) == 0)
+     {
+ #  if defined(HAVE_STRUCT_STATFS_F_FLAGS) && defined(MNT_LOCAL)
+diff --git a/src/fcstr.c b/src/fcstr.c
+index 3fe518f..682f56a 100644
+--- a/src/fcstr.c
++++ b/src/fcstr.c
+@@ -990,7 +990,7 @@ FcStrBuildFilename (const FcChar8 *path,
+ 	len += strlen ((const char *)s) + 1;
+     }
+     list->n = 0;
+-    ret = malloc (sizeof (FcChar8) * (len + 1));
++    ret = calloc (len + 1, sizeof (FcChar8));
+     if (!ret)
+ 	goto bail2;
+     p = ret;
+@@ -1262,11 +1262,13 @@ FcStrSetCreateEx (unsigned int control)
+ static FcBool
+ _FcStrSetGrow (FcStrSet *set, int growElements)
+ {
++    if (!set)
++        return FcFalse;
+     /* accommodate an additional NULL entry at the end of the array */
+-    FcChar8 **strs = malloc ((set->size + growElements + 1) * sizeof (FcChar8 *));
++    FcChar8 **strs = calloc (set->size + growElements + 1, sizeof (FcChar8 *));
+     if (!strs)
+         return FcFalse;
+-    if (set->num)
++    if (set->num && set->strs)
+         memcpy (strs, set->strs, set->num * sizeof (FcChar8 *));
+     if (set->strs)
+         free (set->strs);
+@@ -1597,16 +1599,22 @@ FcStrSetDestroy (FcStrSet *set)
+     int	i;
+ 
+     /* We rely on this in FcGetDefaultLangs for caching. */
+-    if (FcRefIsConst (&set->ref))
+-	return;
++    if (!set || FcRefIsConst (&set->ref))
++	    return;
+ 
+     if (FcRefDec (&set->ref) != 1)
+-	return;
++	    return;
+ 
+-    for (i = 0; i < set->num; i++)
+-	FcStrFree (set->strs[i]);
+-    if (set->strs)
+-	free (set->strs);
++    if (set->strs) {
++        for (i = 0; i < set->num; i++) {
++            if(set->strs[i])
++                FcStrFree (set->strs[i]);
++        }
++        free (set->strs);
++    }
++
++	    
++    
+     free (set);
+ }
+ 
+diff --git a/src/fcxml.c b/src/fcxml.c
+index 1ee03cf..b6012f9 100644
+--- a/src/fcxml.c
++++ b/src/fcxml.c
+@@ -2126,11 +2126,7 @@ FcParseRemapDir (FcConfigParse *parse)
+ 	FcStrSetDestroy (prefix_dirs);
+ 	while ((prefix = FcStrListNext (l)))
+ 	{
+-	    if (!prefix || prefix[0] == 0)
+-	    {
+-		/* nop */
+-	    }
+-	    else if (!parse->scanOnly && (!FcStrUsesHome (prefix) || FcConfigHome ()))
++		if (prefix[0] != 0 && !parse->scanOnly && (!FcStrUsesHome (prefix) || FcConfigHome ()))
+ 	    {
+ 		if (!FcConfigAddFontDir (parse->config, prefix, path, salt))
+ 		    FcConfigMessage (parse, FcSevereError, "out of memory; cannot create remap data for %s as %s", prefix, path);
+@@ -2316,11 +2312,7 @@ FcParseDir (FcConfigParse *parse)
+ 	FcStrSetDestroy (prefix_dirs);
+ 	while ((prefix = FcStrListNext (l)))
+ 	{
+-	    if (!prefix || prefix[0] == 0)
+-	    {
+-		/* nop */
+-	    }
+-	    else if (!parse->scanOnly && (!FcStrUsesHome (prefix) || FcConfigHome ()))
++		if (prefix[0] != 0 && !parse->scanOnly && (!FcStrUsesHome (prefix) || FcConfigHome ()))
+ 	    {
+ 		if (!FcConfigAddFontDir (parse->config, prefix, NULL, salt))
+ 		    FcConfigMessage (parse, FcSevereError, "out of memory; cannot add directory %s", prefix);
+@@ -2462,15 +2454,15 @@ FcConfigPathFini (void)
+     FcChar8 *s;
+ 
+ retry_dir:
+-    s = fc_atomic_ptr_get (&__fc_userdir);
++    s = (FcChar8 *)fc_atomic_ptr_get (&__fc_userdir);
+     if (!fc_atomic_ptr_cmpexch (&__fc_userdir, s, NULL))
+-	goto retry_dir;
++		goto retry_dir;
+     free (s);
+ 
+ retry_conf:
+-    s = fc_atomic_ptr_get (&__fc_userconf);
++    s = (FcChar8 *)fc_atomic_ptr_get (&__fc_userconf);
+     if (!fc_atomic_ptr_cmpexch (&__fc_userconf, s, NULL))
+-	goto retry_conf;
++		goto retry_conf;
+     free (s);
+ }
+ 
+@@ -2532,7 +2524,7 @@ FcParseInclude (FcConfigParse *parse)
+ 	if (FcFileIsDir (s))
+ 	{
+ 	userdir:
+-	    userdir = fc_atomic_ptr_get (&__fc_userdir);
++	    userdir = (FcChar8 *)fc_atomic_ptr_get (&__fc_userdir);
+ 	    if (!userdir)
+ 	    {
+ 		u = FcStrdup (s);
+@@ -2547,7 +2539,7 @@ FcParseInclude (FcConfigParse *parse)
+ 	else if (FcFileIsFile (s))
+ 	{
+ 	userconf:
+-	    userconf = fc_atomic_ptr_get (&__fc_userconf);
++	    userconf = (FcChar8 *)fc_atomic_ptr_get (&__fc_userconf);
+ 	    if (!userconf)
+ 	    {
+ 		u = FcStrdup (s);
+@@ -3361,28 +3353,27 @@ FcConfigParseAndLoadDir (FcConfig	*config,
+ 			 FcBool		complain,
+ 			 FcBool		load)
+ {
+-    DIR		    *d;
++
+     struct dirent   *e;
+     FcBool	    ret = FcTrue;
+     FcChar8	    *file;
+     FcChar8	    *base;
+     FcStrSet	    *files;
+ 
+-    d = opendir ((char *) dir);
++    DIR *d = opendir ((char *) dir);
+     if (!d)
+     {
+ 	if (complain)
+ 	    FcConfigMessage (0, FcSevereError, "Cannot open config dir \"%s\"",
+ 			     name);
+-	ret = FcFalse;
+-	goto bail0;
++		return !complain;
+     }
+     /* freed below */
+-    file = (FcChar8 *) malloc (strlen ((char *) dir) + 1 + FC_MAX_FILE_LEN + 1);
++    file = (FcChar8 *) calloc (1, strlen ((char *) dir) + 1 + FC_MAX_FILE_LEN + 1);
+     if (!file)
+     {
+-	ret = FcFalse;
+-	goto bail1;
++		closedir (d);
++		return !complain;
+     }
+ 
+     strcpy ((char *) file, (char *) dir);
+@@ -3392,8 +3383,9 @@ FcConfigParseAndLoadDir (FcConfig	*config,
+     files = FcStrSetCreateEx (FCSS_GROW_BY_64);
+     if (!files)
+     {
+-	ret = FcFalse;
+-	goto bail2;
++		free (file);
++		closedir (d);
++		return !complain;
+     }
+ 
+     if (FcDebug () & FC_DBG_CONFIG)
+@@ -3402,7 +3394,7 @@ FcConfigParseAndLoadDir (FcConfig	*config,
+     if (load)
+ 	FcConfigAddConfigDir (config, dir);
+ 
+-    while (ret && (e = readdir (d)))
++    while ((e = readdir (d)))
+     {
+ 	int d_len;
+ #define TAIL	    ".conf"
+@@ -3418,27 +3410,26 @@ FcConfigParseAndLoadDir (FcConfig	*config,
+ 	    strcpy ((char *) base, (char *) e->d_name);
+ 	    if (!FcStrSetAdd (files, file))
+ 	    {
+-		ret = FcFalse;
+-		goto bail3;
++			FcStrSetDestroy (files);
++			free (file);
++			closedir (d);
++			return !complain;
+ 	    }
+ 	}
+     }
+-    if (ret)
+-    {
++
+ 	int i;
+ 	qsort (files->strs, files->num, sizeof (FcChar8 *),
+ 	       (int (*)(const void *, const void *)) FcSortCmpStr);
+ 	for (i = 0; ret && i < files->num; i++)
+ 	    ret = _FcConfigParse (config, files->strs[i], complain, load);
+-    }
+-bail3:
++
+     FcStrSetDestroy (files);
+-bail2:
+     free (file);
+-bail1:
+     closedir (d);
+-bail0:
++
+     return ret || !complain;
++
+ }
+ 
+ #ifdef _WIN32
+-- 
+2.34.1
+

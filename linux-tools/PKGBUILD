@@ -11,7 +11,7 @@ pkgname=(
   'usbip+clang'
   'x86_energy_perf_policy+clang'
 )
-pkgver=5.15.12
+pkgver=5.16
 pkgrel=1
 license=('GPL2')
 arch=('x86_64')
@@ -46,23 +46,17 @@ source=(
   'cpupower.systemd'
   'cpupower.service'
   'usbipd.service'
-  0001-tools-perf-Use-long-running-addr2line-per-dso.patch
-  0002-amd-perf.patch
-  0003-amd-cpupower.patch
 )
 validpgpkeys=(
   'ABAF11C65A2970B130ABE3C479BE3E4300411886' # Linus Torvalds
   '647F28654894E3BD457199BE38DBBDC86092693E' # Greg Kroah-Hartman
 )
-sha256sums=('7de919772b62647591527e904e3b3583783381a29d812404f58a222484e751a0'
+sha256sums=('027d7e8988bb69ac12ee92406c3be1fe13f990b1ca2249e226225cd1573308bb'
   'SKIP'
   '4fa509949d6863d001075fa3e8671eff2599c046d20c98bb4a70778595cd1c3f'
   'b692f4859ed3fd9831a058a450a84d8c409bf7e3e45aac1c2896a14bb83f3d7a'
   '42d2ec9f1d9cc255ee7945a27301478364ef482f5a6ddfc960189f03725ccec2'
-  '2e187734d8aec58a3046d79883510d779aa93fb3ab20bd3132c1a607ebe5498f'
-  'c75a7ed4198dab166f1f6b1511515dbd69ef858917f3f914da06813dccc9666a'
-  'a3464786fa020ab72d0c7b49f93a8784acb176d3fb72261ab17329bcfe10748a'
-  '86d42fa06835bd2f3c43d111495d0cc49754d9e6bc3e3ddfc76db9fb344f16e9')
+  '2e187734d8aec58a3046d79883510d779aa93fb3ab20bd3132c1a607ebe5498f')
 
 _llvm=0
 
@@ -90,10 +84,6 @@ prepare() {
       tools/power/x86/turbostat/Makefile
 
   fi
-
-  _patch 0001-tools-perf-Use-long-running-addr2line-per-dso.patch
-  _patch 0002-amd-perf.patch
-  _patch 0003-amd-cpupower.patch
 
 }
 
