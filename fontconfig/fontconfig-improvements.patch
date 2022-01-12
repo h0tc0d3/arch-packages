@@ -1,13 +1,14 @@
-From 505759faf3b56a34db9084eb4f8dced34fd7ed32 Mon Sep 17 00:00:00 2001
+From a91e4c4c14fff7f4cb3b7fa340b4356b827caa19 Mon Sep 17 00:00:00 2001
 From: Grigory Vasilyev <h0tc0d3@gmail.com>
 Date: Mon, 10 Jan 2022 07:30:38 +0300
 Subject: [PATCH] Fontconfig big improvement
 
 ---
  meson.build         |   9 ++
+ src/fcarch.h        |  23 +++
  src/fccache.c       | 313 ++++++++++++++++++-----------------------
  src/fccfg.c         |  95 +++++--------
- src/fccharset.c     | 105 ++++++++------
+ src/fccharset.c     | 112 ++++++++-------
  src/fccompat.c      | 162 ++++++++++++---------
  src/fcdefault.c     |  10 +-
  src/fcdir.c         |  18 +--
@@ -16,18 +17,18 @@ Subject: [PATCH] Fontconfig big improvement
  src/fchash.c        |   6 +-
  src/fcint.h         |  34 ++++-
  src/fclang.c        |   6 +-
- src/fclist.c        |   2 +-
+ src/fclist.c        |  11 +-
  src/fcmatch.c       |  52 +++----
  src/fcmd5.h         | 255 ---------------------------------
  src/fcmurmurhash3.h | 336 ++++++++++++++++++++++++++++++++++++++++++++
- src/fcmutex.h       | 126 +++++++++++++++++
+ src/fcmutex.h       | 104 ++++++++++++++
  src/fcname.c        |   2 +-
  src/fcpat.c         |  77 +++++-----
- src/fcserialize.c   |   2 +-
+ src/fcserialize.c   |  13 +-
  src/fcstat.c        |  15 +-
  src/fcstr.c         |  28 ++--
  src/fcxml.c         |  61 ++++----
- 23 files changed, 987 insertions(+), 770 deletions(-)
+ 24 files changed, 992 insertions(+), 793 deletions(-)
  delete mode 100644 src/fcmd5.h
  create mode 100644 src/fcmurmurhash3.h
 
@@ -51,6 +52,38 @@ index 64cae44..5b2b073 100644
  
  fonts_conf.set('FC_FONTPATH', '')
  fonts_conf.set('FC_CACHEDIR', fc_cachedir)
+diff --git a/src/fcarch.h b/src/fcarch.h
+index 049a5b0..08a1a1f 100644
+--- a/src/fcarch.h
++++ b/src/fcarch.h
+@@ -73,4 +73,27 @@
+ # define FC_ARCHITECTURE FC_ARCH_ENDIAN FC_ARCH_SIZE_ALIGN
+ #endif
+ 
++#if defined(__x86_64__) || defined(__x86_64) || defined(_M_X64) ||             \
++    defined(_M_AMD64) || defined(__amd64__) || defined(__amd64)
++#define FC_ARCH_X86_64 1
++#elif defined(i386) || defined(__i386__) || defined(__i486__) ||               \
++    defined(__i586__) || defined(__i686__) || defined(__i386) ||               \
++    defined(_M_IX86) || defined(_X86_) || defined(__THW_INTEL__) ||            \
++    defined(__I86__) || defined(__INTEL__)
++#define FC_ARCH_X86 1
++#elif defined(__ARM_ARCH_6K__) || defined(__ARM_ARCH_6Z__) ||                  \
++    defined(__ARM_ARCH_6ZK__) || defined(__ARM_ARCH_6T2__) ||                  \
++    defined(__ARM_ARCH_7__) || defined(__ARM_ARCH_7A__) ||                     \
++    defined(__ARM_ARCH_7R__) || defined(__ARM_ARCH_7M__) ||                    \
++    defined(__ARM_ARCH_7S__) || defined(__ARM_ARCH_8A__) ||                    \
++    defined(__aarch64__))
++#define FC_ARCH_ARM 1
++#elif defined(__mips__) || defined(__mips) || defined(__MIPS__)
++#define FC_ARCH_MIPS 1
++#elif defined(__powerpc) || defined(__powerpc__) || defined(__POWERPC__) ||    \
++    defined(__ppc__) || defined(_M_PPC) || defined(_ARCH_PPC) ||               \
++    defined(__PPCGECKO__) || defined(__PPCBROADWAY__) || defined(_XENON)
++#define FC_ARCH_PPC 1
++#endif
++
+ #endif /* _FCARCH_H_ */
 diff --git a/src/fccache.c b/src/fccache.c
 index 4a6a752..30f4444 100644
 --- a/src/fccache.c
@@ -720,10 +753,26 @@ index eb174a4..68f0e6d 100644
  	if (!path)
  	{
 diff --git a/src/fccharset.c b/src/fccharset.c
-index 832649c..a3326ef 100644
+index 832649c..3ae0f96 100644
 --- a/src/fccharset.c
 +++ b/src/fccharset.c
-@@ -152,59 +152,74 @@ FcCharSetPutLeaf (FcCharSet	*fcs,
+@@ -32,13 +32,10 @@ FcCharSetCreate (void)
+ {
+     FcCharSet	*fcs;
+ 
+-    fcs = (FcCharSet *) malloc (sizeof (FcCharSet));
++    fcs = (FcCharSet *) calloc (1, sizeof (FcCharSet));
+     if (!fcs)
+-	return 0;
++		return 0;
+     FcRefInit (&fcs->ref, 1);
+-    fcs->num = 0;
+-    fcs->leaves_offset = 0;
+-    fcs->numbers_offset = 0;
+     return fcs;
+ }
+ 
+@@ -152,59 +149,74 @@ FcCharSetPutLeaf (FcCharSet	*fcs,
  {
      intptr_t	*leaves = FcCharSetLeaves (fcs);
      FcChar16	*numbers = FcCharSetNumbers (fcs);
@@ -842,7 +891,7 @@ index 832649c..a3326ef 100644
  
        fcs->leaves_offset = FcPtrToOffset (fcs, leaves);
        fcs->numbers_offset = FcPtrToOffset (fcs, numbers);
-@@ -1061,7 +1076,7 @@ FcCharLeafEntCreate (FcCharSetFreezer *freezer)
+@@ -1061,7 +1073,7 @@ FcCharLeafEntCreate (FcCharSetFreezer *freezer)
  	if (!newBlocks)
  	    return 0;
  	freezer->leaf_blocks = newBlocks;
@@ -1268,7 +1317,7 @@ index e91c72f..693d52b 100644
  	ret |= !table->key_copy_func (key, &bucket->key);
      else
 diff --git a/src/fcint.h b/src/fcint.h
-index c615b66..f033637 100644
+index c615b66..e074a98 100644
 --- a/src/fcint.h
 +++ b/src/fcint.h
 @@ -846,7 +846,7 @@ FcOpen(const char *pathname, int flags, ...);
@@ -1292,7 +1341,7 @@ index c615b66..f033637 100644
 +    retry:
 +
 +        if(attempts >= 1000) { // Protection against endless attempts.
-+            fprintf(stderr, "Error in FcSafeCalloc: The number of attempts to malloc a key has exceeded 1000.");
++            fprintf(stderr, "Error in FcSafeCalloc: The number of attempts to calloc a key has exceeded 1000.");
 +            exit(1);
 +        }
 +
@@ -1345,10 +1394,26 @@ index 9f3e046..cce492c 100644
      if (ls->extra)
      {
 diff --git a/src/fclist.c b/src/fclist.c
-index 51634ce..b3310da 100644
+index 51634ce..8375bcd 100644
 --- a/src/fclist.c
 +++ b/src/fclist.c
-@@ -53,7 +53,7 @@ FcObjectSetAdd (FcObjectSet *os, const char *object)
+@@ -28,14 +28,7 @@
+ FcObjectSet *
+ FcObjectSetCreate (void)
+ {
+-    FcObjectSet    *os;
+-
+-    os = (FcObjectSet *) malloc (sizeof (FcObjectSet));
+-    if (!os)
+-	return 0;
+-    os->nobject = 0;
+-    os->sobject = 0;
+-    os->objects = 0;
++    FcObjectSet *os = (FcObjectSet *) calloc (1, sizeof (FcObjectSet));
+     return os;
+ }
+ 
+@@ -53,7 +46,7 @@ FcObjectSetAdd (FcObjectSet *os, const char *object)
  	    objects = (const char **) realloc ((void *) os->objects,
  					       s * sizeof (const char *));
  	else
@@ -2034,37 +2099,15 @@ index 0000000..79c8b95
 +#endif // _FCMURMURHASH_H_
 \ No newline at end of file
 diff --git a/src/fcmutex.h b/src/fcmutex.h
-index 556a05e..d45ef07 100644
+index 556a05e..c527358 100644
 --- a/src/fcmutex.h
 +++ b/src/fcmutex.h
-@@ -36,6 +36,82 @@
+@@ -36,6 +36,60 @@
  #include <config.h>
  #endif
  
 +#include "fcatomic.h"
-+
-+#if defined(__x86_64__) || defined(__x86_64) || defined(_M_X64) ||             \
-+    defined(_M_AMD64) || defined(__amd64__) || defined(__amd64)
-+#define FC_ARCH_X86_64 1
-+#elif defined(i386) || defined(__i386__) || defined(__i486__) ||               \
-+    defined(__i586__) || defined(__i686__) || defined(__i386) ||               \
-+    defined(_M_IX86) || defined(_X86_) || defined(__THW_INTEL__) ||            \
-+    defined(__I86__) || defined(__INTEL__)
-+#define FC_ARCH_X86 1
-+#elif defined(__ARM_ARCH_6K__) || defined(__ARM_ARCH_6Z__) ||                  \
-+    defined(__ARM_ARCH_6ZK__) || defined(__ARM_ARCH_6T2__) ||                  \
-+    defined(__ARM_ARCH_7__) || defined(__ARM_ARCH_7A__) ||                     \
-+    defined(__ARM_ARCH_7R__) || defined(__ARM_ARCH_7M__) ||                    \
-+    defined(__ARM_ARCH_7S__) || defined(__ARM_ARCH_8A__) ||                    \
-+    defined(__aarch64__))
-+#define FC_ARCH_ARM 1
-+#elif defined(__mips__) || defined(__mips) || defined(__MIPS__)
-+#define FC_ARCH_MIPS 1
-+#elif defined(__powerpc) || defined(__powerpc__) || defined(__POWERPC__) ||    \
-+    defined(__ppc__) || defined(_M_PPC) || defined(_ARCH_PPC) ||               \
-+    defined(__PPCGECKO__) || defined(__PPCBROADWAY__) || defined(_XENON)
-+#define FC_ARCH_PPC 1
-+#endif
++#include "fcarch.h"
 +
 +#if defined(_WIN32) || defined(_WIN64)
 +#include <windows.h>
@@ -2120,7 +2163,7 @@ index 556a05e..d45ef07 100644
  #define FC_STMT_START do
  #define FC_STMT_END while (0)
  
-@@ -123,5 +199,55 @@ static inline void FcMutexLock   (FcMutex *m) { fc_mutex_impl_lock (m);   }
+@@ -123,5 +177,55 @@ static inline void FcMutexLock   (FcMutex *m) { fc_mutex_impl_lock (m);   }
  static inline void FcMutexUnlock (FcMutex *m) { fc_mutex_impl_unlock (m); }
  static inline void FcMutexFinish (FcMutex *m) { fc_mutex_impl_finish (m); }
  
@@ -2131,7 +2174,7 @@ index 556a05e..d45ef07 100644
 +
 +    while(!lock){
 +  
-+        if(attempts >= 1000) { // Protection against endless attempts to lock a resource.
++        if(attempts >= 1000) { // Protection against endless attempts to lock a resource
 +            fprintf(stderr, "Error: The number of attempts to lock a resource has exceeded 1000.");
 +            exit(1);
 +        }
@@ -2303,10 +2346,28 @@ index 5927be4..1cf6c0f 100644
  	}
  	
 diff --git a/src/fcserialize.c b/src/fcserialize.c
-index 2388dcd..af93395 100644
+index 2388dcd..4b27f4a 100644
 --- a/src/fcserialize.c
 +++ b/src/fcserialize.c
-@@ -165,7 +165,7 @@ FcSerializeResize (FcSerialize *serialize, size_t new_count)
+@@ -41,16 +41,7 @@ FcSerializeCreate (void)
+ {
+     FcSerialize	*serialize;
+ 
+-    serialize = malloc (sizeof (FcSerialize));
+-    if (!serialize)
+-	return NULL;
+-    serialize->size = 0;
+-    serialize->linear = NULL;
+-    serialize->cs_freezer = NULL;
+-    serialize->buckets = NULL;
+-    serialize->buckets_count = 0;
+-    serialize->buckets_used = 0;
+-    serialize->buckets_used_max = 0;
++    serialize = calloc (1, sizeof (FcSerialize));
+     return serialize;
+ }
+ 
+@@ -165,7 +156,7 @@ FcSerializeResize (FcSerialize *serialize, size_t new_count)
      FcSerializeBucket *old_buckets = serialize->buckets;
      FcSerializeBucket *old_buckets_end = old_buckets + old_count;
  
