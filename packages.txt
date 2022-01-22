@@ -8,6 +8,7 @@ libidn2
 ncurses
 readline
 bash
+bzip2
 keyutils
 libidn
 libcap-ng
