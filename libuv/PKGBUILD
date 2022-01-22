@@ -1,5 +1,5 @@
 pkgname=libuv+clang
-pkgver=1.42.0
+pkgver=1.43.0
 pkgrel=1
 pkgdesc="Multi-platform support library with a focus on asynchronous I/O"
 arch=('x86_64')
@@ -10,7 +10,7 @@ conflicts=('libuv')
 depends=('glibc' 'libnsl')
 makedepends=('python-sphinx')
 source=("https://dist.libuv.org/dist/v${pkgver}/libuv-v${pkgver}.tar.gz"{,.sign})
-sha256sums=('43129625155a8aed796ebe90b8d4c990a73985ec717de2b2d5d3a23cfe4deb72'
+sha256sums=('90d72bb7ae18de2519d0cac70eb89c319351146b90cd3f91303a492707e693a4'
   'SKIP')
 # PGP key IDs are available from https://github.com/libuv/libuv/blob/v1.x/MAINTAINERS.md
 validpgpkeys=(

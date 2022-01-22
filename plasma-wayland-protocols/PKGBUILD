@@ -1,5 +1,5 @@
 pkgname=plasma-wayland-protocols+clang
-pkgver=1.5
+pkgver=1.6.0
 pkgrel=1
 pkgdesc="Plasma Specific Protocols for Wayland"
 arch=(any)
@@ -13,7 +13,7 @@ source=(
   "https://download.kde.org/stable/plasma-wayland-protocols/plasma-wayland-protocols-${pkgver}.tar.xz"{,.sig}
 )
 
-sha256sums=('2a62fab7146feaf1e9a47604a1b289972869adfd457db273c6247c3fd505109a'
+sha256sums=('b74ffac969ef067e47180e748a67a3a1816b7157ff4ea620ed4432f59b70f01f'
   'SKIP')
 
 validpgpkeys=(

@@ -1,6 +1,6 @@
 pkgname=telegram-desktop+clang
-pkgver=3.4.3
-pkgrel=2
+pkgver=3.4.8
+pkgrel=1
 pkgdesc='Official Telegram Desktop client'
 arch=('x86_64')
 url="https://desktop.telegram.org/"
@@ -17,7 +17,7 @@ optdepends=('webkit2gtk: embedded browser features'
 source=(
   "https://github.com/telegramdesktop/tdesktop/releases/download/v${pkgver}/tdesktop-${pkgver}-full.tar.gz"
 )
-sha256sums=('ad673a434a3ca335789c55f6f555a2482f734d897b6f0798dcd837ce65b79405')
+sha256sums=('6a962a1110bc15c21999832b0151af8125f33a3b6e978461b8f446217c76876e')
 
 _llvm=0
 

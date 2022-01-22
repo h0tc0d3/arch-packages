@@ -1,6 +1,6 @@
 pkgname=zstd+clang
-pkgver=1.5.1
-pkgrel=2
+pkgver=1.5.2
+pkgrel=1
 pkgdesc='Zstandard - Fast real-time compression algorithm'
 url='https://facebook.github.io/zstd/'
 arch=(x86_64)
@@ -11,7 +11,7 @@ provides=('zstd' "zstd=${pkgver}" 'libzstd.so')
 conflicts=('zstd')
 source=("https://github.com/facebook/zstd/releases/download/v${pkgver}/zstd-${pkgver}.tar.zst"{,.sig})
 
-sha256sums=('444f68cf74d2ee6e1d3e53aa99463570bcabf37734f26f86b8aa3fec99446f96'
+sha256sums=('3ea06164971edec7caa2045a1932d757c1815858e4c2b68c7ef812647535c23f'
   'SKIP')
 
 validpgpkeys=(4EF4AC63455FC9F4545D9B7DEF8FE99528B52FFD)

@@ -3,7 +3,7 @@ pkgname=(pipewire+clang alsa-card-profiles+clang pipewire-docs+clang
   pipewire-alsa+clang pipewire-jack+clang pipewire-pulse+clang gst-plugin-pipewire+clang
   pipewire-zeroconf+clang pipewire-v4l2+clang)
 pkgver=0.3.43
-pkgrel=1
+pkgrel=5
 epoch=1
 pkgdesc="Low-latency audio/video router and processor"
 url="https://pipewire.org"
@@ -30,6 +30,9 @@ prepare() {
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/pipewire directory! Prepare Failed! \E[0m"
     exit 1
   )
+
+  # remove export of LD_LIBRARY_PATH for pw-jack as it would add /usr/lib
+  sed -e '/LD_LIBRARY_PATH/d' -i pipewire-jack/src/pw-jack.in
 
 }
 
@@ -58,6 +61,8 @@ build() {
     -D b_pie=true \
     -D docs=enabled \
     -D jack=disabled \
+    -D jack-devel=true \
+    -D libjack-path=/usr/lib \
     -D libcamera=disabled \
     -D udevrulesdir=/usr/lib/udev/rules.d \
     -D roc=disabled \
@@ -116,7 +121,11 @@ package_pipewire+clang() {
 
     _pick docs usr/share/doc
 
-    _pick jack usr/bin/pw-jack usr/lib/pipewire-${_ver}/jack
+    _pick jack usr/bin/pw-jack
+    _pick jack usr/include/jack
+    _pick jack usr/lib/libjack*
+    _pick jack usr/lib/pkgconfig/jack.pc
+
     _pick jack usr/share/man/man1/pw-jack.1
     _pick jack usr/share/pipewire/jack.conf
 
@@ -190,6 +199,9 @@ package_pipewire-jack+clang() {
   provides=("pipewire-jack" "pipewire-jack=${epoch}:${pkgver}")
   conflicts=("pipewire-jack")
   depends=("pipewire-session-manager" "libpipewire-${_ver}.so" "pipewire+clang=${epoch}:${pkgver}")
+  optdepends=('jack-example-tools: for official JACK example-clients and tools')
+  conflicts=(jack jack2)
+  provides=(jack libjack.so libjackserver.so libjacknet.so)
 
   mv jack/* "${pkgdir:?}"
 
