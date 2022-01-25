@@ -1,0 +1,60 @@
+pkgname=liburing+clang
+pkgver=2.1
+pkgrel=1
+pkgdesc="Linux-native io_uring I/O access library"
+arch=('x86_64')
+url="https://git.kernel.dk/cgit/liburing/"
+license=('LGPL2.1' 'MIT')
+depends=('glibc')
+makedepends=('git')
+provides=('liburing.so' 'liburing' "liburing=${pkgver}")
+conflicts=("liburing")
+source=("git+https://git.kernel.dk/liburing#tag=liburing-${pkgver}?signed")
+sha256sums=('SKIP')
+validpgpkeys=('C0FC392DCADE26D975FA5E4AF7D358FB2971E0A6') # Jens Axboe <axboe@kernel.dk>
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/liburing" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/liburing directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix='/usr' \
+    --mandir='/usr/share/man'
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/liburing" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/liburing directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -vDm 644 LICENSE -t "$pkgdir/usr/share/licenses/liburing"
+
+}

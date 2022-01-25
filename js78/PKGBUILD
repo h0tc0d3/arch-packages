@@ -1,6 +1,6 @@
 pkgname=js78+clang
 pkgver=78.15.0
-pkgrel=2
+pkgrel=3
 pkgdesc="JavaScript interpreter and libraries - Version 78"
 arch=(x86_64)
 url="https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey"
@@ -35,12 +35,12 @@ prepare() {
     _llvm=1
   fi
 
+  mkdir build
+
   cd "${srcdir:?}/firefox-${pkgver}" || (
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/firefox-${pkgver} directory! Prepare Failed! \E[0m"
     exit 1
   )
-
-  mkdir obj
 
   # Post-78 fixes to fix LTO with LLVM 11
   patch -Np1 -i ../0001-Fixes-for-LTO-PGO-support.patch
@@ -51,31 +51,36 @@ prepare() {
   # Fix build with Rust 1.56
   patch -Np1 -i ../0003-Fixes-for-Rust-1.56.patch
 
+  cat >../mozconfig <<EOF
+ac_add_options --enable-application=js
+mk_add_options MOZ_OBJDIR=${PWD@Q}/obj
+ac_add_options --prefix=/usr
+ac_add_options --enable-release
+ac_add_options --enable-hardening
+ac_add_options --enable-optimize
+ac_add_options --enable-rust-simd
+ac_add_options --enable-linker=lld
+ac_add_options --disable-debug
+ac_add_options --disable-debug-symbols
+ac_add_options --disable-jemalloc
+ac_add_options --disable-strip
+# System libraries
+ac_add_options --with-system-zlib
+ac_add_options --without-system-icu
+# Features
+ac_add_options --enable-readline
+ac_add_options --enable-shared-js
+ac_add_options --enable-tests
+ac_add_options --with-intl-api
+EOF
+
 }
 
 build() {
 
-  cd "${srcdir:?}/firefox-${pkgver}/obj" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/firefox-${pkgver}/obj directory! Build Failed! \E[0m"
+  cd "${srcdir:?}/firefox-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/firefox-${pkgver} directory! Build Failed! \E[0m"
     exit 1
-  )
-
-  local configure_args=(
-    --prefix=/usr
-    --disable-debug
-    --disable-debug-symbols
-    --disable-jemalloc
-    --enable-hardening
-    --enable-linker=lld
-    --enable-optimize
-    --enable-readline
-    --enable-release
-    --enable-rust-simd
-    --enable-shared-js
-    --enable-tests
-    --with-intl-api
-    --with-system-zlib
-    --without-system-icu
   )
 
   if [[ ${_llvm} -eq 1 ]]; then
@@ -90,18 +95,22 @@ build() {
   CXXFLAGS="${CXXFLAGS} -fno-semantic-interposition"
   LDFLAGS="${LDFLAGS} -Wl,-Bsymbolic-functions"
 
+  export MOZ_NOSPAM=1
+  export MOZBUILD_STATE_PATH="${srcdir:?}/build"
+
   # Do 3-tier PGO
   echo "Building instrumented JS..."
-  sh ../js/src/configure "${configure_args[@]}" \
-    --enable-profile-generate=cross
-  make
+  cat >.mozconfig ../mozconfig - <<EOF
+ac_add_options --enable-profile-generate=cross
+EOF
+  ./mach build
 
   echo "Profiling instrumented JS..."
   (
-    local js="${PWD}/dist/bin/js"
+    local js="${PWD}/obj/dist/bin/js"
     export LLVM_PROFILE_FILE="${PWD}/js-%p-%m.profraw"
 
-    cd ../js/src/octane
+    cd js/src/octane
     "${js}" run.js
 
     cd ../../../third_party/webkit/PerformanceTests/ARES-6
@@ -117,15 +126,15 @@ build() {
   test -s merged.profdata
 
   echo "Removing instrumented JS..."
-  make clobber
+  ./mach clobber
 
   echo "Building optimized JS..."
-  sh ../js/src/configure "${configure_args[@]}" \
-    --enable-lto=cross \
-    --enable-profile-use=cross \
-    --with-pgo-profile-path="${PWD}/merged.profdata"
-
-  make
+  cat >.mozconfig ../mozconfig - <<EOF
+ac_add_options --enable-lto=cross
+ac_add_options --enable-profile-use=cross
+ac_add_options --with-pgo-profile-path=${PWD@Q}/merged.profdata
+EOF
+  ./mach build
 
 }
 

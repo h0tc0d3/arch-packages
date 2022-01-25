@@ -5,10 +5,12 @@ libclc
 libseccomp
 libunistring
 libidn2
+liburing
 ncurses
 readline
 bash
 bzip2
+lz4
 keyutils
 libidn
 libcap-ng

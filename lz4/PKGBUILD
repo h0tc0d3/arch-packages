@@ -1,0 +1,69 @@
+pkgname=lz4+clang
+epoch=1
+pkgver=1.9.3
+pkgrel=2
+pkgdesc='Extremely fast compression algorithm'
+arch=('x86_64')
+url='http://www.lz4.org/'
+license=('GPL2')
+makedepends=('git')
+checkdepends=('diffutils')
+depends=('glibc')
+provides=("lz4" "lz4=${pkgver}")
+conflicts=(lz4)
+source=("git+https://github.com/lz4/lz4.git#tag=v${pkgver}"
+  'https://github.com/lz4/lz4/commit/8301a21773ef61656225e264f4f06ae14462bca7.patch')
+sha256sums=('SKIP'
+  'c99da650a79a42db4db23e72146701cce9106383ba45709c5ac89022e36dcfb2')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/lz4" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/lz4 directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    export MOREFLAGS="${CFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  # do not use the main makefile, it calls sub make with -e
+  # exported CLFAGS by makepkg break the version. see FS#50071
+  make -C lib PREFIX=/usr
+  make -C programs PREFIX=/usr lz4 lz4c
+
+}
+
+check() {
+
+  rm -f passwd.lz4
+  lz4/programs/lz4 /etc/passwd passwd.lz4
+  lz4/programs/lz4 -d passwd.lz4 passwd
+  diff -q /etc/passwd passwd
+  rm passwd
+
+}
+
+package() {
+
+  cd "${srcdir:?}/lz4" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/lz4 directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make install PREFIX=/usr DESTDIR="${pkgdir:?}"
+
+}

@@ -1,7 +1,7 @@
 pkgname=alacritty+clang
 pkgdesc="A cross-platform, GPU-accelerated terminal emulator"
-pkgver=0.9.0
-pkgrel=3
+pkgver=0.10.0
+pkgrel=2
 arch=('x86_64')
 url="https://github.com/alacritty/alacritty"
 license=('Apache')
@@ -10,7 +10,7 @@ depends=('freetype2' 'fontconfig' 'libxi' 'libxcursor' 'libxrandr')
 conflicts=(alacritty)
 checkdepends=('ttf-dejavu') # for monospace fontconfig test
 optdepends=('ncurses: for alacritty terminfo database')
-_commit=3af1940192245f96f0b7c8e2d2d5c4a5d8eb98a1
+_commit=8a26dee0a9167777709935789b95758e36885617
 source=(
   "git+https://github.com/alacritty/alacritty.git#commit=${_commit}"
   alacritty-allow-disable-vsync.patch
@@ -19,14 +19,14 @@ validpgpkeys=(
   '4DAA67A9EA8B91FCC15B699C85CDAE3C164BA7B4' # Christian Dürr
 )
 sha256sums=('SKIP'
-  '096317e2d29381f4c675d20af44982c2933c4ed71dfe5531600ab096c094b9d1')
+            'afdb8fa0696c3b28d09461149b0211899b74031e213339b47b76a6dff36169ae')
 
 _llvm=0
 
 _patch() {
 
   echo -e "\E[1;33m Apply patch: ${1}\E[0m"
-  patch -p1 -i "${srcdir:?}/${1}"
+  #patch -p1 -i "${srcdir:?}/${1}"
 
 }
 
@@ -89,6 +89,7 @@ package() {
   desktop-file-install -m 644 --dir "${pkgdir:?}/usr/share/applications/" "extra/linux/Alacritty.desktop"
   install -D -m755 "target/release/alacritty" "${pkgdir:?}/usr/bin/alacritty"
   install -D -m644 "extra/alacritty.man" "${pkgdir:?}/usr/share/man/man1/alacritty.1"
+  install -D -m644 "extra/alacritty-msg.man" "${pkgdir:?}/usr/share/man/man1/alacritty-msg.1"
   install -D -m644 "extra/linux/io.alacritty.Alacritty.appdata.xml" "${pkgdir:?}/usr/share/appdata/io.alacritty.Alacritty.appdata.xml"
   install -D -m644 "alacritty.yml" "${pkgdir:?}/usr/share/doc/alacritty/example/alacritty.yml"
   install -D -m644 "extra/completions/alacritty.bash" "${pkgdir:?}/usr/share/bash-completion/completions/alacritty"
