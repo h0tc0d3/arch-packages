@@ -8,6 +8,7 @@ libidn2
 liburing
 ncurses
 readline
+gdb
 bash
 bzip2
 lz4
@@ -186,6 +187,10 @@ pipewire-media-session
 gsl
 lib2geom
 alacritty
+wlroots
+sway
+rofi
 krita
+kicad
 julia
 -chromium

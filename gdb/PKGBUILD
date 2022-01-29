@@ -1,0 +1,130 @@
+pkgbase=gdb+clang
+pkgname=(gdb+clang gdb-common+clang)
+pkgver=11.2
+pkgrel=1
+pkgdesc='The GNU Debugger'
+arch=(x86_64)
+url='https://www.gnu.org/software/gdb/'
+license=(GPL3)
+
+makedepends=(
+  glibc gcc-libs texinfo python guile ncurses
+  expat xz mpfr source-highlight readline
+  xxhash
+)
+
+source=(
+  "https://ftp.gnu.org/gnu/gdb/gdb-${pkgver}.tar.xz"{,.sig}
+)
+
+sha256sums=('1497c36a71881b8671a9a84a0ee40faab788ca30d7ba19d8463c3cc787152e32'
+  'SKIP'
+)
+
+validpgpkeys=('F40ADB902B24264AA42E50BF92EDB04BFF325CF3') # Joel Brobecker
+
+_llvm=0
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/gdb-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gdb-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # hack! - libiberty configure tests for header files using "$CPP $CPPFLAGS"
+  sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" libiberty/configure
+
+  mkdir -p build
+
+}
+
+build() {
+
+  cd "${srcdir:?}/gdb-${pkgver}/build" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gdb-${pkgver}/build directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ../configure \
+    --prefix=/usr \
+    --enable-64-bit-bfd \
+    --disable-install-libbfd \
+    --disable-install-libiberty \
+    --enable-obsolete \
+    --disable-readline \
+    --with-system-readline \
+    --without-zlib \
+    --disable-nls \
+    --enable-source-highlight \
+    --enable-tui \
+    --with-expat \
+    --with-system-readline \
+    --with-python=/usr/bin/python \
+    --with-guile=guile-2.2 \
+    --with-xxhash \
+    --with-system-gdbinit=/etc/gdb/gdbinit
+
+  make
+
+}
+
+package_gdb-common+clang() {
+
+  depends=(python guile)
+  conflicts=(gdb-common)
+  provides=("gdb-common" "gdb-common=${pkgver}")
+
+  cd "${srcdir:?}/gdb-${pkgver}/build" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gdb-${pkgver}/build directory! Package gdb-common Failed! \E[0m"
+    exit 1
+  )
+
+  make -C gdb/data-directory DESTDIR="${pkgdir:?}" install
+
+}
+
+package_gdb+clang() {
+
+  depends=(glibc ncurses libncursesw.so gcc-libs expat xz mpfr
+    source-highlight "gdb-common+clang=${pkgver}"
+    readline libreadline.so guile python libelf xxhash)
+  conflicts=(gdb)
+  provides=("gdb" "gdb=${pkgver}")
+  backup=(etc/gdb/gdbinit)
+
+  cd "${srcdir:?}/gdb-${pkgver}/build" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gdb-${pkgver}/build directory! Package gdb Failed! \E[0m"
+    exit 1
+  )
+
+  make -C gdb DESTDIR="${pkgdir:?}" install
+  make -C gdbserver DESTDIR="${pkgdir:?}" install
+
+  # install "custom" system gdbinit
+  install -dm 755 "${pkgdir:?}/etc/gdb"
+  touch "${pkgdir:?}/etc/gdb/gdbinit"
+
+  # comes from gdb-common
+  rm -r "${pkgdir:?}/usr/share/gdb/"
+
+}

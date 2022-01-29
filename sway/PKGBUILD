@@ -1,0 +1,100 @@
+pkgname=sway+clang
+pkgver=1.7
+epoch=1
+pkgrel=1
+pkgdesc='Tiling Wayland compositor and replacement for the i3 window manager'
+arch=(x86_64)
+url='https://swaywm.org/'
+license=(MIT)
+provides=(sway "sway=${pkgver}")
+conflicts=(sway)
+depends=(
+  'cairo'
+  'gdk-pixbuf2'
+  'json-c'
+  'pango'
+  'polkit'
+  'pcre'
+  'swaybg'
+  'ttf-font'
+  'wlroots'
+)
+makedepends=(git meson scdoc setconf wayland-protocols)
+backup=(etc/sway/config)
+optdepends=(
+  'dmenu: Application launcher'
+  'grim: Screenshot utility'
+  'i3status: Status line'
+  'mako: Lightweight notification daemon'
+  'slurp: Select a region'
+  'swayidle: Idle management daemon'
+  'swaylock: Screen locker'
+  'wallutils: Timed wallpapers'
+  'waybar: Highly customizable bar'
+  'xorg-xwayland: X11 support'
+)
+source=(
+  "https://github.com/swaywm/sway/releases/download/${pkgver}/sway-${pkgver}.tar.gz"
+  "https://github.com/swaywm/sway/releases/download/${pkgver}/sway-${pkgver}.tar.gz.sig"
+  "50-systemd-user.conf"
+  "sway_hidpi.patch::https://github.com/swaywm/sway/pull/5090.patch"
+)
+sha512sums=('028cf5d504d5914bfb78d44156d6a290de660c5ed0638f4e2c56e5be76db9b0baeda035e1fa1ae23559016bd7e4312f7ff70c2fb4904df25358577c1a3d21243'
+  'SKIP'
+  'c2b7d808f4231f318e03789015624fd4cf32b81434b15406570b4e144c0defc54e216d881447e6fd9fc18d7da608cccb61c32e0e1fab2f1fe2750acf812d3137'
+  '52939ec82677d7bea77a4f8adabd3cf70e29a95e5073a6748706493206e0a013b03b37b96b13bd3a2ac1f78955f0982b0f483af4b229f112d9e969c15fd324aa')
+validpgpkeys=('34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48' # Simon Ser
+  '9DDA3B9FA5D58DD5392C78E652CB6609B22DA89A')            # Drew DeVault
+
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+  cd "${srcdir:?}/sway-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/sway-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # Set the version information to 'Arch Linux' instead of 'makepkg'
+  sed -i "s/branch \\\'@1@\\\'/Arch Linux/g" meson.build
+
+  patch -p1 --input="${srcdir:?}/sway_hidpi.patch"
+
+}
+
+build() {
+
+  meson setup "sway-${pkgver}" build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true \
+    -D sd-bus-provider=libsystemd \
+    -D werror=false
+
+  meson compile -C build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" meson install -C build
+  install -Dm644 "sway-${pkgver}/LICENSE" "${pkgdir:?}/usr/share/licenses/sway/LICENSE"
+  install -Dm644 50-systemd-user.conf -t "${pkgdir:?}/etc/sway/config.d/"
+
+  for util in autoname-workspaces.py inactive-windows-transparency.py grimshot; do
+    install -Dm755 "sway-${pkgver}/contrib/$util" -t \
+      "${pkgdir:?}/usr/share/sway/scripts"
+  done
+
+}

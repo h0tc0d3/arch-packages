@@ -1,0 +1,107 @@
+pkgname=wlroots+clang
+pkgver=0.15.0
+pkgrel=4
+license=('MIT')
+pkgdesc='Modular Wayland compositor library'
+url='https://github.com/swaywm/wlroots'
+arch=('x86_64')
+conflicts=('wlroots')
+depends=(
+  'libglvnd'
+  'libinput'
+  'seatd' 'libseat.so'
+  'libxcb'
+  'libxkbcommon' 'libxkbcommon.so'
+  'opengl-driver'
+  'pixman' 'libpixman-1.so'
+  'systemd-libs' 'libudev.so'
+  'vulkan-icd-loader' 'libvulkan.so'
+  'wayland'
+  'xcb-util-errors'
+  'xcb-util-renderutil'
+  'xcb-util-wm'
+)
+makedepends=(
+  'glslang'
+  'meson'
+  'ninja'
+  'systemd'
+  'vulkan-headers'
+  'wayland-protocols'
+  'xorg-xwayland'
+)
+optdepends=(
+  'xorg-xwayland: Xwayland support'
+)
+provides=(
+  'libwlroots.so'
+  'wlroots' "wlroots=${pkgver}"
+)
+source=(
+  "wlroots-${pkgver}.tar.gz::https://gitlab.freedesktop.org/wlroots/wlroots/-/releases/${pkgver}/downloads/wlroots-${pkgver}.tar.gz"
+  "https://gitlab.freedesktop.org/wlroots/wlroots/-/releases/${pkgver}/downloads/wlroots-${pkgver}.tar.gz.sig"
+  0001-add-support-for-global-scale-factor.patch
+  0002-add-support-for-changing-global-scale-factor.patch
+)
+sha256sums=('2921a38cea79dbb6f1da895a4dbe1faedba8d7ff2c0c2468dad94ccba12e4278'
+  'SKIP'
+  '60c29c96dcd86cf36f6d7ac1300ed942388beba0071508eda3b05b0b12e93fef'
+  '58383ceccf22fbcf33683f3165fa82dfdeaaa72433d14d3049793eb67daf9d1c')
+validpgpkeys=(
+  '34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48' # Simon Ser
+  '9DDA3B9FA5D58DD5392C78E652CB6609B22DA89A' # Drew DeVault
+  '4100929B33EEB0FD1DB852797BC79407090047CA' # Sway signing key
+)
+
+_extra_lto_flag=""
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -d "wlroots-${pkgver}" -p1 -i "${srcdir:?}/${1}"
+
+}
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+  _patch 0001-add-support-for-global-scale-factor.patch
+  _patch 0002-add-support-for-changing-global-scale-factor.patch
+
+}
+
+build() {
+
+  # Vulkan renderer is still experimental but since mesa comes with
+  # libvulkan.so Meson autodetects this as wanting to build with Vulkan.
+
+  CFLAGS="${CFLAGS} -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function"
+  CXXFLAGS="${CXXFLAGS} -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function"
+
+  meson setup "wlroots-${pkgver}" build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true \
+    -Drenderers=gles2
+
+  ninja -C build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" meson install -C build
+
+  install -Dm644 "wlroots-${pkgver}/LICENSE" -t "${pkgdir:?}/usr/share/licenses/wlroots/"
+
+}
