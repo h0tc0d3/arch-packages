@@ -1,0 +1,54 @@
+pkgname=grim+clang
+pkgver=1.3.2
+pkgrel=1
+pkgdesc='Screenshot utility for Wayland'
+arch=(x86_64)
+url='https://github.com/emersion/grim'
+license=(MIT)
+provides=('grim' "grim=${pkgver}")
+conflicts=('grim')
+depends=(cairo libjpeg-turbo wayland)
+makedepends=(git meson pango scdoc wayland-protocols)
+_commit=c2efce7ffcfb70df5ea197f729da83be79d54f34 # tag: v1.3.2
+source=("grim::git+https://github.com/emersion/grim.git#commit=${_commit}")
+sha256sums=('SKIP')
+
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+}
+
+build() {
+
+  CFLAGS="${CFLAGS} -Wno-unused-variable -Wno-unused-but-set-variable"
+  CXXFLAGS="${CXXFLAGS} -Wno-unused-variable -Wno-unused-but-set-variable"
+
+  meson setup grim build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true
+
+  meson compile -C build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" meson install -C build
+
+  install -Dm644 grim/LICENSE \
+    "${pkgdir:?}/usr/share/licenses/grim/LICENSE"
+
+}

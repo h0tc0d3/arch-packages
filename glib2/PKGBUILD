@@ -3,7 +3,7 @@ pkgname=(
   glib2+clang
   glib2-docs+clang
 )
-pkgver=2.70.2
+pkgver=2.70.3
 pkgrel=1
 pkgdesc="Low level core library"
 url="https://wiki.gnome.org/Projects/GLib"

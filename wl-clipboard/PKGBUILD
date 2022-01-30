@@ -1,0 +1,53 @@
+pkgname=wl-clipboard+clang
+pkgver=2.0.0
+pkgrel=2
+epoch=1
+pkgdesc="Command-line copy/paste utilities for Wayland"
+arch=('x86_64')
+provides=('wl-clipboard' "wl-clipboard=${pkgver}")
+conflicts=('wl-clipboard')
+url="https://github.com/bugaevc/wl-clipboard"
+license=('GPL3')
+depends=('wayland')
+optdepends=(
+  'xdg-utils: for content type inference in wl-copy'
+  'mailcap: for type inference in wl-paste'
+)
+makedepends=('git' 'meson' 'wayland-protocols')
+_commit=297ab2a6fdd34c15c5eb3eb427be8daf753bcfd7
+source=("wl-clipboard::git+https://github.com/bugaevc/wl-clipboard.git#commit=${_commit}")
+sha256sums=('SKIP')
+
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+}
+
+build() {
+
+  meson setup "wl-clipboard" build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true
+
+  meson compile -C build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" meson install -C build
+
+}

@@ -1,8 +1,8 @@
 pkgbase=qt5-base+clang
 pkgname=(qt5-base+clang qt5-xcb-private-headers+clang)
-pkgver=5.15.2+kde+r294
-pkgrel=1
-_commit=366350c2e4a7eccbda0f3936e69c6b9c4fa28f55
+pkgver=5.15.2+kde+r295
+pkgrel=2
+_commit=03933d189a93c760b642c7021dd9bb63802da254
 arch=('x86_64')
 url='https://www.qt.io'
 license=('GPL3' 'LGPL3' 'FDL' 'custom')

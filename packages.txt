@@ -146,6 +146,8 @@ xcb-util-image
 xcb-util-cursor
 xcb-util-keysyms
 xcb-util-wm
+gdk-pixbuf2
+libnotify
 lm_sensors
 jemalloc
 gperftools
@@ -189,6 +191,14 @@ lib2geom
 alacritty
 wlroots
 sway
+swayidle
+swaylock
+grim
+wl-clipboard
+slurp
+clipman
+jq
+mako
 rofi
 krita
 kicad
