@@ -3,7 +3,7 @@ pkgname=('systemd+clang' 'systemd-libs+clang' 'systemd-resolvconf+clang' 'system
 _tag='d066a4f747b225d47c5f5c97a8843d30878995b8' # git rev-parse v${_tag_name}
 _tag_name=250.3
 pkgver="${_tag_name/-/}"
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 url='https://www.github.com/systemd/systemd'
 makedepends=(
@@ -14,7 +14,6 @@ makedepends=(
   'meson' 'libseccomp' 'pcre2' 'audit' 'kexec-tools' 'libxkbcommon'
   'bash-completion' 'p11-kit' 'systemd' 'libfido2' 'tpm2-tss' 'rsync'
 )
-options=('strip')
 validpgpkeys=(
   '63CDA1E5D3FC22B998D20DD6327F26951A015CC4' # Lennart Poettering <lennart@poettering.net>
   'A9EA9081724FFAE0484C35A1A81CEA22BC8C7E2E' # Luca Boccassi <luca.boccassi@gmail.com>
@@ -156,7 +155,7 @@ build() {
     -D sbat-distro-version="${pkgver}" \
     -D sbat-distro-url="systemd+clang"
 
-  ninja -C build
+  meson compile -C build
 
 }
 

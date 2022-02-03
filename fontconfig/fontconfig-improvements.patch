@@ -1,65 +1,186 @@
-From a91e4c4c14fff7f4cb3b7fa340b4356b827caa19 Mon Sep 17 00:00:00 2001
+From ac6dc15f821450d947668648d8f488db6322fa39 Mon Sep 17 00:00:00 2001
 From: Grigory Vasilyev <h0tc0d3@gmail.com>
 Date: Mon, 10 Jan 2022 07:30:38 +0300
 Subject: [PATCH] Fontconfig big improvement
 
 ---
- meson.build         |   9 ++
- src/fcarch.h        |  23 +++
- src/fccache.c       | 313 ++++++++++++++++++-----------------------
- src/fccfg.c         |  95 +++++--------
- src/fccharset.c     | 112 ++++++++-------
- src/fccompat.c      | 162 ++++++++++++---------
- src/fcdefault.c     |  10 +-
- src/fcdir.c         |  18 +--
- src/fcfreetype.c    |  18 ++-
- src/fcfs.c          |  25 ++--
- src/fchash.c        |   6 +-
- src/fcint.h         |  34 ++++-
- src/fclang.c        |   6 +-
- src/fclist.c        |  11 +-
- src/fcmatch.c       |  52 +++----
- src/fcmd5.h         | 255 ---------------------------------
- src/fcmurmurhash3.h | 336 ++++++++++++++++++++++++++++++++++++++++++++
- src/fcmutex.h       | 104 ++++++++++++++
- src/fcname.c        |   2 +-
- src/fcpat.c         |  77 +++++-----
- src/fcserialize.c   |  13 +-
- src/fcstat.c        |  15 +-
- src/fcstr.c         |  28 ++--
- src/fcxml.c         |  61 ++++----
- 24 files changed, 992 insertions(+), 793 deletions(-)
+ meson.build            |  29 +--
+ meson_options.txt      |   2 +
+ po-conf/meson.build    |   2 +-
+ po/meson.build         |   2 +-
+ src/Makefile.am        |   2 +-
+ src/cutout.py          |   2 +-
+ src/fcarch.h           |  29 ++-
+ src/fcatomic.c         |  55 +++--
+ src/fcatomic.h         |   6 +-
+ src/fccache.c          | 444 +++++++++++++++++++----------------------
+ src/fccfg.c            |  95 ++++-----
+ src/fccharset.c        | 112 ++++++-----
+ src/fccompat.c         | 162 ++++++++-------
+ src/fcdefault.c        |  10 +-
+ src/fcdeprecate.h      |   6 +-
+ src/fcdir.c            |  18 +-
+ src/fcfoundry.h        |   4 +
+ src/fcfreetype.c       |  18 +-
+ src/fcfs.c             |  25 +--
+ src/fchash.c           |  15 +-
+ src/fcint.h            |  37 +++-
+ src/fclang.c           |   6 +-
+ src/fclist.c           |  11 +-
+ src/fcmatch.c          |  57 +++---
+ src/fcmd5.h            | 255 -----------------------
+ src/fcmurmurhash3.h    | 337 +++++++++++++++++++++++++++++++
+ src/fcmutex.h          | 109 +++++++++-
+ src/fcname.c           |   5 +-
+ src/fcobjs.h           | 111 ++++++-----
+ src/fcobjshash.gperf.h |   3 +-
+ src/fcpat.c            |  77 +++----
+ src/fcserialize.c      |  13 +-
+ src/fcstat.c           |  15 +-
+ src/fcstr.c            |  28 ++-
+ src/fcxml.c            |  61 +++---
+ 35 files changed, 1190 insertions(+), 973 deletions(-)
  delete mode 100644 src/fcmd5.h
  create mode 100644 src/fcmurmurhash3.h
 
 diff --git a/meson.build b/meson.build
-index 64cae44..5b2b073 100644
+index 64cae44..7423cc7 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -244,6 +244,15 @@ conf.set_quoted('FC_CACHEDIR', fc_cachedir)
- conf.set_quoted('FC_TEMPLATEDIR', fc_templatedir)
- conf.set_quoted('FONTCONFIG_PATH', fc_baseconfigdir)
- conf.set_quoted('FC_FONTPATH', '')
-+prog_python = import('python').find_installation('python3')
-+build_time = run_command(
-+  prog_python, '-c',
-+  '''
-+from datetime import datetime
-+print(int(datetime.now().timestamp()))
-+  ''').stdout().strip()
-+
-+conf.set('FC_SEED', build_time)
+@@ -1,7 +1,7 @@
+ project('fontconfig', 'c',
+   version: '2.13.94',
+   meson_version : '>= 0.56.0',
+-  default_options: [ 'buildtype=debugoptimized'],
++  default_options: ['c_std=c11', 'buildtype=debugoptimized'],
+ )
  
- fonts_conf.set('FC_FONTPATH', '')
- fonts_conf.set('FC_CACHEDIR', fc_cachedir)
+ fc_version = meson.project_version()
+@@ -253,6 +253,10 @@ if fc_configdir.startswith(fc_baseconfigdir + '/')
+   fonts_conf.set('CONFIGDIR', fc_configdir.split(fc_baseconfigdir + '/')[1])
+ endif
+ 
++if get_option('cache-seed') > 0
++  conf.set('FC_CACHE_SEED', get_option('cache-seed'))
++endif
++
+ # It will automatically fallback to subproject if not found on system
+ gperf = find_program('gperf')
+ 
+@@ -272,7 +276,7 @@ else
+   @1@
+   '''
+   gperf_snippet_format = 'echo foo,bar | @0@ -L ANSI-C'
+-  gperf_snippet = run_command(sh, '-c', gperf_snippet_format.format(gperf.path()))
++  gperf_snippet = run_command(sh, '-c', gperf_snippet_format.format(gperf.full_path()), check: true)
+   gperf_test = gperf_test_format.format('size_t', gperf_snippet.stdout())
+ 
+   if cc.compiles(gperf_test) 
+@@ -381,13 +385,12 @@ fc_headers = [
+ install_headers(fc_headers, subdir: meson.project_name())
+ 
+ # Summary
+-if meson.version().version_compare('>= 0.53')
+-  doc_targets = get_variable('doc_targets', [])
+-
+-  summary({
+-         'Documentation': (doc_targets.length() > 0 ? doc_targets : false),
+-         'NLS': not get_option('nls').disabled(),
+-         'Tests': not get_option('tests').disabled(),
+-         'Tools': not get_option('tools').disabled(),
+-         }, section: 'General', bool_yn: true, list_sep: ', ')
+-endif
++
++doc_targets = get_variable('doc_targets', [])
++
++summary({
++        'Documentation': (doc_targets.length() > 0 ? doc_targets : false),
++        'NLS': not get_option('nls').disabled(),
++        'Tests': not get_option('tests').disabled(),
++        'Tools': not get_option('tools').disabled(),
++        }, section: 'General', bool_yn: true, list_sep: ', ')
+diff --git a/meson_options.txt b/meson_options.txt
+index b70edf1..d77ec8e 100644
+--- a/meson_options.txt
++++ b/meson_options.txt
+@@ -13,3 +13,5 @@ option('tools', type : 'feature', value : 'auto', yield : true,
+   description: 'Build command-line tools (fc-list, fc-query, etc.)')
+ option('cache-build', type : 'feature', value : 'enabled',
+   description: 'Run fc-cache on install')
++option('cache-seed', type: 'integer', min : 0, max : 4294967295,
++  value: 0, description: 'Seed for cache files')
+\ No newline at end of file
+diff --git a/po-conf/meson.build b/po-conf/meson.build
+index 4567cae..5c2a39e 100644
+--- a/po-conf/meson.build
++++ b/po-conf/meson.build
+@@ -1,3 +1,3 @@
+ i18n.gettext(meson.project_name(),
+-    args: '--directory=' + meson.source_root()
++    args: '--directory=' + meson.project_source_root()
+ )
+diff --git a/po/meson.build b/po/meson.build
+index 20152e3..5cea343 100644
+--- a/po/meson.build
++++ b/po/meson.build
+@@ -1,3 +1,3 @@
+ i18n.gettext(meson.project_name() + '-conf',
+-    args: '--directory=' + meson.source_root()
++    args: '--directory=' + meson.project_source_root()
+ )
+diff --git a/src/Makefile.am b/src/Makefile.am
+index 390ca82..07e8b96 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -110,7 +110,7 @@ fcobjshash.gperf: Makefile stamp-fcobjshash.gperf
+ 	@touch -r stamp-fcobjshash.gperf $@
+ stamp-fcobjshash.gperf: fcobjshash.gperf.h fcobjs.h
+ 	$(AM_V_GEN) $(CPP) -I$(top_srcdir) $(CPPFLAGS) $< | \
+-	$(SED) 's/^ *//;s/ *, */,/' | \
++	$(SED) 's/^ *//;s/ *, */,/;s/__FC_NEWLINE__/\n/g/' | \
+ 	awk ' \
+ 		/CUT_OUT_BEGIN/ { no_write=1; next; }; \
+ 		/CUT_OUT_END/ { no_write=0; next; }; \
+diff --git a/src/cutout.py b/src/cutout.py
+index 323eec8..a208769 100644
+--- a/src/cutout.py
++++ b/src/cutout.py
+@@ -27,6 +27,7 @@ if __name__== '__main__':
+     ret = subprocess.run(cpp + host_cargs + [args[0].input], stdout=subprocess.PIPE, check=True)
+ 
+     stdout = ret.stdout.decode('utf8')
++    stdout = stdout.replace('__FC_NEWLINE__', '\n')
+ 
+     with open(args[0].output, 'w') as out:
+         write = True
+@@ -34,7 +35,6 @@ if __name__== '__main__':
+             l = l.strip('\r')
+             if l.startswith('CUT_OUT_BEGIN'):
+                 write = False
+-
+             if write and l:
+                 stripped = re.sub('^\s+', '', l)
+                 stripped = re.sub('\s*,\s*', ',', stripped)
 diff --git a/src/fcarch.h b/src/fcarch.h
-index 049a5b0..08a1a1f 100644
+index 049a5b0..8c54047 100644
 --- a/src/fcarch.h
 +++ b/src/fcarch.h
+@@ -20,8 +20,8 @@
+  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+  * PERFORMANCE OF THIS SOFTWARE.
+  */
+-#ifndef _FCARCH_H_
+-#define _FCARCH_H_
++#ifndef FC_HEADER_FCARCH_H
++#define FC_HEADER_FCARCH_H
+ 
+ #ifdef HAVE_CONFIG_H
+ #include <config.h>
 @@ -73,4 +73,27 @@
  # define FC_ARCHITECTURE FC_ARCH_ENDIAN FC_ARCH_SIZE_ALIGN
  #endif
  
+-#endif /* _FCARCH_H_ */
 +#if defined(__x86_64__) || defined(__x86_64) || defined(_M_X64) ||             \
 +    defined(_M_AMD64) || defined(__amd64__) || defined(__amd64)
 +#define FC_ARCH_X86_64 1
@@ -83,9 +204,103 @@ index 049a5b0..08a1a1f 100644
 +#define FC_ARCH_PPC 1
 +#endif
 +
- #endif /* _FCARCH_H_ */
++#endif /* FC_HEADER_FCARCH_H */
+diff --git a/src/fcatomic.c b/src/fcatomic.c
+index 5b5e030..01e9b87 100644
+--- a/src/fcatomic.c
++++ b/src/fcatomic.c
+@@ -73,33 +73,32 @@
+ FcAtomic *
+ FcAtomicCreate (const FcChar8   *file)
+ {
+-    int	    file_len = strlen ((char *) file);
+-    int	    new_len = file_len + sizeof (NEW_NAME);
+-    int	    lck_len = file_len + sizeof (LCK_NAME);
+-    int	    tmp_len = file_len + sizeof (TMP_NAME);
+-    int	    total_len = (sizeof (FcAtomic) +
+-			 file_len + 1 +
+-			 new_len + 1 +
+-			 lck_len + 1 +
+-			 tmp_len + 1);
+-    FcAtomic	*atomic = malloc (total_len);
+-    if (!atomic)
+-	return 0;
+-
+-    atomic->file = (FcChar8 *) (atomic + 1);
+-    strcpy ((char *) atomic->file, (char *) file);
+-
+-    atomic->new = atomic->file + file_len + 1;
+-    strcpy ((char *) atomic->new, (char *) file);
+-    strcat ((char *) atomic->new, NEW_NAME);
+-
+-    atomic->lck = atomic->new + new_len + 1;
+-    strcpy ((char *) atomic->lck, (char *) file);
+-    strcat ((char *) atomic->lck, LCK_NAME);
+-
+-    atomic->tmp = atomic->lck + lck_len + 1;
+-
+-    return atomic;
++  size_t file_len = strlen((char *)file);
++  size_t new_len = file_len + sizeof(NEW_NAME);
++  size_t lck_len = file_len + sizeof(LCK_NAME);
++  size_t tmp_len = file_len + sizeof(TMP_NAME);
++  size_t total_len = (sizeof(FcAtomic) + file_len + 1
++                        + new_len + 1 + lck_len
++                        + 1 + tmp_len + 1);
++
++  FcAtomic *atomic = malloc(total_len);
++  if (!atomic)
++    return 0;
++
++  atomic->file = (FcChar8 *)(atomic + 1);
++  strcpy((char *)atomic->file, (char *)file);
++
++  atomic->new = atomic->file + file_len + 1;
++  strcpy((char *)atomic->new, (char *)file);
++  strcat((char *)atomic->new, NEW_NAME);
++
++  atomic->lck = atomic->new + new_len + 1;
++  strcpy((char *)atomic->lck, (char *)file);
++  strcat((char *)atomic->lck, LCK_NAME);
++
++  atomic->tmp = atomic->lck + lck_len + 1;
++
++  return atomic;
+ }
+ 
+ FcBool
+@@ -161,7 +160,7 @@ FcAtomicLock (FcAtomic *atomic)
+ 	if (FcStat (atomic->lck, &lck_stat) >= 0)
+ 	{
+ 	    time_t  now = time (0);
+-	    if ((long int) (now - lck_stat.st_mtime) > 10 * 60)
++	    if ((now - lck_stat.st_mtime) > (long int)(10 * 60))
+ 	    {
+ #ifdef HAVE_LINK
+ 		if (no_link)
+diff --git a/src/fcatomic.h b/src/fcatomic.h
+index 3f4a9d3..07377d9 100644
+--- a/src/fcatomic.h
++++ b/src/fcatomic.h
+@@ -29,8 +29,8 @@
+  * Google Author(s): Behdad Esfahbod
+  */
+ 
+-#ifndef _FCATOMIC_H_
+-#define _FCATOMIC_H_
++#ifndef FC_HEADER_FCATOMIC_H
++#define FC_HEADER_FCATOMIC_H
+ 
+ #ifdef HAVE_CONFIG_H
+ #include <config.h>
+@@ -168,4 +168,4 @@ static inline int    FcRefAdd      (FcRef *r, int v) { return fc_atomic_int_add
+ static inline void   FcRefSetConst (FcRef *r) { r->count = FC_REF_CONSTANT_VALUE; }
+ static inline FcBool FcRefIsConst  (const FcRef *r) { return r->count == FC_REF_CONSTANT_VALUE; }
+ 
+-#endif /* _FCATOMIC_H_ */
++#endif /* FC_HEADER_FCATOMIC_H */
 diff --git a/src/fccache.c b/src/fccache.c
-index 4a6a752..30f4444 100644
+index 4a6a752..948c334 100644
 --- a/src/fccache.c
 +++ b/src/fccache.c
 @@ -22,7 +22,7 @@
@@ -97,8 +312,62 @@ index 4a6a752..30f4444 100644
  #include <stdio.h>
  #include <stdlib.h>
  #include <fcntl.h>
-@@ -145,73 +145,42 @@ FcCacheIsMmapSafe (int fd)
+@@ -67,15 +67,14 @@ FcDirCacheDeleteUUID (const FcChar8  *dir,
+ {
+     FcBool ret = FcTrue;
+ #ifndef _WIN32
+-    const FcChar8 *sysroot;
+-    FcChar8 *target, *d;
++    FcChar8 *d = NULL;
+     struct stat statb;
+     struct timeval times[2];
  
+     config = FcConfigReference (config);
+     if (!config)
+ 	return FcFalse;
+-    sysroot = FcConfigGetSysRoot (config);
++    const FcChar8 *sysroot = FcConfigGetSysRoot (config);
+     if (sysroot)
+ 	d = FcStrBuildFilename (sysroot, dir, NULL);
+     else
+@@ -85,7 +84,7 @@ FcDirCacheDeleteUUID (const FcChar8  *dir,
+ 	ret = FcFalse;
+ 	goto bail;
+     }
+-    target = FcStrBuildFilename (d, ".uuid", NULL);
++    FcChar8 *target = FcStrBuildFilename (d, ".uuid", NULL);
+     ret = unlink ((char *) target) == 0;
+     if (ret)
+     {
+@@ -122,8 +121,9 @@ FcCacheIsMmapSafe (int fd)
+       MMAP_USE,
+       MMAP_DONT_USE,
+       MMAP_CHECK_FS,
+-    } status;
+-    static void *static_status;
++    } status = MMAP_NOT_INITIALIZED;
++
++    static const void *static_status;
+ 
+     status = (intptr_t) fc_atomic_ptr_get (&static_status);
+ 
+@@ -135,90 +135,79 @@ FcCacheIsMmapSafe (int fd)
+ 	    status =  use ? MMAP_USE : MMAP_DONT_USE;
+ 	else
+ 	    status = MMAP_CHECK_FS;
+-	(void) fc_atomic_ptr_cmpexch (&static_status, NULL, (void *) (intptr_t) status);
++	(void) fc_atomic_ptr_cmpexch (&static_status, NULL, (void *) &status);
+     }
+ 
+-    if (status == MMAP_CHECK_FS)
+-	return FcIsFsMmapSafe (fd);
+-    else
+-	return status == MMAP_USE;
++    if (status == MMAP_CHECK_FS) {
++      return FcIsFsMmapSafe(fd);
++    }
+ 
++    return status == MMAP_USE;
  }
  
 -static const char bin2hex[] = { '0', '1', '2', '3',
@@ -125,19 +394,20 @@ index 4a6a752..30f4444 100644
 +    
 +    uint64_t hash[2] = {0};
 +    const FcChar8 *orig_dir = NULL;
-+    FcChar8 *mapped_dir = NULL;
 +
 +    /* 
 +     * Obtain a path where "dir" is mapped to.
 +     * In case: <remap-dir as-path="/usr/share/fonts">/run/host/fonts</remap-dir>
       * FcConfigMapFontPath (config, "/run/host/fonts") will returns "/usr/share/fonts".
       */
-+
-     mapped_dir = FcConfigMapFontPath(config, dir);
+-    mapped_dir = FcConfigMapFontPath(config, dir);
 -    if (mapped_dir)
 -    {
 -	orig_dir = dir;
 -	dir = mapped_dir;
++    const FcChar8 *salt = FcConfigMapSalt (config, dir);
++
++    FcChar8 *mapped_dir = FcConfigMapFontPath(config, dir);
 +    if (mapped_dir) {
 +        orig_dir = dir;
 +        dir = mapped_dir;
@@ -154,15 +424,33 @@ index 4a6a752..30f4444 100644
 -	if (!orig_dir)
 -		orig_dir = dir;
 -	dir = key;
--    }
++
++    if (!salt) {
++        MurmurHash3_128((const char *)dir, strlen ((const char *) dir), &hash);
++    } else {
++        size_t dl = strlen((const char *)dir);
++        size_t sl = strlen((const char *)salt);
++
++        FcChar8 *key = (FcChar8 *)FcSafeMalloc(dl + sl + 1);
++        memcpy(key, dir, dl);
++        memcpy(key + dl, salt, sl + 1);
++        key[dl + sl] = 0;
++        if (!orig_dir)
++            orig_dir = dir;
++        dir = key;
++        MurmurHash3_128((const char *)dir, strlen ((const char *) dir), &hash);
++        if (key)
++	        FcStrFree (key);
+     }
 -    MD5Init (&ctx);
 -    MD5Update (&ctx, (const unsigned char *)dir, strlen ((const char *) dir));
--
+ 
 -    MD5Final (hash, &ctx);
++    
  
 -    if (key)
 -	FcStrFree (key);
--
+ 
 -    cache_base[0] = '/';
 -    hex_hash = cache_base + 1;
 -    for (cnt = 0; cnt < 16; ++cnt)
@@ -172,7 +460,6 @@ index 4a6a752..30f4444 100644
 -    }
 -    hex_hash[2*cnt] = 0;
 -    strcat ((char *) cache_base, "-" FC_ARCHITECTURE FC_CACHE_SUFFIX);
-+    MurmurHash3_128((const unsigned char *)dir, strlen ((const char *) dir), &hash);
 +    snprintf((char *)cache_base, CACHEBASE_LEN, "/%lx%lx-%s%s", hash[0], hash[1], FC_ARCHITECTURE, FC_CACHE_SUFFIX);
 +    
      if (FcDebug() & FC_DBG_CACHE)
@@ -194,7 +481,15 @@ index 4a6a752..30f4444 100644
  }
  
  #ifndef _WIN32
-@@ -226,30 +195,28 @@ FcDirCacheBasenameUUID (FcConfig *config, const FcChar8 *dir, FcChar8 cache_base
+ static FcChar8 *
+ FcDirCacheBasenameUUID (FcConfig *config, const FcChar8 *dir, FcChar8 cache_base[CACHEBASE_LEN])
+ {
+-    FcChar8 *target, *fuuid;
++    FcChar8 *target = NULL;
+     const FcChar8 *sysroot = FcConfigGetSysRoot (config);
+     int fd;
+ 
+@@ -226,30 +215,28 @@ FcDirCacheBasenameUUID (FcConfig *config, const FcChar8 *dir, FcChar8 cache_base
       * to determine the cache name no matter where it was mapped to.
       */
      cache_base[0] = 0;
@@ -204,9 +499,10 @@ index 4a6a752..30f4444 100644
 +	    target = FcStrBuildFilename (sysroot, dir, NULL);
      else
 -	target = FcStrdup (dir);
+-    fuuid = FcStrBuildFilename (target, ".uuid", NULL);
 +	    target = FcStrdup (dir);
 +
-     fuuid = FcStrBuildFilename (target, ".uuid", NULL);
++    FcChar8 *fuuid = FcStrBuildFilename (target, ".uuid", NULL);
      if ((fd = FcOpen ((char *) fuuid, O_RDONLY)) != -1)
      {
 -	char suuid[37];
@@ -241,16 +537,37 @@ index 4a6a752..30f4444 100644
  bail:
      FcStrFree (fuuid);
      FcStrFree (target);
-@@ -276,7 +243,7 @@ FcDirCacheUnlink (const FcChar8 *dir, FcConfig *config)
+@@ -268,15 +255,14 @@ FcDirCacheUnlink (const FcChar8 *dir, FcConfig *config)
+ #endif
+     FcStrList	*list;
+     FcChar8	*cache_dir;
+-    const FcChar8 *sysroot;
+     FcBool	ret = FcTrue;
+ 
+     config = FcConfigReference (config);
+     if (!config)
  	return FcFalse;
-     sysroot = FcConfigGetSysRoot (config);
+-    sysroot = FcConfigGetSysRoot (config);
++    const FcChar8 *sysroot = FcConfigGetSysRoot (config);
  
 -    FcDirCacheBasenameMD5 (config, dir, cache_base);
 +    FcDirCacheBasenameMurmurHash3 (config, dir, cache_base);
  #ifndef _WIN32
      FcDirCacheBasenameUUID (config, dir, uuid_cache_base);
  #endif
-@@ -376,7 +343,7 @@ FcDirCacheProcess (FcConfig *config, const FcChar8 *dir,
+@@ -359,8 +345,9 @@ FcDirCacheProcess (FcConfig *config, const FcChar8 *dir,
+     int		fd = -1;
+     FcChar8	cache_base[CACHEBASE_LEN];
+     FcStrList	*list;
+-    FcChar8	*cache_dir, *d;
+-    struct stat file_stat, dir_stat;
++    FcChar8	*d=NULL;
++    struct stat dir_stat;
++    struct stat file_stat;
+     FcBool	ret = FcFalse;
+     const FcChar8 *sysroot = FcConfigGetSysRoot (config);
+     struct timeval latest_mtime = (struct timeval){ 0 };
+@@ -376,12 +363,13 @@ FcDirCacheProcess (FcConfig *config, const FcChar8 *dir,
      }
      FcStrFree (d);
  
@@ -259,7 +576,25 @@ index 4a6a752..30f4444 100644
  
      list = FcStrListCreate (config->cacheDirs);
      if (!list)
-@@ -481,53 +448,27 @@ struct _FcCacheSkip {
+         return FcFalse;
+ 	
++    FcChar8	*cache_dir = NULL;
+     while ((cache_dir = FcStrListNext (list)))
+     {
+         FcChar8	*cache_hashed;
+@@ -456,9 +444,9 @@ FcDirCacheProcess (FcConfig *config, const FcChar8 *dir,
+  * of the necessary pointers
+  */
+ 
+-typedef struct _FcCacheSkip FcCacheSkip;
++typedef struct FcCacheSkip FcCacheSkip;
+ 
+-struct _FcCacheSkip {
++struct FcCacheSkip {
+     FcCache	    *cache;
+     FcRef	    ref;
+     intptr_t	    size;
+@@ -481,73 +469,46 @@ struct _FcCacheSkip {
  static FcCacheSkip	*fcCacheChains[FC_CACHE_MAX_LEVEL];
  static int		fcCacheMaxLevel;
  
@@ -320,28 +655,78 @@ index 4a6a752..30f4444 100644
  /*
   * Generate a random level number, distributed
   * so that each level is 1/4 as likely as the one before
-@@ -538,14 +479,16 @@ static int
- random_level (void)
- {
-     /* tricky bit -- each bit is '1' 75% of the time */
+  *
+  * Note that level numbers run 1 <= level <= MAX_LEVEL
+  */
+-static int
+-random_level (void)
+-{
+-    /* tricky bit -- each bit is '1' 75% of the time */
 -    long int	bits = FcRandom () | FcRandom ();
-+    int32_t numA = FcRandom ();
-+    int32_t numB = FcRandom ();
-+    int32_t	bits = numA | numB;
-     int	level = 0;
- 
-     while (++level < FC_CACHE_MAX_LEVEL)
-     {
+-    int	level = 0;
+-
+-    while (++level < FC_CACHE_MAX_LEVEL)
+-    {
 -	if (bits & 1)
 -	    break;
 -	bits >>= 1;
-+        if (bits & 1)
-+            break;
-+        bits >>= 1;
-     }
-     return level;
+-    }
+-    return level;
++static int random_level(void) {
++  /* tricky bit -- each bit is '1' 75% of the time */
++  uint32_t numA = FcRandom();
++  uint32_t numB = FcRandom();
++  uint32_t bits = numA | numB;
++  int level = 0;
++
++  while (++level < FC_CACHE_MAX_LEVEL) {
++    if (bits & 1)
++      break;
++    bits >>= 1;
++  }
++  return level;
  }
-@@ -585,9 +528,11 @@ FcCacheInsert (FcCache *cache, struct stat *cache_stat)
+ 
+ /*
+@@ -557,27 +518,27 @@ static FcBool
+ FcCacheInsert (FcCache *cache, struct stat *cache_stat)
+ {
+     FcCacheSkip    **update[FC_CACHE_MAX_LEVEL];
+-    FcCacheSkip    *s, **next;
+-    int		    i, level;
++    FcCacheSkip    *s=NULL;
+ 
+     lock_cache ();
+ 
+     /*
+      * Find links along each chain
+      */
+-    next = fcCacheChains;
+-    for (i = fcCacheMaxLevel; --i >= 0; )
+-    {
+-	for (; (s = next[i]); next = s->next)
+-	    if (s->cache > cache)
+-		break;
+-        update[i] = &next[i];
++    FcCacheSkip **next = fcCacheChains;
++    for (int i = fcCacheMaxLevel; i >= 0; i--) {
++      while ((s = next[i])) {
++        if (s->cache > cache)
++          break;
++        next = s->next;
++      }
++      update[i] = &next[i];
+     }
+ 
+     /*
+      * Create new list element
+      */
+-    level = random_level ();
++    int level = random_level ();
+     if (level > fcCacheMaxLevel)
+     {
+ 	level = fcCacheMaxLevel + 1;
+@@ -585,9 +546,11 @@ FcCacheInsert (FcCache *cache, struct stat *cache_stat)
  	fcCacheMaxLevel = level;
      }
  
@@ -356,16 +741,89 @@ index 4a6a752..30f4444 100644
  
      s->cache = cache;
      s->size = cache->size;
-@@ -680,13 +625,16 @@ FcCacheRemoveUnlocked (FcCache *cache)
-         update[i] = &next[i];
+@@ -600,25 +563,16 @@ FcCacheInsert (FcCache *cache, struct stat *cache_stat)
+ 	s->cache_mtime = cache_stat->st_mtime;
+ #ifdef HAVE_STRUCT_STAT_ST_MTIM
+ 	s->cache_mtime_nano = cache_stat->st_mtim.tv_nsec;
+-#else
+-	s->cache_mtime_nano = 0;
+ #endif
      }
+-    else
+-    {
+-	s->cache_dev = 0;
+-	s->cache_ino = 0;
+-	s->cache_mtime = 0;
+-	s->cache_mtime_nano = 0;
+-    }
+ 
+     /*
+      * Insert into all fcCacheChains
+      */
+-    for (i = 0; i < level; i++)
++    for (int j = 0; j < level; j++)
+     {
+-	s->next[i] = *update[i];
+-	*update[i] = s;
++	s->next[j] = *update[j];
++	*update[j] = s;
+     }
+ 
+     unlock_cache ();
+@@ -628,7 +582,6 @@ FcCacheInsert (FcCache *cache, struct stat *cache_stat)
+ static FcCacheSkip *
+ FcCacheFindByAddrUnlocked (void *object)
+ {
+-    int	    i;
+     FcCacheSkip    **next = fcCacheChains;
+     FcCacheSkip    *s;
+ 
+@@ -638,7 +591,7 @@ FcCacheFindByAddrUnlocked (void *object)
+     /*
+      * Walk chain pointers one level at a time
+      */
+-    for (i = fcCacheMaxLevel; --i >= 0;)
++    for (int i = fcCacheMaxLevel; i >= 0; i--)
+ 	while (next[i] && (char *) object >= ((char *) next[i]->cache + next[i]->size))
+ 	    next = next[i]->next;
+     /*
+@@ -664,29 +617,33 @@ static void
+ FcCacheRemoveUnlocked (FcCache *cache)
+ {
+     FcCacheSkip	    **update[FC_CACHE_MAX_LEVEL];
+-    FcCacheSkip	    *s, **next;
+-    int		    i;
++    FcCacheSkip	    *s = NULL;
+     void            *allocated;
+ 
+     /*
+      * Find links along each chain
+      */
+-    next = fcCacheChains;
+-    for (i = fcCacheMaxLevel; --i >= 0; )
+-    {
+-	for (; (s = next[i]); next = s->next)
+-	    if (s->cache >= cache)
+-		break;
+-        update[i] = &next[i];
++    FcCacheSkip **next = fcCacheChains;
++    for (int i = fcCacheMaxLevel; i >= 0; i--) {
++      while ((s = next[i])) {
++        if (s->cache >= cache)
++          break;
++        next = s->next;
++      }
++      update[i] = &next[i];
+     }
++
      s = next[0];
-+    
-+    if (s) {
-     for (i = 0; i < fcCacheMaxLevel && *update[i] == s; i++)
+-    for (i = 0; i < fcCacheMaxLevel && *update[i] == s; i++)
 -	*update[i] = s->next[i];
 -    while (fcCacheMaxLevel > 0 && fcCacheChains[fcCacheMaxLevel - 1] == NULL)
 -	fcCacheMaxLevel--;
++    
++    if (s) {
++    for (int i = 0; i < fcCacheMaxLevel && *update[i] == s; i++)
 +	    *update[i] = s->next[i];
 +    }
  
@@ -378,7 +836,7 @@ index 4a6a752..30f4444 100644
  	allocated = s->allocated;
  	while (allocated)
  	{
-@@ -942,16 +890,15 @@ FcDirCacheMapFd (FcConfig *config, int fd, struct stat *fd_stat, struct stat *di
+@@ -942,16 +899,15 @@ FcDirCacheMapFd (FcConfig *config, int fd, struct stat *fd_stat, struct stat *di
      FcCache	*cache;
      FcBool	allocated = FcFalse;
  
@@ -403,7 +861,7 @@ index 4a6a752..30f4444 100644
      }
  
      /*
-@@ -960,65 +907,71 @@ FcDirCacheMapFd (FcConfig *config, int fd, struct stat *fd_stat, struct stat *di
+@@ -960,65 +916,71 @@ FcDirCacheMapFd (FcConfig *config, int fd, struct stat *fd_stat, struct stat *di
       */
      if (FcCacheIsMmapSafe (fd) && fd_stat->st_size >= FC_CACHE_MIN_MMAP)
      {
@@ -512,7 +970,7 @@ index 4a6a752..30f4444 100644
  	
      return cache;
  }
-@@ -1272,11 +1225,9 @@ FcDirCacheBuild (FcFontSet *set, const FcChar8 *dir, struct stat *dir_stat, FcSt
+@@ -1272,11 +1234,9 @@ FcDirCacheBuild (FcFontSet *set, const FcChar8 *dir, struct stat *dir_stat, FcSt
  	goto bail1;
  
      /* Serialize layout complete. Now allocate space and fill it */
@@ -525,7 +983,7 @@ index 4a6a752..30f4444 100644
  
      serialize->linear = cache;
  
-@@ -1417,7 +1368,7 @@ FcDirCacheWrite (FcCache *cache, FcConfig *config)
+@@ -1417,7 +1377,7 @@ FcDirCacheWrite (FcCache *cache, FcConfig *config)
      if (!cache_dir)
  	return FcFalse;
  
@@ -534,7 +992,7 @@ index 4a6a752..30f4444 100644
      cache_hashed = FcStrBuildFilename (cache_dir, cache_base, NULL);
      FcStrFree (cache_dir);
      if (!cache_hashed)
-@@ -1621,7 +1572,7 @@ FcDirCacheLock (const FcChar8 *dir,
+@@ -1621,7 +1581,7 @@ FcDirCacheLock (const FcChar8 *dir,
      const FcChar8 *sysroot = FcConfigGetSysRoot (config);
      int fd = -1;
  
@@ -543,7 +1001,7 @@ index 4a6a752..30f4444 100644
      list = FcStrListCreate (config->cacheDirs);
      if (!list)
  	return -1;
-@@ -1640,8 +1591,11 @@ FcDirCacheLock (const FcChar8 *dir,
+@@ -1640,8 +1600,11 @@ FcDirCacheLock (const FcChar8 *dir,
  	if (fd != -1)
  	{
  #if defined(_WIN32)
@@ -557,7 +1015,7 @@ index 4a6a752..30f4444 100644
  #else
  	    struct flock fl;
  
-@@ -1650,19 +1604,18 @@ FcDirCacheLock (const FcChar8 *dir,
+@@ -1650,19 +1613,18 @@ FcDirCacheLock (const FcChar8 *dir,
  	    fl.l_start = 0;
  	    fl.l_len = 0;
  	    fl.l_pid = getpid ();
@@ -1124,6 +1582,27 @@ index a9a3b72..aff1417 100644
      if (prgname && fc_atomic_ptr_cmpexch (&default_prgname, prgname, NULL)) {
  	free (prgname);
      }
+diff --git a/src/fcdeprecate.h b/src/fcdeprecate.h
+index 214b684..3508b8d 100644
+--- a/src/fcdeprecate.h
++++ b/src/fcdeprecate.h
+@@ -24,8 +24,8 @@
+  * These APIs are deprecated; still exported by the library, but not
+  * declared in the public header file
+  */
+-#ifndef _FCDEPRECATE_H_
+-#define _FCDEPRECATE_H_
++#ifndef FC_HEADER_FCDEPRECATE_H
++#define FC_HEADER_FCDEPRECATE_H
+ 
+ FcPublic int
+ FcConfigGetRescanInverval (FcConfig *config);
+@@ -33,4 +33,4 @@ FcConfigGetRescanInverval (FcConfig *config);
+ FcPublic FcBool
+ FcConfigSetRescanInverval (FcConfig *config, int rescanInterval);
+ 
+-#endif /* _FCDEPRECATE_H_ */
++#endif /* FC_HEADER_FCDEPRECATE_H */
 diff --git a/src/fcdir.c b/src/fcdir.c
 index e332897..b5ca7ed 100644
 --- a/src/fcdir.c
@@ -1160,6 +1639,26 @@ index e332897..b5ca7ed 100644
  	{
  	    strcpy ((char *) base, (char *) e->d_name);
  	    if (!FcStrSetAdd (files, file_prefix)) {
+diff --git a/src/fcfoundry.h b/src/fcfoundry.h
+index bc103bb..6cf2f32 100644
+--- a/src/fcfoundry.h
++++ b/src/fcfoundry.h
+@@ -22,6 +22,8 @@
+ 
+ /* Order is significant.  For example, some B&H fonts are hinted by
+    URW++, and both strings appear in the notice. */
++#ifndef FC_HEADER_FCFOUNDRY_H
++#define FC_HEADER_FCFOUNDRY_H
+ 
+ static const char *FcNoticeFoundries[][2] =
+     {
+@@ -46,3 +48,5 @@ static const char *FcNoticeFoundries[][2] =
+ };
+ 
+ #define NUM_NOTICE_FOUNDRIES	(int) (sizeof (FcNoticeFoundries) / sizeof (FcNoticeFoundries[0]))
++
++#endif /* FC_HEADER_FCFOUNDRY_H */
+\ No newline at end of file
 diff --git a/src/fcfreetype.c b/src/fcfreetype.c
 index cf923f2..973d091 100644
 --- a/src/fcfreetype.c
@@ -1288,7 +1787,7 @@ index 21c6c7c..68b5ed1 100644
  	    return FcFalse;
  	s->sfont = sfont;
 diff --git a/src/fchash.c b/src/fchash.c
-index e91c72f..693d52b 100644
+index e91c72f..2efd966 100644
 --- a/src/fchash.c
 +++ b/src/fchash.c
 @@ -57,11 +57,10 @@ FcHashTableCreate (FcHashFunc    hash_func,
@@ -1304,7 +1803,31 @@ index e91c72f..693d52b 100644
  	ret->hash_func = hash_func;
  	ret->compare_func = compare_func;
  	ret->key_copy_func = key_copy_func;
-@@ -131,10 +130,9 @@ FcHashTableAddInternal (FcHashTable *table,
+@@ -75,11 +74,10 @@ FcHashTableCreate (FcHashFunc    hash_func,
+ void
+ FcHashTableDestroy (FcHashTable *table)
+ {
+-    int i;
+-
+-    for (i = 0; i < FC_HASH_SIZE; i++)
++    for (int i = 0; i < FC_HASH_SIZE; i++)
+     {
+-	FcHashBucket *bucket = table->buckets[i], *prev;
++	
++	FcHashBucket *bucket = table->buckets[i];
+ 
+ 	while (bucket)
+ 	{
+@@ -87,7 +85,7 @@ FcHashTableDestroy (FcHashTable *table)
+ 		table->key_destroy_func (bucket->key);
+ 	    if (table->value_destroy_func)
+ 		table->value_destroy_func (bucket->value);
+-	    prev = bucket;
++	    FcHashBucket *prev = bucket;
+ 	    bucket = bucket->next;
+ 	    free (prev);
+ 	}
+@@ -131,10 +129,9 @@ FcHashTableAddInternal (FcHashTable *table,
      FcChar32 hash = table->hash_func (key);
      FcBool ret = FcFalse;
  
@@ -1317,10 +1840,18 @@ index e91c72f..693d52b 100644
  	ret |= !table->key_copy_func (key, &bucket->key);
      else
 diff --git a/src/fcint.h b/src/fcint.h
-index c615b66..e074a98 100644
+index c615b66..02a46e0 100644
 --- a/src/fcint.h
 +++ b/src/fcint.h
-@@ -846,7 +846,7 @@ FcOpen(const char *pathname, int flags, ...);
+@@ -30,6 +30,7 @@
+ #endif
+ 
+ #include "fcstdint.h"
++#include "fcobjs.h"
+ 
+ #include <stdlib.h>
+ #include <stdio.h>
+@@ -846,7 +847,7 @@ FcOpen(const char *pathname, int flags, ...);
  FcPrivate int
  FcMakeTempfile (char *template);
  
@@ -1329,7 +1860,16 @@ index c615b66..e074a98 100644
  FcRandom (void);
  
  FcPrivate FcBool
-@@ -1420,4 +1420,36 @@ FcPrivate FcBool
+@@ -1046,7 +1047,7 @@ FcListPatternMatchAny (const FcPattern *p,
+ enum {
+   FC_INVALID_OBJECT = 0,
+ #define FC_OBJECT(NAME, Type, Cmp) FC_##NAME##_OBJECT,
+-#include "fcobjs.h"
++  FC_OBJECT_LIST
+ #undef FC_OBJECT
+   FC_ONE_AFTER_MAX_BASE_OBJECT
+ #define FC_MAX_BASE_OBJECT (FC_ONE_AFTER_MAX_BASE_OBJECT - 1)
+@@ -1420,4 +1421,36 @@ FcPrivate FcBool
  FcHashTableRemove (FcHashTable *table,
  		   void        *key);
  
@@ -1423,10 +1963,36 @@ index 51634ce..8375bcd 100644
  	    return FcFalse;
  	os->objects = objects;
 diff --git a/src/fcmatch.c b/src/fcmatch.c
-index cf0876c..50e90f2 100644
+index cf0876c..9386b18 100644
 --- a/src/fcmatch.c
 +++ b/src/fcmatch.c
-@@ -533,7 +533,7 @@ FcCompareDataInit (FcPattern     *pat,
+@@ -23,6 +23,7 @@
+  */
+ 
+ #include "fcint.h"
++#include "fcobjs.h"
+ 
+ static double
+ FcCompareNumber (const FcValue *value1, const FcValue *value2, FcValue *bestValue)
+@@ -306,7 +307,7 @@ FcCompareFilename (const FcValue *v1, const FcValue *v2, FcValue *bestValue)
+ #define FC_OBJECT(NAME, Type, Cmp)	PRI_##Cmp(NAME)
+ 
+ typedef enum _FcMatcherPriorityDummy {
+-#include "fcobjs.h"
++FC_OBJECT_LIST
+ } FcMatcherPriorityDummy;
+ 
+ #undef FC_OBJECT
+@@ -367,7 +368,7 @@ typedef struct _FcMatcher {
+ #define FC_OBJECT(NAME, Type, Cmp)	{ FC_##NAME##_OBJECT,	Cmp,	PRI_##NAME##_STRONG,	PRI_##NAME##_WEAK },
+ static const FcMatcher _FcMatchers [] = {
+     { FC_INVALID_OBJECT, NULL, -1, -1 },
+-#include "fcobjs.h"
++	FC_OBJECT_LIST
+ };
+ #undef FC_OBJECT
+ 
+@@ -533,7 +534,7 @@ FcCompareDataInit (FcPattern     *pat,
              key = FcValueString (&l->value);
              if (!FcHashTableFind (table, key, (void **)&e))
              {
@@ -1435,7 +2001,7 @@ index cf0876c..50e90f2 100644
                  e->strong_value = 1e99;
                  e->weak_value = 1e99;
                  FcHashTableAdd (table, (void *)key, e);
-@@ -987,32 +987,34 @@ FcFontSetMatchInternal (FcFontSet   **sets,
+@@ -987,32 +988,34 @@ FcFontSetMatchInternal (FcFontSet   **sets,
  	    FcBool f = FcTrue;
  
  	    ss = s = strdup (env);
@@ -1757,10 +2323,10 @@ index 7e8a6e1..0000000
 -}
 diff --git a/src/fcmurmurhash3.h b/src/fcmurmurhash3.h
 new file mode 100644
-index 0000000..79c8b95
+index 0000000..ae0f75c
 --- /dev/null
 +++ b/src/fcmurmurhash3.h
-@@ -0,0 +1,336 @@
+@@ -0,0 +1,337 @@
 +/**
 +    MurmurHash3 was written by Austin Appleby, and is placed in the public
 +    domain. The author hereby disclaims copyright to this source code.
@@ -1776,8 +2342,8 @@ index 0000000..79c8b95
 +#ifndef _FCMURMURHASH_H_
 +#define _FCMURMURHASH_H_
 +
-+#ifndef FC_SEED
-+#error "Error: FC_SEED not defined!"
++#ifndef FC_CACHE_SEED
++#define FC_CACHE_SEED 1318815734
 +#endif
 +
 +#if defined(_MSC_VER) // Compiler MSVC
@@ -1800,6 +2366,7 @@ index 0000000..79c8b95
 +#else // Other Compilers
 +
 +#include <stdint.h>
++#include <stddef.h>
 +
 +#define FORCE_INLINE static inline __attribute__((always_inline))
 +
@@ -1820,7 +2387,7 @@ index 0000000..79c8b95
 +
 +#if SIZEOF_VOID_P == 8 // 64-bit version
 +
-+FORCE_INLINE uint64_t getblock64(const uint64_t *p, int i) { return p[i]; }
++FORCE_INLINE uint64_t getblock64(const uint64_t *p, size_t i) { return p[i]; }
 +
 +FORCE_INLINE uint64_t fmix64(uint64_t k) {
 +  k ^= k >> 33;
@@ -1832,19 +2399,19 @@ index 0000000..79c8b95
 +  return k;
 +}
 +
-+static inline void MurmurHash3_128(const void *key, const int len, void *out) {
++static inline void MurmurHash3_128(const void *key, const size_t len, void *out) {
 +  const uint8_t *data = (const uint8_t *)key;
-+  const int nblocks = len / 16;
++  const size_t nblocks = len / 16;
 +
-+  uint64_t h1 = FC_SEED;
-+  uint64_t h2 = FC_SEED;
++  uint64_t h1 = FC_CACHE_SEED;
++  uint64_t h2 = FC_CACHE_SEED;
 +
 +  const uint64_t c1 = BIG_CONSTANT(0x87c37b91114253d5);
 +  const uint64_t c2 = BIG_CONSTANT(0x4cf5ad432745937f);
 +
 +  const uint64_t *blocks = (const uint64_t *)(data);
 +
-+  for (int i = 0; i < nblocks; i++) {
++  for (size_t i = 0; i < nblocks; i++) {
 +    uint64_t k1 = getblock64(blocks, i * 2 + 0);
 +    uint64_t k2 = getblock64(blocks, i * 2 + 1);
 +
@@ -1932,7 +2499,7 @@ index 0000000..79c8b95
 +
 +#else // 32-bit version
 +
-+FORCE_INLINE uint32_t getblock32(const uint32_t *p, int i) { return p[i]; }
++FORCE_INLINE uint32_t getblock32(const uint32_t *p, size_t i) { return p[i]; }
 +
 +FORCE_INLINE uint32_t fmix32(uint32_t h) {
 +
@@ -1945,15 +2512,15 @@ index 0000000..79c8b95
 +  return h;
 +}
 +
-+static inline void MurmurHash3_128(const void *key, const int len, void *out) {
++static inline void MurmurHash3_128(const void *key, const size_t len, void *out) {
 +
 +  const uint8_t *data = (const uint8_t *)key;
-+  const int nblocks = len / 16;
++  const size_t nblocks = len / 16;
 +
-+  uint32_t h1 = FC_SEED;
-+  uint32_t h2 = FC_SEED;
-+  uint32_t h3 = FC_SEED;
-+  uint32_t h4 = FC_SEED;
++  uint32_t h1 = FC_CACHE_SEED;
++  uint32_t h2 = FC_CACHE_SEED;
++  uint32_t h3 = FC_CACHE_SEED;
++  uint32_t h4 = FC_CACHE_SEED;
 +
 +  const uint32_t c1 = 0x239b961b;
 +  const uint32_t c2 = 0xab0e9789;
@@ -1962,7 +2529,7 @@ index 0000000..79c8b95
 +
 +  const uint32_t *blocks = (const uint32_t *)(data + nblocks * 16);
 +
-+  for (int i = -nblocks; i; i++) {
++  for (size_t i = -nblocks; i; i++) {
 +    uint32_t k1 = getblock32(blocks, i * 4 + 0);
 +    uint32_t k2 = getblock32(blocks, i * 4 + 1);
 +    uint32_t k3 = getblock32(blocks, i * 4 + 2);
@@ -2099,15 +2666,25 @@ index 0000000..79c8b95
 +#endif // _FCMURMURHASH_H_
 \ No newline at end of file
 diff --git a/src/fcmutex.h b/src/fcmutex.h
-index 556a05e..c527358 100644
+index 556a05e..6141f95 100644
 --- a/src/fcmutex.h
 +++ b/src/fcmutex.h
-@@ -36,6 +36,60 @@
+@@ -29,13 +29,68 @@
+  * Google Author(s): Behdad Esfahbod
+  */
+ 
+-#ifndef _FCMUTEX_H_
+-#define _FCMUTEX_H_
++#ifndef FC_HEADER_MUTEX_H
++#define FC_HEADER_MUTEX_H
+ 
+ #ifdef HAVE_CONFIG_H
  #include <config.h>
  #endif
  
 +#include "fcatomic.h"
 +#include "fcarch.h"
++#include "fcstdint.h"
 +
 +#if defined(_WIN32) || defined(_WIN64)
 +#include <windows.h>
@@ -2163,67 +2740,83 @@ index 556a05e..c527358 100644
  #define FC_STMT_START do
  #define FC_STMT_END while (0)
  
-@@ -123,5 +177,55 @@ static inline void FcMutexLock   (FcMutex *m) { fc_mutex_impl_lock (m);   }
+@@ -123,5 +178,53 @@ static inline void FcMutexLock   (FcMutex *m) { fc_mutex_impl_lock (m);   }
  static inline void FcMutexUnlock (FcMutex *m) { fc_mutex_impl_unlock (m); }
  static inline void FcMutexFinish (FcMutex *m) { fc_mutex_impl_finish (m); }
  
-+static inline void FcMutexLockResource (FcMutex **res){
++static inline void FcMutexLockResource(FcMutex **res) {
 +
 +    FcMutex *lock = NULL;
 +    uint32_t attempts = 0;
 +
-+    while(!lock){
-+  
-+        if(attempts >= 1000) { // Protection against endless attempts to lock a resource
-+            fprintf(stderr, "Error: The number of attempts to lock a resource has exceeded 1000.");
-+            exit(1);
-+        }
-+        
-+        attempts++;
-+        
-+        lock = fc_atomic_ptr_get (res);
-+    
-+        if (!lock) {
-+            lock = (FcMutex *) calloc (1, sizeof (FcMutex));
-+            if(lock){
-+                FcMutexInit (lock);
-+                if (!fc_atomic_ptr_cmpexch (res, NULL, lock)) {
-+                    FcMutexFinish (lock);
-+                    free (lock);
-+                }
-+            }
-+        }
++    retry:
++    if (attempts >= 1000) { // Protection against endless attempts to lock a resource
++        fprintf(stderr, "Error: The number of attempts to lock a resource has "
++                        "exceeded 1000.");
++        exit(1);
++    }
 +
-+        if (!lock) {
-+            FcYield();
++    attempts++;
++
++    lock = fc_atomic_ptr_get(res);
++
++    if (!lock) {
++        lock = (FcMutex *) calloc(1, sizeof(FcMutex));
++        if (lock) {
++            FcMutexInit(lock);
++            if (!fc_atomic_ptr_cmpexch(res, NULL, lock)) {
++                FcMutexFinish(lock);
++                free(lock);
++            }
 +        }
 +    }
 +
-+  FcMutexLock (lock);
++    if (!lock) {
++        FcYield();
++        goto retry;
++    }
++
++    FcMutexLock(lock);
 +
 +}
 +
-+static inline void FcMutexUnlockResource (FcMutex **res)
-+{
-+    FcMutex *lock = fc_atomic_ptr_get (res);
-+    FcMutexUnlock (lock);
++static inline void FcMutexUnlockResource(FcMutex **res) {
++    FcMutex *lock = fc_atomic_ptr_get(res);
++    FcMutexUnlock(lock);
 +}
 +
-+static inline void FcMutexFreeResource (FcMutex **res)
-+{
-+    FcMutex *lock = fc_atomic_ptr_get (res);
-+    if (lock && fc_atomic_ptr_cmpexch (res, lock, NULL)) {
-+        FcMutexFinish (lock);
-+        free (lock);
++static inline void FcMutexFreeResource(FcMutex **res) {
++    FcMutex *lock = fc_atomic_ptr_get(res);
++    if (lock && fc_atomic_ptr_cmpexch(res, lock, NULL)) {
++        FcMutexFinish(lock);
++        free(lock);
 +    }
 +}
  
- #endif /* _FCMUTEX_H_ */
+-#endif /* _FCMUTEX_H_ */
++#endif /* FC_HEADER_MUTEX_H */
 diff --git a/src/fcname.c b/src/fcname.c
-index 3567656..5d398ed 100644
+index 3567656..5e5b8d9 100644
 --- a/src/fcname.c
 +++ b/src/fcname.c
-@@ -433,7 +433,7 @@ FcNameParse (const FcChar8 *name)
+@@ -23,6 +23,7 @@
+  */
+ 
+ #include "fcint.h"
++#include "fcobjs.h"
+ #include <ctype.h>
+ #include <stdlib.h>
+ #include <string.h>
+@@ -30,7 +31,7 @@
+ 
+ static const FcObjectType FcObjects[] = {
+ #define FC_OBJECT(NAME, Type, Cmp) { FC_##NAME, Type },
+-#include "fcobjs.h"
++FC_OBJECT_LIST
+ #undef FC_OBJECT
+ };
+ 
+@@ -433,7 +434,7 @@ FcNameParse (const FcChar8 *name)
      const FcConstant	*c;
  
      /* freed below */
@@ -2232,6 +2825,140 @@ index 3567656..5d398ed 100644
      if (!save)
  	goto bail0;
      pat = FcPatternCreate ();
+diff --git a/src/fcobjs.h b/src/fcobjs.h
+index acc0471..ea0ca51 100644
+--- a/src/fcobjs.h
++++ b/src/fcobjs.h
+@@ -22,56 +22,63 @@
+  * PERFORMANCE OF THIS SOFTWARE.
+  */
+ /* DON'T REORDER!  The order is part of the cache signature. */
+-FC_OBJECT (FAMILY,		FcTypeString,	FcCompareFamily)
+-FC_OBJECT (FAMILYLANG,		FcTypeString,	NULL)
+-FC_OBJECT (STYLE,		FcTypeString,	FcCompareString)
+-FC_OBJECT (STYLELANG,		FcTypeString,	NULL)
+-FC_OBJECT (FULLNAME,		FcTypeString,	NULL)
+-FC_OBJECT (FULLNAMELANG,	FcTypeString,	NULL)
+-FC_OBJECT (SLANT,		FcTypeInteger,	FcCompareNumber)
+-FC_OBJECT (WEIGHT,		FcTypeRange,	FcCompareRange)
+-FC_OBJECT (WIDTH,		FcTypeRange,	FcCompareRange)
+-FC_OBJECT (SIZE,		FcTypeRange,	FcCompareSize)
+-FC_OBJECT (ASPECT,		FcTypeDouble,	NULL)
+-FC_OBJECT (PIXEL_SIZE,		FcTypeDouble,	FcCompareNumber)
+-FC_OBJECT (SPACING,		FcTypeInteger,	FcCompareNumber)
+-FC_OBJECT (FOUNDRY,		FcTypeString,	FcCompareString)
+-FC_OBJECT (ANTIALIAS,		FcTypeBool,	FcCompareBool)
+-FC_OBJECT (HINT_STYLE,		FcTypeInteger,	NULL)
+-FC_OBJECT (HINTING,		FcTypeBool,	NULL)
+-FC_OBJECT (VERTICAL_LAYOUT,	FcTypeBool,	NULL)
+-FC_OBJECT (AUTOHINT,		FcTypeBool,	NULL)
+-FC_OBJECT (GLOBAL_ADVANCE,	FcTypeBool,	NULL)	/* deprecated */
+-FC_OBJECT (FILE,		FcTypeString,	FcCompareFilename)
+-FC_OBJECT (INDEX,		FcTypeInteger,	NULL)
+-FC_OBJECT (RASTERIZER,		FcTypeString,	FcCompareString)	/* deprecated */
+-FC_OBJECT (OUTLINE,		FcTypeBool,	FcCompareBool)
+-FC_OBJECT (SCALABLE,		FcTypeBool,	FcCompareBool)
+-FC_OBJECT (DPI,			FcTypeDouble,	NULL)
+-FC_OBJECT (RGBA,		FcTypeInteger,	NULL)
+-FC_OBJECT (SCALE,		FcTypeDouble,	NULL)
+-FC_OBJECT (MINSPACE,		FcTypeBool,	NULL)
+-FC_OBJECT (CHARWIDTH,		FcTypeInteger,	NULL)
+-FC_OBJECT (CHAR_HEIGHT,		FcTypeInteger,	NULL)
+-FC_OBJECT (MATRIX,		FcTypeMatrix,	NULL)
+-FC_OBJECT (CHARSET,		FcTypeCharSet,	FcCompareCharSet)
+-FC_OBJECT (LANG,		FcTypeLangSet,	FcCompareLang)
+-FC_OBJECT (FONTVERSION,		FcTypeInteger,	FcCompareNumber)
+-FC_OBJECT (CAPABILITY,		FcTypeString,	NULL)
+-FC_OBJECT (FONTFORMAT,		FcTypeString,	FcCompareString)
+-FC_OBJECT (EMBOLDEN,		FcTypeBool,	NULL)
+-FC_OBJECT (EMBEDDED_BITMAP,	FcTypeBool,	NULL)
+-FC_OBJECT (DECORATIVE,		FcTypeBool,	FcCompareBool)
+-FC_OBJECT (LCD_FILTER,		FcTypeInteger,	NULL)
+-FC_OBJECT (NAMELANG,		FcTypeString,	NULL)
+-FC_OBJECT (FONT_FEATURES,	FcTypeString,	NULL)
+-FC_OBJECT (PRGNAME,		FcTypeString,	NULL)
+-FC_OBJECT (HASH,		FcTypeString,	NULL)	/* deprecated */
+-FC_OBJECT (POSTSCRIPT_NAME,	FcTypeString,	FcComparePostScript)
+-FC_OBJECT (COLOR,		FcTypeBool,	FcCompareBool)
+-FC_OBJECT (SYMBOL,		FcTypeBool,	FcCompareBool)
+-FC_OBJECT (FONT_VARIATIONS,	FcTypeString,	NULL)
+-FC_OBJECT (VARIABLE,		FcTypeBool,	FcCompareBool)
+-FC_OBJECT (FONT_HAS_HINT,	FcTypeBool,	FcCompareBool)
+-FC_OBJECT (ORDER,		FcTypeInteger,	FcCompareNumber)
++#ifndef FC_HEADER_FCOBJS_H
++#define FC_HEADER_FCOBJS_H
++
++#define FC_OBJECT_LIST                                                         \
++  FC_OBJECT(FAMILY, FcTypeString, FcCompareFamily)                             \
++  FC_OBJECT(FAMILYLANG, FcTypeString, NULL)                                    \
++  FC_OBJECT(STYLE, FcTypeString, FcCompareString)                              \
++  FC_OBJECT(STYLELANG, FcTypeString, NULL)                                     \
++  FC_OBJECT(FULLNAME, FcTypeString, NULL)                                      \
++  FC_OBJECT(FULLNAMELANG, FcTypeString, NULL)                                  \
++  FC_OBJECT(SLANT, FcTypeInteger, FcCompareNumber)                             \
++  FC_OBJECT(WEIGHT, FcTypeRange, FcCompareRange)                               \
++  FC_OBJECT(WIDTH, FcTypeRange, FcCompareRange)                                \
++  FC_OBJECT(SIZE, FcTypeRange, FcCompareSize)                                  \
++  FC_OBJECT(ASPECT, FcTypeDouble, NULL)                                        \
++  FC_OBJECT(PIXEL_SIZE, FcTypeDouble, FcCompareNumber)                         \
++  FC_OBJECT(SPACING, FcTypeInteger, FcCompareNumber)                           \
++  FC_OBJECT(FOUNDRY, FcTypeString, FcCompareString)                            \
++  FC_OBJECT(ANTIALIAS, FcTypeBool, FcCompareBool)                              \
++  FC_OBJECT(HINT_STYLE, FcTypeInteger, NULL)                                   \
++  FC_OBJECT(HINTING, FcTypeBool, NULL)                                         \
++  FC_OBJECT(VERTICAL_LAYOUT, FcTypeBool, NULL)                                 \
++  FC_OBJECT(AUTOHINT, FcTypeBool, NULL)                                        \
++  FC_OBJECT(GLOBAL_ADVANCE, FcTypeBool, NULL) /* deprecated */                 \
++  FC_OBJECT(FILE, FcTypeString, FcCompareFilename)                             \
++  FC_OBJECT(INDEX, FcTypeInteger, NULL)                                        \
++  FC_OBJECT(RASTERIZER, FcTypeString, FcCompareString) /* deprecated */        \
++  FC_OBJECT(OUTLINE, FcTypeBool, FcCompareBool)                                \
++  FC_OBJECT(SCALABLE, FcTypeBool, FcCompareBool)                               \
++  FC_OBJECT(DPI, FcTypeDouble, NULL)                                           \
++  FC_OBJECT(RGBA, FcTypeInteger, NULL)                                         \
++  FC_OBJECT(SCALE, FcTypeDouble, NULL)                                         \
++  FC_OBJECT(MINSPACE, FcTypeBool, NULL)                                        \
++  FC_OBJECT(CHARWIDTH, FcTypeInteger, NULL)                                    \
++  FC_OBJECT(CHAR_HEIGHT, FcTypeInteger, NULL)                                  \
++  FC_OBJECT(MATRIX, FcTypeMatrix, NULL)                                        \
++  FC_OBJECT(CHARSET, FcTypeCharSet, FcCompareCharSet)                          \
++  FC_OBJECT(LANG, FcTypeLangSet, FcCompareLang)                                \
++  FC_OBJECT(FONTVERSION, FcTypeInteger, FcCompareNumber)                       \
++  FC_OBJECT(CAPABILITY, FcTypeString, NULL)                                    \
++  FC_OBJECT(FONTFORMAT, FcTypeString, FcCompareString)                         \
++  FC_OBJECT(EMBOLDEN, FcTypeBool, NULL)                                        \
++  FC_OBJECT(EMBEDDED_BITMAP, FcTypeBool, NULL)                                 \
++  FC_OBJECT(DECORATIVE, FcTypeBool, FcCompareBool)                             \
++  FC_OBJECT(LCD_FILTER, FcTypeInteger, NULL)                                   \
++  FC_OBJECT(NAMELANG, FcTypeString, NULL)                                      \
++  FC_OBJECT(FONT_FEATURES, FcTypeString, NULL)                                 \
++  FC_OBJECT(PRGNAME, FcTypeString, NULL)                                       \
++  FC_OBJECT(HASH, FcTypeString, NULL) /* deprecated */                         \
++  FC_OBJECT(POSTSCRIPT_NAME, FcTypeString, FcComparePostScript)                \
++  FC_OBJECT(COLOR, FcTypeBool, FcCompareBool)                                  \
++  FC_OBJECT(SYMBOL, FcTypeBool, FcCompareBool)                                 \
++  FC_OBJECT(FONT_VARIATIONS, FcTypeString, NULL)                               \
++  FC_OBJECT(VARIABLE, FcTypeBool, FcCompareBool)                               \
++  FC_OBJECT(FONT_HAS_HINT, FcTypeBool, FcCompareBool)                          \
++  FC_OBJECT(ORDER, FcTypeInteger, FcCompareNumber)
++
+ /* ^-------------- Add new objects here. */
++
++#endif /* FC_HEADER_FCOBJS_H */
+\ No newline at end of file
+diff --git a/src/fcobjshash.gperf.h b/src/fcobjshash.gperf.h
+index 1765c94..570af23 100644
+--- a/src/fcobjshash.gperf.h
++++ b/src/fcobjshash.gperf.h
+@@ -44,6 +44,7 @@ struct FcObjectTypeInfo {
+ };
+ 
+ %%
+-#define FC_OBJECT(NAME, Type, Cmp) FC_##NAME, FC_##NAME##_OBJECT
+ #include "fcobjs.h"
++#define FC_OBJECT(NAME, Type, Cmp) FC_##NAME, FC_##NAME##_OBJECT__FC_NEWLINE__
++FC_OBJECT_LIST
+ #undef FC_OBJECT
 diff --git a/src/fcpat.c b/src/fcpat.c
 index 5927be4..1cf6c0f 100644
 --- a/src/fcpat.c
@@ -2638,5 +3365,5 @@ index 1ee03cf..b6012f9 100644
  
  #ifdef _WIN32
 -- 
-2.34.1
+2.35.1
 

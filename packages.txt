@@ -196,7 +196,6 @@ swaylock
 grim
 wl-clipboard
 slurp
-clipman
 jq
 mako
 rofi

@@ -1,5 +1,5 @@
 pkgname=rofi+clang
-pkgver=1.7.2
+pkgver=1.7.3
 pkgrel=1
 pkgdesc='A window switcher, application launcher and dmenu replacement. X11 and Wayland support.'
 arch=(x86_64)
@@ -9,7 +9,7 @@ depends=(libxdg-basedir startup-notification libxkbcommon-x11 xcb-util-wm xcb-ut
 makedepends=('git' 'wayland' 'wayland-protocols' 'meson')
 provides=('rofi' "rofi=${pkgver}")
 optdepends=('i3-wm: use as a window switcher' 'sway: use as a window switcher')
-_commit=0a0d8333ca28e4a1093adfd0c0b2b2301c34625b
+_commit=d34e827dd04bfdfffcbe77915aa2a4c1b3828f8b
 source=("rofi::git+https://github.com/lbonn/rofi.git#commit=${_commit}")
 sha256sums=('SKIP')
 
@@ -40,7 +40,7 @@ build() {
     -D xcb=enabled \
     -D drun=true \
     -D window=true \
-    -Dcheck=disabled
+    -D check=disabled
 
   meson compile -C build
 
