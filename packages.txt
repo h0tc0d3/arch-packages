@@ -1,6 +1,7 @@
 -glibc
 -libgcrypt
 -llvm
+xxhash
 libclc
 libseccomp
 libunistring

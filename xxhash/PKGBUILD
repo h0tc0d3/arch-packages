@@ -1,0 +1,55 @@
+pkgname=xxhash+clang
+pkgver=0.8.1
+pkgrel=1
+pkgdesc='Extremely fast non-cryptographic hash algorithm'
+arch=(x86_64)
+url=https://cyan4973.github.io/xxHash/
+license=(
+  GPL2
+  BSD
+)
+depends=(glibc)
+makedepends=(git)
+provides=(libxxhash.so 'xxhash' "xxhash=${pkgver}")
+conflicts=('xxhash')
+_commit=35b0373c697b5f160d3db26b1cbb45a0d5ba788c
+source=(
+  "git+https://github.com/Cyan4973/xxHash.git#commit=${_commit}"
+  xxhash-man-symlinks.patch
+)
+sha256sums=('SKIP'
+  '31de6bba71bc20056ed85b0cd408aade16123b9c9fa0dfbf9837a63d455a1102')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  patch -d xxHash -Np1 -i "${srcdir:?}/xxhash-man-symlinks.patch"
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  make PREFIX=/usr -C xxHash
+
+}
+
+package() {
+
+  make PREFIX=/usr DESTDIR="${pkgdir:?}" -C xxHash install
+
+  install -Dm 644 xxHash/LICENSE -t "${pkgdir:?}"/usr/share/licenses/xxhash
+
+}
