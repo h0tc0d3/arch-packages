@@ -1,9 +1,5 @@
 Short description: Adjust CS_PATH return value.
-Author(s): Fedora glibc team <glibc@lists.fedoraproject.org>
-Origin: PATCH
-Upstream status: not-needed
-
-In Fedora we should return only /usr/bin because /bin is just a symlink
+We should return only /usr/bin because /bin is just a symlink
 to /usr/bin after MoveToUsr transition (which glibc has not really
 completed).
 

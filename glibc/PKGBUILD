@@ -1,19 +1,18 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
 pkgver=2.35
-pkgrel=1
+pkgrel=2
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
 makedepends=(git gd lib32-gcc-libs python)
 optdepends=('perl: for mtrace')
 options=(staticlibs)
-_commit=811124ce08306021a85834a0ddf60f122a050a59
+_commit=3d9f171bfb5325bd5f427e9fc386453358c6e840
 source=("git+https://sourceware.org/git/glibc.git#commit=${_commit}"
   #source=("https://ftp.gnu.org/gnu/glibc/glibc-${pkgver}.tar.xz"
   locale-gen
   sdt.h sdt-config.h
-  glibc-fedora-linux-tcsetattr.patch
   glibc-newlocale-error.patch
   glibc-cs-path.patch
   glibc-relative-relocations.patch
@@ -27,9 +26,8 @@ sha256sums=('SKIP'
   '83f108f915863c7ed0338e2d3e8f2e071a531a090ef8f8b2eb3a956a3c4f04d7'
   '774061aff612a377714a509918a9e0e0aafce708b87d2d7e06b1bd1f6542fe70'
   'cdc234959c6fdb43f000d3bb7d1080b0103f4080f5e67bcfe8ae1aaf477812f0'
-  'a9c10b02fe9fb3d0d5c1565124fedaace2932be4b147b6c6deaf1efbe2c07882'
   '733396588e1e7c356f8d33ba80f6c317963dd936f9039f3f77f0bcec81138159'
-  'bdc28d5b5444e0ec35c98cb959635cf4f3bd23c47aa1b2f1c334a79db411b911'
+  'bf4a09560dbcd1cdffb4d083013b6daa3303b2857d38829ac0f2a1ef13091e80'
   '73746aaa884f9c05ae423fc0e4bb9b9e735f4303569d078fb4092aa162b326e1'
   '5abaf44c35e6bb6abd61469fb313630e2b27897fbf04fbb8cf9013349d7f72e5')
 
@@ -52,8 +50,6 @@ prepare() {
 
   _patch glibc-relative-relocations.patch
   _patch glibc-clang.patch
-
-  _patch glibc-fedora-linux-tcsetattr.patch
   _patch glibc-newlocale-error.patch
   _patch glibc-cs-path.patch
 
