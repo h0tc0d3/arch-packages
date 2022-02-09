@@ -1,7 +1,7 @@
 pkgbase=elfutils+clang
 pkgname=('debuginfod+clang' 'elfutils+clang' 'libelf+clang')
 pkgver=0.186
-pkgrel=3
+pkgrel=4
 pkgdesc='Handle ELF object files and DWARF debugging information'
 arch=('x86_64')
 url="https://sourceware.org/elfutils/"
@@ -84,7 +84,7 @@ check() {
     exit 1
   )
 
- #make check
+  #make check
 
 }
 
@@ -161,5 +161,8 @@ package_debuginfod+clang() {
     "${pkgdir:?}/usr/share/man/man1/eu-"* \
     "${pkgdir:?}/usr/share/man/man3/elf_"* \
     "${pkgdir:?}/usr/share/locale"
+
+  # set the default DEBUGINFOD_URLS environment variable to the distribution's debuginfod URL
+  printf "https://debuginfod.archlinux.org\nhttps://debug.archlinux.club\n" >"${pkgdir:?}/etc/debuginfod/archlinux.urls"
 
 }

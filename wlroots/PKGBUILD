@@ -1,6 +1,6 @@
 pkgname=wlroots+clang
-pkgver=0.15.0
-pkgrel=4
+pkgver=0.15.1
+pkgrel=1
 license=('MIT')
 pkgdesc='Modular Wayland compositor library'
 url='https://github.com/swaywm/wlroots'
@@ -43,7 +43,7 @@ source=(
   0001-add-support-for-global-scale-factor.patch
   0002-add-support-for-changing-global-scale-factor.patch
 )
-sha256sums=('2921a38cea79dbb6f1da895a4dbe1faedba8d7ff2c0c2468dad94ccba12e4278'
+sha256sums=('5b92f11a52d978919ed1306e0d54c9d59f1762b28d44f0a2da3ef3b351305373'
   'SKIP'
   '60c29c96dcd86cf36f6d7ac1300ed942388beba0071508eda3b05b0b12e93fef'
   '58383ceccf22fbcf33683f3165fa82dfdeaaa72433d14d3049793eb67daf9d1c')

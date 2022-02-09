@@ -1,5 +1,5 @@
 pkgname=kwin+clang
-pkgver=5.23.5
+pkgver=5.24.0
 pkgrel=1
 pkgdesc='An easy to use, but flexible, composited Window Manager'
 arch=(x86_64)
@@ -16,7 +16,7 @@ source=(
   "https://download.kde.org/stable/plasma/${pkgver}/kwin-${pkgver}.tar.xz"{,.sig}
 )
 install=kwin.install
-sha256sums=('f749e7e9b753d1ed1ae9655ea3cdec7d13946c64c820d4c85be2c0f95ac55f01'
+sha256sums=('c6aec516954c1149aba394530a52c0514b60b21f4d834f58603d648be1bd05a7'
   'SKIP')
 validpgpkeys=(
   'E0A3EB202F8E57528E13E72FD7574483BB57B18D' # Jonathan Riddell <jr@jriddell.org>
