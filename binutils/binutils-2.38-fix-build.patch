@@ -1,0 +1,19 @@
+diff --git a/ld/ldlang.c b/ld/ldlang.c
+index 3f70577..b707058 100644
+--- a/ld/ldlang.c
++++ b/ld/ldlang.c
+@@ -7380,13 +7380,7 @@ lang_place_orphans (void)
+ 		ldlang_place_orphan (s);
+ 	    }
+ 	}
+-      else
+-	{
+-	  if (warn)
+-	    einfo (_("%P: warning: cannot find entry symbol %s;"
+-		     " not setting start address\n"),
+-		   entry_symbol.name);
+-	}
++
+     }
+ }
+ 

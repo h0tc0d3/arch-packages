@@ -1,6 +1,6 @@
 pkgname=libtool
-pkgver=2.4.6+42+gb88cebd5
-pkgrel=22
+pkgver=2.4.6+63+gf5eb6f11
+pkgrel=1
 pkgdesc='A generic library support script'
 arch=(x86_64)
 url='https://www.gnu.org/software/libtool'
@@ -12,19 +12,20 @@ checkdepends=(gcc-fortran)
 provides=("libltdl=${pkgver}" "libtool-multilib=${pkgver}")
 conflicts=(libltdl libtool-multilib)
 replaces=(libltdl libtool-multilib)
-_commit=b88cebd510add4420dd8f5367e3cc6e6e1f267cd
+_commit=f5eb6f11698c65e550bfdcc1a0a1943df6d70f28
 source=(
   "git+https://git.savannah.gnu.org/git/libtool.git#commit=${_commit}"
   "git+https://git.savannah.gnu.org/git/gnulib.git"
   "gnulib-bootstrap::git+https://github.com/gnulib-modules/bootstrap.git"
   libtool-no_hostname.patch
-  libtool-am-1.16-test.patch
 )
 sha256sums=('SKIP'
-            'SKIP'
-            'SKIP'
-            '693aabb24a6e7ce21fe0b5d14394e19edcb8476663b5afa4463f9fa0df24d946'
-            'f1686e8e6d4eb40b711b904e62d713f55a2de0e94da3bf7e5d3e9c30074f5f8e')
+  'SKIP'
+  'SKIP'
+  '693aabb24a6e7ce21fe0b5d14394e19edcb8476663b5afa4463f9fa0df24d946'
+)
+
+_llvm=0
 
 pkgver() {
 
@@ -46,6 +47,10 @@ _patch() {
 
 prepare() {
 
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
   cd "${srcdir:?}/libtool" || (
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/libtool directory! Prepare Failed! \E[0m"
     exit 1
@@ -57,7 +62,6 @@ prepare() {
   git submodule update
 
   _patch libtool-no_hostname.patch
-  _patch libtool-am-1.16-test.patch
 
   ./bootstrap
 
@@ -71,6 +75,12 @@ build() {
   )
 
   CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
 
   ./configure \
     --prefix=/usr \

@@ -66,7 +66,7 @@ gcc/testsuite/
  
    /* The state variable:
       0 means not parsing
-@@ -284,7 +294,8 @@ static _cpp_buff *collect_args (cpp_reader *, const cpp_hashnode *,
+@@ -284,7 +294,8 @@ static _cpp_buff *collect_args (cpp_read
  static cpp_context *next_context (cpp_reader *);
  static const cpp_token *padding_token (cpp_reader *, const cpp_token *);
  static const cpp_token *new_string_token (cpp_reader *, uchar *, unsigned int);
@@ -76,7 +76,7 @@ gcc/testsuite/
  static void paste_all_tokens (cpp_reader *, const cpp_token *);
  static bool paste_tokens (cpp_reader *, location_t,
  			  const cpp_token **, const cpp_token *);
-@@ -818,10 +829,11 @@ cpp_quote_string (uchar *dest, const uchar *src, unsigned int len)
+@@ -812,10 +823,11 @@ cpp_quote_string (uchar *dest, const uch
    return dest;
  }
  
@@ -91,7 +91,7 @@ gcc/testsuite/
  {
    unsigned char *dest;
    unsigned int i, escape_it, backslash_count = 0;
-@@ -834,9 +846,27 @@ stringify_arg (cpp_reader *pfile, macro_arg *arg)
+@@ -828,9 +840,27 @@ stringify_arg (cpp_reader *pfile, macro_
    *dest++ = '"';
  
    /* Loop, reading in the argument's tokens.  */
@@ -121,7 +121,7 @@ gcc/testsuite/
  
        if (token->type == CPP_PADDING)
  	{
-@@ -923,7 +953,7 @@ paste_tokens (cpp_reader *pfile, location_t location,
+@@ -917,7 +947,7 @@ paste_tokens (cpp_reader *pfile, locatio
    cpp_token *lhs;
    unsigned int len;
  
@@ -130,7 +130,7 @@ gcc/testsuite/
    buf = (unsigned char *) alloca (len);
    end = lhsend = cpp_spell_token (pfile, *plhs, buf, true);
  
-@@ -949,8 +979,10 @@ paste_tokens (cpp_reader *pfile, location_t location,
+@@ -943,8 +973,10 @@ paste_tokens (cpp_reader *pfile, locatio
        location_t saved_loc = lhs->src_loc;
  
        _cpp_pop_buffer (pfile);
@@ -143,7 +143,7 @@ gcc/testsuite/
  
        /* We have to remove the PASTE_LEFT flag from the old lhs, but
  	 we want to keep the new location.  */
-@@ -962,8 +994,10 @@ paste_tokens (cpp_reader *pfile, location_t location,
+@@ -956,8 +988,10 @@ paste_tokens (cpp_reader *pfile, locatio
        /* Mandatory error for all apart from assembler.  */
        if (CPP_OPTION (pfile, lang) != CLK_ASM)
  	cpp_error_with_line (pfile, CPP_DL_ERROR, location, 0,
@@ -156,7 +156,7 @@ gcc/testsuite/
        return false;
      }
  
-@@ -1039,7 +1073,10 @@ paste_all_tokens (cpp_reader *pfile, const cpp_token *lhs)
+@@ -1033,7 +1067,10 @@ paste_all_tokens (cpp_reader *pfile, con
  	    abort ();
  	}
        if (!paste_tokens (pfile, virt_loc, &lhs, rhs))
@@ -168,7 +168,7 @@ gcc/testsuite/
      }
    while (rhs->flags & PASTE_LEFT);
  
-@@ -1906,7 +1943,8 @@ replace_args (cpp_reader *pfile, cpp_hashnode *node, cpp_macro *macro,
+@@ -1900,7 +1937,8 @@ replace_args (cpp_reader *pfile, cpp_has
  	if (src->flags & STRINGIFY_ARG)
  	  {
  	    if (!arg->stringified)
@@ -178,11 +178,10 @@ gcc/testsuite/
  	  }
  	else if ((src->flags & PASTE_LEFT)
  		 || (src != macro->exp.tokens && (src[-1].flags & PASTE_LEFT)))
-@@ -2029,7 +2067,24 @@ replace_args (cpp_reader *pfile, cpp_hashnode *node, cpp_macro *macro,
+@@ -2023,6 +2061,24 @@ replace_args (cpp_reader *pfile, cpp_has
  		  paste_flag = tokens_buff_last_token_ptr (buff);
  		}
  
--	      if (src->flags & PASTE_LEFT)
 +	      if (vaopt_tracker.stringify ())
 +		{
 +		  unsigned int count
@@ -199,12 +198,12 @@ gcc/testsuite/
 +		  tokens_buff_add_token (buff, virt_locs,
 +					 t, t->src_loc, t->src_loc,
 +					 NULL, 0);
++		  continue;
 +		}
-+	      else if (src->flags & PASTE_LEFT)
- 		{
- 		  /* With a non-empty __VA_OPT__ on the LHS of ##, the last
- 		     token should be flagged PASTE_LEFT.  */
-@@ -3585,7 +3640,10 @@ create_iso_definition (cpp_reader *pfile)
+ 	      if (start && paste_flag == start && (*start)->flags & PASTE_LEFT)
+ 		/* If __VA_OPT__ expands to nothing (either because __VA_ARGS__
+ 		   is empty or because it is __VA_OPT__() ), drop PASTE_LEFT
+@@ -3584,7 +3640,10 @@ create_iso_definition (cpp_reader *pfile
  	 function-like macros when lexing the subsequent token.  */
        if (macro->count > 1 && token[-1].type == CPP_HASH && macro->fun_like)
  	{

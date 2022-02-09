@@ -33,7 +33,7 @@ gcc/testsuite/
 
 --- libcpp/macro.c.jj
 +++ libcpp/macro.c
-@@ -295,7 +295,7 @@ static cpp_context *next_context (cpp_reader *);
+@@ -295,7 +295,7 @@ static cpp_context *next_context (cpp_re
  static const cpp_token *padding_token (cpp_reader *, const cpp_token *);
  static const cpp_token *new_string_token (cpp_reader *, uchar *, unsigned int);
  static const cpp_token *stringify_arg (cpp_reader *, const cpp_token **,
@@ -42,7 +42,7 @@ gcc/testsuite/
  static void paste_all_tokens (cpp_reader *, const cpp_token *);
  static bool paste_tokens (cpp_reader *, location_t,
  			  const cpp_token **, const cpp_token *);
-@@ -834,8 +834,7 @@ cpp_quote_string (uchar *dest, const uchar *src, unsigned int len)
+@@ -826,8 +826,7 @@ cpp_quote_string (uchar *dest, const uch
  /* Convert a token sequence FIRST to FIRST+COUNT-1 to a single string token
     according to the rules of the ISO C #-operator.  */
  static const cpp_token *
@@ -52,7 +52,7 @@ gcc/testsuite/
  {
    unsigned char *dest;
    unsigned int i, escape_it, backslash_count = 0;
-@@ -852,24 +851,6 @@ stringify_arg (cpp_reader *pfile, const cpp_token **first, unsigned int count,
+@@ -844,24 +843,6 @@ stringify_arg (cpp_reader *pfile, const
      {
        const cpp_token *token = first[i];
  
@@ -77,7 +77,7 @@ gcc/testsuite/
        if (token->type == CPP_PADDING)
  	{
  	  if (source == NULL
-@@ -1003,6 +984,7 @@ paste_tokens (cpp_reader *pfile, location_t location,
+@@ -995,6 +976,7 @@ paste_tokens (cpp_reader *pfile, locatio
        return false;
      }
  
@@ -85,7 +85,7 @@ gcc/testsuite/
    *plhs = lhs;
    _cpp_pop_buffer (pfile);
    return true;
-@@ -1945,8 +1927,7 @@ replace_args (cpp_reader *pfile, cpp_hashnode *node, cpp_macro *macro,
+@@ -1937,8 +1919,7 @@ replace_args (cpp_reader *pfile, cpp_has
  	if (src->flags & STRINGIFY_ARG)
  	  {
  	    if (!arg->stringified)
@@ -95,7 +95,7 @@ gcc/testsuite/
  	  }
  	else if ((src->flags & PASTE_LEFT)
  		 || (src != macro->exp.tokens && (src[-1].flags & PASTE_LEFT)))
-@@ -2066,11 +2047,46 @@ replace_args (cpp_reader *pfile, cpp_hashnode *node, cpp_macro *macro,
+@@ -2065,11 +2046,46 @@ replace_args (cpp_reader *pfile, cpp_has
  		{
  		  unsigned int count
  		    = start ? paste_flag - start : tokens_buff_count (buff);

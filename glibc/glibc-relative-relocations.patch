@@ -1,83 +1,105 @@
-commit 8e6f8427bdd95a76036c2ac1b97877861df83268
-Author: Fangrui Song <maskray@google.com>
-Date:   Mon Oct 18 12:47:16 2021 -0700
+From b2cd3aeb9c0a2fbd03b37065e7630a48571bb6b8 Mon Sep 17 00:00:00 2001
+From: Fangrui Song <maskray@google.com>
+Date: Sat, 8 Jan 2022 00:17:48 -0800
+Subject: [PATCH] elf: Support DT_RELR relative relocation format [BZ #27924]
 
-    elf: Support DT_RELR relative relocation format [BZ #27924]
-    
-    PIE and shared objects usually have many relative relocations. In
-    2017/2018, SHT_RELR/DT_RELR was proposed on
-    https://groups.google.com/g/generic-abi/c/bX460iggiKg/m/GxjM0L-PBAAJ
-    ("Proposal for a new section type SHT_RELR") and is a pre-standard. RELR
-    usually takes 3% or smaller space than R_*_RELATIVE relocations. The
-    virtual memory size of a mostly statically linked PIE is typically 5~10%
-    smaller.
-    
-    ---
-    
-    Notes I will not include in the submitted commit:
-    
-    Available on https://sourceware.org/git/?p=glibc.git;a=shortlog;h=refs/heads/maskray/relr
-    
-    "pre-standard": even Solaris folks are happy with the refined generic-abi
-    proposal. Cary Coutant will apply the change
-    https://sourceware.org/pipermail/libc-alpha/2021-October/131781.html
-    
-    This patch is simpler than Chrome OS's glibc patch and makes ELF_DYNAMIC_DO_RELR
-    available to all ports. I don't think the current glibc implementation
-    supports ia64 in an ELFCLASS32 container. That said, the style I used is
-    works with an ELFCLASS32 container for 64-bit machine if ElfW(Addr) is
-    64-bit.
-    
-    * Chrome OS folks have carried a local patch since 2018 (latest version:
-      https://chromium.googlesource.com/chromiumos/overlays/chromiumos-overlay/+/refs/heads/main/sys-libs/glibc/files/local/glibc-2.32).
-      I.e. this feature has been battle tested.
-    * Android bionic supports 2018 and switched to DT_RELR==36 in 2020.
-    * The Linux kernel has supported CONFIG_RELR since 2019-08
-      (https://git.kernel.org/linus/5cf896fb6be3effd9aea455b22213e27be8bdb1d).
-    * A musl patch (by me) exists but is not applied:
-      https://www.openwall.com/lists/musl/2019/03/06/3
-    * rtld-elf from FreeBSD 14 will support DT_RELR.
-    
-    I believe upstream glibc should support DT_RELR to benefit all Linux
-    distributions. I filed some feature requests to get their attention:
-    
-    * Gentoo: https://bugs.gentoo.org/818376
-    * Arch Linux: https://bugs.archlinux.org/task/72433
-    * Debian https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=996598
-    * Fedora https://bugzilla.redhat.com/show_bug.cgi?id=2014699
-    
-    As of linker support (to the best of my knowledge):
-    
-    * LLD support DT_RELR.
-    * https://chromium.googlesource.com/chromiumos/overlays/chromiumos-overlay/+/refs/heads/main/sys-devel/binutils/files/
-      has a gold patch.
-    * GNU ld feature request https://sourceware.org/bugzilla/show_bug.cgi?id=27923
-    
-    I wish that GNU ld and gold maintainers can implement the feature as well :)
-    
-    Tested on aarch64 and x86_64.
-    
-    Changes from v1 (https://sourceware.org/pipermail/libc-alpha/2021-October/131768.html)
-    * Fix style, simplify code
-    * Improve test
+PIE and shared objects usually have many relative relocations. In
+2017/2018, SHT_RELR/DT_RELR was proposed on
+https://groups.google.com/g/generic-abi/c/bX460iggiKg/m/GxjM0L-PBAAJ
+("Proposal for a new section type SHT_RELR") and is a pre-standard. RELR
+usually takes 3% or smaller space than R_*_RELATIVE relocations. The
+virtual memory size of a mostly statically linked PIE is typically 5~10%
+smaller.
+
+To protect mysterious crash when a DT_RELR using object runs with older
+glibc, GNU ld's -z pack-relative-relocs adds a version dependency on
+libc.so.6's GLIBC_ABI_DT_RELR version node. This change defines
+GLIBC_ABI_DT_RELR in libc.so.6.
+
+---
+
+Notes I will not include in the submitted commit:
+
+Available on https://sourceware.org/git/?p=glibc.git;a=shortlog;h=refs/heads/maskray/relr
+
+"pre-standard": even Solaris folks are happy with the refined generic-abi
+proposal. Cary Coutant will apply the change
+https://sourceware.org/pipermail/libc-alpha/2021-October/131781.html
+
+This patch is simpler than Chrome OS's glibc patch and makes ELF_DYNAMIC_DO_RELR
+available to all ports. I don't think the current glibc implementation
+supports ia64 in an ELFCLASS32 container. That said, the style I used is
+works with an ELFCLASS32 container for 64-bit machine if ElfW(Addr) is
+64-bit.
+
+* Chrome OS folks have carried a local patch since 2018 (latest version:
+  https://chromium.googlesource.com/chromiumos/overlays/chromiumos-overlay/+/refs/heads/main/sys-libs/glibc/files/local/glibc-2.32).
+  I.e. this feature has been battle tested.
+* Android bionic supports 2018 and switched to DT_RELR==36 in 2020.
+* The Linux kernel has supported CONFIG_RELR since 2019-08
+  (https://git.kernel.org/linus/5cf896fb6be3effd9aea455b22213e27be8bdb1d).
+* A musl patch (by me) exists but is not applied:
+  https://www.openwall.com/lists/musl/2019/03/06/3
+* rtld-elf from FreeBSD 14 will support DT_RELR.
+
+I believe upstream glibc should support DT_RELR to benefit all Linux
+distributions. I filed some feature requests to get their attention:
+
+* Gentoo: https://bugs.gentoo.org/818376
+* Arch Linux: https://bugs.archlinux.org/task/72433
+* Debian https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=996598
+* Fedora https://bugzilla.redhat.com/show_bug.cgi?id=2014699
+
+As of linker support (to the best of my knowledge):
+
+* LLD support DT_RELR.
+* https://chromium.googlesource.com/chromiumos/overlays/chromiumos-overlay/+/refs/heads/main/sys-devel/binutils/files/
+  has a gold patch.
+* GNU ld feature request https://sourceware.org/bugzilla/show_bug.cgi?id=27923
+
+Tested on aarch64 and x86_64.
+
+Changes from v1 (https://sourceware.org/pipermail/libc-alpha/2021-October/131768.html)
+* Fix style, simplify code
+* Improve test
+
+Changes from v2
+* Add GLIBC_ABI_DT_RELR version node similar to HJ Lu's GLIBC_ABI_VERSION_GEN2
+  https://sourceware.org/pipermail/libc-alpha/2021-November/133386.html
+---
+ configure              | 37 ++++++++++++++++++++++++++++++++++
+ configure.ac           |  4 ++++
+ elf/Makefile           | 19 +++++++++++++++---
+ elf/Versions           |  3 +++
+ elf/dynamic-link.h     | 34 +++++++++++++++++++++++++++++++
+ elf/elf.h              | 13 ++++++++++--
+ elf/get-dynamic-info.h |  3 +++
+ elf/libc-abi-dt-relr.c | 21 ++++++++++++++++++++
+ elf/tst-relr-no-pie.c  |  1 +
+ elf/tst-relr.c         | 45 ++++++++++++++++++++++++++++++++++++++++++
+ scripts/abilist.awk    |  2 ++
+ 11 files changed, 177 insertions(+), 5 deletions(-)
+ create mode 100644 elf/libc-abi-dt-relr.c
+ create mode 100644 elf/tst-relr-no-pie.c
+ create mode 100644 elf/tst-relr.c
 
 diff --git a/configure b/configure
-index 2f9adca064..383a0e5ad3 100755
+index 3f956cf777..fc6d8d8244 100755
 --- a/configure
 +++ b/configure
-@@ -6071,6 +6071,37 @@ $as_echo "$libc_linker_feature" >&6; }
+@@ -6102,6 +6102,43 @@ $as_echo "$libc_linker_feature" >&6; }
  config_vars="$config_vars
  have-depaudit = $libc_cv_depaudit"
  
-+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for linker that supports --pack-dyn-relocs=relr" >&5
-+$as_echo_n "checking for linker that supports --pack-dyn-relocs=relr... " >&6; }
++{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for linker that supports -z pack-relative-relocs" >&5
++$as_echo_n "checking for linker that supports -z pack-relative-relocs... " >&6; }
 +libc_linker_feature=no
 +if test x"$gnu_ld" = x"yes"; then
 +  cat > conftest.c <<EOF
 +int _start (void) { return 42; }
 +EOF
 +  if { ac_try='${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS $no_ssp
-+		    -Wl,--pack-dyn-relocs=relr -nostdlib -nostartfiles
++		    -Wl,-z,pack-relative-relocs -nostdlib -nostartfiles
 +		    -fPIC -shared -o conftest.so conftest.c
 +		    1>&5'
 +  { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_try\""; } >&5
@@ -86,7 +108,13 @@ index 2f9adca064..383a0e5ad3 100755
 +  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
 +  test $ac_status = 0; }; }
 +  then
-+    libc_linker_feature=yes
++    if ${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS $no_ssp -Wl,-z,pack-relative-relocs -nostdlib \
++	-nostartfiles -fPIC -shared -o conftest.so conftest.c 2>&1 \
++	| grep "warning: -z pack-relative-relocs ignored" > /dev/null 2>&1; then
++      true
++    else
++      libc_linker_feature=yes
++    fi
 +  fi
 +  rm -f conftest*
 +fi
@@ -104,14 +132,14 @@ index 2f9adca064..383a0e5ad3 100755
  $as_echo_n "checking for linker that supports --no-dynamic-linker... " >&6; }
  libc_linker_feature=no
 diff --git a/configure.ac b/configure.ac
-index 7eb4239359..a8e81849ac 100644
+index 277d3527d2..9cebe17325 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -1354,6 +1354,10 @@ LIBC_LINKER_FEATURE([--depaudit], [-Wl,--depaudit,x],
+@@ -1361,6 +1361,10 @@ LIBC_LINKER_FEATURE([--depaudit], [-Wl,--depaudit,x],
  		    [libc_cv_depaudit=yes], [libc_cv_depaudit=no])
  LIBC_CONFIG_VAR([have-depaudit], [$libc_cv_depaudit])
  
-+LIBC_LINKER_FEATURE([--pack-dyn-relocs=relr], [-Wl,--pack-dyn-relocs=relr],
++LIBC_LINKER_FEATURE([-z pack-relative-relocs], [-Wl,-z,pack-relative-relocs],
 +		    [libc_cv_relr=yes], [libc_cv_relr=no])
 +LIBC_CONFIG_VAR([have-relr], [$libc_cv_relr])
 +
@@ -119,28 +147,75 @@ index 7eb4239359..a8e81849ac 100644
  		    [-Wl,--no-dynamic-linker],
  		    [libc_cv_no_dynamic_linker=yes],
 diff --git a/elf/Makefile b/elf/Makefile
-index cb9bcfb799..a9bfd65b77 100644
+index b86d116be9..33c795d62c 100644
 --- a/elf/Makefile
 +++ b/elf/Makefile
-@@ -245,6 +245,13 @@ tests-special += $(objpfx)tst-audit14-cmp.out $(objpfx)tst-audit15-cmp.out \
- 		 $(objpfx)tst-audit16-cmp.out
+@@ -46,6 +46,7 @@ routines = \
+   libc-dl_find_object \
+   libc_early_init \
+   rtld_static_init \
++  libc-abi-dt-relr \
+   # routines
+ 
+ # The core dynamic linking functions are in libc for the static and
+@@ -360,6 +360,13 @@ tests-special += $(objpfx)tst-audit14-cmp.out $(objpfx)tst-audit15-cmp.out \
+ 		 $(objpfx)tst-audit16-cmp.out $(objpfx)tst-audit14a-cmp.out
  endif
  endif
 +ifeq ($(have-relr),yes)
 +tests += tst-relr tst-relr-no-pie
 +tests-pie += tst-relr
 +tests-no-pie += tst-relr-no-pie
-+LDFLAGS-tst-relr += -Wl,--pack-dyn-relocs=relr
-+LDFLAGS-tst-relr-no-pie += -Wl,--pack-dyn-relocs=relr
++LDFLAGS-tst-relr += -z pack-relative-relocs
++LDFLAGS-tst-relr-no-pie += -z pack-relative-relocs
 +endif
  endif
  tests += $(tests-execstack-$(have-z-execstack))
  ifeq ($(run-built-tests),yes)
+@@ -824,8 +831,10 @@ $(eval $(call include_dsosort_tests,dso-sort-tests-1.def))
+ $(eval $(call include_dsosort_tests,dso-sort-tests-2.def))
+ endif
+ 
+-check-abi: $(objpfx)check-abi-ld.out
+-tests-special += $(objpfx)check-abi-ld.out
++check-abi: $(objpfx)check-abi-ld.out \
++	   $(objpfx)check-libc-abi-dt-relr.out
++tests-special += $(objpfx)check-abi-ld.out \
++	   $(objpfx)check-libc-abi-dt-relr.out
+ update-abi: update-abi-ld
+ update-all-abi: update-all-abi-ld
+ 
+@@ -2715,6 +2716,10 @@ CFLAGS-tst-dl_find_object-mod7.c += -funwind-tables
+ CFLAGS-tst-dl_find_object-mod8.c += -funwind-tables
+ CFLAGS-tst-dl_find_object-mod9.c += -funwind-tables
+ 
++$(objpfx)check-libc-abi-dt-relr.out: $(common-objpfx)libc.so
++	LC_ALL=C $(NM) -D $< | grep '__libc_abi_dt_relr_placeholder@@GLIBC_ABI_DT_RELR' > $@; \
++	$(evaluate-test)
++
+ $(objpfx)tst-p_alignmod-base.so: $(libsupport)
+ LDFLAGS-tst-p_alignmod-base.so += -Wl,-z,max-page-size=0x200000
+ 
+
+diff --git a/elf/Versions b/elf/Versions
+index a4f1e76708..79325817d3 100644
+--- a/elf/Versions
++++ b/elf/Versions
+@@ -23,6 +23,9 @@ libc {
+   GLIBC_2.35 {
+     _dl_find_object;
+   }
++  GLIBC_ABI_DT_RELR {
++    __libc_abi_dt_relr_placeholder;
++  }
+   GLIBC_PRIVATE {
+     # functions used in other libraries
+     __libc_early_init;
 diff --git a/elf/dynamic-link.h b/elf/dynamic-link.h
-index ac4cc70dea..fafd42f918 100644
+index 25dd7ca4f2..4dd62b34d7 100644
 --- a/elf/dynamic-link.h
 +++ b/elf/dynamic-link.h
-@@ -160,6 +160,33 @@ elf_machine_lazy_rel (struct link_map *map, struct r_scope_elem *scope[],
+@@ -146,14 +146,48 @@ elf_machine_lazy_rel (struct link_map *map, struct r_scope_elem *scope[],
  #  define ELF_DYNAMIC_DO_RELA(map, scope, lazy, skip_ifunc) /* Nothing to do.  */
  # endif
  
@@ -173,17 +248,24 @@ index ac4cc70dea..fafd42f918 100644
 +
  /* This can't just be an inline function because GCC is too dumb
     to inline functions containing inlines themselves.  */
++# ifdef RTLD_BOOTSTRAP
++#  define DO_RTLD_BOOTSTRAP 1
++# else
++#  define DO_RTLD_BOOTSTRAP 0
++# endif
  # define ELF_DYNAMIC_RELOCATE(map, scope, lazy, consider_profile, skip_ifunc) \
-@@ -168,6 +195,7 @@ elf_machine_lazy_rel (struct link_map *map, struct r_scope_elem *scope[],
+   do {									      \
+     int edr_lazy = elf_machine_runtime_setup ((map), (scope), (lazy),	      \
  					      (consider_profile));	      \
      ELF_DYNAMIC_DO_REL ((map), (scope), edr_lazy, skip_ifunc);		      \
      ELF_DYNAMIC_DO_RELA ((map), (scope), edr_lazy, skip_ifunc);		      \
-+    ELF_DYNAMIC_DO_RELR ((map));					      \
++    if ((map) != &GL(dl_rtld_map) || DO_RTLD_BOOTSTRAP)		      	      \
++      ELF_DYNAMIC_DO_RELR (map);					      \
    } while (0)
  
  #endif
 diff --git a/elf/elf.h b/elf/elf.h
-index 50f87baceb..6dc1ee0ac0 100644
+index 0735f6b579..0195029188 100644
 --- a/elf/elf.h
 +++ b/elf/elf.h
 @@ -443,7 +443,8 @@ typedef struct
@@ -221,7 +303,7 @@ index 50f87baceb..6dc1ee0ac0 100644
  #define DT_HIOS		0x6ffff000	/* End of OS-specific */
  #define DT_LOPROC	0x70000000	/* Start of processor-specific */
 diff --git a/elf/get-dynamic-info.h b/elf/get-dynamic-info.h
-index f63e07dc6d..005c48d642 100644
+index 6c2ccd6db4..6c2a3a12b1 100644
 --- a/elf/get-dynamic-info.h
 +++ b/elf/get-dynamic-info.h
 @@ -89,6 +89,7 @@ elf_get_dynamic_info (struct link_map *l, bool bootstrap,
@@ -241,6 +323,33 @@ index f63e07dc6d..005c48d642 100644
    if (bootstrap || static_pie_bootstrap)
      {
        assert (info[DT_RUNPATH] == NULL);
+diff --git a/elf/libc-abi-dt-relr.c b/elf/libc-abi-dt-relr.c
+new file mode 100644
+index 0000000000..41c8e9f8eb
+--- /dev/null
++++ b/elf/libc-abi-dt-relr.c
+@@ -0,0 +1,21 @@
++/* Placeholder definition for GLIBC_ABI_DT_RELR node.
++   Copyright (C) 2022 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#ifdef SHARED
++const char __libc_abi_dt_relr_placeholder = 0;
++#endif
 diff --git a/elf/tst-relr-no-pie.c b/elf/tst-relr-no-pie.c
 new file mode 100644
 index 0000000000..7df0cdbfd6
@@ -299,3 +408,18 @@ index 0000000000..0b0fe5ed17
 +}
 +
 +#include <support/test-driver.c>
+diff --git a/scripts/abilist.awk b/scripts/abilist.awk
+index 24a34ccbed..e6a94c6571 100644
+--- a/scripts/abilist.awk
++++ b/scripts/abilist.awk
+@@ -55,6 +55,8 @@ $2 == "g" || $2 == "w" && (NF == 7 || NF == 8) {
+   # caused STV_HIDDEN symbols to appear in .dynsym, though that is useless.
+   if (NF > 7 && $7 == ".hidden") next;
+ 
++  if (version == "GLIBC_ABI_DT_RELR") next;
++
+   if (version == "GLIBC_PRIVATE" && !include_private) next;
+ 
+   desc = "";
+-- 
+2.27.0

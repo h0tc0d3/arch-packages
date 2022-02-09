@@ -1,16 +1,15 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
 pkgver=2.35
-pkgrel=2
+pkgrel=3
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
-makedepends=(git gd lib32-gcc-libs python)
+makedepends=(git gd lib32-gcc-libs gcc-libs python)
 optdepends=('perl: for mtrace')
-options=(staticlibs)
-_commit=3d9f171bfb5325bd5f427e9fc386453358c6e840
+options=(!strip staticlibs)
+_commit=9e94f57484a2aba0fe67ea2059b5843f651887c2
 source=("git+https://sourceware.org/git/glibc.git#commit=${_commit}"
-  #source=("https://ftp.gnu.org/gnu/glibc/glibc-${pkgver}.tar.xz"
   locale-gen
   sdt.h sdt-config.h
   glibc-newlocale-error.patch
@@ -28,7 +27,7 @@ sha256sums=('SKIP'
   'cdc234959c6fdb43f000d3bb7d1080b0103f4080f5e67bcfe8ae1aaf477812f0'
   '733396588e1e7c356f8d33ba80f6c317963dd936f9039f3f77f0bcec81138159'
   'bf4a09560dbcd1cdffb4d083013b6daa3303b2857d38829ac0f2a1ef13091e80'
-  '73746aaa884f9c05ae423fc0e4bb9b9e735f4303569d078fb4092aa162b326e1'
+  'd05f640c5e4571a5cd4fb9a22153f12b972b14a67b16883ffd71ad48c26d5df0'
   '5abaf44c35e6bb6abd61469fb313630e2b27897fbf04fbb8cf9013349d7f72e5')
 
 _patch() {
@@ -69,38 +68,44 @@ build() {
     --enable-bind-now
     --enable-tunables
     --enable-kernel=5.10.1
-    --enable-multi-arch
+    --disable-multi-arch
     --enable-stack-protector=strong
     --enable-systemtap
-    --disable-nscd # Deprecated
+    --disable-build-nscd
+    --disable-nscd
     --disable-cet
     --disable-stackguard-randomization # BZ #27872 Commit f294306ba1385b096f4e4cac9146a989f1e6d1c0
     --disable-lock-elision
     --disable-profile
+    --disable-crypt
     --disable-werror
   )
 
   cd "${srcdir:?}/glibc-build" || exit 1
 
-  echo "slibdir=/usr/lib" >>configparms
-  echo "rtlddir=/usr/lib" >>configparms
-  echo "sbindir=/usr/bin" >>configparms
-  echo "rootsbindir=/usr/bin" >>configparms
+  {
+    echo "slibdir=/usr/lib"
+    echo "rtlddir=/usr/lib"
+    echo "sbindir=/usr/bin"
+    echo "rootsbindir=/usr/bin"
+  } >configparms
 
   # remove fortify for building libraries
   CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
-  CFLAGS=${CFLAGS/-fno-plt/}
-  CXXFLAGS=${CXXFLAGS/-fno-plt/}
-  #LDFLAGS=${LDFLAGS/,-z,now/}
+  CFLAGS=${CFLAGS/-Wp,-D_FORTIFY_SOURCE=2/}
 
   if [[ ${_lld} -eq 1 ]]; then
-    CC="${CC} -fuse-ld=lld"
+    BUILD_CC="gcc" CC="gcc -Wl,-fuse-ld=lld" CXX="gcc++ -Wl,-fuse-ld=lld" \
+      "${srcdir:?}/glibc/configure" \
+      --libdir=/usr/lib \
+      --libexecdir=/usr/lib \
+      ${_configure_flags[@]}
+  else
+    "${srcdir:?}/glibc/configure" \
+      --libdir=/usr/lib \
+      --libexecdir=/usr/lib \
+      ${_configure_flags[@]}
   fi
-
-  "${srcdir:?}/glibc/configure" \
-    --libdir=/usr/lib \
-    --libexecdir=/usr/lib \
-    ${_configure_flags[@]}
 
   # build libraries with fortify disabled
   echo "build-programs=no" >>configparms
@@ -108,15 +113,7 @@ build() {
 
   # re-enable fortify for programs
   sed -i "/build-programs=/s#no#yes#" configparms
-
-  if [[ ${_lld} -eq 1 ]]; then
-    echo "CC += -D_FORTIFY_SOURCE=2 -fuse-ld=lld" >>configparms
-    echo "CXX += -D_FORTIFY_SOURCE=2 -fuse-ld=lld" >>configparms
-  else
-    echo "CC += -D_FORTIFY_SOURCE=2" >>configparms
-    echo "CXX += -D_FORTIFY_SOURCE=2" >>configparms
-  fi
-
+  echo "CFLAGS += -Wp,-D_FORTIFY_SOURCE=2" >>configparms
   make
 
   # build info pages manually for reprducibility
@@ -124,24 +121,28 @@ build() {
 
   cd "${srcdir:?}/lib32-glibc-build" || exit 1
 
-  export CC="gcc -m32 -mstackrealign"
-  export CXX="g++ -m32 -mstackrealign"
+  {
+    echo "slibdir=/usr/lib32"
+    echo "rtlddir=/usr/lib32"
+    echo "sbindir=/usr/bin"
+    echo "rootsbindir=/usr/bin"
+  } >configparms
 
-  echo "slibdir=/usr/lib32" >>configparms
-  echo "rtlddir=/usr/lib32" >>configparms
-  echo "sbindir=/usr/bin" >>configparms
-  echo "rootsbindir=/usr/bin" >>configparms
-
-  # remove fortify for building libraries
-  CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
-  CFLAGS=${CFLAGS/-fno-plt/}
-  CXXFLAGS=${CXXFLAGS/-fno-plt/}
-
-  "${srcdir:?}/glibc/configure" \
-    --host=i686-pc-linux-gnu \
-    --libdir=/usr/lib32 \
-    --libexecdir=/usr/lib32 \
-    ${_configure_flags[@]}
+  if [[ ${_lld} -eq 1 ]]; then
+    BUILD_CC="gcc" CC="gcc -m32 -Wl,-fuse-ld=lld" CXX="g++ -m32 -Wl,-fuse-ld=lld" \
+      "${srcdir:?}/glibc/configure" \
+      --host=i686-pc-linux-gnu \
+      --libdir=/usr/lib32 \
+      --libexecdir=/usr/lib32 \
+      ${_configure_flags[@]}
+  else
+    BUILD_CC="gcc" CC="gcc -m32" CXX="g++ -m32" \
+      "${srcdir:?}/glibc/configure" \
+      --host=i686-pc-linux-gnu \
+      --libdir=/usr/lib32 \
+      --libexecdir=/usr/lib32 \
+      ${_configure_flags[@]}
+  fi
 
   # build libraries with fortify disabled
   echo "build-programs=no" >>configparms
@@ -149,14 +150,14 @@ build() {
 
   # re-enable fortify for programs
   sed -i "/build-programs=/s#no#yes#" configparms
-
-  echo "CC += -D_FORTIFY_SOURCE=2" >>configparms
-  echo "CXX += -D_FORTIFY_SOURCE=2" >>configparms
-
+  echo "CFLAGS += -Wp,-D_FORTIFY_SOURCE=2" >>configparms
   make
 
-  unset CC
-  unset CXX
+}
+
+disable_test() {
+
+  sed -i "s/\b${1:?}\b//" "${srcdir:?}/glibc/${2:?}"
 
 }
 
@@ -164,11 +165,25 @@ check() {
 
   cd glibc-build || exit 1
 
-  # remove fortify in preparation to run test-suite
-  sed -i '/FORTIFY/d' configparms
+  # adjust/remove buildflags that cause false-positive testsuite failures
+  sed -i '/FORTIFY/d' configparms                                   # failure to build testsuite
+  sed -i 's/-Werror=format-security/-Wformat-security/' config.make # failure to build testsuite
+  sed -i '/CFLAGS/s/-fno-plt//' config.make                         # 16 failures
+  sed -i '/CFLAGS/s/-fexceptions//' config.make                     # 1 failure
+  LDFLAGS=${LDFLAGS/,-z,now/}                                       # 10 failures
 
-  # some failures are "expected"
-  make check || true
+  # The following tests fail due to restrictions in the Arch build system
+  # The correct fix is to add the following to the systemd-nspawn call:
+  # --capability=CAP_IPC_LOCK --system-call-filter="@clock @pkey"
+  disable_test test-errno-linux sysdeps/unix/sysv/linux/Makefile
+  disable_test tst-ntp_gettime sysdeps/unix/sysv/linux/Makefile
+  disable_test tst-ntp_gettimex sysdeps/unix/sysv/linux/Makefile
+  disable_test tst-mlock2 sysdeps/unix/sysv/linux/Makefile
+  disable_test tst-pkey sysdeps/unix/sysv/linux/Makefile
+  disable_test tst-adjtime time/Makefile
+  disable_test tst-clock2 time/Makefile
+
+  make check
 
 }
 

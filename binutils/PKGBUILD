@@ -1,6 +1,6 @@
 pkgname=binutils
-pkgver=2.37
-pkgrel=5
+pkgver=2.38
+pkgrel=1
 pkgdesc='A set of programs to assemble and manipulate binary and object files'
 arch=(x86_64)
 url='https://www.gnu.org/software/binutils/'
@@ -10,67 +10,45 @@ depends=(glibc zlib elfutils)
 makedepends=(elfutils git)
 conflicts=(binutils-multilib)
 replaces=(binutils-multilib)
-options=(staticlibs !distcc !ccache)
-#_commit=cb5f6a3e146cc70bc2d864989386df80acec5d3e
-#source=(git+https://sourceware.org/git/binutils-gdb.git#commit=$_commit)
+options=(staticlibs)
 source=(
   "https://ftp.gnu.org/gnu/binutils/binutils-${pkgver}.tar.xz"{,.sig}
   binutils-no-config-h-check.patch
   binutils-revert-PLT-elision.patch
-  binutils-do-not-link-with-static-libstdc++.patch
   binutils-special-sections-in-groups.patch
   binutils-fix-testsuite-failures.patch
   binutils-gold-mismatched-section-flags.patch
   binutils-CVE-2019-1010204.patch
   binutils-gold-warn-unsupported.patch
   binutils-use-long-long.patch
-  binutils-testsuite-fixes.patch
   binutils-gold-i386-gnu-property-notes.patch
-  binutils-clang-fails.patch
-  binutils-ld-expression-parsing.patch
-  binutil-opcodes-constify-and-local-meps-macros.patch
-  binutils-bfd-close-file-descriptor.patch
-  binutils-dwarf-5-dir0.patch
   binutils-autoconf-version.patch
   binutils-ld-default-entry-of-0-for-shared.patch
-  binutils-empty-MIND-string.patch
-  binutils.unicode.patch
-  binutils-ld-read-only-script.patch
-  binutils-gas-multibyte-warnings.patch
   binutils-readelf-other-sym-info.patch
-  binutils-readelf-recognize-FDO-Packaging-Metadata-ELF-note.patch
-  binutils-CVE-2021-45078.patch
+  gcc12-libtool-no-rpath.patch
+  binutils-2.38-fix-build.patch
 )
-sha256sums=('820d9724f020a3e69cb337893a0b63c2db161dadcb0e06fc11dc29eb1e84a32c'
+sha256sums=('e316477a914f567eccc34d5d29785b8b0f5a10208d36bbacedcc39048ecfe024'
   'SKIP'
   'c842f958c26c56b868ca7e9a56012490aef4ff29a4956c06ab422955758a9af6'
   'cf9fd37b33332866a2cebb8e090b51fa6ed5ac3defbff8787d8953056b5b3ba9'
-  '4e5fc2b51ed0a1cc52d279a7ed869b5c5f39de74a637f6ca965a25a496bf6112'
   '143f53ebe64cf7640d8bce44446995c2d1b393fd3c5a4dbd0a82c24352e0e8f4'
   '49e01577e2f95926441642d2e798bcfc4ea08a9c83e4d28bbb9d563d569b7ef3'
   '1939d75dbaa43a917e3388a6b9382ae0ba200b6f65b95979e226281be507394c'
   '199b4044d06f8daa2197a7a4d03cf8b2a63f2e7b8493e709c6a016c1e3f902d1'
   '2d430b66f84a19c154725ec535280c493be1d34f1a90f95208dce02fecd0e4e4'
   '73af103882e23936b5423e5756a6edf485ef327091e0b9aaa2a51be55764e98e'
-  '1a18158ec63bd325e8996affe1e5c660224a8bc30d626773e6d0577627b04654'
   '72ba8f1a0c9d8ec0f443f11d1a3bea8fff5d7b6ff6cdbd0fd02ded747959503d'
-  '330000140987646c45e882635845439b4cb9fae1eb601f832685243356a9e32e'
-  '2fcb5acbce65f2e0ecc6dac08ffa670041a57379430e9359804e957c2362cbc7'
-  'ae485133cc4df1ff95b541ab893626b8bd2f3a1d9971de9b87228cc409a128f4'
-  '37d2b543dc8d40d49aa6a9d7be004fda0a8ee6a191e5f63676843c83708bbac7'
-  'fde5af6450d18a9db618b12d5f6a7ea572c9e05f502097c1ab9ba3f2a5af056d'
   '915c02b0e5df3c6849e170304a2ee16f5741b74fdb6e5ad755a38364d06afc62'
   'e6ffa1b8452ae74293523140a9eb767b3b30b73d9e466709fcf8c478a05bd455'
-  '100336b5a728f59b744da9ec571408e98d4d2541bae314630ebfd501f20770b3'
-  '4d7081d31800269e0e59594ccb9348d1023614e2aac96c3a3772e0ab626a2a36'
-  '9519ddd6b10f86c0ef26d941489c63e4a78424abc8684262cddb0e2962fcdd8e'
-  '596c8e6f12cbf317f7ccf6fdd7cde621141f8479772d94882c192d227c169acc'
   '995f16f70b4b2be12f0c8dec4bdc5e074c831f35751b99de2c2f47053621745f'
-  '1839129c1e4daf6b6490d9db8749e64a2fc1a64e6c484ef7aae7639e72d694fe'
-  '590c914dd3f210c7cf509028febe1823ad64d979c288bcfb8a11d732ce25f1a8')
+  'e60f198bb49f29dfca2355e6ca2fae24c2a933a55ab567fedfa55ca5ae57aad4'
+  '0e661641bbcf15ac8d3d3dbff802ccd9c475309a8fcdcc0294e2d3e2001252d2')
 validpgpkeys=(3A24BC1E8FB409FA9F14371813FCEF89DD9E3C4F)
 
 # toolchain build order: linux-api-headers->glibc->binutils->gcc->binutils->glibc
+
+_llvm=0
 
 _patch() {
 
@@ -81,21 +59,14 @@ _patch() {
 
 prepare() {
 
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
   [[ ! -d binutils-gdb ]] && ln -s binutils-${pkgver} binutils-gdb
   mkdir -p binutils-build
 
   cd binutils-gdb || exit 1
-
-  # Fix clang build fail
-  _patch binutils-clang-fails.patch
-  # ld script expression parsing
-  _patch binutils-ld-expression-parsing.patch
-  # opcodes: constify & local meps macros
-  _patch binutil-opcodes-constify-and-local-meps-macros.patch
-  # Close the file descriptor if there is no archive plugin file descriptor
-  # to avoid running out of file descriptors on thin archives with many
-  # archive members.
-  _patch binutils-bfd-close-file-descriptor.patch
 
   ##############################
   #                            #
@@ -122,26 +93,22 @@ prepare() {
   # FIXME:    Replace with a configure time option.
   _patch binutils-revert-PLT-elision.patch
 
-  # Purpose:  Stop the binutils from statically linking with libstdc++.
-  # Lifetime: Permanent.
-  _patch binutils-do-not-link-with-static-libstdc++.patch
-
   # Purpose:  Allow OS specific sections in section groups.
-  # Lifetime: Fixed in 2.38 (maybe)
+  # Lifetime: Fixed in 2.39 (maybe)
   _patch binutils-special-sections-in-groups.patch
 
   # Purpose:  Fix linker testsuite failures.
-  # Lifetime: Fixed in 2.37 (maybe)
+  # Lifetime: Fixed in 2.39 (maybe)
   _patch binutils-fix-testsuite-failures.patch
 
   # Purpose:  Stop gold from aborting when input sections with the same name
   #            have different flags.
-  # Lifetime: Fixed in 2.38 (maybe)
+  # Lifetime: Fixed in 2.39 (maybe)
   _patch binutils-gold-mismatched-section-flags.patch
 
   # Purpose:  Add a check to the GOLD linker for a corrupt input file
   #            with a fuzzed section offset.
-  # Lifetime: Fixed in 2.38 (maybe)
+  # Lifetime: Fixed in 2.39 (maybe)
   _patch binutils-CVE-2019-1010204.patch
 
   # Purpose:  Change the gold configuration script to only warn about
@@ -158,45 +125,20 @@ prepare() {
   # Lifetime: Permanent.
   _patch binutils-use-long-long.patch
 
-  # Purpose:  Fix testsuite failures due to the patches applied here.
-  # Lifetime: Permanent, but varying with each new rebase.
-  _patch binutils-testsuite-fixes.patch
-
   # Purpose:  Enable the creation of .note.gnu.property sections by the GOLD
   #            linker for x86 binaries.
-  # Lifetime: Fixed in 2.38 maybe
+  # Lifetime: Fixed in 2.39 maybe
   _patch binutils-gold-i386-gnu-property-notes.patch
-
-  # Purpose:  Ensure that the 0'th entry in DWARF-5 directory tables generated
-  #            by gas contains the current working directory.
-  # Lifetime: Fixed in 2.38
-  _patch binutils-dwarf-5-dir0.patch
 
   # Purpose: Allow the binutils to be configured with any (recent) version of
   #          autoconf.
-  # Lifetime: Fixed in 2.38 (maybe ?)
+  # Lifetime: Fixed in 2.39 (maybe ?)
   _patch binutils-autoconf-version.patch
 
   # Purpose:  Set the entry address of shared libraries to 0, so that they can
   #           be detected by the loader and not run as an executable.
   # Lifetime: Permanent.
   _patch binutils-ld-default-entry-of-0-for-shared.patch
-
-  # Purpose:  Fix a seg-fault compiling the efivar libraries.
-  # Lifetime: Fixed in 2.38.
-  _patch binutils-empty-MIND-string.patch
-
-  # Purpose:  Add ability to show unicode characters to display tools
-  # Lifetime: Fixed in 2.38.
-  _patch binutils.unicode.patch
-
-  # Purpose:  Add ability to create read-only notes via linker scripts
-  # Lifetime: Fixed in 2.38.
-  _patch binutils-ld-read-only-script.patch
-
-  # Purpose:  Add ability to warn about unicode characters in the assembler
-  # Lifetime: Fixed in 2.38.
-  _patch binutils-gas-multibyte-warnings.patch
 
   # Purpose:  Changes readelf so that when it displays extra information about
   #           a symbol, this information is placed at the end of the line.
@@ -205,13 +147,13 @@ prepare() {
   #           a fixed output from readelf.  But it seems that some of them are
   #           no longer being maintained.
   _patch binutils-readelf-other-sym-info.patch
-  # Purpose:  Recognize FDO Packaging Metadata ELF note in readelf.
-  # Lifetime: Fixed in 2.38.
-  _patch binutils-readelf-recognize-FDO-Packaging-Metadata-ELF-note.patch
 
-  # Purpose:  Fix a potential illegal memory access parsing a corrupt COFF file.
-  # Lifetime: Fixed in 2.38.
-  _patch binutils-CVE-2021-45078.patch
+  # Purpose:  Stop libtool from inserting useless runpaths into binaries.
+  # Lifetime: Who knows.
+  _patch gcc12-libtool-no-rpath.patch
+
+  # My patch to fix build 2.38
+  _patch binutils-2.38-fix-build.patch
 
   # Turn off development mode (-Werror, gas run-time checks, date in sonames)
   sed -i '/^development=/s/true/false/' bfd/development.sh
@@ -220,7 +162,7 @@ prepare() {
   sed -i "/ac_cpp=/s/\${CPPFLAGS}/\${CPPFLAGS} -O2/" libiberty/configure
 
   # Fix error: ‘LONG_MIN’ undeclared (first use in this function)
-  sed -i -e "/#include\s\"fibheap\.h\"/ a#include <limits.h>" libiberty/fibheap.c
+  #sed -i -e "/#include\s\"fibheap\.h\"/ a#include <limits.h>" libiberty/fibheap.c
 
 }
 
@@ -230,6 +172,12 @@ build() {
 
   LDFLAGS="${LDFLAGS} -Wl,--enable-new-dtags"
   CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
 
   # --enable-deterministic-archives=no BZ 1195883
   # --enable-generate-build-notes=no BZ 1572485

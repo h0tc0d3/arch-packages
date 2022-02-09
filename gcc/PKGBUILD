@@ -5,7 +5,7 @@ pkgname=(gcc gcc-libs gcc-fortran gcc-objc gcc-ada gcc-go lib32-gcc-libs gcc-d)
 pkgver=11.2.1
 _majorver=${pkgver%%.*}
 _islver=0.24
-pkgrel=3
+pkgrel=4
 pkgdesc='The GNU Compiler Collection'
 arch=(x86_64)
 license=(GPL LGPL FDL custom)
@@ -13,13 +13,14 @@ url='https://gcc.gnu.org'
 makedepends=(binutils libmpc gcc-ada doxygen lib32-glibc lib32-gcc-libs python git libxcrypt)
 checkdepends=(dejagnu inetutils)
 options=(!emptydirs)
+if [[ -z ${CHOST} ]]; then
+  CHOST=x86_64-pc-linux-gnu
+fi
 _libdir="usr/lib/gcc/${CHOST:?}/${pkgver%%+*}"
-_commit=e41308252e835ddedcabfd4a98240080c6583a43
-# source=(
+_commit=19d0e7645eb2f65afe0505022331c57e7095c52e
 source=(
   "git://gcc.gnu.org/git/gcc.git#commit=${_commit}"
-  #"https://sourceware.org/pub/gcc/releases/gcc-${pkgver}/gcc-${pkgver}.tar.xz"
-  "http://isl.gforge.inria.fr/isl-${_islver}.tar.xz"
+  "https://libisl.sourceforge.io/isl-${_islver}.tar.xz"
   c89 c99
   gcc-gdc_phobos_path.patch
   gcc-ada-repro.patch
@@ -31,6 +32,7 @@ source=(
   gcc11-stringify-__VA_OPT__-2.patch
   gcc11-libgcc-link.patch
   gcc11-pr101786.patch
+  gcc-11.2.0-cross-compile-include.patch
 )
 validpgpkeys=(
   F3691687D867B81B51CE07D9BBE43771487328A9 # bpiotrowski@archlinux.org
@@ -48,10 +50,11 @@ sha256sums=('SKIP'
   '58837a6070cbaab4a5453843d4ce12f595948129c04c78af272aefce7c15573d'
   '23897d6da54e392f09a9ed63fd45e3e656e465624bf83644f257dd7382980984'
   'f758e7bc1e013a96b00afc70354d0da81d15de75c98c1cb20df5158dda5d936d'
-  'f5d5a0bd59fe61072a3d058c7184edfeefcc53592f7515e83b9558887227139f'
-  'e10989e95c14e612bc64fdbd9f1859e5696bca285cc8d17fa81322425692f730'
+  'ee0306adc51c33fb4ca83f9cfaf0fa72e1e18a895b6ad338e8d3a789c6f1f585'
+  '2d478d21b009f8662971681b37a8ccdee3cc8886f3a28b9b8382a3d8fcb5969f'
   '95a7ef8f98a5135a0071978d5a2927f7b4fe397355c9c8050fbf05b5683aeed6'
-  'cbacb7c8e128e1722a379c295ef761a3a92563ebd614af3ceefc8f193fa04392')
+  'cbacb7c8e128e1722a379c295ef761a3a92563ebd614af3ceefc8f193fa04392'
+  'be93cc7b4fb7a9a16cbffdd30b30727cf2c72e0bb59c69231bd7ef68d9631aeb')
 
 _patch() {
 
@@ -63,6 +66,7 @@ _patch() {
 prepare() {
 
   [[ ! -d gcc ]] && ln -s gcc-${pkgver/+/-} gcc
+
   cd gcc
 
   # link isl for in-tree build
@@ -92,6 +96,10 @@ prepare() {
   _patch 0 gcc11-stringify-__VA_OPT__.patch
   _patch 0 gcc11-libgcc-link.patch
   _patch 0 gcc11-pr101786.patch
+  # https://bugs.gentoo.org/803371
+  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=80196
+  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100017
+  _patch 1 gcc-11.2.0-cross-compile-include.patch
 
   mkdir -p "${srcdir:?}/gcc-build"
 
@@ -108,7 +116,7 @@ build() {
   CXXFLAGS=${CXXFLAGS/-pipe/}
 
   "${srcdir:?}/gcc/configure" \
-    --host=x86_64-pc-linux-gnu \
+    --host=${CHOST:?} \
     --prefix=/usr \
     --libdir=/usr/lib \
     --libexecdir=/usr/lib \
@@ -470,7 +478,7 @@ package_gcc-d() {
   rm -f "${pkgdir:?}/usr/lib32/"lib{gphobos,gdruntime}.so*
 
   install -d "${pkgdir:?}"/usr/include/dlang
-  ln -s /"${_libdir}"/include/d "${pkgdir:?}"/usr/include/dlang/gdc
+  ln -s "/${_libdir}/include/d" "${pkgdir:?}"/usr/include/dlang/gdc
 
   # Install Runtime Library Exception
   install -d "${pkgdir:?}/usr/share/licenses/${pkgname:?}/"
