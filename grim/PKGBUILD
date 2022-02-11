@@ -1,5 +1,5 @@
 pkgname=grim+clang
-pkgver=1.3.2
+pkgver=1.4.0
 pkgrel=1
 pkgdesc='Screenshot utility for Wayland'
 arch=(x86_64)
@@ -9,7 +9,7 @@ provides=('grim' "grim=${pkgver}")
 conflicts=('grim')
 depends=(cairo libjpeg-turbo wayland)
 makedepends=(git meson pango scdoc wayland-protocols)
-_commit=c2efce7ffcfb70df5ea197f729da83be79d54f34 # tag: v1.3.2
+_commit=275e8c61381f43a31241c48d53243b655424faf8 # tag: v1.4.0
 source=("grim::git+https://github.com/emersion/grim.git#commit=${_commit}")
 sha256sums=('SKIP')
 
