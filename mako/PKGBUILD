@@ -1,6 +1,6 @@
 pkgname=mako+clang
 pkgver=1.6
-pkgrel=2
+pkgrel=3
 license=('MIT')
 provides=('mako' "mako=${pkgver}")
 conflicts=('mako')
