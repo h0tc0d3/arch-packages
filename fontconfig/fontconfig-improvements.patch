@@ -76,29 +76,6 @@ index 64cae44..7423cc7 100644
    gperf_test = gperf_test_format.format('size_t', gperf_snippet.stdout())
  
    if cc.compiles(gperf_test) 
-@@ -381,13 +385,12 @@ fc_headers = [
- install_headers(fc_headers, subdir: meson.project_name())
- 
- # Summary
--if meson.version().version_compare('>= 0.53')
--  doc_targets = get_variable('doc_targets', [])
--
--  summary({
--         'Documentation': (doc_targets.length() > 0 ? doc_targets : false),
--         'NLS': not get_option('nls').disabled(),
--         'Tests': not get_option('tests').disabled(),
--         'Tools': not get_option('tools').disabled(),
--         }, section: 'General', bool_yn: true, list_sep: ', ')
--endif
-+
-+doc_targets = get_variable('doc_targets', [])
-+
-+summary({
-+        'Documentation': (doc_targets.length() > 0 ? doc_targets : false),
-+        'NLS': not get_option('nls').disabled(),
-+        'Tests': not get_option('tests').disabled(),
-+        'Tools': not get_option('tools').disabled(),
-+        }, section: 'General', bool_yn: true, list_sep: ', ')
 diff --git a/meson_options.txt b/meson_options.txt
 index b70edf1..d77ec8e 100644
 --- a/meson_options.txt

@@ -1,6 +1,7 @@
 pkgname=mesa+clang
 pkgdesc="Mesa open-source implementation of the OpenGL specification"
-pkgver=21.3.5
+pkgver=21.3.6
+_pkgver=${pkgver//_/-}
 pkgrel=1
 arch=('x86_64')
 makedepends=('git' 'python-mako' 'xorgproto' 'llvm'
@@ -14,12 +15,12 @@ conflicts=('mesa' 'opencl-mesa' 'vulkan-intel' 'vulkan-radeon' 'vulkan-mesa-laye
 url="https://www.mesa3d.org"
 license=('custom')
 source=(
-  "https://archive.mesa3d.org/mesa-${pkgver}.tar.xz"{,.sig}
+  "https://archive.mesa3d.org/mesa-${_pkgver}.tar.xz"{,.sig}
   'LICENSE'
   'mesa-remove-swr.patch'
 )
 
-sha256sums=('d93b2a9d2464ee856d7637a07dff6b7cd950f295ad58518bb959f76882cf4a4c'
+sha256sums=('96bb761fd546e9aa41d025fcc025225c5668443839dae21e3731959beb096736'
   'SKIP'
   '7fdc119cf53c8ca65396ea73f6d10af641ba41ea1dd2bd44a824726e01c8b3f2'
   'c7aadbec8859418503b97a4ff8080841772a93a6c881522e6ad035db2d43fb81')
@@ -29,7 +30,6 @@ validpgpkeys=(
   '71C4B75620BC75708B4BDB254C95FAAB3EB073EC' # Dylan Baker <dylan@pnwbakers.com>
 )
 
-DRI_DRIVERS="i915,i965,r200,r100,nouveau"
 GALLIUM_DRIVERS="r300,r600,radeonsi,nouveau,virgl,svga,swrast,iris,zink,crocus"
 VULKAN_DRIVERS="amd,intel,swrast"
 VULKAN_LAYERS="device-select,intel-nullhw,overlay"
@@ -49,7 +49,7 @@ prepare() {
     _extra_lto_flag='-D b_lto_mode=thin'
   fi
 
-  cd "${srcdir:?}/mesa-${pkgver}" || (
+  cd "${srcdir:?}/mesa-${_pkgver}" || (
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/mesa-${pkgver} directory! Prepare Failed! \E[0m"
     exit 1
   )
@@ -62,7 +62,7 @@ prepare() {
 
 build() {
 
-  meson setup mesa-${pkgver} build \
+  meson setup mesa-${_pkgver} build \
     --prefix /usr \
     --libexecdir lib \
     --sbindir bin \

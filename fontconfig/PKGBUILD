@@ -1,6 +1,6 @@
 pkgname=fontconfig+clang
-pkgver=2.13.94
-pkgrel=7
+pkgver=2.13.96
+pkgrel=1
 epoch=2
 pkgdesc="Library for configuring and customizing font access"
 url=https://www.freedesktop.org/wiki/Software/fontconfig/
@@ -14,7 +14,7 @@ conflicts=(fontconfig fontconfig-docs)
 replaces=('fontconfig-docs<2:2.13.93-1')
 install=fontconfig.install
 backup=(etc/fonts/fonts.conf)
-_commit=e474b380ffdb330eca7dd0f0fddacc7b19f3247d
+_commit=d37f97223a4715176c0889e91685dc796457e25f
 source=(
   #"git+https://gitlab.freedesktop.org/fontconfig/fontconfig.git#commit=${_commit}"
   "https://gitlab.freedesktop.org/fontconfig/fontconfig/-/archive/${_commit}/fontconfig-${_commit}.tar.gz"
@@ -26,13 +26,13 @@ source=(
   fontconfig-improvements.patch
 )
 
-sha256sums=('ba33e4aad2d7ed7d489f69d0a83e62ceab2b7b181123e67c1874fcdbde134b31'
+sha256sums=('0d5c978e8806adaa17aedfc52f310ccbc6ee3f5a190d9a9256035f3656bd4eae'
   '7a9d50bccc709eb15db6ba8e13f69bc9d79b0bf354f1d17c1a5b2748edff3c33'
   '44f12491c9fd7eff825853846a2b3b8df2b96fc6520be5cb31ce7f37a160ff02'
   'fd7b6ce8ce178107f2e0b52462ebf186b6051c6eec945770107fda57048c9f34'
   'b2bee567aab161615cf565a5a426ab2e93ab706f0913d4a3ff94b8f40766b574'
   'bbbaf032d175b339fd39647e342d67455cd4a0df5f9435a918f3e758291fb0e6'
-  '1a36bab2704ea292a75e0571d130e4ca0ffdb496b9f5c548a86e31317e176218')
+  '8de242c30ec9373ed8a9b41de557ce5344341adaad8ca8cde0aacf52503790aa')
 
 _extra_lto_flag=""
 
