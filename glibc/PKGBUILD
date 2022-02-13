@@ -1,7 +1,7 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
 pkgver=2.35
-pkgrel=3
+pkgrel=4
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
@@ -16,6 +16,7 @@ source=("git+https://sourceware.org/git/glibc.git#commit=${_commit}"
   glibc-cs-path.patch
   glibc-relative-relocations.patch
   glibc-clang.patch
+  glibc-set-text-section-in-memset-vec-unaligned-erms.patch
 )
 validpgpkeys=(
   7273542B39962DF7B299931416792B4EA25340F8 # Carlos O'Donell
@@ -28,7 +29,8 @@ sha256sums=('SKIP'
   '733396588e1e7c356f8d33ba80f6c317963dd936f9039f3f77f0bcec81138159'
   'bf4a09560dbcd1cdffb4d083013b6daa3303b2857d38829ac0f2a1ef13091e80'
   'd05f640c5e4571a5cd4fb9a22153f12b972b14a67b16883ffd71ad48c26d5df0'
-  '5abaf44c35e6bb6abd61469fb313630e2b27897fbf04fbb8cf9013349d7f72e5')
+  '5abaf44c35e6bb6abd61469fb313630e2b27897fbf04fbb8cf9013349d7f72e5'
+  '775240247bc18e95e1d7618895e6d1059b6fa9b1ca07e5853db6f88cd2a863a2')
 
 _patch() {
 
@@ -51,6 +53,7 @@ prepare() {
   _patch glibc-clang.patch
   _patch glibc-newlocale-error.patch
   _patch glibc-cs-path.patch
+  _patch glibc-set-text-section-in-memset-vec-unaligned-erms.patch
 
   if ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _lld=1
@@ -74,7 +77,6 @@ build() {
     --disable-build-nscd
     --disable-nscd
     --disable-cet
-    --disable-stackguard-randomization # BZ #27872 Commit f294306ba1385b096f4e4cac9146a989f1e6d1c0
     --disable-lock-elision
     --disable-profile
     --disable-crypt
