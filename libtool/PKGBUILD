@@ -1,16 +1,16 @@
-pkgname=libtool
+pkgname=libtool+clang
 pkgver=2.4.6+63+gf5eb6f11
-pkgrel=1
+pkgrel=2
 pkgdesc='A generic library support script'
 arch=(x86_64)
 url='https://www.gnu.org/software/libtool'
 license=(GPL)
 groups=(base-devel)
 depends=(sh tar glibc)
-makedepends=("gcc" git help2man)
+makedepends=(gcc git help2man)
 checkdepends=(gcc-fortran)
-provides=("libltdl=${pkgver}" "libtool-multilib=${pkgver}")
-conflicts=(libltdl libtool-multilib)
+provides=("libltdl=${pkgver}" "libtool-multilib=${pkgver}" "libtool=${pkgver}")
+conflicts=(libltdl libtool-multilib libtool)
 replaces=(libltdl libtool-multilib)
 _commit=f5eb6f11698c65e550bfdcc1a0a1943df6d70f28
 source=(

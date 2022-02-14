@@ -1,4 +1,6 @@
 -glibc
+binutils
+libtool
 -libgcrypt
 -llvm
 python
