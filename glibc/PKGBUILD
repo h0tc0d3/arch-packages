@@ -1,7 +1,7 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
 pkgver=2.35
-pkgrel=4
+pkgrel=5
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
@@ -71,7 +71,7 @@ build() {
     --enable-bind-now
     --enable-tunables
     --enable-kernel=5.10.1
-    --disable-multi-arch
+    --enable-multi-arch
     --enable-stack-protector=strong
     --enable-systemtap
     --disable-build-nscd
