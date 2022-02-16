@@ -1,5 +1,5 @@
 diff --git a/hw/xwayland/meson.build b/hw/xwayland/meson.build
-index e848daf..70d6103 100644
+index 37c3949..d9e6718 100644
 --- a/hw/xwayland/meson.build
 +++ b/hw/xwayland/meson.build
 @@ -4,6 +4,8 @@ srcs = [
@@ -8,9 +8,9 @@ index e848daf..70d6103 100644
      'xwayland-cursor.h',
 +    'xwayland-ext.c',
 +    'xwayland-ext.h',
+     'xwayland-drm-lease.h',
+     'xwayland-drm-lease.c',
      'xwayland-glamor.h',
-     'xwayland-glx.h',
-     'xwayland-pixmap.c',
 diff --git a/hw/xwayland/xwayland-cursor.c b/hw/xwayland/xwayland-cursor.c
 index 16c13fb..a88a3d3 100644
 --- a/hw/xwayland/xwayland-cursor.c
@@ -477,13 +477,13 @@ index d2fa4e0..9c3ab32 100644
       * use it when binding to the xdg-output protocol...
       */
 diff --git a/hw/xwayland/xwayland-output.h b/hw/xwayland/xwayland-output.h
-index 9e10687..ec08975 100644
+index f0b2d35..919a227 100644
 --- a/hw/xwayland/xwayland-output.h
 +++ b/hw/xwayland/xwayland-output.h
-@@ -43,7 +43,7 @@ struct xwl_output {
-     struct xwl_screen *xwl_screen;
-     RROutputPtr randr_output;
-     RRCrtcPtr randr_crtc;
+@@ -53,7 +53,7 @@ struct xwl_output {
+     struct wl_output *output;
+     struct zxdg_output_v1 *xdg_output;
+     uint32_t server_output_id;
 -    int32_t x, y, width, height, refresh;
 +    int32_t x, y, width, height, scale, refresh;
      Rotation rotation;

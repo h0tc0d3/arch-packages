@@ -1,6 +1,6 @@
 pkgname=xorg-xwayland+clang
-pkgver=21.1.4
-pkgrel=2
+pkgver=22.1.0
+pkgrel=1
 arch=('x86_64')
 license=('custom')
 groups=('xorg')
@@ -17,9 +17,9 @@ source=(
   "https://xorg.freedesktop.org/archive/individual/xserver/xwayland-${pkgver}.tar.xz"{,.sig}
   xwlScaling.diff
 )
-sha256sums=('19f6795f31cfa8eb352b1e5b3c379f22ee6020e98701ff2cc679da8c4f1159f7'
+sha256sums=('1752d6d0a930e71292b5a308d3811ebd54d8cc68cacff44de654265b8617a2bf'
   'SKIP'
-  '0cd4fe4a40935b1df87cd0f0f876b833cbcde19f54d8748efea10ae16e7aee63')
+  '242d5a510286f9363f01220740ae0cbef2844baa53766d1d6257ba570ca07f03')
 provides=('xorg-xwayland' "xorg-xwayland=${pkgver}" 'xorg-server-xwayland')
 conflicts=('xorg-xwayland' 'xorg-server-xwayland')
 replaces=('xorg-server-xwayland')
