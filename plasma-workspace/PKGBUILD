@@ -1,6 +1,6 @@
 pkgbase=plasma-workspace+clang
 pkgname=(plasma-workspace+clang plasma-wayland-session+clang)
-pkgver=5.24.0
+pkgver=5.24.1
 pkgrel=1
 pkgdesc='KDE Plasma Workspace'
 arch=(x86_64)
@@ -16,7 +16,7 @@ source=(
   "https://download.kde.org/stable/plasma/${pkgver}/plasma-workspace-${pkgver}.tar.xz"{,.sig}
   kde.pam
 )
-sha256sums=('e337943732cafda000b972856ba0eab953f2c3190b8d8d952a3c6e1105d5d34a'
+sha256sums=('c79627fed9430c84502ed6917b91372423955ce5ce32abba409350de7b2d8f27'
   'SKIP'
   '00090291204baabe9d6857d3b1419832376dd2e279087d718b64792691e86739')
 validpgpkeys=(

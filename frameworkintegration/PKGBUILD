@@ -1,6 +1,6 @@
 pkgname=frameworkintegration+clang
-pkgver=5.90.0
-pkgrel=2
+pkgver=5.91.0
+pkgrel=1
 pkgdesc='Framework providing components to allow applications to integrate with a KDE Workspace'
 arch=(x86_64)
 url='https://community.kde.org/Frameworks'
@@ -13,11 +13,9 @@ optdepends=('appstream-qt: dependency resolving via AppStream' 'packagekit-qt5: 
 groups=(kf5)
 source=(
   "https://download.kde.org/stable/frameworks/${pkgver%.*}/frameworkintegration-${pkgver}.tar.xz"{,.sig}
-  https://invent.kde.org/frameworks/frameworkintegration/-/commit/675802e7.patch
 )
-sha256sums=('5651afb5bb3563d2212662974bd91750b313e3b58fabf59f59459ef904a6fbec'
-  'SKIP'
-  '047ea79fdfd0866dc4565b277e6c1e6bb9e88e99774482663de57e72100e72ea')
+sha256sums=('7fbc8c3b949849d22161f78df453d759389319a91b4925ff235799e410c5e684'
+  'SKIP')
 validpgpkeys=(53E6B47B45CEA3E0D5B7457758D0EE648A48B3BB) # David Faure <faure@kde.org>
 
 _llvm=0
@@ -27,8 +25,6 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=1
   fi
-
-  patch -d frameworkintegration-${pkgver} -p1 <675802e7.patch # Fix KNS downloads
 
 }
 

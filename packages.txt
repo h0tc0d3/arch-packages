@@ -100,6 +100,8 @@ xorg-server
 kwayland
 kwayland-server
 kwayland-integration
+kcoreaddons
+kservice
 kwin
 libffi
 guile
@@ -108,8 +110,6 @@ dbus
 wayland
 xorg-xwayland
 qt5-wayland
-kcoreaddons
-kservice
 kded
 plasma-wayland-protocols
 kwindowsystem
@@ -122,8 +122,8 @@ kdeclarative
 kcmutils
 kinit
 libqalculate
-plasma-workspace
 plasma-framework
+plasma-workspace
 imath
 libheif
 libavif
@@ -206,4 +206,4 @@ rofi
 krita
 kicad
 julia
--chromium
+chromium

@@ -1,5 +1,5 @@
 pkgname=chromium+clang
-pkgver=98.0.4758.80
+pkgver=98.0.4758.102
 pkgrel=1
 _launcher_ver=8
 _gcc_patchset=5
@@ -13,7 +13,7 @@ depends=('gtk3' 'nss' 'alsa-lib' 'xdg-utils' 'libxss' 'libcups' 'libgcrypt'
   'ttf-liberation' 'systemd' 'dbus' 'libpulse' 'pciutils' 'libva'
   'desktop-file-utils' 'hicolor-icon-theme')
 makedepends=('python' 'gn' 'ninja' 'clang' 'lld' 'gperf' 'nodejs' 'pipewire'
-  'java-runtime-headless' 'python2')
+  'java-runtime-headless')
 optdepends=(
   'pipewire: WebRTC desktop sharing under Wayland'
   'kdialog: support for native dialogs in Plasma'
@@ -45,7 +45,7 @@ source=(
   fix-build-break-with-system-libdrm.patch
   use-FT_Done_MM_Var-in-CFX_Font-AdjustMMParams.patch
 )
-sha256sums=('c87266e20f860a32c48affc70a769368d1b876dbad768e3aa93ee3c335944171'
+sha256sums=('415b47e912766cd07f9f52e95bc6470b835acf1d6f566ae32e66ba8be608f33e'
   '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
   'f561145514e9d30a696a82f6a6a4eca06e664b58d7cda30dad9afb2cef341a4d'
   'e5b651b403e5b161bf9b5e049f8202c444d7f1700411f89d62c20303c80846e0'
