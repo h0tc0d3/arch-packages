@@ -1,6 +1,6 @@
 pkgname=e2fsprogs+clang
 pkgver=1.46.5
-pkgrel=2
+pkgrel=3
 pkgdesc="Ext2/3/4 filesystem utilities"
 arch=('x86_64')
 license=('GPL' 'LGPL' 'MIT')
@@ -15,7 +15,7 @@ provides=(
   'libss.so'
 )
 conflicts=('e2fsprogs')
-backup=('etc/mke2fs.conf')
+backup=('etc/mke2fs.conf' 'etc/e2scrub.conf')
 options=('staticlibs')
 validpgpkeys=('3AB057B7E78D945C8C5591FBD36F769BC11804F0') # Theodore Ts'o <tytso@mit.edu>
 source=(

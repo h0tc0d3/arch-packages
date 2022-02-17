@@ -14,7 +14,7 @@ source=(
   fix-compilation-with-clang-13.patch
 )
 sha256sums=('bcd9a1f57f982a9615eb7e2faf87236dc88eb1d0c886f3471c7440ead605060d'
-  '8324dbaa34ccd9f213cd32e87e6a93b3434b395d7f5dd9370b7e0969119b8aa0')
+  '13f4355f1cfb997d1cb03990476d36171448d258cecea7b9f4bfbb28e21f036a')
 
 _llvm=0
 

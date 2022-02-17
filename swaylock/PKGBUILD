@@ -1,6 +1,6 @@
 pkgname=swaylock+clang
 pkgver=1.5
-pkgrel=3
+pkgrel=4
 license=("MIT")
 pkgdesc="Screen locker for Wayland"
 makedepends=(
@@ -20,6 +20,7 @@ provides=('swaylock' "swaylock=${pkgver}")
 conflicts=('swaylock')
 arch=('x86_64')
 url="https://github.com/swaywm/swaylock"
+backup=('etc/pam.d/swaylock')
 source=(
   "swaylock-$pkgver.tar.gz::https://github.com/swaywm/swaylock/archive/$pkgver.tar.gz"
   "https://github.com/swaywm/swaylock/releases/download/$pkgver/swaylock-$pkgver.tar.gz.sig"

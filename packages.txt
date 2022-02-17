@@ -1,8 +1,8 @@
 -glibc
+llvm
 binutils
 libtool
--libgcrypt
--llvm
+libgcrypt
 python
 xxhash
 libclc

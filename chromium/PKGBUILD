@@ -1,6 +1,6 @@
 pkgname=chromium+clang
 pkgver=98.0.4758.102
-pkgrel=1
+pkgrel=2
 _launcher_ver=8
 _gcc_patchset=5
 pkgdesc="A web browser built for speed, simplicity, and security"
@@ -39,8 +39,6 @@ source=(
   chromium-std-max-fix.patch
   chromium-gcc11.patch
   chromium-InkDropHost-crash.patch
-  chromium-ffmpeg-4.4.patch
-  chromium-unbundle-ffmpeg-av_stream_get_first_dts.patch
   downgrade-duplicate-peer-error-to-dvlog.patch
   fix-build-break-with-system-libdrm.patch
   use-FT_Done_MM_Var-in-CFX_Font-AdjustMMParams.patch
@@ -63,8 +61,6 @@ sha256sums=('415b47e912766cd07f9f52e95bc6470b835acf1d6f566ae32e66ba8be608f33e'
   '7584ec20a3830f619d80d4bcbc432f6a5b7e733c00d397a5dc831ba093ffcc6b'
   '5690089b8bd6946dfa975b8022531213b882b3396a3c968eeef9836b131725b7'
   '04bba6fb19ea5a4ab3949b65f06c88728a00ab296f42022ece62ca2fa25ec2e7'
-  '1a9e074f417f8ffd78bcd6874d8e2e74a239905bf662f76a7755fa40dc476b57'
-  '1f0c1a7a1eb67d91765c9f28df815f58e1c6dc7b37d0acd4d68cac8e5515786c'
   'd7e7642cd750a1d781caf1a4aa550ecd25c1c9bca9267d11915bc5c6d9bcf6de'
   'edf4d973ff197409d319bb6fbbaa529e53bc62347d26b0733c45a116a1b23f37'
   'be62f09332281b5b8cfcffeffb291527b83bf81e0c87d8c04bed2e1d66afda99')
@@ -167,18 +163,10 @@ prepare() {
   _patch chromium-std-max-fix.patch # glibc 2.34
   _patch chromium-gcc11.patch
   _patch chromium-InkDropHost-crash.patch
-  _patch chromium-ffmpeg-4.4.patch
 
   _patch downgrade-duplicate-peer-error-to-dvlog.patch
   _patch fix-build-break-with-system-libdrm.patch
   _patch use-FT_Done_MM_Var-in-CFX_Font-AdjustMMParams.patch
-
-  # Substitute the custom function av_stream_get_first_dts; will need to
-  # switch to bundled ffmpeg when we're no longer using ffmpeg 4.4 in Arch
-  # Upstream commit that made first_dts internal causing Chromium to add a
-  # custom function: https://github.com/FFmpeg/FFmpeg/commit/591b88e6787c4
-  # https://crbug.com/1251779
-  _patch chromium-unbundle-ffmpeg-av_stream_get_first_dts.patch
 
   # Fix build with system libpng
   sed -i -e "/USE_SYSTEM_LIBPNG/ a#include \"core/fxcodec/fx_codec_def.h\"" \

@@ -17,7 +17,7 @@ if [[ -z ${CHOST} ]]; then
   CHOST=x86_64-pc-linux-gnu
 fi
 _libdir="usr/lib/gcc/${CHOST:?}/${pkgver%%+*}"
-_commit=19d0e7645eb2f65afe0505022331c57e7095c52e
+_commit=c08d4266e48d52b7f8d16c79d3471be40ff56acc
 source=(
   "git://gcc.gnu.org/git/gcc.git#commit=${_commit}"
   "https://libisl.sourceforge.io/isl-${_islver}.tar.xz"
