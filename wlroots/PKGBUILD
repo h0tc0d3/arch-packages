@@ -1,6 +1,6 @@
 pkgname=wlroots+clang
 pkgver=0.15.1
-pkgrel=2
+pkgrel=3
 license=('MIT')
 pkgdesc='Modular Wayland compositor library'
 url='https://github.com/swaywm/wlroots'
@@ -92,7 +92,8 @@ build() {
     -D b_ndebug=true \
     -D b_lto=true ${_extra_lto_flag} \
     -D b_pie=true \
-    -Drenderers=gles2
+    -D xwayland=enabled \
+    -D examples=false
 
   ninja -C build
 

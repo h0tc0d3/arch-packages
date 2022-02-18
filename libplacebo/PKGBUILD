@@ -1,6 +1,6 @@
 pkgname=libplacebo+clang
 pkgver=4.192.1
-pkgrel=1
+pkgrel=2
 pkgdesc='Reusable library for GPU-accelerated video/image rendering primitives'
 url='https://github.com/haasn/libplacebo'
 arch=('x86_64')
@@ -38,6 +38,7 @@ build() {
     -D b_lto=true ${_extra_lto_flag} \
     -D b_pie=true \
     -D tests=true \
+    -D demos=false \
     -D vulkan=enabled \
     -D glslang=enabled \
     -D shaderc=enabled \

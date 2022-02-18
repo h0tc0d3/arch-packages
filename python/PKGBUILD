@@ -3,14 +3,14 @@ shopt -s extglob
 pkgbase=python+clang
 pkgname=(python+clang python-tests+clang)
 pkgver=3.10.2
-pkgrel=1
+pkgrel=2
 _pybasever=${pkgver%.*}
 pkgdesc="Next generation of the python high-level scripting language"
 arch=('x86_64')
 license=('custom')
 url="https://www.python.org/"
 depends=('bzip2' 'expat' 'gdbm' 'libffi' 'libnsl' 'libxcrypt' 'openssl' 'zlib')
-makedepends=('tk' 'sqlite' 'bluez-libs' 'mpdecimal' 'llvm' 'gdb' 'xorg-server-xvfb' 'ttf-font')
+makedepends=('tk' 'sqlite' 'bluez-libs' 'mpdecimal' 'llvm' 'gdb' 'ttf-font')
 source=("https://www.python.org/ftp/python/${pkgver%rc*}/Python-${pkgver}.tar.xz"{,.asc})
 sha256sums=('17de3ac7da9f2519aa9d64378c603a73a0e9ad58dffa8812e45160c086de64c7'
   'SKIP')
@@ -32,9 +32,6 @@ prepare() {
   # FS#23997
   sed -i -e "s|^#.* /usr/local/bin/python|#!/usr/bin/python|" Lib/cgi.py
 
-  # Speed up LTO
-  sed -i -e "s|-flto |-flto=4 |g" configure configure.ac
-
   # Ensure that we are using the system copy of various libraries (expat, libffi, and libmpdec),
   # rather than copies shipped in the tarball
   rm -r Modules/expat
@@ -54,9 +51,6 @@ build() {
     exit 1
   )
 
-  # PGO should be done with -O3
-  CFLAGS="${CFLAGS/-O2/-O3}"
-
   if [[ ${_llvm} -eq 1 ]]; then
 
     LDFLAGS="${LDFLAGS} -fuse-ld=lld"
@@ -66,23 +60,19 @@ build() {
   # Disable bundled pip & setuptools
   ./configure --prefix=/usr \
     --enable-shared \
-    --with-computed-gotos \
-    --enable-optimizations \
-    --with-lto \
     --enable-ipv6 \
+    --enable-loadable-sqlite-extensions \
+    --with-lto \
+    --with-computed-gotos \
     --with-system-expat \
     --with-dbmliborder=gdbm:ndbm \
     --with-system-ffi \
     --with-system-libmpdec \
-    --enable-loadable-sqlite-extensions \
     --without-ensurepip \
     --with-tzpath=/usr/share/zoneinfo
 
-  # Obtain next free server number for xvfb-run; this even works in a chroot environment.
-  export servernum=99
-  while ! xvfb-run -a -n "${servernum}" /bin/true 2>/dev/null; do servernum=$((servernum + 1)); done
-
-  LC_CTYPE=en_US.UTF-8 xvfb-run -s "-screen 0 1920x1080x16 -ac +extension GLX" -a -n "${servernum}" make EXTRA_CFLAGS="${CFLAGS}"
+  LC_CTYPE=en_US.UTF-8 make regen-all EXTRA_CFLAGS="${CFLAGS}"
+  LC_CTYPE=en_US.UTF-8 make EXTRA_CFLAGS="${CFLAGS}"
 
 }
 
@@ -96,12 +86,8 @@ check() {
     exit 1
   )
 
-  # Obtain next free server number for xvfb-run; this even works in a chroot environment.
-  export servernum=99
-  while ! xvfb-run -a -n "${servernum}" /bin/true 2>/dev/null; do servernum=$((servernum + 1)); done
-
   LD_LIBRARY_PATH="${srcdir:?}/Python-${pkgver}":${LD_LIBRARY_PATH} \
-    LC_CTYPE=en_US.UTF-8 xvfb-run -s "-screen 0 1920x1080x16 -ac +extension GLX" -a -n "${servernum}" \
+    LC_CTYPE=en_US.UTF-8 \
     "${srcdir:?}/Python-${pkgver}/python" -m test.regrtest -v -uall -x test_socket -x test_tk -x test_zlib
 
 }
@@ -124,12 +110,6 @@ package_python+clang() {
     echo -e "\E[1;31mCan't cd to ${srcdir}/Python-${pkgver} directory! Prepare python Failed! \E[0m"
     exit 1
   )
-
-  # Hack to avoid building again
-  sed -i 's/^all:.*$/all: build_all/' Makefile
-
-  # PGO should be done with -O3
-  CFLAGS="${CFLAGS/-O2/-O3}"
 
   make DESTDIR="${pkgdir:?}" EXTRA_CFLAGS="${CFLAGS}" install
 
