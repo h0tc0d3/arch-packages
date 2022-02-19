@@ -168,7 +168,6 @@ krb5
 gnutls
 libcurl-gnutls
 gnupg
-telegram-desktop
 mpv
 speexdsp
 alsa-lib
@@ -203,7 +202,10 @@ slurp
 jq
 mako
 rofi
+neovim
+neomutt
 krita
 kicad
 julia
+telegram-desktop
 chromium

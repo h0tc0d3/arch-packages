@@ -1,0 +1,94 @@
+pkgname=neomutt+clang
+pkgver=20211029
+pkgrel=2
+pkgdesc='A version of mutt with added features'
+url='https://neomutt.org/'
+license=('GPL')
+arch=('x86_64')
+conflicts=(neomutt)
+provides=(neomutt "neomutt=${pkgver}")
+depends=('glibc' 'gpgme' 'lua53' 'notmuch-runtime' 'krb5' 'gnutls' 'sqlite'
+  'libsasl' 'ncurses' 'libidn2' 'lmdb' 'gdbm' 'kyotocabinet'
+  'lz4' 'zlib' 'zstd' 'db')
+optdepends=('python: keybase.py'
+  'perl: smime_keys'
+  'ca-certificates: default CA certificates')
+makedepends=('git' 'gnupg' 'libxslt' 'docbook-xsl' 'w3m')
+source=("neomutt-${pkgver}.tar.gz::https://github.com/neomutt/neomutt/archive/${pkgver}.tar.gz"
+  "neomutt-${pkgver}.tar.gz.sig::https://github.com/neomutt/neomutt/releases/download/${pkgver}/${pkgver}.tar.gz.sig"
+  "default-ca-certificates.patch")
+sha256sums=('08245cfa7aec80b895771fd1adcbb7b86e9c0434dfa64574e3c8c4d692aaa078'
+  'SKIP'
+  '571716b8979e9b43328416c3c56eff228b6c58355d7c080b8987ea89c6360776')
+validpgpkeys=('86C2397270DD7A561263CA4E5FAF0A6EE7371805') # Richard Russon (flatcap) <rich@flatcap.org>
+
+_llvm=1
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/neomutt-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir}/neomutt-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  patch -Np1 -i "${srcdir:?}/default-ca-certificates.patch"
+
+}
+
+build() {
+
+  cd "${srcdir:?}/neomutt-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir}/neomutt-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --libexecdir=/usr/lib \
+    --gpgme \
+    --sqlite \
+    --autocrypt \
+    --lua \
+    --notmuch \
+    --gss \
+    --gnutls \
+    --sasl \
+    --with-ui=ncurses \
+    --with-idn2=/usr \
+    --disable-idn \
+    --idn2 \
+    --bdb \
+    --lmdb \
+    --kyotocabinet \
+    --gdbm \
+    --lz4 \
+    --zlib \
+    --zstd
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/neomutt-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir}/neomutt-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+}
