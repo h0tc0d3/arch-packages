@@ -138,6 +138,7 @@ dolphin-plugins
 glib2
 gtk2
 gtk3
+libwacom
 libinput
 xf86-input-libinput
 libxi
