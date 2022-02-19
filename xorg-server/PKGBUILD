@@ -8,7 +8,7 @@ pkgname=(
   'xorg-server-devel+clang'
 )
 pkgver=21.1.3
-pkgrel=2
+pkgrel=4
 arch=('x86_64')
 license=('custom')
 groups=('xorg')
@@ -23,11 +23,12 @@ makedepends=('xorgproto' 'pixman' 'libx11' 'mesa' 'mesa-libgl' 'xtrans'
 )
 source=(
   "https://xorg.freedesktop.org/releases/individual/xserver/xorg-server-${pkgver}.tar.xz"{,.sig}
+  xvfb-run # with updates from FC master
+  xvfb-run.1
   xorg-use-intel-only-on-pre-gen4.diff
   xorg-xfree86-use-modesetting-driver-by-default-on-GeForce.patch
   xorg-xkb-fix-XkbSetMap-when-changing-a-keysym.patch
-  xvfb-run # with updates from FC master
-  xvfb-run.1
+  xorg-xephyr_Dont_check_for_SeatId_anymore.patch
 )
 
 validpgpkeys=(
@@ -40,11 +41,12 @@ validpgpkeys=(
 
 sha256sums=('61d6aad5b6b47a116b960bd7f0cba4ee7e6da95d6bb0b127bde75d7d1acdebe5'
   'SKIP'
+  'a0a68505e3eb3ba6581388ae41b9dfd5208ec9b8983e78714778c20b71bc0ece'
+  '2460adccd3362fefd4cdc5f1c70f332d7b578091fb9167bf88b5f91265bbd776'
   'f8703466041a04428e68a77e1c07579679b07d15f8ec28934f1a65548007a756'
   '91b067753e823d6e3462d35be127f66e94e71a490c666e1aae41fe4e5b1ea47c'
   '698aedfd056ed7fd617fa455b269b673072b5544ac7617e7f41e71e20b7083e2'
-  'd709078f5658576931655c7a46ff90b3586a2643a9124075d00ff3a567937845'
-  '2460adccd3362fefd4cdc5f1c70f332d7b578091fb9167bf88b5f91265bbd776')
+  '057004ab36d4733e6c275f76bbc3851f6cdb9063305a3ae874f2fd83f14a6dc0')
 
 _extra_lto_flag=""
 
@@ -73,6 +75,9 @@ prepare() {
   _patch xorg-xfree86-use-modesetting-driver-by-default-on-GeForce.patch
 
   _patch xorg-xkb-fix-XkbSetMap-when-changing-a-keysym.patch
+
+  # FS#73274
+  _patch xorg-xephyr_Dont_check_for_SeatId_anymore.patch
 
 }
 

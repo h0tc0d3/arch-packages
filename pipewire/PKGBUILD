@@ -2,8 +2,8 @@ pkgbase=pipewire+clang
 pkgname=(pipewire+clang alsa-card-profiles+clang pipewire-docs+clang
   pipewire-alsa+clang pipewire-jack+clang pipewire-pulse+clang gst-plugin-pipewire+clang
   pipewire-zeroconf+clang pipewire-v4l2+clang pipewire-x11-bell+clang)
-pkgver=0.3.46
-pkgrel=1
+pkgver=0.3.47
+pkgrel=2
 epoch=1
 pkgdesc="Low-latency audio/video router and processor"
 url="https://pipewire.org"
@@ -14,7 +14,7 @@ makedepends=(git meson doxygen graphviz python-docutils valgrind libpulse
   bluez-libs sbc libldac libfreeaptx libfdk-aac avahi lilv
   webrtc-audio-processing)
 checkdepends=(desktop-file-utils)
-_commit=0df9d037292f7b815be59d265c47790ee7a495c9 # tags/0.3.46
+_commit=2af393889358723a2789caa3c856700b1c968ef0 # tags/0.3.47
 source=("git+https://gitlab.freedesktop.org/pipewire/pipewire.git#commit=${_commit}")
 sha256sums=('SKIP')
 
@@ -31,8 +31,11 @@ prepare() {
     exit 1
   )
 
+  # fix issues with mpd/ libspa-support.so: https://gitlab.freedesktop.org/pipewire/pipewire/-/issues/2147
+  git cherry-pick -n 16f63a3c8fa227625bade5a9edea22354b347d18 d1f7e96f821089224ddcacf8e8f506f99c54eb5c
+
   # remove export of LD_LIBRARY_PATH for pw-jack as it would add /usr/lib
-  sed -e '/LD_LIBRARY_PATH/d' -i pipewire-jack/src/pw-jack.in
+  sed -i '/LD_LIBRARY_PATH/d' pipewire-jack/src/pw-jack.in
 
 }
 
@@ -132,7 +135,6 @@ package_pipewire+clang() {
     _pick jack usr/include/jack
     _pick jack usr/lib/libjack*
     _pick jack usr/lib/pkgconfig/jack.pc
-
     _pick jack usr/share/man/man1/pw-jack.1
     _pick jack usr/share/pipewire/jack.conf
 
@@ -143,16 +145,19 @@ package_pipewire+clang() {
 
     _pick gst usr/lib/gstreamer-1.0
 
-    _pick zeroconf usr/lib/pipewire-${_ver}/libpipewire-module-zeroconf-discover.so
+    _pick zeroconf usr/lib/pipewire-${_ver}/libpipewire-module-{raop,zeroconf}-discover.so
 
     _pick v4l2 usr/bin/pw-v4l2 usr/lib/pipewire-${_ver}/v4l2
 
     _pick x11-bell usr/lib/pipewire-${_ver}/libpipewire-module-x11-bell.so
-  )
 
-  mkdir -p "${pkgdir:?}/etc/alsa/conf.d"
-  ln -st "${pkgdir:?}/etc/alsa/conf.d" \
-    /usr/share/alsa/alsa.conf.d/50-pipewire.conf
+    mkdir -p etc/alsa/conf.d
+    ln -st etc/alsa/conf.d /usr/share/alsa/alsa.conf.d/50-pipewire.conf
+
+    # directories for overrides
+    mkdir -p etc/pipewire/{client-rt,client,minimal,pipewire,pipewire-pulse}.conf.d
+
+  )
 
   install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 pipewire/COPYING
 
@@ -216,6 +221,8 @@ package_pipewire-jack+clang() {
 
   install -Dm644 /dev/null \
     "${pkgdir:?}/usr/share/pipewire/media-session.d/with-jack"
+
+  mkdir -p "${pkgdir:?}/etc/pipewire/jack.conf.d"
 
   install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 pipewire/COPYING
 

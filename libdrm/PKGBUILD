@@ -1,5 +1,5 @@
 pkgname=libdrm+clang
-pkgver=2.4.109
+pkgver=2.4.110
 pkgrel=1
 pkgdesc="Userspace interface to kernel DRM services"
 url="https://dri.freedesktop.org/"
@@ -13,7 +13,7 @@ checkdepends=('cairo')
 replaces=('libdrm-new' 'libdrm-nouveau')
 source=("https://dri.freedesktop.org/libdrm/libdrm-${pkgver}.tar.xz"
   COPYING)
-sha256sums=('629352e08c1fe84862ca046598d8a08ce14d26ab25ee1f4704f993d074cb7f26'
+sha256sums=('eecee4c4b47ed6d6ce1a9be3d6d92102548ea35e442282216d47d05293cf9737'
   '9631d4f694952e3e6ae5a05534c2e93e994e47d3413677a3a00e45c8cef6db93')
 validpgpkeys=(
   '10A6D91DA1B05BD29F6DEBAC0C74F35979C486BE' # David Airlie <airlied@redhat.com>
