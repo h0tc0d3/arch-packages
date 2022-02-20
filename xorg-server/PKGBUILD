@@ -8,7 +8,7 @@ pkgname=(
   'xorg-server-devel+clang'
 )
 pkgver=21.1.3
-pkgrel=4
+pkgrel=6
 arch=('x86_64')
 license=('custom')
 groups=('xorg')
@@ -29,6 +29,8 @@ source=(
   xorg-xfree86-use-modesetting-driver-by-default-on-GeForce.patch
   xorg-xkb-fix-XkbSetMap-when-changing-a-keysym.patch
   xorg-xephyr_Dont_check_for_SeatId_anymore.patch
+  xorg-dix_Correctly_save_replayed_event_into_GrabInfoRec.patch
+  xorg-present_Check_for_NULL_to_prevent_crash.patch
 )
 
 validpgpkeys=(
@@ -46,7 +48,9 @@ sha256sums=('61d6aad5b6b47a116b960bd7f0cba4ee7e6da95d6bb0b127bde75d7d1acdebe5'
   'f8703466041a04428e68a77e1c07579679b07d15f8ec28934f1a65548007a756'
   '91b067753e823d6e3462d35be127f66e94e71a490c666e1aae41fe4e5b1ea47c'
   '698aedfd056ed7fd617fa455b269b673072b5544ac7617e7f41e71e20b7083e2'
-  '057004ab36d4733e6c275f76bbc3851f6cdb9063305a3ae874f2fd83f14a6dc0')
+  '057004ab36d4733e6c275f76bbc3851f6cdb9063305a3ae874f2fd83f14a6dc0'
+  'e7049b851c303bf16ac862a2cf5a67a39c1c456a73aea66bcaa9882c968a092b'
+  '1cd5446f4f2d7c5ea11837f50c770e2704600310f9212971316c6e9fa763c69a')
 
 _extra_lto_flag=""
 
@@ -78,6 +82,10 @@ prepare() {
 
   # FS#73274
   _patch xorg-xephyr_Dont_check_for_SeatId_anymore.patch
+
+  # Fix crash with closed nvidia FS#73875
+  _patch xorg-dix_Correctly_save_replayed_event_into_GrabInfoRec.patch
+  _patch xorg-present_Check_for_NULL_to_prevent_crash.patch
 
 }
 
