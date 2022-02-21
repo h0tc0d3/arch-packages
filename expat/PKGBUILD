@@ -1,6 +1,6 @@
 pkgname=expat+clang
-pkgver=2.4.5
-pkgrel=2
+pkgver=2.4.6
+pkgrel=1
 pkgdesc='An XML parser library'
 arch=('x86_64')
 url="https://libexpat.github.io/"
@@ -12,7 +12,7 @@ conflicts=(expat)
 source=(
   "https://github.com/libexpat/libexpat/releases/download/R_${pkgver//./_}/expat-${pkgver}.tar.bz2"{,.asc}
 )
-sha256sums=('fbb430f964c7a2db2626452b6769e6a8d5d23593a453ccbc21701b74deabedff'
+sha256sums=('ce317706b07cae150f90cddd4253f5b4fba929607488af5ac47bf2bc08e31f09'
   'SKIP')
 validpgpkeys=(3176EF7DB2367F1FCA4F306B1F9B0E909AF37285) # Sebastian Pipping
 

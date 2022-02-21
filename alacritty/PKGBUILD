@@ -1,7 +1,7 @@
 pkgname=alacritty+clang
 pkgdesc="A cross-platform, GPU-accelerated terminal emulator"
-pkgver=0.10.0
-pkgrel=2
+pkgver=0.10.1
+pkgrel=1
 arch=('x86_64')
 url="https://github.com/alacritty/alacritty"
 license=('Apache')
@@ -10,7 +10,7 @@ depends=('freetype2' 'fontconfig' 'libxi' 'libxcursor' 'libxrandr')
 conflicts=(alacritty)
 checkdepends=('ttf-dejavu') # for monospace fontconfig test
 optdepends=('ncurses: for alacritty terminfo database')
-_commit=8a26dee0a9167777709935789b95758e36885617
+_commit=2844606db8201d40462a01b29299ac3c5a52c523
 source=(
   "git+https://github.com/alacritty/alacritty.git#commit=${_commit}"
   alacritty-allow-disable-vsync.patch
@@ -19,7 +19,7 @@ validpgpkeys=(
   '4DAA67A9EA8B91FCC15B699C85CDAE3C164BA7B4' # Christian Dürr
 )
 sha256sums=('SKIP'
-            'afdb8fa0696c3b28d09461149b0211899b74031e213339b47b76a6dff36169ae')
+  'afdb8fa0696c3b28d09461149b0211899b74031e213339b47b76a6dff36169ae')
 
 _llvm=0
 
@@ -64,7 +64,8 @@ build() {
 
   fi
 
-  env CARGO_INCREMENTAL=0 cargo build --release --locked
+  export CARGO_PROFILE_RELEASE_LTO=true CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_INCREMENTAL=0
+  cargo build --release --locked
 
 }
 
@@ -75,7 +76,8 @@ check() {
     exit 1
   )
 
-  env CARGO_INCREMENTAL=0 cargo test --locked
+  export CARGO_INCREMENTAL=0
+  cargo test --locked
 
 }
 
