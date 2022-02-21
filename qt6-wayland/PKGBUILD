@@ -1,0 +1,52 @@
+pkgname=qt6-wayland+clang
+_qtver=6.2.3
+pkgver=${_qtver/-/}
+pkgrel=2
+arch=(x86_64)
+url='https://www.qt.io'
+license=(GPL3 LGPL3 FDL custom)
+pkgdesc='Provides APIs for Wayland'
+provides=("qt6-wayland" "qt6-wayland=${pkgver}")
+conflicts=("qt6-wayland")
+depends=(qt6-declarative libxcomposite)
+makedepends=(cmake)
+groups=(qt6)
+source=("https://download.qt.io/official_releases/qt/${pkgver%.*}/${_qtver}/submodules/qtwayland-everywhere-src-${_qtver}.tar.xz")
+sha256sums=('48fdc52b1241d35532a24beebf5856d78eadc0f1f88a0a48b51a51e279c4ce72')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -B build -S "qtwayland-everywhere-src-${_qtver}" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+  install -d "${pkgdir:?}/usr/share/licenses"
+  ln -s /usr/share/licenses/qt6-base "${pkgdir:?}/usr/share/licenses/qt6-wayland"
+
+}

@@ -1,0 +1,119 @@
+pkgname=qt6-base
+_qtver=6.2.3
+pkgver=${_qtver/-/}
+pkgrel=5
+arch=(x86_64)
+url='https://www.qt.io'
+license=(GPL3 LGPL3 FDL custom)
+pkgdesc='A cross-platform application and UI framework'
+provides=("qt6-base" "qt6-base=${pkgver}")
+conflicts=("qt6-base")
+depends=(libjpeg-turbo xcb-util-keysyms xcb-util-cursor libgl fontconfig xdg-utils
+  shared-mime-info xcb-util-wm libxrender libxi sqlite mesa vulkan-headers
+  tslib libinput libxkbcommon-x11 libproxy libcups double-conversion brotli libb2 md4c icu libpng)
+makedepends=(cmake libfbclient mariadb-libs unixodbc postgresql alsa-lib gst-plugins-base-libs
+  gtk3 libpulse cups freetds xmlstarlet)
+optdepends=('qt6-wayland: to run Qt6 applications in a Wayland session'
+  'postgresql-libs: PostgreSQL driver'
+  'mariadb-libs: MariaDB driver'
+  'unixodbc: ODBC driver'
+  'libfbclient: Firebird/iBase driver'
+  'freetds: MS SQL driver'
+  'gtk3: GTK platform plugin'
+  'perl: for syncqt')
+groups=(qt6)
+source=(
+  "https://download.qt.io/official_releases/qt/${pkgver%.*}/${_qtver}/submodules/qtbase-everywhere-src-${_qtver}.tar.xz"
+  qmake-cflags.patch
+  qmake-config.patch
+  qtbase-cxxflag.patch
+  qtbase-gcc11.patch
+  qtbase-libglvnd.patch
+)
+sha256sums=('34d6d0072e197241463c417ad72610c3d44e2efd6062868e9a95283103d75df4'
+  '5411edbe215c24b30448fac69bd0ba7c882f545e8cf05027b2b6e2227abc5e78'
+  '4abc22150fa3e06b2fdcec32146abc9be4e316692aa4d5bd5aa53b4b726783fa'
+  'ad4dc439bc23826b7f165b1e897d8544adff593254cb03061be397358a7163b0'
+  '71292be753abc23d814566f2cc865e621f33a17ce94111eb0e0ae48f221fb864'
+  'c0196f44cc1de0195225144c03fbab1372acb590c60ac89e4c452205ec28c6a7'
+)
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -d "qtbase-everywhere-src-${_qtver}" -p1 -i "${srcdir:?}/${1}"
+
+}
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  _patch qmake-cflags.patch # Use system CFLAGS
+  _patch qmake-config.patch # Don't strip binaries with qmake and use -ltcg, cf. QTBUG-73834
+  _patch qtbase-cxxflag.patch
+  _patch qtbase-gcc11.patch
+  _patch qtbase-libglvnd.patch
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -B build -S "qtbase-everywhere-src-${_qtver}" \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DINSTALL_BINDIR=lib/qt6/bin \
+    -DINSTALL_PUBLICBINDIR=usr/bin \
+    -DINSTALL_LIBEXECDIR=lib/qt6 \
+    -DINSTALL_DOCDIR=share/doc/qt6 \
+    -DINSTALL_ARCHDATADIR=lib/qt6 \
+    -DINSTALL_DATADIR=share/qt6 \
+    -DINSTALL_INCLUDEDIR=include/qt6 \
+    -DINSTALL_MKSPECSDIR=lib/qt6/mkspecs \
+    -DINSTALL_EXAMPLESDIR=share/doc/qt6/examples \
+    -DQT_FEATURE_journald=ON \
+    -DQT_FEATURE_openssl_linked=ON \
+    -DQT_FEATURE_system_sqlite=ON \
+    -DQT_FEATURE_fontconfig=ON \
+    -DQT_FEATURE_glib=ON \
+    -DQT_FEATURE_icu=ON \
+    -DQT_FEATURE_enable_new_dtags=ON \
+    -DQT_FEATURE_openssl_linked=ON \
+    -DQT_FEATURE_separate_debug_info=OFF \
+    -DQT_FEATURE_reduce_relocations=OFF \
+    -DQT_FEATURE_relocatable=OFF \
+    -DQT_FEATURE_system_jpeg=ON \
+    -DQT_FEATURE_system_png=ON \
+    -DQT_FEATURE_system_zlib=ON \
+    -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
+
+  cmake --build build
+
+}
+
+package() {
+
+  depends+=(qt6-translations)
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+  install -Dm644 "qtbase-everywhere-src-${_qtver}/LICENSE"* -t "${pkgdir:?}/usr/share/licenses/qt6-base"
+
+  # Install symlinks for user-facing tools
+  install -d "${pkgdir:?}/usr/bin"
+  while IFS=$'\n' read -r _line; do
+    ln -s "${_line%% *}" "${pkgdir:?}/${_line#* }"
+  done <"${srcdir:?}/build/user_facing_tool_links.txt"
+
+}

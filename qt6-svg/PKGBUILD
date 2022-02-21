@@ -1,0 +1,52 @@
+pkgname=qt6-svg+clang
+_qtver=6.2.3
+pkgver=${_qtver/-/}
+pkgrel=2
+arch=(x86_64)
+url='https://www.qt.io'
+license=(GPL3 LGPL3 FDL custom)
+provides=("qt6-svg" "qt6-svg=${pkgver}")
+conflicts=("qt6-svg")
+pkgdesc='Classes for displaying the contents of SVG files'
+depends=(qt6-base)
+makedepends=(cmake)
+groups=(qt6)
+source=("https://download.qt.io/official_releases/qt/${pkgver%.*}/${_qtver}/submodules/qtsvg-everywhere-src-${_qtver}.tar.xz")
+sha256sums=('4a6bc9eeafa231ee9516f0fe84ddb0fbe8fba94844f4e7bd34c381e01610e2ee')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -B build -S "qtsvg-everywhere-src-${_qtver}" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+  install -d "${pkgdir:?}/usr/share/licenses"
+  ln -s /usr/share/licenses/qt6-base "${pkgdir:?}/usr/share/licenses/qt6-svg"
+
+}

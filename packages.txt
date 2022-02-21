@@ -36,6 +36,13 @@ qt5-base
 qt5-imageformats
 qt5-x11extras
 qt5-tools
+qt5-translations
+qt6-base
+qt6-declarative
+qt6-5compat
+qt6-svg
+qt6-tools
+qt6-translations
 phonon-qt5
 phonon-qt5-gstreamer
 phonon-qt5-vlc
@@ -110,6 +117,7 @@ dbus
 wayland
 xorg-xwayland
 qt5-wayland
+qt6-wayland
 kded
 plasma-wayland-protocols
 kwindowsystem
@@ -129,6 +137,8 @@ libheif
 libavif
 libwebp
 openexr
+qt6-imageformats
+qt6-multimedia
 kimageformats
 kdegraphics-thumbnailers
 plasma-desktop
