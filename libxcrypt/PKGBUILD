@@ -1,14 +1,12 @@
-pkgname=libxcrypt+clang
+pkgbase=libxcrypt+clang
+pkgname=(libxcrypt+clang libxcrypt-compat+clang)
 pkgver=4.4.28
-pkgrel=1
-pkgdesc='Modern library for one-way hashing of passwords'
+pkgrel=2
 arch=('x86_64')
 url='https://github.com/besser82/libxcrypt/'
 license=('GPL')
 depends=('glibc')
 makedepends=('git')
-provides=("libxcrypt" "libxcrypt=${pkgver}" 'libcrypt.so')
-conflicts=("libxcrypt")
 install=libxcrypt.install
 _commit=50cf2b6dd4fdf04309445f2eec8de7051d953abf          # git rev-parse v${pkgver}
 validpgpkeys=('678CE3FEE430311596DB8C16F52E98007594C21D') # Björn 'besser82' Esser
@@ -34,10 +32,7 @@ prepare() {
 
 build() {
 
-  cd "${srcdir:?}/libxcrypt" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxcrypt directory! Build Failed! \E[0m"
-    exit 1
-  )
+  mkdir build-libxcrypt build-libxcrypt-compat
 
   if [[ ${_llvm} -eq 1 ]]; then
 
@@ -47,10 +42,15 @@ build() {
 
   fi
 
-  ./configure \
+  cd "${srcdir:?}/build-libxcrypt" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/build-libxcrypt directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  "${srcdir:?}/libxcrypt/configure" \
     --prefix=/usr \
     --disable-static \
-    --enable-hashes=all \
+    --enable-hashes=strong,glibc \
     --enable-obsolete-api=no \
     --disable-failure-tokens \
     --disable-silent-rules \
@@ -58,12 +58,26 @@ build() {
 
   make
 
+  cd "${srcdir:?}/build-libxcrypt-compat" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/build-libxcrypt-compat directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  "${srcdir:?}/libxcrypt/configure" \
+    --prefix=/usr \
+    --disable-static \
+    --enable-hashes=strong,glibc \
+    --enable-obsolete-api=glibc \
+    --disable-failure-tokens
+
+  make
+
 }
 
 check() {
 
-  cd "${srcdir:?}/libxcrypt" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxcrypt directory! Check Failed! \E[0m"
+  cd "${srcdir:?}/build-libxcrypt" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/build-libxcrypt directory! Check Failed! \E[0m"
     exit 1
   )
 
@@ -71,13 +85,33 @@ check() {
 
 }
 
-package() {
+package_libxcrypt+clang() {
 
-  cd "${srcdir:?}/libxcrypt" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxcrypt directory! Package Failed! \E[0m"
+  pkgdesc='Modern library for one-way hashing of passwords'
+  provides=("libxcrypt" "libxcrypt=${pkgver}" 'libcrypt.so')
+  conflicts=("libxcrypt")
+
+  cd "${srcdir:?}/build-libxcrypt" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/build-libxcrypt directory! Package Failed! \E[0m"
     exit 1
   )
 
   make DESTDIR="${pkgdir:?}" install
+
+}
+
+package_libxcrypt-compat+clang() {
+
+  pkgdesc='Modern library for one-way hashing of passwords - legacy API functions'
+  depends=('libxcrypt+clang')
+
+  cd "${srcdir:?}/build-libxcrypt-compat" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/build-libxcrypt-compat directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  rm -rf "${pkgdir:?}/usr/"{include,lib/{lib*.so,pkgconfig},share}
 
 }

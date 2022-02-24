@@ -1,14 +1,14 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
 pkgver=2.35
-pkgrel=7
+pkgrel=8
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
 makedepends=(git gd lib32-gcc-libs gcc-libs python)
 optdepends=('perl: for mtrace')
 options=(!strip staticlibs)
-_commit=9e94f57484a2aba0fe67ea2059b5843f651887c2
+_commit=0f88a5c66e1cbb574bf37d953bf7155c0a1f5ae7
 source=("git+https://sourceware.org/git/glibc.git#commit=${_commit}"
   locale-gen
   sdt.h sdt-config.h
@@ -52,16 +52,6 @@ prepare() {
   _patch glibc-newlocale-error.patch
   _patch glibc-cs-path.patch
 
-  # x86-64: Optimize bzero Remove setting the .text section for the code.
-  # This commit adds that back.
-  git cherry-pick -n 7912236f4a597deb092650ca79f33504ddb4af28
-  # x86-64: Remove bzero weak alias in SS2 memset
-  git cherry-pick -n 0fb8800029d230b3711bf722b2a47db92d0e273f
-  # x86: Fix bug in strncmp-evex and strncmp-avx2 [BZ #28895]
-  git cherry-pick -n e108c02a5e23c8c88ce66d8705d4a24bb6b9a8bf
-  # pthread: Use 64 bit time_t stat internally for sem_open (BZ #28880)
-  git cherry-pick -n 894755e16e10725c94bec3f910d35730614a7d00
-
   if ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _lld=1
   fi
@@ -86,6 +76,7 @@ build() {
     --disable-cet
     --disable-lock-elision
     --disable-profile
+    --disable-crypt
     --disable-werror
   )
 
