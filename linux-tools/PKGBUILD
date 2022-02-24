@@ -5,13 +5,13 @@ pkgname=(
   'cpupower+clang'
   'linux-tools-meta+clang'
   'perf+clang'
-  #  'python-perf+clang'
+  'python-perf+clang'
   'tmon+clang'
   'turbostat+clang'
   'usbip+clang'
   'x86_energy_perf_policy+clang'
 )
-pkgver=5.16.8
+pkgver=5.16.11
 pkgrel=1
 license=('GPL2')
 arch=('x86_64')
@@ -51,7 +51,7 @@ validpgpkeys=(
   'ABAF11C65A2970B130ABE3C479BE3E4300411886' # Linus Torvalds
   '647F28654894E3BD457199BE38DBBDC86092693E' # Greg Kroah-Hartman
 )
-sha256sums=('52aa5f05ee8addcc1ec0020f50e5f88ea1a308c2afac4a2305e1e4cf42580316'
+sha256sums=('6d186158a4c44a4df438e0286ee8186f1cc9cc9d8a909d4c3e25a4f7eca8b023'
   'SKIP'
   '4fa509949d6863d001075fa3e8671eff2599c046d20c98bb4a70778595cd1c3f'
   'b692f4859ed3fd9831a058a450a84d8c409bf7e3e45aac1c2896a14bb83f3d7a'
@@ -166,7 +166,7 @@ package_linux-tools-meta+clang() {
     'cpupower+clang'
     'linux-tools-meta+clang'
     'perf+clang'
-    #  'python-perf+clang'
+    'python-perf+clang'
     'tmon+clang'
     'turbostat+clang'
     'usbip+clang'
@@ -209,14 +209,16 @@ package_perf+clang() {
 
 }
 
-#package_python-perf(){
-#  pkgdesc='Linux kernel performance auditing tool (python bindings)'
-#  depends=('python')
-#
-#  cd linux-${_pkgver}/tools/perf
-#
-#  make install-python_ext PYTHON=python DESTDIR="${pkgdir:?}"
-#}
+package_python-perf+clang() {
+
+  pkgdesc='Linux kernel performance auditing tool (python bindings)'
+  depends=('python')
+
+  cd linux-${_pkgver}/tools/perf
+
+  make install-python_ext PYTHON=python DESTDIR="${pkgdir:?}"
+
+}
 
 package_cpupower+clang() {
 
