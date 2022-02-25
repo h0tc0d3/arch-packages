@@ -1,6 +1,6 @@
 pkgname=chromium+clang
-pkgver=98.0.4758.102
-pkgrel=2
+pkgver=98.0.4758.109
+pkgrel=1
 _launcher_ver=8
 _gcc_patchset=5
 pkgdesc="A web browser built for speed, simplicity, and security"
@@ -43,7 +43,7 @@ source=(
   fix-build-break-with-system-libdrm.patch
   use-FT_Done_MM_Var-in-CFX_Font-AdjustMMParams.patch
 )
-sha256sums=('415b47e912766cd07f9f52e95bc6470b835acf1d6f566ae32e66ba8be608f33e'
+sha256sums=('cc53a994c72f9a1b503a2f6c98a2c131ae86ad64efda0e346351b0794ce13c58'
   '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
   'f561145514e9d30a696a82f6a6a4eca06e664b58d7cda30dad9afb2cef341a4d'
   'e5b651b403e5b161bf9b5e049f8202c444d7f1700411f89d62c20303c80846e0'

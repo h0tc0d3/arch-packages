@@ -1,6 +1,6 @@
 pkgname=xf86-video-amdgpu+clang
-pkgver=21.0.0
-pkgrel=2
+pkgver=22.0.0
+pkgrel=1
 pkgdesc="X.org amdgpu video driver"
 arch=('x86_64')
 url="https://xorg.freedesktop.org/"
@@ -11,14 +11,14 @@ makedepends=('xorg-server-devel' 'systemd' 'X-ABI-VIDEODRV_VERSION=25.2')
 conflicts=('xf86-video-amdgpu' 'xorg-server<21.1.0' 'X-ABI-VIDEODRV_VERSION<25' 'X-ABI-VIDEODRV_VERSION>=26')
 groups=('xorg-drivers')
 source=(
-  "${url}/releases/individual/driver/xf86-video-amdgpu-${pkgver}.tar.bz2"{,.sig}
+  "https://xorg.freedesktop.org/releases/individual/driver/xf86-video-amdgpu-${pkgver}.tar.xz"{,.sig}
 )
-sha256sums=('607823034defba6152050e5eb1c4df94b38819ef764291abadd81b620bc2ad88'
-  'SKIP'
-)
+sha256sums=('9d23fb602915dc3ccde92aa4d1e9485e7e54eaae2f41f485e55eb20761778266'
+  'SKIP')
 validpgpkeys=(
-  #'B09FAF35BE914521980951145A81AF8E6ADBB200' # Michel Daenzer <michel@daenzer.net>
+  'B09FAF35BE914521980951145A81AF8E6ADBB200' # Michel Daenzer <michel@daenzer.net>
   '017E91A875CBA321258380F19B4EE4F98474DE40' # "Alex Deucher <alexdeucher@gmail.com>"
+  'F1111E4AAF984C9763795FFE4B25B5180522B8D9' # Shashank Sharma <contactshashanksharma@gmail.com>
 )
 
 _llvm=0
