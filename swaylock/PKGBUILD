@@ -22,8 +22,8 @@ arch=('x86_64')
 url="https://github.com/swaywm/swaylock"
 backup=('etc/pam.d/swaylock')
 source=(
-  "swaylock-$pkgver.tar.gz::https://github.com/swaywm/swaylock/archive/$pkgver.tar.gz"
-  "https://github.com/swaywm/swaylock/releases/download/$pkgver/swaylock-$pkgver.tar.gz.sig"
+  "swaylock-${pkgver}.tar.gz::https://github.com/swaywm/swaylock/archive/${pkgver}.tar.gz"
+  "https://github.com/swaywm/swaylock/releases/download/${pkgver}/swaylock-${pkgver}.tar.gz.sig"
 )
 sha256sums=('37b9c70e5698e8872b0b964a7454ecdb0f1a9e06b686eecf2b6c54f7f64a3f42'
   'SKIP')
@@ -38,7 +38,6 @@ prepare() {
   fi
 
 }
-
 
 build() {
 
@@ -62,7 +61,7 @@ package() {
 
   DESTDIR="${pkgdir:?}" meson install -C build
 
-  install -Dm644 "swaylock-$pkgver/LICENSE" -t "${pkgdir:?}/usr/share/licenses/swaylock"
-  install -Dm644 "swaylock-$pkgver/README.md" -t "${pkgdir:?}/usr/share/doc/swaylock"
+  install -Dm644 "swaylock-${pkgver}/LICENSE" -t "${pkgdir:?}/usr/share/licenses/swaylock"
+  install -Dm644 "swaylock-${pkgver}/README.md" -t "${pkgdir:?}/usr/share/doc/swaylock"
 
 }

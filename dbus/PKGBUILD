@@ -1,6 +1,6 @@
 pkgbase=dbus+clang
 pkgname=(dbus+clang dbus-docs+clang)
-pkgver=1.12.20
+pkgver=1.12.22
 pkgrel=1
 pkgdesc="Freedesktop.org message bus system"
 url="https://wiki.freedesktop.org/www/Software/dbus/"

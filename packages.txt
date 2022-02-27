@@ -202,6 +202,7 @@ pipewire
 pipewire-media-session
 gsl
 lib2geom
+ffmpeg
 alacritty
 wlroots
 sway
