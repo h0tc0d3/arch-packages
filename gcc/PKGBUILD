@@ -5,7 +5,7 @@ pkgname=(gcc gcc-libs gcc-fortran gcc-objc gcc-ada gcc-go lib32-gcc-libs gcc-d)
 pkgver=11.2.1
 _majorver=${pkgver%%.*}
 _islver=0.24
-pkgrel=4
+pkgrel=5
 pkgdesc='The GNU Compiler Collection'
 arch=(x86_64)
 license=(GPL LGPL FDL custom)
@@ -17,7 +17,7 @@ if [[ -z ${CHOST} ]]; then
   CHOST=x86_64-pc-linux-gnu
 fi
 _libdir="usr/lib/gcc/${CHOST:?}/${pkgver%%+*}"
-_commit=c08d4266e48d52b7f8d16c79d3471be40ff56acc
+_commit=79fddacc4e8cce9590b52f58a25db2129376adc3
 source=(
   "git://gcc.gnu.org/git/gcc.git#commit=${_commit}"
   "https://libisl.sourceforge.io/isl-${_islver}.tar.xz"
@@ -143,7 +143,7 @@ build() {
     --enable-shared \
     --enable-threads=posix \
     --enable-64-bit-bfd \
-    --disable-bootstrap \
+    --enable-bootstrap \
     --disable-werror \
     gdc_include_dir=/usr/include/dlang/gdc
 

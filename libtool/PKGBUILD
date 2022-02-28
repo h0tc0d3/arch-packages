@@ -1,6 +1,6 @@
 pkgname=libtool+clang
 pkgver=2.4.6+63+gf5eb6f11
-pkgrel=2
+pkgrel=3
 pkgdesc='A generic library support script'
 arch=(x86_64)
 url='https://www.gnu.org/software/libtool'
