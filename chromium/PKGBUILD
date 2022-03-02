@@ -1,15 +1,15 @@
 pkgname=chromium+clang
-pkgver=98.0.4758.109
+pkgver=99.0.4844.51
 pkgrel=1
 _launcher_ver=8
-_gcc_patchset=5
+_gcc_patchset=3
 pkgdesc="A web browser built for speed, simplicity, and security"
 arch=('x86_64')
 url="https://www.chromium.org/Home"
 license=('BSD')
 provides=('chromium' "chromium=${pkgver}")
 conflicts=('chromium')
-depends=('gtk3' 'nss' 'alsa-lib' 'xdg-utils' 'libxss' 'libcups' 'libgcrypt'
+depends=('gtk4' 'nss' 'alsa-lib' 'xdg-utils' 'libxss' 'libcups' 'libgcrypt'
   'ttf-liberation' 'systemd' 'dbus' 'libpulse' 'pciutils' 'libva'
   'desktop-file-utils' 'hicolor-icon-theme')
 makedepends=('python' 'gn' 'ninja' 'clang' 'lld' 'gperf' 'nodejs' 'pipewire'
@@ -23,47 +23,37 @@ optdepends=(
 source=(
   "https://commondatastorage.googleapis.com/chromium-browser-official/chromium-${pkgver}.tar.xz"
   "https://github.com/foutrelis/chromium-launcher/archive/v${_launcher_ver}/chromium-launcher-${_launcher_ver}.tar.gz"
-  "https://github.com/stha09/chromium-patches/releases/download/chromium-${pkgver%%.*}-patchset-$_gcc_patchset/chromium-${pkgver%%.*}-patchset-$_gcc_patchset.tar.xz"
-  chromium-sandbox-pie.patch
+  "https://github.com/stha09/chromium-patches/releases/download/chromium-${pkgver%%.*}-patchset-${_gcc_patchset}/chromium-${pkgver%%.*}-patchset-${_gcc_patchset}.tar.xz"
   chromium-no-libpng-prefix.patch
   chromium-jpeg-nomangle.patch
   chromium-no-zlib-mangle.patch
-  chromium-unbundle-zlib.patch
   chromium-use-oauth2-client-switches-as-default.patch
-  chromium-enable-hardware-accelerated-mjpeg.patch
-  chromium-fix-vaapi-on-intel.patch
-  extend-enable-accelerated-video-decode-flag.patch
   sql-make-VirtualCursor-standard-layout-type.patch
-  chromium-protobuf-RepeatedPtrField-export.patch
   chromium-EnumTable-crash.patch
-  chromium-std-max-fix.patch
   chromium-gcc11.patch
   chromium-InkDropHost-crash.patch
-  downgrade-duplicate-peer-error-to-dvlog.patch
   fix-build-break-with-system-libdrm.patch
   use-FT_Done_MM_Var-in-CFX_Font-AdjustMMParams.patch
+  webcodecs-stop-using-AudioOpusEncoder.patch
+  chromium-glibc-2.34.patch
+  chromium-gtk4-build.patch
 )
-sha256sums=('cc53a994c72f9a1b503a2f6c98a2c131ae86ad64efda0e346351b0794ce13c58'
+sha256sums=('97c52e57eca0dc8b752d274047f38c88aaa86036c0587b26b056efbd3fb2bae3'
   '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
-  'f561145514e9d30a696a82f6a6a4eca06e664b58d7cda30dad9afb2cef341a4d'
-  'e5b651b403e5b161bf9b5e049f8202c444d7f1700411f89d62c20303c80846e0'
+  '9cd2570e92e9bfeff3faf0d5b56334535cb2313f99ab0d9019b74d18ae1c7d0a'
   '70a2805a63df15817a3435e983c0350c5d04ff62deffd8214cbb040b904f54a5'
   '15c93da644dbc533a6b74bd7f86a07dc59023c7b369298acd649715b9a9209a5'
   'c162eafc1f128e616281e719d860ec8726eec89660f449ed0e9af7dfe07c8cc9'
-  'f8dcac3a18e20bee8c54912c1c931e723e97981cc88c8568bd05411812ff6204'
   'e393174d7695d0bafed69e868c5fbfecf07aa6969f3b64596d0bae8b067e1711'
-  '043d83d22af1210c2dd7f3ef9e42e6f316556cb9ec3e377deded080025abf9c1'
-  'cfd35f512cd966a1566397c02897d3cb3d89e117b41b8629e2de11329a2c0b17'
-  '83900524799e1976ac58ac76f1f9ad5686775aaf264a3f38034ba05e733dc588'
   'b94b2e88f63cfb7087486508b8139599c89f96d7a4181c61fec4b4e250ca327a'
-  '5d5bfedbabdf3e05c8159afc2bf776b8f95212413ba44464b4d973ac5a127cf1'
   'bb4560e067eb6ff6d4c4a5c4f149d1cc1c9c705a14be4721ead2ebb8ec84ded1'
-  '7584ec20a3830f619d80d4bcbc432f6a5b7e733c00d397a5dc831ba093ffcc6b'
   '5690089b8bd6946dfa975b8022531213b882b3396a3c968eeef9836b131725b7'
   '04bba6fb19ea5a4ab3949b65f06c88728a00ab296f42022ece62ca2fa25ec2e7'
-  'd7e7642cd750a1d781caf1a4aa550ecd25c1c9bca9267d11915bc5c6d9bcf6de'
   'edf4d973ff197409d319bb6fbbaa529e53bc62347d26b0733c45a116a1b23f37'
-  'be62f09332281b5b8cfcffeffb291527b83bf81e0c87d8c04bed2e1d66afda99')
+  '38348ec177c65ddfcb7201cbcd36b8d5bd69bc00683f1cd2cb929c26c431ae6b'
+  '064daaa2b9d95b96ec04d8ddebf4af441f92263d123365b58fe73966866080af'
+  '57ca10547d9cfdc94f710a2edfcd51817bb73839c1d0ab73a496a19a036fa866'
+  '63bebd6b68ddcd807f859ab395d0a605b165195d6514425fa9888ff781b9eb65')
 #noextract=("${source[@]##*/}")
 # Possible replacements are listed in build/linux/unbundle/replace_gn_files.py
 # Keys are the names in the above script; values are the dependencies in Arch
@@ -135,47 +125,29 @@ prepare() {
   # runtime -- this allows signing into Chromium without baked-in values
   _patch chromium-use-oauth2-client-switches-as-default.patch
 
-  # Add pie build flags to sandbox
-  # _patch chromium-sandbox-pie.patch # Unstable
   # Do not prefix libpng functions
   _patch chromium-no-libpng-prefix.patch
   # Do not mangle libjpeg
   _patch chromium-jpeg-nomangle.patch
   # Do not mangle zlib
   _patch chromium-no-zlib-mangle.patch
-  # Unbundle zlib
-  _patch chromium-unbundle-zlib.patch
-
-  # VAAPI
-  _patch chromium-enable-hardware-accelerated-mjpeg.patch
-  _patch extend-enable-accelerated-video-decode-flag.patch
-  _patch chromium-fix-vaapi-on-intel.patch
-
-  # Fixes for building with libstdc++ instead of libc++
-  #_patch patches/
 
   # https://chromium-review.googlesource.com/c/chromium/src/+/2862724
   _patch sql-make-VirtualCursor-standard-layout-type.patch
 
   # Upstream fixes
-  _patch chromium-protobuf-RepeatedPtrField-export.patch
   _patch chromium-EnumTable-crash.patch
-  _patch chromium-std-max-fix.patch # glibc 2.34
   _patch chromium-gcc11.patch
   _patch chromium-InkDropHost-crash.patch
 
-  _patch downgrade-duplicate-peer-error-to-dvlog.patch
   _patch fix-build-break-with-system-libdrm.patch
   _patch use-FT_Done_MM_Var-in-CFX_Font-AdjustMMParams.patch
-
-  # Fix build with system libpng
-  sed -i -e "/USE_SYSTEM_LIBPNG/ a#include \"core/fxcodec/fx_codec_def.h\"" \
-    third_party/pdfium/core/fxcodec/png/png_decoder.cpp
+  _patch webcodecs-stop-using-AudioOpusEncoder.patch
+  _patch chromium-gtk4-build.patch
 
   # Fix build with glibc 3.34
   # sandbox/linux/services/credentials.cc:101:16: error: variable-sized object may not be initialized
-  sed -i -e "s/char\stls_buf\[PTHREAD_STACK_MIN\]\s=\s{0};/char tls_buf[PTHREAD_STACK_MIN];for(size_t i=0;i<PTHREAD_STACK_MIN;i++) tls_buf[i]=0;/g" \
-    sandbox/linux/services/credentials.cc
+  _patch chromium-glibc-2.34.patch
 
   # Link to system tools required by the build
   mkdir -p third_party/node/linux/node-linux-x64/bin
@@ -297,7 +269,7 @@ build() {
   CXXFLAGS=${CXXFLAGS/-Wp,-D_GLIBCXX_ASSERTIONS/}
 
   gn gen out/Release --args="${_flags[*]}"
-  ninja ${NINJAFLAGS} -C out/Release chrome chrome_sandbox chromedriver
+  ninja -C out/Release chrome chrome_sandbox chromedriver
 
 }
 
