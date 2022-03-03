@@ -1,5 +1,5 @@
 pkgname=gwenview+clang
-pkgver=21.12.2
+pkgver=21.12.3
 pkgrel=1
 pkgdesc='A fast and easy to use image viewer'
 url='https://apps.kde.org/gwenview/'
@@ -8,7 +8,7 @@ license=(GPL LGPL FDL)
 provides=("gwenview" "gwenview=${pkgver}")
 conflicts=("gwenview")
 groups=(kde-applications kde-graphics)
-depends=(kactivities baloo libkipi libkdcraw kparts kitemmodels cfitsio phonon-qt5 purpose perl)
+depends=(kactivities libkipi libkdcraw kparts kitemmodels cfitsio phonon-qt5 purpose perl)
 optdepends=('qt5-imageformats: support for tiff, webp, and more image formats'
   'kimageformats: support for dds, xcf, exr, psd, and more image formats'
   'kipi-plugins: export to various online services'
@@ -17,12 +17,13 @@ makedepends=(extra-cmake-modules kdoctools)
 source=(
   "https://download.kde.org/stable/release-service/${pkgver}/src/gwenview-${pkgver}.tar.xz"
 )
-sha256sums=('66c374773d272233eaecccb9dbf23d02a697a942f35a04700b28a94729197bca')
+sha256sums=('28d10e121394e4c710c77f2d46e18fc881c57613603ed65bfd892d4e79f67a7d')
 validpgpkeys=(
   CA262C6C83DE4D2FB28A332A3A6A4DB839EAA6D7 # Albert Astals Cid <aacid@kde.org>
   F23275E4BF10AFC1DF6914A6DBD2CE893E2D1C87 # Christoph Feck <cfeck@kde.org>
   D81C0CB38EB725EF6691C385BB463350D6EF31EF # Heiko Becker <heiko.becker@kde.org>
 )
+
 _llvm=0
 
 prepare() {
@@ -37,15 +38,15 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    #CFLAGS="${CFLAGS} -flto=thin"
-    #CXXFLAGS="${CXXFLAGS} -flto=thin"
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
     LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
 
   cmake -B build -S gwenview-${pkgver} \
     -DCMAKE_BUILD_TYPE=Release \
-    -DGWENVIEW_SEMANTICINFO_BACKEND="Baloo" \
+    -DGWENVIEW_SEMANTICINFO_BACKEND=None \
     -DBUILD_TESTING=OFF
 
   cmake --build build
