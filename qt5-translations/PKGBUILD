@@ -1,5 +1,5 @@
 pkgname=qt5-translations+clang
-pkgver=5.15.2+kde+r22
+pkgver=5.15.3+kde+r2
 pkgrel=1
 arch=('any')
 url='https://www.qt.io'
@@ -9,8 +9,8 @@ provides=("qt5-translations" "qt5-translations=${pkgver}")
 conflicts=("qt5-translations")
 makedepends=('git' 'qt5-tools')
 groups=('qt' 'qt5')
-_commit=8fbbdf21f127197f97b58c7d80d2fa2a59135638
-source=(git+https://invent.kde.org/qt/qt/qttranslations#commit=${_commit}"")
+_commit=a6d5e7f84a57394db4c8b069f81c56cfeb802e19
+source=("git+https://invent.kde.org/qt/qt/qttranslations#commit=${_commit}")
 sha256sums=('SKIP')
 
 _llvm=0
@@ -22,7 +22,7 @@ pkgver() {
     exit 1
   )
 
-  echo "5.15.2+kde+r$(git rev-list --count origin/5.15.2..${_commit})"
+  echo "5.15.3+kde+r$(git rev-list --count v5.15.3-lts-lgpl..${_commit})"
 
 }
 
@@ -47,18 +47,14 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    qmake ../qttranslations
     CFLAGS="${CFLAGS} -flto=thin"
     CXXFLAGS="${CXXFLAGS} -flto=thin"
     LDFLAGS="${LDFLAGS} -fuse-ld=lld"
-    make
-
-  else
-
-    qmake ../qttranslations
-    make
 
   fi
+
+  qmake ../qttranslations
+  make
 
 }
 

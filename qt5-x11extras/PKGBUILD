@@ -1,7 +1,6 @@
 pkgname=qt5-x11extras+clang
-_qtver=5.15.2
-pkgver=${_qtver/-/}
-pkgrel=2
+pkgver=5.15.3+kde+r0
+pkgrel=1
 arch=('x86_64')
 url='https://www.qt.io'
 provides=("qt5-x11extras" "qt5-x11extras=${pkgver}")
@@ -9,11 +8,24 @@ conflicts=("qt5-x11extras")
 license=('GPL3' 'LGPL3' 'FDL' 'custom')
 pkgdesc='Provides platform-specific APIs for X11'
 depends=('qt5-base')
+makedepends=('git')
 groups=('qt' 'qt5')
-source=("https://download.qt.io/official_releases/qt/${pkgver%.*}/${_qtver}/submodules/qtx11extras-everywhere-src-${_qtver}.tar.xz")
-sha256sums=('7014702ee9a644a5a93da70848ac47c18851d4f8ed622b29a72eed9282fc6e3e')
+_commit=f628d7a60e45d90a439cb0a393a6229ac6892be5
+source=("git+https://invent.kde.org/qt/qt/qtx11extras#commit=${_commit}")
+sha256sums=('SKIP')
 
 _llvm=0
+
+pkgver() {
+
+  cd "${srcdir:?}/qtx11extras" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/qtx11extras directory! PkgVer Failed! \E[0m"
+    exit 1
+  )
+
+  echo "5.15.3+kde+r$(git rev-list --count v5.15.3-lts-lgpl..${_commit})"
+
+}
 
 prepare() {
 
@@ -42,7 +54,7 @@ build() {
 
   fi
 
-  qmake ../qtx11extras-everywhere-src-${_qtver}
+  qmake ../qtx11extras
   make
 
 }

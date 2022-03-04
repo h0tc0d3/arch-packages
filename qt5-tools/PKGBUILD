@@ -1,6 +1,6 @@
 pkgname=qt5-tools+clang
-pkgver=5.15.2+kde+r17
-pkgrel=6
+pkgver=5.15.3+kde+r1
+pkgrel=1
 arch=('x86_64')
 url='https://www.qt.io'
 license=('GPL3' 'LGPL3' 'FDL' 'custom')
@@ -11,7 +11,7 @@ makedepends=('qt5-declarative' 'vulkan-headers' 'clang' 'qt5-webkit' 'git')
 optdepends=('clang: for qdoc' 'qt5-webkit: for Qt Assistant')
 groups=('qt' 'qt5')
 conflicts=('qt5-tools' 'qtchooser')
-_commit=33693a928986006d79c1ee743733cde5966ac402
+_commit=a3e5b2eb8ef5982bc1fffb390ebcd141be1deee4
 source=(
   "git+https://invent.kde.org/qt/qt/qttools#commit=${_commit}"
   {assistant,designer,linguist,qdbusviewer}.desktop
@@ -31,7 +31,7 @@ pkgver() {
     exit 1
   )
 
-  echo "5.15.2+kde+r$(git rev-list --count origin/5.15.2..${_commit})"
+  echo "5.15.3+kde+r$(git rev-list --count v5.15.3-lts-lgpl..${_commit})"
 
 }
 
@@ -44,13 +44,6 @@ prepare() {
   if [[ ! -d build ]]; then
     mkdir -p build
   fi
-
-  cd "${srcdir:?}/qttools" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/qttools directory! Prepare Failed! \E[0m"
-    exit 1
-  )
-
-  git revert -n dbe0567470db2b369a9fdb28d9fbac38be3e2d60 # Revert version bump
 
 }
 
