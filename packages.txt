@@ -31,6 +31,14 @@ libxml2
 libjpeg-turbo
 libpng
 libxcvt
+gsl
+spirv-headers
+spirv-tools
+glslang
+shaderc
+vulkan-headers
+vulkan-icd-loader
+vulkan-tools
 mesa
 qt5-base
 qt5-declarative
@@ -97,7 +105,6 @@ libxrender
 libxft
 libxrandr
 libepoxy
-shaderc
 libglvnd
 libplacebo
 libxshmfence
@@ -201,7 +208,6 @@ polkit
 rtkit
 pipewire
 pipewire-media-session
-gsl
 lib2geom
 ffmpeg
 alacritty

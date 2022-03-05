@@ -1,0 +1,73 @@
+pkgname=glslang+clang
+pkgver=11.8.0
+pkgrel=2
+pkgdesc='OpenGL and OpenGL ES shader front end and validator'
+arch=('x86_64')
+url='https://github.com/KhronosGroup/glslang'
+license=('BSD')
+provides=('glslang' "glslang=${pkgver}")
+conflicts=('glslang')
+depends=('gcc-libs')
+makedepends=('cmake' 'git' 'python' 'spirv-tools' 'spirv-headers')
+options=('staticlibs')
+# Get the commits from known_good.json for every release
+source=("glslang-${pkgver}.tar.gz::https://github.com/KhronosGroup/glslang/archive/${pkgver}.tar.gz")
+sha256sums=('9e5fbe5b844d203da5e61bcd84eda76326e0ff5dc696cb862147bbe01d2febb0')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake \
+    -B build-shared \
+    -S glslang-${pkgver} \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_SHARED_LIBS=ON
+
+  cmake --build build-shared
+
+  cmake \
+    -B build-static \
+    -S glslang-${pkgver} \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_SHARED_LIBS=OFF
+
+  cmake --build build-static
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build-shared
+  DESTDIR="${pkgdir:?}" cmake --install build-static
+
+  install -Dm644 glslang-${pkgver}/LICENSE.txt "${pkgdir:?}/usr/share/licenses/${pkgname}/LICENSE"
+
+  cd "${pkgdir:?}/usr/lib" || (
+    echo -e "\E[1;31mCan't cd to ${pkgdir:?}/usr/lib directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  for lib in *.so; do
+    ln -sf "${lib}" "${lib}.0"
+  done
+
+}

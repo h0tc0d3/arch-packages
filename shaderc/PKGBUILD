@@ -1,5 +1,5 @@
 pkgname=shaderc+clang
-pkgver=2021.3
+pkgver=2022.1
 pkgrel=1
 pkgdesc='Collection of tools, libraries and tests for shader compilation'
 url='https://github.com/google/shaderc'
@@ -12,7 +12,7 @@ conflicts=('shaderc')
 source=(
   "shaderc-${pkgver}.tar.gz::https://github.com/google/shaderc/archive/v${pkgver}.tar.gz"
 )
-sha256sums=('d05f646c363e6447f233126b196238d9022a1dca1bf98f766511aa1a58320972')
+sha256sums=('592c0ba07706a940f95a24073d7f3d050daa0839f24019434a7b2776e5620ace')
 
 _llvm=0
 

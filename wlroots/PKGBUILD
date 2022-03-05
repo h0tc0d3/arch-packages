@@ -1,6 +1,6 @@
 pkgname=wlroots+clang
 pkgver=0.15.1
-pkgrel=3
+pkgrel=4
 license=('MIT')
 pkgdesc='Modular Wayland compositor library'
 url='https://github.com/swaywm/wlroots'
