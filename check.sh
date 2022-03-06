@@ -1,0 +1,62 @@
+#!/usr/bin/bash
+# Author: Grigory Vasilyev <echo "h0tc0d3(-*A*-)g-m*a-i-l(-d#t-)c#m" | sed -e 's/-//ig;s/*//ig;s/(A)/@/i;s/#/o/ig;s/(dot)/./i'>
+# License: Apache License 2.0
+
+SOURCE_DIR=${0%/*}
+if [[ "${SOURCE_DIR}" == "." ]]; then
+  SOURCE_DIR=${PWD}
+fi
+
+set -euo pipefail
+
+PACKAGES=()
+while IFS=$'\n' read -r package; do
+  PACKAGES+=("${package}")
+done <"${SOURCE_DIR:?}/packages.txt"
+
+sudo pacman -Sy
+
+for package in "${PACKAGES[@]}"; do
+
+  if [[ "${package}" =~ ^\+.* ]]; then
+    continue
+  fi
+
+  if [[ "${package}" =~ ^\-.* ]]; then
+    package=${package:1:${#package}}
+  fi
+
+  pkginfo=$(LC_ALL=C pacman -Si "${package}" |
+    sed -nE '/Repository.*(core|extra|community)/I{:a;N;/Version/Ta;N;p}' |
+    grep "Version" |
+    grep -oE "[0-9]*:*[0-9a-zA-Z\._\+]+-[0-9]+" | head -n 1)
+
+  # shellcheck disable=SC1090 disable=SC1091
+  source "${SOURCE_DIR:?}/${package}/PKGBUILD"
+
+  if [[ "${pkginfo}" == *":"* ]]; then
+
+    iepoch="${pkginfo%:*}"
+    ipkgver="$(echo "${pkginfo##*:}" | cut -f1 -d-)"
+    ipkgrel="${pkginfo##*-}"
+
+    if [[ "${iepoch}" == "${epoch:?}" && "${ipkgver}" == "${pkgver:?}" && "${ipkgrel}" == "${pkgrel:?}" ]]; then
+      echo -e "\E[1;32m[+]\E[0m ${package} ${iepoch}:${ipkgver}-${ipkgrel}"
+    else
+      echo -e "\E[1;31m[-]\E[0m ${package} ${epoch}:${pkgver}-${pkgrel} \E[1;33m-->\E[0m ${iepoch}:${ipkgver}-${ipkgrel}"
+    fi
+
+  else
+
+    ipkgver="${pkginfo%%-*}"
+    ipkgrel="${pkginfo##*-}"
+
+    if [[ "${ipkgver}" == "${pkgver:?}" && "${ipkgrel}" == "${pkgrel:?}" ]]; then
+      echo -e "\E[1;32m[+]\E[0m ${package} ${ipkgver}-${ipkgrel}"
+    else
+      echo -e "\E[1;31m[-]\E[0m ${package} ${pkgver}-${pkgrel} \E[1;33m->\E[0m ${ipkgver}-${ipkgrel}"
+    fi
+
+  fi
+
+done

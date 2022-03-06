@@ -4,24 +4,8 @@ We open official packages repository: **[Arch Linux Club](https://archlinux.club
 
 All packages optimized for build with LLVM and Clang.
 
-Usage: `./build.sh --help`
+Check packages versions from this repo and Arch Linux official: `./check.sh`
 
-```text
-USAGE: build.sh [options]...
-
-  --install, -i                 Build and install packages
-  --uninstall, --revert, -u     Uninstall packages and revert system
-  --install-keys, -k            Install GPG keys required for build
-  --install-deps, -d            Install build dependencies
-  --force, -f                   Force rebuild packages
-  --check, -c                   Check packages versions
-  --all, -a                     Build all packages(if not set only updates & not installed)
-  --yes, -y                     Answer yes for build all packages
-```
-
-Before build packages please run `./build.sh --install-keys` and then `./build.sh --install-deps`!
-
-Check packages versions from this repo and Arch Linux official: `./build.sh --check`.
 It's helps to fast find changes of packages and faster update them in this repo.
 On right side this repo package version and on left side arch linux package version.
 
@@ -107,13 +91,4 @@ NINJAFLAGS="-j$(nproc)"
 DEBUG_CFLAGS="-g"
 DEBUG_CXXFLAGS="-g"
 DEBUG_RUSTFLAGS="-C debuginfo=2"
-```
-
-Before build Mesa edit `mesa/mesa.conf` file and set dri, gallium, vulkan drivers for build.
-More info you can find here [Mesa OpenGL](https://wiki.archlinux.org/title/OpenGL), [mesa-git package](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=mesa-git), [Mesa Documentation](https://docs.mesa3d.org/systems.html)
-
-```bash
-DRI_DRIVERS="i915,i965,r200,r100,nouveau"
-GALLIUM_DRIVERS="r300,r600,radeonsi,nouveau,svga,swrast,virgl,iris,zink"
-VULKAN_DRIVERS="amd,intel,swrast"
 ```

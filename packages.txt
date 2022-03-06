@@ -216,6 +216,7 @@ wlroots
 sway
 swayidle
 swaylock
+waybar
 grim
 wl-clipboard
 slurp
