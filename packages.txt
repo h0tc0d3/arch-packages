@@ -27,6 +27,7 @@ musl
 snappy
 +zlib-ng
 zstd
+kmod
 libxml2
 libjpeg-turbo
 libpng

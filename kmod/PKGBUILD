@@ -1,0 +1,86 @@
+pkgname=kmod+clang
+pkgver=29
+pkgrel=2
+pkgdesc="Linux kernel module management tools and library"
+arch=('x86_64')
+url='https://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git'
+license=('GPL2')
+depends=('glibc' 'zlib' 'openssl' 'xz' 'zstd' 'python')
+makedepends=('git' 'gtk-doc' 'cython')
+checkdepends=('linux-headers' 'libelf')
+provides=('module-init-tools=3.16' 'libkmod.so' 'kmod' "kmod=${pkgver}")
+conflicts=('module-init-tools' 'kmod')
+replaces=('module-init-tools')
+validpgpkeys=('EAB33C9690013C733916AC839BA2A5A630CBEA53') # Lucas DeMarchi
+_commit=205827426d7c54c959b95c0f9584fe16a1471bbb
+source=("git+https://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git#commit=${_commit}"
+  'depmod-search.conf'
+  'depmod.hook' 'depmod.script')
+sha256sums=('SKIP'
+  '1a92bfeae870f61ce814577e69d2a147a9c0caf6aed1131243e4179241fcc4a8'
+  'c11c2a0f66ea405493e8617689ca10818dc81dd1dddc19bdb220c8b2917119c1'
+  '827c02e868777e8fcaa91fd519966ef5d30c8d30bad1b20eb56e01cbc9a2e43f')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/kmod" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/kmod directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  ./autogen.sh
+
+}
+
+build() {
+
+  cd "${srcdir:?}/kmod" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/kmod directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --sysconfdir=/etc \
+    --with-xz \
+    --with-zlib \
+    --with-zstd \
+    --with-openssl \
+    --enable-python
+
+  make
+
+}
+
+package() {
+
+  make -C "kmod" DESTDIR="${pkgdir:?}" install
+
+  # extra directories
+  install -dm755 "${pkgdir:?}"/{etc,usr/lib}/{depmod,modprobe}.d
+
+  for tool in {ins,ls,rm,dep}mod mod{probe,info}; do
+    ln -s kmod "${pkgdir:?}/usr/bin/${tool}"
+  done
+
+  # install depmod.d file for search/ dir
+  install -Dm644 "${srcdir:?}/depmod-search.conf" "${pkgdir:?}/usr/lib/depmod.d/search.conf"
+
+  # hook
+  install -Dm644 "${srcdir:?}/depmod.hook" "${pkgdir:?}/usr/share/libalpm/hooks/60-depmod.hook"
+  install -Dm755 "${srcdir:?}/depmod.script" "${pkgdir:?}/usr/share/libalpm/scripts/depmod"
+
+}
