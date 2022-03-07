@@ -1,6 +1,6 @@
 pkgname=libva+clang
 pkgver=2.13.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Video Acceleration (VA) API for Linux'
 arch=(x86_64)
 url=https://01.org/linuxmedia/vaapi
