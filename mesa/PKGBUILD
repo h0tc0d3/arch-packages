@@ -1,6 +1,6 @@
 pkgname=mesa+clang
 pkgdesc="Mesa open-source implementation of the OpenGL specification"
-pkgver=21.3.7
+pkgver=22.0.0
 _pkgver=${pkgver//_/-}
 pkgrel=2
 arch=('x86_64')
@@ -17,13 +17,11 @@ license=('custom')
 source=(
   "https://archive.mesa3d.org/mesa-${_pkgver}.tar.xz"{,.sig}
   'LICENSE'
-  'mesa-remove-swr.patch'
 )
 
-sha256sums=('b4fa9db7aa61bf209ef0b40bef83080999d86ad98df8b8b4fada7c128a1efc3d'
+sha256sums=('e6c41928b5b9917485bd67cec22d15e62cad7a358bf4c711a647979987601250'
   'SKIP'
-  '7fdc119cf53c8ca65396ea73f6d10af641ba41ea1dd2bd44a824726e01c8b3f2'
-  'c7aadbec8859418503b97a4ff8080841772a93a6c881522e6ad035db2d43fb81')
+  '7fdc119cf53c8ca65396ea73f6d10af641ba41ea1dd2bd44a824726e01c8b3f2')
 
 validpgpkeys=(
   '57551DE15B968F6341C248F68D8E31AFC32428A6' # Keith Packard <keithp@keithp.com>
@@ -49,15 +47,6 @@ prepare() {
     _extra_lto_flag='-D b_lto_mode=thin'
   fi
 
-  cd "${srcdir:?}/mesa-${_pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/mesa-${pkgver} directory! Prepare Failed! \E[0m"
-    exit 1
-  )
-
-  # Remove SWR driver. SWR already removed from main branch.
-  rm -fr src/gallium/drivers/swr
-  _patch mesa-remove-swr.patch
-
 }
 
 build() {
@@ -76,7 +65,6 @@ build() {
     -D sysconfdir=/etc \
     -D platforms=x11,wayland \
     -D osmesa=true \
-    -D dri-drivers="${DRI_DRIVERS}" \
     -D gallium-drivers="${GALLIUM_DRIVERS}" \
     -D vulkan-drivers="${VULKAN_DRIVERS}" \
     -D vulkan-layers="${VULKAN_LAYERS}" \
