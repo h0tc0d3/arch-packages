@@ -1,0 +1,84 @@
+pkgname=libselinux+clang
+pkgver=3.3
+pkgrel=2
+pkgdesc="SELinux library and simple utilities"
+arch=('x86_64')
+url='https://github.com/SELinuxProject/selinux'
+license=('custom')
+groups=('selinux')
+makedepends=('pkgconf' 'python' 'ruby' 'xz' 'swig')
+depends=('libsepol>=3.3' 'pcre')
+optdepends=(
+  'python: python bindings'
+  'ruby: ruby bindings'
+)
+conflicts=("selinux-usr-libselinux" "libselinux" "selinux-alpm-hook")
+provides=("libselinux" "libselinux=${pkgver}")
+backup=('etc/selinux/config')
+source=(
+  "https://github.com/SELinuxProject/selinux/releases/download/${pkgver}/libselinux-${pkgver}.tar.gz"
+  libselinux.tmpfiles.d
+  selinux.config
+)
+sha256sums=('acfdee27633d2496508c28727c3d41d3748076f66d42fccde2e6b9f3463a7057'
+  'a1ee24a4f866e60107279df063d74ac5ea833b6e3e1d30faaecb869082e839e9'
+  '83df09da52d03558bdb3c7a8568349458ec52b02dbac3a42ef71c515ad455fb5')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libselinux-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libselinux-${pkgver} build directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  # Do not build deprecated rpm_execcon() interface. It is useless on Arch Linux anyway.
+  export DISABLE_RPM=y
+
+  make swigify
+  make all
+  make PYTHON=/usr/bin/python pywrap
+  make RUBY=/usr/bin/ruby rubywrap
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libselinux-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libselinux-${pkgver} build directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  export DISABLE_RPM=y
+
+  make DESTDIR="${pkgdir:?}" SBINDIR=/usr/bin SHLIBDIR=/usr/lib install
+  make DESTDIR="${pkgdir:?}" PYTHON=/usr/bin/python SBINDIR=/usr/bin SHLIBDIR=/usr/lib install-pywrap
+  make DESTDIR="${pkgdir:?}" RUBY=/usr/bin/ruby SBINDIR=/usr/bin SHLIBDIR=/usr/lib install-rubywrap
+
+  /usr/bin/python -m compileall "${pkgdir:?}/$(/usr/bin/python -c 'from distutils.sysconfig import *; print(get_python_lib(plat_specific=1))')"
+
+  install -Dm 0644 "${srcdir:?}/libselinux.tmpfiles.d" "${pkgdir:?}"/usr/lib/tmpfiles.d/libselinux.conf
+
+  install -Dm 0644 LICENSE "${pkgdir:?}/usr/share/licenses/libselinux/LICENSE"
+
+  # Default SELinux config
+  install -Dm 0644 "${srcdir:?}/selinux.config" "${pkgdir:?}/etc/selinux/config"
+
+}

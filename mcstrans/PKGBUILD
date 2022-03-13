@@ -1,0 +1,46 @@
+pkgname=mcstrans+clang
+pkgver=3.3
+pkgrel=1
+pkgdesc="SELinux MCS translation daemon"
+arch=('x86_64')
+url='https://github.com/SELinuxProject/selinux/wiki'
+license=('GPL2')
+conflicts=("mcstrans")
+provides=("mcstrans=${pkgver}")
+groups=('selinux')
+depends=('libcap' 'libselinux>=3.3' 'pcre')
+source=("https://github.com/SELinuxProject/selinux/releases/download/${pkgver}/mcstrans-${pkgver}.tar.gz")
+sha256sums=('49f52eed54333e9bac46e15c07ea14d077ddc5a7cbed39d0aa2cf653f36c8b8c')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  make -C "mcstrans-${pkgver}"
+
+}
+package() {
+
+  make DESTDIR="${pkgdir:?}" SBINDIR=/usr/bin install -C "mcstrans-${pkgver}"
+
+  # Remove mcstrans init script
+  rm -rf "${pkgdir:?}/etc/rc.d"
+  rmdir "${pkgdir:?}/etc"
+
+}

@@ -18,12 +18,8 @@ sudo pacman -Sy
 
 for package in "${PACKAGES[@]}"; do
 
-  if [[ "${package}" =~ ^\+.* ]]; then
-    continue
-  fi
-
   if [[ "${package}" =~ ^\-.* ]]; then
-    package=${package:1:${#package}}
+    continue
   fi
 
   pkginfo=$(LC_ALL=C pacman -Si "${package}" |

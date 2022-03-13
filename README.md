@@ -1,10 +1,52 @@
 # Arch Linux performance important packages
 
-We open official packages repository: **[Arch Linux Club](https://archlinux.club/)**
+We open official packages repository: **[Arch Linux Club](https://www.archlinux.club/)**
 
 All packages optimized for build with LLVM and Clang.
 
-Check packages versions from this repo and Arch Linux official: `./check.sh`
+## SELinux
+
+For SELinux install packages:
+```bash
+pacman -Syu \
+    psmisc+clang findutils+clang iproute2+clang libsepol+clang libselinux+clang \
+    libsemanage+clang checkpolicy+clang secilc+clang policycoreutils+clang \
+    pambase+clang sudo+clang coreutils+clang shadow+clang openssh+clang \
+    mcstrans+clang dbus-glib+clang restorecond+clang setools+clang \
+    selinux-python+clang selinux-dbus+clang python-gobject+clang \
+    selinux-gui+clang selinux-sandbox+clang
+```
+
+Take care, SELinux packages not include `logrotate`, `cronie`, `setroubleshoot` packages. `setroubleshoot` having bugs and not working on Arch Linux. `logrotate`, `cronie` you have to build with `--with-selinux` flag.
+
+## SELinux reference policy installation
+
+Edit `/etc/selinux/config` and replace `SELINUX=disabled` to `SELINUX=permissive`.
+
+```bash
+git clone https://github.com/SELinuxProject/refpolicy.git
+cd refpolicy
+su
+make bare
+```
+
+Edit `build.conf` and replace `#DISTRO = redhat` to `DISTRO = arch`,
+`SYSTEMD = n` to `SYSTEMD = y`.
+
+```bash
+make conf
+make install
+make load
+
+reboot
+
+su
+restorecon -r /
+```
+
+## Compare package version from this repo and Arch Linux official
+
+For compare use script: `./check`
 
 It's helps to fast find changes of packages and faster update them in this repo.
 On right side this repo package version and on left side arch linux package version.

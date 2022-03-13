@@ -1,0 +1,57 @@
+pkgname=restorecond+clang
+pkgver=3.3
+pkgrel=1
+pkgdesc="SELinux restorecon daemon"
+arch=('x86_64')
+url='https://github.com/SELinuxProject/selinux/wiki'
+license=('GPL2')
+groups=('selinux')
+makedepends=('pkgconf')
+depends=('dbus-glib' 'libselinux>=2.7')
+conflicts=('policycoreutils<2.7' 'restorecond')
+provides=("restorecond=${pkgver}")
+source=(
+  "https://github.com/SELinuxProject/selinux/releases/download/${pkgver}/restorecond-${pkgver}.tar.gz"
+  relabel-selinux.hook
+  selinux-alpm-hook
+)
+sha256sums=('218c3d8873f31764e3c82d53ac713c0c9faaa07caf42ed7184e93ca2b27d8f27'
+  '4df844a89a50fe1caebe0cb92fc925b3dedf7a1a8258eef53f0dd328c1cc089e'
+  '652fe1b44190e7ee9457aec86338a8252a70e1d443d7193041a3659d3cdc45b8')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  make -C "restorecond-${pkgver}"
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" SBINDIR=/usr/bin install -C "restorecond-${pkgver}"
+
+  # Remove restorecond init script
+  rm -rf "${pkgdir:?}/etc/rc.d"
+
+  # SELinux Pacman hooks. Prefix the hook file with "zz-" so that it is run after all other hooks
+  install -Dm 0644 "${srcdir:?}/relabel-selinux.hook" "${pkgdir:?}/usr/share/libalpm/hooks/zzz-relabel-selinux.hook"
+  install -Dm 0755 "${srcdir:?}/selinux-alpm-hook" "${pkgdir:?}/usr/share/libalpm/scripts/selinux-alpm-hook"
+
+}

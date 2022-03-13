@@ -1,6 +1,6 @@
 pkgname=waybar+clang
-pkgver=0.9.10
-pkgrel=1
+pkgver=0.9.12
+pkgrel=2
 pkgdesc='Highly customizable Wayland bar for Sway and Wlroots based compositors'
 arch=('x86_64')
 url="https://github.com/Alexays/Waybar/"
@@ -42,7 +42,7 @@ source=(
   "waybar-${pkgver}.tar.gz::https://github.com/Alexays/Waybar/archive/${pkgver}.tar.gz"
 )
 
-sha256sums=('bbf78e0176792877079be443b9490b2597408cc90e0289ea8c08acc601623ff8')
+sha256sums=('1f3f6692de99567c43939e7ad2e96f8c6a5ef83f760ad6f77865e46a3c6811d6')
 
 _extra_lto_flag=""
 

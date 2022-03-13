@@ -1,0 +1,60 @@
+pkgname=python-gobject+clang
+pkgver=3.42.0
+pkgrel=3
+pkgdesc="Python Bindings for GLib/GObject/GIO/GTK+"
+url="https://wiki.gnome.org/Projects/PyGObject"
+arch=(x86_64)
+license=(LGPL)
+depends=(gobject-introspection-runtime python)
+makedepends=(python-cairo gobject-introspection git meson)
+checkdepends=(python-pytest gtk3)
+optdepends=('cairo: Cairo bindings')
+provides=("pygobject-devel=${pkgver}" "python-gobject" "python-gobject=${pkgver}")
+conflicts=(pygobject-devel "python-gobject")
+replaces=('pygobject-devel<=3.36.1-1')
+_commit=d612f3cc675a1838bc5a18061df040ab6405fd31 # tags/3.42.0^0
+source=("git+https://gitlab.gnome.org/GNOME/pygobject.git#commit=${_commit}")
+sha256sums=('SKIP')
+
+pkgver() {
+
+  cd pygobject &&
+    git describe --tags | sed 's/-/+/g'
+
+}
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+}
+
+build() {
+
+  meson setup pygobject build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true
+
+  meson compile -C build
+
+}
+
+package() {
+
+  meson install -C build --destdir "${pkgdir:?}"
+
+  python -m compileall -d /usr/lib "${pkgdir:?}/usr/lib"
+
+  python -O -m compileall -d /usr/lib "${pkgdir:?}/usr/lib"
+
+}

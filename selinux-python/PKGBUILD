@@ -1,0 +1,44 @@
+pkgname=selinux-python+clang
+pkgver=3.3
+pkgrel=2
+pkgdesc="SELinux python tools and libraries"
+groups=('selinux')
+arch=('x86_64')
+url='https://github.com/SELinuxProject/selinux/wiki'
+license=('GPL2')
+depends=('python' 'python-audit' 'python-ipy' 'libsemanage>=3.3' 'setools>=4.4.0')
+conflicts=('sepolgen<2.7' 'policycoreutils<2.7' 'selinux-python')
+provides=("selinux-python" "selinux-python=${pkgver}" "sepolgen=${pkgver}-${pkgrel}")
+source=("https://github.com/SELinuxProject/selinux/releases/download/${pkgver}/selinux-python-${pkgver}.tar.gz")
+sha256sums=('8ad91061300387996ccb474962fb93dde263d924aa8f740618be16b22e2444ec')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  make PYTHON=/usr/bin/python -C "selinux-python-${pkgver}"
+
+}
+
+package() {
+
+  make -C "selinux-python-${pkgver}" PYTHON=/usr/bin/python DESTDIR="${pkgdir:?}" SBINDIR=/usr/bin install
+  /usr/bin/python -m compileall "${pkgdir}/$(/usr/bin/python3 -c 'import site; print(site.getsitepackages()[0])')"
+
+}

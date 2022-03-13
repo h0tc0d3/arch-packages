@@ -1,0 +1,53 @@
+pkgname=secilc+clang
+pkgver=3.3
+pkgrel=1
+pkgdesc="SELinux Common Intermediate Language Compiler"
+groups=('selinux')
+arch=('x86_64')
+url='https://github.com/SELinuxProject/cil/wiki'
+license=('custom')
+conflicts=("secilc")
+provides=("secilc" "secilc=${pkgver}")
+makedepends=('xmlto' 'docbook-xml' 'docbook-xsl')
+checkdepends=('checkpolicy')
+depends=('libsepol>=3.1')
+source=("https://github.com/SELinuxProject/selinux/releases/download/${pkgver}/secilc-${pkgver}.tar.gz")
+sha256sums=('2c5e1a5d417baf1d2aa3eac294e12c3aac7184a5ef6a779dcbe469ed756e8651')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  make all -C "secilc-${pkgver}"
+
+}
+
+check() {
+
+  make test -C "secilc-${pkgver}"
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "secilc-${pkgver}"
+
+  install -Dm 0644 "secilc-${pkgver}/COPYING" "${pkgdir}/usr/share/licenses/secilc/COPYING"
+
+}

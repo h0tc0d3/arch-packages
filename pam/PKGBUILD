@@ -1,13 +1,13 @@
 pkgname=pam+clang
 pkgver=1.5.2
-pkgrel=1
+pkgrel=2
 pkgdesc="PAM (Pluggable Authentication Modules) library"
 arch=('x86_64')
 license=('GPL2')
 provides=('pam' "pam=${pkgver}" 'libpam.so' 'libpamc.so' 'libpam_misc.so')
 conflicts=('pam')
 url="http://linux-pam.org"
-depends=('glibc' 'libtirpc' 'pambase' 'audit' 'libaudit.so' 'libxcrypt' 'libcrypt.so')
+depends=('glibc' 'libtirpc' 'pambase' 'audit' 'libaudit.so' 'libxcrypt' 'libcrypt.so' 'libselinux')
 makedepends=('flex' 'w3m' 'docbook-xml>=4.4' 'docbook-xsl')
 backup=(etc/security/{access.conf,faillock.conf,group.conf,limits.conf,namespace.conf,namespace.init,pam_env.conf,time.conf} etc/environment)
 source=(
@@ -59,7 +59,8 @@ build() {
   ./configure \
     --libdir=/usr/lib \
     --sbindir=/usr/bin \
-    --disable-db
+    --disable-db \
+    --enable-selinux
 
   make
 

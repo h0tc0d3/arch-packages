@@ -1,0 +1,65 @@
+pkgname=findutils+clang
+pkgver=4.9.0
+pkgrel=1
+pkgdesc="GNU utilities to locate files"
+arch=('x86_64')
+license=('GPL3')
+provides=('findutils' "findutils=${pkgver}")
+conflicts=('findutils')
+groups=('base-devel')
+depends=('glibc' 'sh' 'libselinux')
+url='https://www.gnu.org/software/findutils/'
+source=("https://ftp.gnu.org/pub/gnu/findutils/findutils-${pkgver}.tar.xz"{,.sig})
+sha1sums=('2a7830f1c25c3c7179150084748099c3c31f819b'
+  'SKIP')
+validpgpkeys=('A5189DB69C1164D33002936646502EF796917195') # Bernhard Voelker <mail@bernhard-voelker.de>
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/findutils-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/findutils-${pkgver} build directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  # Don't build or install locate because we use mlocate,
+  # which is a secure version of locate.
+  sed -e '/^SUBDIRS/s/locate//' -e 's/frcode locate updatedb//' -i Makefile.in
+
+  ./configure \
+    --prefix=/usr
+
+  # don't build locate, but the docs want a file in there.
+  make -C locate dblocation.texi
+  make
+
+}
+
+check() {
+
+  make check -C findutils-${pkgver}
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" make install -C findutils-${pkgver}
+
+}

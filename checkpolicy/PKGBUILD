@@ -1,0 +1,44 @@
+pkgname=checkpolicy+clang
+pkgver=3.3
+pkgrel=1
+pkgdesc="SELinux policy compiler"
+arch=('x86_64')
+url='https://github.com/SELinuxProject/selinux'
+license=('GPL2')
+groups=('selinux')
+makedepends=('libsepol>=3.3')
+conflicts=("selinux-usr-checkpolicy" "checkpolicy")
+provides=("checkpolicy" "checkpolicy=${pkgver}" "selinux-usr-checkpolicy=${pkgver}-${pkgrel}")
+source=("https://github.com/SELinuxProject/selinux/releases/download/${pkgver}/checkpolicy-${pkgver}.tar.gz")
+sha256sums=('25c84edfa3a10ab8cb073b97bc55cb66377532d54a2723da9accdabd05431485')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  make -C "checkpolicy-${pkgver}"
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "checkpolicy-${pkgver}"
+  install -m 0755 "checkpolicy-${pkgver}/test/dismod" "${pkgdir:?}/usr/bin/sedismod"
+  install -m 0755 "checkpolicy-${pkgver}/test/dispol" "${pkgdir:?}/usr/bin/sedispol"
+
+}

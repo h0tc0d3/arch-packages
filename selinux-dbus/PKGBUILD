@@ -1,0 +1,42 @@
+pkgname=selinux-dbus+clang
+pkgver=3.3
+pkgrel=1
+pkgdesc="DBus service which allows managing SELinux configuration"
+groups=('selinux')
+arch=('x86_64')
+url='https://github.com/SELinuxProject/selinux/wiki'
+license=('GPL2')
+depends=('python' 'selinux-python')
+conflicts=('policycoreutils<2.7' 'selinux-dbus')
+provides=("selinux-dbus=${pkgver}")
+source=("https://github.com/SELinuxProject/selinux/releases/download/${pkgver}/selinux-dbus-${pkgver}.tar.gz")
+sha256sums=('9aa2724bbc889128fd5ee4f7fd9cf1d9fb52c3449b98dc662da5a95b3cddbf44')
+
+_llvm=0
+
+prepare() {
+
+    if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+        _llvm=1
+    fi
+
+}
+
+build() {
+
+    if [[ ${_llvm} -eq 1 ]]; then
+
+        CFLAGS="${CFLAGS} -flto=thin"
+        CXXFLAGS="${CXXFLAGS} -flto=thin"
+        LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+    fi
+
+    make -C "selinux-dbus-${pkgver}"
+
+}
+package() {
+
+    make DESTDIR="${pkgdir:?}" install -C "selinux-dbus-${pkgver}"
+
+}

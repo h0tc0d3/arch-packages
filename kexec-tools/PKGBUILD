@@ -1,0 +1,71 @@
+pkgname=kexec-tools+clang
+pkgver=2.0.23
+pkgrel=1
+pkgdesc="Load another kernel from the currently executing Linux kernel"
+arch=('x86_64')
+provides=('kexec-tools' "kexec-tools=${pkgver}")
+conflicts=('kexec-tools')
+url="https://kernel.org/pub/linux/utils/kernel/kexec/"
+source=("git://git.kernel.org/pub/scm/utils/kernel/kexec/kexec-tools.git#tag=v${pkgver}")
+makedepends=('git')
+depends=('zlib' 'xz')
+license=('GPL2')
+
+sha256sums=('SKIP')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/kexec-tools" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/kexec-tools build directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # Upstream patches
+  git cherry-pick -n 193e51deccc62544f6423eb5e5eefc8a23aad679
+  git cherry-pick -n d6516ba4c88f217fe14455db92c60cd0e9af18f8
+
+  ./bootstrap
+
+}
+
+build() {
+
+  cd "${srcdir:?}/kexec-tools" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/kexec-tools build directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --sbindir=/usr/bin \
+    --without-lzma
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/kexec-tools" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/kexec-tools build directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  install -D -m644 kexec/kexec.8 "${pkgdir:?}/usr/share/man/man8/kexec.8"
+
+}

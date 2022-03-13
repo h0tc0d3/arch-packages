@@ -1,0 +1,90 @@
+pkgname=iproute2+clang
+pkgver=5.16.0
+pkgrel=1
+pkgdesc='IP Routing Utilities'
+arch=('x86_64')
+license=('GPL2')
+url='https://git.kernel.org/pub/scm/network/iproute2/iproute2.git'
+depends=('glibc' 'iptables' 'libelf' 'libselinux')
+optdepends=(
+  'db: userspace arp daemon'
+  'libcap: tipc'
+  'linux-atm: ATM support'
+)
+provides=("iproute" 'iproute2' "iproute2=${pkgver}")
+conflicts=('iproute2')
+backup=(
+  'etc/iproute2/ematch_map'
+  'etc/iproute2/rt_dsfield'
+  'etc/iproute2/rt_protos'
+  'etc/iproute2/rt_realms'
+  'etc/iproute2/rt_scopes'
+  'etc/iproute2/rt_tables'
+)
+makedepends=('linux-atm')
+options=('staticlibs')
+validpgpkeys=('9F6FC345B05BE7E766B83C8F80A77F6095CDE47E') # Stephen Hemminger
+source=("https://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-${pkgver}.tar."{xz,sign}
+  '0001-make-iproute2-fhs-compliant.patch')
+sha256sums=('c064b66f6b001c2a35aa5224b5b1ac8aa4bee104d7dce30d6f10a84cb8b01e2f'
+  'SKIP'
+  'f60fefe4c17d3b768824bb50ae6416292bcebba06d73452e23f4147b46b827d3')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/iproute2-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/iproute2-${pkgver} build directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # set correct fhs structure
+  patch -Np1 -i "${srcdir:?}/0001-make-iproute2-fhs-compliant.patch"
+
+  # do not treat warnings as errors
+  sed -i 's/-Werror//' Makefile
+
+}
+
+build() {
+
+  cd "${srcdir:?}/iproute2-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/iproute2-${pkgver} build directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --with-selinux
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/iproute2-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/iproute2-${pkgver} build directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" SBINDIR="/usr/bin" install
+
+  # libnetlink isn't installed, install it FS#19385
+  install -Dm0644 include/libnetlink.h "${pkgdir:?}/usr/include/libnetlink.h"
+  install -Dm0644 lib/libnetlink.a "${pkgdir:?}/usr/lib/libnetlink.a"
+
+}

@@ -1,11 +1,11 @@
 pkgname=polkit+clang
 pkgver=0.120
-pkgrel=4
+pkgrel=5
 pkgdesc="Application development toolkit for controlling system-wide privileges"
 arch=(x86_64)
 license=(LGPL)
 url="https://www.freedesktop.org/wiki/Software/polkit/"
-provides=('polkit' "polkit=${pkgver}")
+provides=('polkit' "polkit=${pkgver}" libpolkit-{agent,gobject}-1.so)
 conflicts=('polkit')
 depends=(glib2 pam expat systemd js78)
 makedepends=(meson gtk-doc gobject-introspection git)
@@ -28,7 +28,7 @@ pkgver() {
     exit 1
   )
 
-  git describe --tags | sed 's/-/+/g'
+  git describe --tags | sed 's/[^-]*-g/r&/;s/-/+/g'
 
 }
 
@@ -47,6 +47,9 @@ prepare() {
 
   # CVE-2021-4034
   git cherry-pick -n a2bf5c9c83b6ae46cbd5c779d3055bff81ded683
+
+  # CVE-2021-4115
+  git cherry-pick -n 41cb093f554da8772362654a128a84dd8a5542a7
 
   # Fix build with Meson 0.61.0
   git apply -3 "${srcdir:?}/meson-0.61.diff"

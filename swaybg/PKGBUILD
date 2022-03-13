@@ -1,6 +1,6 @@
 pkgname=swaybg+clang
-pkgver=1.1
-pkgrel=2
+pkgver=1.1.1
+pkgrel=1
 pkgdesc='Wallpaper tool for Wayland compositors'
 arch=(x86_64)
 url='https://github.com/swaywm/swaybg'
@@ -21,7 +21,7 @@ source=(
   "swaybg-${pkgver}.tar.gz::https://github.com/swaywm/swaybg/releases/download/v${pkgver}/swaybg-${pkgver}.tar.gz"
   "swaybg-${pkgver}.tar.gz.sig::https://github.com/swaywm/swaybg/releases/download/v${pkgver}/swaybg-${pkgver}.tar.gz.sig"
 )
-sha256sums=('958f425310514ae2aae064595c3e7efba2187b0d2947136c49188558fdb367b1'
+sha256sums=('71cc8fc2cb7ae5ad3af772ab286b0b42f1c7cb17bea131e78c2d40a2fb8e6c59'
   'SKIP')
 validpgpkeys=(
   "9DDA3B9FA5D58DD5392C78E652CB6609B22DA89A" # Drew DeVault

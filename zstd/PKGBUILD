@@ -1,6 +1,6 @@
 pkgname=zstd+clang
 pkgver=1.5.2
-pkgrel=2
+pkgrel=3
 pkgdesc='Zstandard - Fast real-time compression algorithm'
 url='https://facebook.github.io/zstd/'
 arch=(x86_64)
@@ -41,7 +41,8 @@ build() {
 
   fi
 
-  make
+  # Set PREFIX, as libzstd.pc is otherwise generated with -L/usr/local
+  make PREFIX=/usr
   make -C contrib/pzstd
 
 }

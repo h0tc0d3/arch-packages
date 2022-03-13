@@ -1,0 +1,75 @@
+pkgname=dbus-glib+clang
+pkgver=0.112
+pkgrel=2
+pkgdesc="GLib bindings for DBUS"
+url="https://www.freedesktop.org/wiki/Software/DBusBindings"
+arch=(x86_64)
+license=('GPL')
+provides=("dbus-glib" "dbus-glib=${pkgver}")
+conflicts=("dbus-glib")
+depends=('dbus' 'glib2')
+makedepends=('python' 'gtk-doc')
+source=(
+  "https://dbus.freedesktop.org/releases/dbus-glib/dbus-glib-${pkgver}.tar.gz"{,.asc}
+  dbus-glib-bash-completion.patch::https://gitlab.freedesktop.org/dbus/dbus-glib/-/merge_requests/5.patch
+)
+sha256sums=('7d550dccdfcd286e33895501829ed971eeb65c614e73aadb4a08aeef719b143a'
+  'SKIP'
+  'edbdd4fb5fce358b427da1a1c68347ce09ca444da6ac67ff1fcd6cc67fc92f99')
+validpgpkeys=('DA98F25C0871C49A59EAFF2C4DE8FF2A63C7CC90')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/dbus-glib-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/dbus-glib-${pkgver} build directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  patch -p1 -N -i "${srcdir:?}/dbus-glib-bash-completion.patch" # Fix bash completion
+
+}
+
+build() {
+
+  cd "${srcdir:?}/dbus-glib-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/dbus-glib-${pkgver} build directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --localstatedir=/var \
+    --libexecdir=/usr/lib \
+    --enable-gtk-doc \
+    --disable-static
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/dbus-glib-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/dbus-glib-${pkgver} build directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install completiondir=/usr/share/bash-completion/completions
+  mv "${pkgdir:?}/usr/share/bash-completion/completions/"{dbus-bash-completion.sh,dbus-send}
+
+}

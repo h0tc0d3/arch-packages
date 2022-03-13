@@ -1,0 +1,43 @@
+pkgname=selinux-sandbox+clang
+pkgver=3.3
+pkgrel=1
+pkgdesc="sandboxing tool for SELinux"
+arch=('x86_64')
+url='https://github.com/SELinuxProject/selinux/wiki'
+license=('GPL2')
+groups=('selinux')
+depends=('libcap-ng' 'selinux-python')
+conflicts=('policycoreutils<2.7' 'selinux-sandbox')
+provides=("selinux-sandbox=${pkgver}")
+source=("https://github.com/SELinuxProject/selinux/releases/download/${pkgver}/selinux-sandbox-${pkgver}.tar.gz")
+sha256sums=('927aef383ab59aa3f2a9d2e5b0860d90c63f22246eb93038e1dc50885dbf8867')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  make -C "selinux-sandbox-${pkgver}"
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" SBINDIR=/usr/bin install -C "selinux-sandbox-${pkgver}"
+
+}

@@ -1,0 +1,23 @@
+#!/usr/bin/bash
+# Author: Grigory Vasilyev <echo "h0tc0d3(-*A*-)g-m*a-i-l(-d#t-)c#m" | sed -e 's/-//ig;s/*//ig;s/(A)/@/i;s/#/o/ig;s/(dot)/./i'>
+# License: Apache License 2.0
+
+SOURCE_DIR=${0%/*}
+if [[ "${SOURCE_DIR}" == "." ]]; then
+  SOURCE_DIR=${PWD}
+fi
+
+set -euo pipefail
+
+PACKAGES=()
+while IFS=$'\n' read -r package; do
+  PACKAGES+=("${package}")
+done < <(find "${SOURCE_DIR:?}/" -maxdepth 1 -type d -printf "%f\n")
+
+for package in "${PACKAGES[@]}"; do
+
+  if ! grep -Fiq "${package:?}" "${SOURCE_DIR:?}/packages.txt" ; then
+    echo "${package:?}"
+  fi
+
+done

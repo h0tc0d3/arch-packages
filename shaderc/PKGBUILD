@@ -1,6 +1,6 @@
 pkgname=shaderc+clang
 pkgver=2022.1
-pkgrel=1
+pkgrel=2
 pkgdesc='Collection of tools, libraries and tests for shader compilation'
 url='https://github.com/google/shaderc'
 arch=('x86_64')

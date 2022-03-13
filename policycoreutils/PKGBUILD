@@ -1,0 +1,49 @@
+pkgname=policycoreutils+clang
+pkgver=3.3
+pkgrel=1
+pkgdesc="SELinux policy core utilities"
+arch=('x86_64')
+url='https://github.com/SELinuxProject/selinux'
+license=('GPL2')
+groups=('selinux')
+depends=('libsemanage>=3.3' 'pam')
+optdepends=('mcstrans: SELinux MCS translation daemon'
+  'restorecond: SELinux daemon that fixes SELinux file contexts'
+  'selinux-dbus-config: D-Bus configuration for SELinux'
+  'selinux-gui: GUI tools for SELinux'
+  'selinux-python: Python tools and libraries for SELinux'
+  'selinux-sandbox: sandboxing tool for SELinux'
+  'semodule-utils: SELinux module tools')
+conflicts=("selinux-usr-policycoreutils" "policycoreutils")
+provides=("policycoreutils" "policycoreutils=${pkgver}" "selinux-usr-policycoreutils=${pkgver}-${pkgrel}")
+source=("https://github.com/SELinuxProject/selinux/releases/download/${pkgver}/policycoreutils-${pkgver}.tar.gz")
+sha256sums=('4199040ced8a81f2ddd0522b4faf2aba62fc821473f4051dc8474fb1c4a01078')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  make -C "policycoreutils-${pkgver}" LSPP_PRIV=y all
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" -C "policycoreutils-${pkgver}" LIBEXECDIR=/usr/lib SBINDIR=/usr/bin install
+
+}

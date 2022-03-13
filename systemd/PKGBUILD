@@ -1,9 +1,9 @@
 pkgbase=systemd+clang
 pkgname=('systemd+clang' 'systemd-libs+clang' 'systemd-resolvconf+clang' 'systemd-sysvcompat+clang')
-_tag='d066a4f747b225d47c5f5c97a8843d30878995b8' # git rev-parse v${_tag_name}
-_tag_name=250.3
+_tag='5aba21f1561d48fdcf7f4670263ba109c25c1ea6' # git rev-parse v${_tag_name}
+_tag_name=250.4
 pkgver="${_tag_name/-/}"
-pkgrel=4
+pkgrel=1
 arch=('x86_64')
 url='https://www.github.com/systemd/systemd'
 makedepends=(
@@ -12,7 +12,7 @@ makedepends=(
   'libmicrohttpd' 'libxcrypt' 'libxslt' 'util-linux' 'linux-api-headers'
   'python-jinja' 'python-lxml' 'quota-tools' 'shadow' 'gnu-efi-libs' 'git'
   'meson' 'libseccomp' 'pcre2' 'audit' 'kexec-tools' 'libxkbcommon'
-  'bash-completion' 'p11-kit' 'systemd' 'libfido2' 'tpm2-tss' 'rsync'
+  'bash-completion' 'p11-kit' 'systemd' 'libfido2' 'tpm2-tss' 'rsync' 'libselinux'
 )
 validpgpkeys=(
   '63CDA1E5D3FC22B998D20DD6327F26951A015CC4' # Lennart Poettering <lennart@poettering.net>
@@ -39,26 +39,26 @@ source=("git+https://github.com/systemd/systemd-stable#tag=${_tag}?signed"
   '30-systemd-tmpfiles.hook'
   '30-systemd-udev-reload.hook'
   '30-systemd-update.hook')
-sha512sums=('SKIP'
+sha256sums=('SKIP'
   'SKIP'
-  'cc0c2ffb5f7c3a7176cd68f3dddd85ca000dcc4cdf3044746a20147234adb6811800fd28a4713faa6a59bf8c02be9fd43c2d6aa6695fd1dbf03ae773a91d090c'
-  'f0d933e8c6064ed830dec54049b0a01e27be87203208f6ae982f10fb4eddc7258cb2919d594cbfb9a33e74c3510cfd682f3416ba8e804387ab87d1a217eb4b73'
-  '8167dd8f610fd98e3de4360cacd0020d3691cd1a989591a6db2f0d1277ce96880e64753bdbed759c6cf4b95d39b5d2415b4d9810e369e50e59655742174ff51c'
-  'a8c7e4a2cc9c9987e3c957a1fc3afe8281f2281fffd2e890913dcf00cf704024fb80d86cb75f9314b99b0e03bac275b22de93307bfc226d8be9435497e95b7e6'
-  '61032d29241b74a0f28446f8cf1be0e8ec46d0847a61dadb2a4f096e8686d5f57fe5c72bcf386003f6520bc4b5856c32d63bf3efe7eb0bc0deefc9f68159e648'
-  'c416e2121df83067376bcaacb58c05b01990f4614ad9de657d74b6da3efa441af251d13bf21e3f0f71ddcb4c9ea658b81da3d915667dc5c309c87ec32a1cb5a5'
-  '5a1d78b5170da5abe3d18fdf9f2c3a4d78f15ba7d1ee9ec2708c4c9c2e28973469bc19386f70b3cf32ffafbe4fcc4303e5ebbd6d5187a1df3314ae0965b25e75'
-  'b90c99d768dc2a4f020ba854edf45ccf1b86a09d2f66e475de21fe589ff7e32c33ef4aa0876d7f1864491488fd7edb2682fc0d68e83a6d4890a0778dc2d6fe19'
-  '217a9dc3f9d8cd0c9fee54f777396f5a270c2e8a30c572ce5f635165adadcec275af0dae1456019cedb9cc93b7cef0862e5070aeb99a19e496625200e8dfac93'
-  '299dcc7094ce53474521356647bdd2fb069731c08d14a872a425412fcd72da840727a23664b12d95465bf313e8e8297da31259508d1c62cc2dcea596160e21c5'
-  '0d6bc3d928cfafe4e4e0bc04dbb95c5d2b078573e4f9e0576e7f53a8fab08a7077202f575d74a3960248c4904b5f7f0661bf17dbe163c524ab51dd30e3cb80f7'
-  '2b50b25e8680878f7974fa9d519df7e141ca11c4bfe84a92a5d01bb193f034b1726ea05b3c0030bad1fbda8dbb78bf1dc7b73859053581b55ba813c39b27d9dc'
-  '63e55b3acd14bc54320b6f2310b43398651ad4e262d4f4a0135e05d34a993e56ed673cc46e57f15b418371df5c4cef6f54486db96325e4abb1d33fb1a3946254'
-  'a1661ab946c6cd7d3c6251a2a9fd68afe231db58ce33c92c42594aedb5629be8f299ba08a34713327b373a3badd1554a150343d8d3e5dfb102999c281bd49154'
-  '9426829605bbb9e65002437e02ed54e35c20fdf94706770a3dc1049da634147906d6b98bf7f5e7516c84068396a12c6feaf72f92b51bdf19715e0f64620319de'
-  'da7a97d5d3701c70dd5388b0440da39006ee4991ce174777931fea2aa8c90846a622b2b911f02ae4d5fffb92680d9a7e211c308f0f99c04896278e2ee0d9a4dc'
-  'a50d202a9c2e91a4450b45c227b295e1840cc99a5e545715d69c8af789ea3dd95a03a30f050d52855cabdc9183d4688c1b534eaa755ebe93616f9d192a855ee3'
-  '825b9dd0167c072ba62cabe0677e7cd20f2b4b850328022540f122689d8b25315005fa98ce867cf6e7460b2b26df16b88bb3b5c9ebf721746dce4e2271af7b97')
+  '266cb1cffb4491d62eb62cd680de4288d57aff31e77b7b1af1c6b419fccedbfc'
+  '5227c9bd463ae9f967a1ffbbf5f95da3c53461eb9fab97ab894fc3a2f56fe96a'
+  '48007e412f49a26823154312e76080d81e3b3c4d699deb0a17b81f4fa4421b98'
+  '4cfed7987fd43032960bdf4aee95f30d0e74b78cbdd11ca11aa79ecb52b004ef'
+  'e81d73077046628ba495ed07abfc819ea270d773fe806b3ff0af527a2c6b5d42'
+  '77ca6618c5e04c136eff8ddfb738a5de0742cb375edfa02b959a125024b8bf46'
+  'd0ec3070db1f29799adbc8be8a26341290d2df4bf35939a5adce8e7947bad3bf'
+  'd51eddf2503c7f4b971c755a22391c3dbd1c41dd984a202a66c613436e43bd31'
+  '46bc9d0259b503e97bdf75aa23e8277aef7813fd7bc76b9daac1741d1d30f3d4'
+  'f55162dc55268aa3850ef410aa1e444defa0f68b996e415c8b8bc04d63053e7a'
+  'a938701f4244ebdc4ae88ed0032a8315b68f086c6e45d9f2e34ef9442a8f6b47'
+  'be3c749ed51ee26c8412e0304a41ac5e00e668f4d5227b5f359a3b0c31d18d5d'
+  'e112fab7ff7134df71580617d03c59ce0cd74540facece6fa40ba05e4644e9bd'
+  'b19b23467dc33b3e8267cabea10726b0d181e0de1b491ec538b9fb620bccf57f'
+  '1af0fbaeaf974fe3d8409854179fac68e8461524dd49849b7e889374363ce3c9'
+  '3cfdc3c21d32cc35b1315f4ff4df87238bc7d2c27bdcf4e5a70600832c481e95'
+  'f6364443609b1d5a07f385e7228ace0eae5040ae3bbd4e00ed5033ef1b19e4b9'
+  '1090b7b1edba2042298b609a77bbe122982ca936208408fb79d77b33a2f3c27a')
 
 _backports=(
   # bus: Use OrderedSet for introspection
@@ -130,6 +130,8 @@ build() {
     -D b_pie=true \
     -D version-tag="${_tag_name/-/\~}-${pkgrel}-arch" \
     -D mode=release \
+    -D selinux=true \
+    -D audit=true \
     -D gnu-efi=true \
     -D efi-libdir=/usr/lib \
     -D ima=false \

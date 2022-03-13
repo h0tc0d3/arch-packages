@@ -3,11 +3,11 @@ pkgname=(util-linux+clang util-linux-libs+clang)
 _pkgmajor=2.37
 _realver=${_pkgmajor}.4
 pkgver=${_realver/-/}
-pkgrel=1
+pkgrel=2
 pkgdesc='Miscellaneous system utilities for Linux'
 url='https://github.com/karelzak/util-linux'
 arch=('x86_64')
-makedepends=('asciidoctor' 'libcap-ng' 'libxcrypt' 'python' 'systemd')
+makedepends=('asciidoctor' 'libcap-ng' 'libxcrypt' 'python' 'systemd' 'libselinux')
 license=('GPL2')
 validpgpkeys=('B0C64D14301CC6EFAEDF60E4E4B71D5EEC39C284') # Karel Zak
 source=(
@@ -77,6 +77,7 @@ build() {
     --enable-chfn-chsh \
     --enable-write \
     --enable-mesg \
+    --with-selinux \
     --with-python=3
 
   make

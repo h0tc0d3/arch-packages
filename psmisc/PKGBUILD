@@ -1,0 +1,56 @@
+pkgname=psmisc+clang
+pkgver=23.4
+pkgrel=1
+pkgdesc='Miscellaneous procfs tools'
+arch=('x86_64')
+provides=('psmisc' "psmisc=${pkgver}")
+conflicts=('psmisc')
+url='https://gitlab.com/psmisc/psmisc'
+license=('GPL')
+depends=('ncurses' 'libselinux')
+source=("https://downloads.sourceforge.net/psmisc/psmisc-${pkgver}.tar.xz")
+sha256sums=('7f0cceeace2050c525f3ebb35f3ba01d618b8d690620580bdb8cd8269a0c1679')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/psmisc-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/psmisc-${pkgver} build directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --with-selinux
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/psmisc-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/psmisc-${pkgver} build directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+}
