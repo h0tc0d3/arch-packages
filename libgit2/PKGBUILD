@@ -1,0 +1,67 @@
+pkgname=libgit2+clang
+pkgver=1.4.2
+pkgrel=1
+epoch=1
+pkgdesc="A linkable library for Git"
+arch=(x86_64)
+url="https://github.com/libgit2/libgit2"
+license=(GPL2)
+depends=(glibc http-parser openssl pcre zlib libssh2.so)
+makedepends=(cmake libssh2 python)
+provides=(libgit2 "libgit2=${pkgver}" libgit2.so)
+conflicts=(libgit2)
+source=(
+  "libgit2-${pkgver}.tar.gz::https://github.com/libgit2/libgit2/archive/v${pkgver}.tar.gz"
+  libgit2-1.2.0-remove_http-parse_incompatible_tests.patch
+)
+
+sha256sums=('901c2b4492976b86477569502a41c31b274b69adc177149c02099ea88404ef19'
+  'e95000dd7e2a3c56015114d0b67cf1a6d2ff382d2e2a2567dbb4731300a1deb1')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+  # remove tests that are only compatible with the (modified) vendored version
+  # of http-parser, but not with upstream http-parser
+  patch -d libgit2-${pkgver} -Np1 -i ../libgit2-1.2.0-remove_http-parse_incompatible_tests.patch
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -S libgit2-${pkgver} -B build \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_BUILD_TYPE=None \
+    -DUSE_HTTP_PARSER=system \
+    -DUSE_SSH=ON \
+    -DTHREADSAFE=ON \
+    -Wno-dev
+
+  make VERBOSE=1 -C build
+
+}
+
+check() {
+
+  make VERBOSE=1 test -C build
+
+}
+
+package() {
+
+  make VERBOSE=1 DESTDIR="${pkgdir:?}" install -C build
+  install -vDm 644 libgit2-${pkgver}/{AUTHORS,README.md} -t "${pkgdir:?}/usr/share/doc/libgit2"
+
+}

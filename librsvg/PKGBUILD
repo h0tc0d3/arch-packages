@@ -1,5 +1,5 @@
 pkgname=librsvg+clang
-pkgver=2.52.6
+pkgver=2.53.2
 pkgrel=1
 epoch=2
 pkgdesc="SVG rendering library"
@@ -9,8 +9,8 @@ license=(LGPL)
 provides=("librsvg" "librsvg=${pkgver}" "librsvg-${pkgver%%.*}.so")
 conflicts=("librsvg")
 depends=(gdk-pixbuf2 pango)
-makedepends=(gobject-introspection vala gtk-doc git rust)
-_commit=d6d3f75135363c46024cfd050fe91d4b38c8bb1a # tags/2.52.6^0
+makedepends=(gobject-introspection vala gtk-doc git rust python-docutils gi-docgen)
+_commit=c5d0eb679ee45377417bbf9ce2dabde0eb72802d # tags/2.53.2^0
 source=("git+https://gitlab.gnome.org/GNOME/librsvg.git#commit=${_commit}")
 sha256sums=('SKIP')
 

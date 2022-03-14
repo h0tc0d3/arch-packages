@@ -1,23 +1,23 @@
 pkgname=restorecond+clang
 pkgver=3.3
-pkgrel=1
+pkgrel=2
 pkgdesc="SELinux restorecon daemon"
 arch=('x86_64')
 url='https://github.com/SELinuxProject/selinux/wiki'
 license=('GPL2')
 groups=('selinux')
 makedepends=('pkgconf')
-depends=('dbus-glib' 'libselinux>=2.7')
+depends=('dbus-glib' 'libselinux>=2.7' 'python')
 conflicts=('policycoreutils<2.7' 'restorecond')
 provides=("restorecond=${pkgver}")
 source=(
   "https://github.com/SELinuxProject/selinux/releases/download/${pkgver}/restorecond-${pkgver}.tar.gz"
   relabel-selinux.hook
-  selinux-alpm-hook
+  selinux-alpm-hook.py
 )
 sha256sums=('218c3d8873f31764e3c82d53ac713c0c9faaa07caf42ed7184e93ca2b27d8f27'
-  '4df844a89a50fe1caebe0cb92fc925b3dedf7a1a8258eef53f0dd328c1cc089e'
-  '652fe1b44190e7ee9457aec86338a8252a70e1d443d7193041a3659d3cdc45b8')
+  'ba457e759938590cc7cd714af4e1eac5c5f07e861197c269ff954d530b67cd23'
+  'e03932355995f1dd696fdaf7d289981ea0ed4e94920b405425fd9fff0692010c')
 
 _llvm=0
 
@@ -52,6 +52,6 @@ package() {
 
   # SELinux Pacman hooks. Prefix the hook file with "zz-" so that it is run after all other hooks
   install -Dm 0644 "${srcdir:?}/relabel-selinux.hook" "${pkgdir:?}/usr/share/libalpm/hooks/zzz-relabel-selinux.hook"
-  install -Dm 0755 "${srcdir:?}/selinux-alpm-hook" "${pkgdir:?}/usr/share/libalpm/scripts/selinux-alpm-hook"
+  install -Dm 0755 "${srcdir:?}/selinux-alpm-hook.py" "${pkgdir:?}/usr/share/libalpm/scripts/selinux-alpm-hook.py"
 
 }

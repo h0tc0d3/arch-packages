@@ -1,6 +1,6 @@
 pkgname=libvdpau+clang
-pkgver=1.4
-pkgrel=2
+pkgver=1.5
+pkgrel=1
 pkgdesc="Nvidia VDPAU library"
 arch=(x86_64)
 url='https://www.freedesktop.org/wiki/Software/VDPAU/'
@@ -8,8 +8,8 @@ provides=(libvdpau "libvdpau=${pkgver}")
 conflicts=(libvdpau)
 depends=('libxext')
 license=('custom')
-_commit=c3d1a9dbafdfe6144ff474d0d523dc01b068750f # 1.4
-source=("git+https://gitlab.freedesktop.org/vdpau/libvdpau.git#tag=$_commit")
+_commit=79f1506a3307d3275b0fdfb2e110c173f68e6f78 # 1.5
+source=("git+https://gitlab.freedesktop.org/vdpau/libvdpau.git#tag=${_commit}")
 makedepends=('xorgproto' 'git' 'meson')
 sha256sums=('SKIP')
 

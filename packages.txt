@@ -6,6 +6,7 @@ binutils
 libtool
 libgcrypt
 python
+rust
 -libsepol
 -libselinux
 xxhash
@@ -215,6 +216,7 @@ python-gobject
 gnutls
 libcurl-gnutls
 gnupg
+libgit2
 mpv
 speexdsp
 alsa-lib

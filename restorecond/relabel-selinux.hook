@@ -1,12 +1,12 @@
 [Trigger]
 Operation = Install
 Operation = Upgrade
-Type = File
+Type = Path
 Target = *
 
 [Action]
 Description = SELinux: relabel installed files
 Depends = policycoreutils
 When = PostTransaction
-Exec = /usr/share/libalpm/scripts/selinux-alpm-hook
+Exec = /usr/share/libalpm/scripts/selinux-alpm-hook.py
 NeedsTargets
