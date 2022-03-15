@@ -1,5 +1,5 @@
 pkgname=telegram-desktop+clang
-pkgver=3.4.8
+pkgver=3.6.0
 pkgrel=1
 pkgdesc='Official Telegram Desktop client'
 arch=('x86_64')
@@ -8,16 +8,20 @@ license=('GPL3')
 provides=('telegram-desktop' "telegram-desktop=${pkgver}")
 conflicts=('telegram-desktop')
 depends=('hunspell' 'ffmpeg' 'hicolor-icon-theme' 'lz4' 'minizip' 'openal' 'ttf-opensans'
-  'qt6-imageformats' 'qt6-svg' 'qt6-wayland' 'qt6-5compat' 'xxhash' 'glibmm'
-  'rnnoise' 'pipewire' 'libxtst' 'libxrandr' 'jemalloc' 'abseil-cpp')
+  'qt6-imageformats' 'qt6-svg' 'qt6-wayland' 'qt6-5compat' 'libdbusmenu-qt6' 'xxhash'
+  'kwayland' 'glibmm' 'rnnoise' 'pipewire' 'libxtst' 'libxrandr' 'jemalloc' 'abseil-cpp')
 makedepends=('cmake' 'git' 'ninja' 'python' 'range-v3' 'tl-expected' 'microsoft-gsl'
-  'extra-cmake-modules' 'wayland-protocols' 'plasma-wayland-protocols' 'libtg_owt')
-optdepends=('webkit2gtk: embedded browser features'
-  'xdg-desktop-portal: desktop integration')
+  'extra-cmake-modules' 'webkit2gtk' 'libtg_owt')
+optdepends=(
+  'webkit2gtk: embedded browser features'
+  'xdg-desktop-portal: desktop integration'
+)
 source=(
   "https://github.com/telegramdesktop/tdesktop/releases/download/v${pkgver}/tdesktop-${pkgver}-full.tar.gz"
+  tgcalls-ffmpeg5.patch
 )
-sha256sums=('6a962a1110bc15c21999832b0151af8125f33a3b6e978461b8f446217c76876e')
+sha256sums=('a381a4aacaa41beaea31bdd30047ee7b127277d73f7591ccb7ed363a3f048a5c'
+  '183e1b29c6202a911613c7e2f9f618ba9a2eaa3f7ccbdfeefc70366a6e1be427')
 
 _llvm=0
 
@@ -26,6 +30,8 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=1
   fi
+
+  patch -d "${srcdir:?}/tdesktop-${pkgver}-full/Telegram/ThirdParty/tgcalls" -Np1 -i "${srcdir:?}/tgcalls-ffmpeg5.patch"
 
 }
 
@@ -49,12 +55,12 @@ build() {
     -DTDESKTOP_API_ID=611335 \
     -DTDESKTOP_API_HASH=d524b414d21f4d37f08684c1df41ac9c
 
-  ninja ${NINJAFLAGS} -C build
+  ninja -C build
 
 }
 
 package() {
 
-  DESTDIR="${pkgdir:?}" ninja ${NINJAFLAGS} -C build install
+  DESTDIR="${pkgdir:?}" ninja -C build install
 
 }
