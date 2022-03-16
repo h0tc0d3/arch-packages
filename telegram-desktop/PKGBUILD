@@ -1,5 +1,5 @@
 pkgname=telegram-desktop+clang
-pkgver=3.6.0
+pkgver=3.6.1
 pkgrel=1
 pkgdesc='Official Telegram Desktop client'
 arch=('x86_64')
@@ -20,7 +20,7 @@ source=(
   "https://github.com/telegramdesktop/tdesktop/releases/download/v${pkgver}/tdesktop-${pkgver}-full.tar.gz"
   tgcalls-ffmpeg5.patch
 )
-sha256sums=('a381a4aacaa41beaea31bdd30047ee7b127277d73f7591ccb7ed363a3f048a5c'
+sha256sums=('1e87df0970b135d566f5af4bc6c2695fc98ba387dc1137100a478f02d48c12e8'
   '183e1b29c6202a911613c7e2f9f618ba9a2eaa3f7ccbdfeefc70366a6e1be427')
 
 _llvm=0

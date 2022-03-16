@@ -1,6 +1,6 @@
 pkgname=libusb+clang
 pkgver=1.0.25
-pkgrel=2
+pkgrel=3
 pkgdesc="Library that provides generic access to USB devices"
 arch=('x86_64')
 url="https://libusb.info/"
@@ -11,8 +11,10 @@ depends=('glibc' 'libudev.so')
 makedepends=('systemd')
 source=(
   "https://github.com/libusb/libusb/releases/download/v${pkgver}/libusb-${pkgver}.tar.bz2"
+  0001-core-install-first-context-as-implicit-default.patch
 )
-sha256sums=('8a28ef197a797ebac2702f095e81975e2b02b2eeff2774fa909c78a74ef50849')
+sha256sums=('8a28ef197a797ebac2702f095e81975e2b02b2eeff2774fa909c78a74ef50849'
+  '8b4f772775767c75a4f68fb182d12064e009c1d3146599463b82ff347ec06a2f')
 
 _llvm=0
 
@@ -27,6 +29,7 @@ prepare() {
     exit 1
   )
 
+  patch -Np1 -i "${srcdir:?}/0001-core-install-first-context-as-implicit-default.patch"
   autoreconf -vfi
 
 }
