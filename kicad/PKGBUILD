@@ -1,5 +1,5 @@
 pkgname=kicad+clang
-pkgver=6.0.3
+pkgver=6.0.4
 pkgrel=1
 pkgdesc="Electronic schematic and printed circuit board (PCB) design tools"
 arch=('x86_64')
@@ -14,7 +14,7 @@ optdepends=(
 conflicts=('kicad' 'kicad-bzr')
 provides=('kicad')
 install=kicad.install
-_commit=9dc35b575cf0562b2ecd2ddde9e8a9016aa397b9
+_commit=2c061ed67a7dabde2230241455e04070aefb3601
 source=(
   "kicad::git+https://gitlab.com/kicad/code/kicad.git#commit=${_commit}"
   fix-archive-permissions.patch
