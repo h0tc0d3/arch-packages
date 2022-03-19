@@ -1,0 +1,121 @@
+pkgbase=lapack+clang
+pkgname=(lapack+clang blas+clang cblas+clang lapacke+clang lapack-doc+clang)
+pkgver=3.10.0
+pkgrel=1
+url='https://www.netlib.org/lapack'
+pkgdesc='Linear Algebra PACKage'
+depends=(gcc-libs)
+makedepends=(gcc-fortran cmake python doxygen)
+arch=(x86_64)
+license=(custom)
+source=(
+  "https://github.com/Reference-LAPACK/lapack/archive/v${pkgver}/lapack-${pkgver}.tar.gz"
+  fix-out-of-bounds-read-in-larrv-CVE-2021-4048.patch
+)
+
+sha256sums=('328c1bea493a32cac5257d84157dc686cc3ab0b004e2bea22044e0a59f6f8a19'
+  'c1c2869d0d69a74f4f772367d416af690a44ca510994eee8941e35b6bd9d10a6')
+
+_lld=0
+
+prepare() {
+
+  if ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _lld=1
+  fi
+
+  patch -d lapack-${pkgver} -Np1 -i "${srcdir:?}/fix-out-of-bounds-read-in-larrv-CVE-2021-4048.patch"
+
+}
+
+build() {
+
+  CFLAGS="${CFLAGS} -frecursive -fno-optimize-sibling-calls -Wno-unused-command-line-argument"
+  CXXFLAGS="${CXXFLAGS} -frecursive -fno-optimize-sibling-calls -Wno-unused-command-line-argument"
+
+  if [[ ${_lld} -eq 1 ]]; then
+
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -B build -S lapack-${pkgver} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_Fortran_COMPILER=gfortran \
+    -DBUILD_DEPRECATED=ON \
+    -DBUILD_SHARED_LIBS=ON \
+    -DLAPACKE=ON \
+    -DLAPACKE_WITH_TMG=ON \
+    -DCBLAS=ON
+
+  cmake --build build
+
+  # Build man pages
+  cd lapack-${pkgver} &&
+    doxygen DOCS/Doxyfile_man
+
+}
+
+package_lapack+clang() {
+
+  provides=(lapack "lapack=${pkgver}")
+  conflicts=(lapack)
+
+  depends=(blas)
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+  rm -r "${pkgdir:?}/usr/lib/"{libblas.*,libcblas.*,liblapacke.*}
+  rm -r "${pkgdir:?}/usr/lib/pkgconfig/"{blas.*,cblas.*,lapacke.*}
+  rm -r "${pkgdir:?}/usr/lib/cmake/"{cblas*,lapacke*}
+  rm -r "${pkgdir:?}/usr/include"
+
+}
+
+package_blas+clang() {
+
+  pkgdesc="Basic Linear Algebra Subprograms"
+  provides=(blas "blas=${pkgver}")
+  conflicts=(blas)
+
+  DESTDIR="${pkgdir:?}" cmake --install build/BLAS
+
+  install -Dm644 "lapack-${pkgver}/LICENSE" -t "${pkgdir:?}/usr/share/licenses/blas/"
+
+}
+
+package_cblas+clang() {
+
+  pkgdesc="C interface to BLAS"
+  depends=(blas)
+  provides=(cblas "cblas=${pkgver}")
+  conflicts=(cblas)
+
+  DESTDIR="${pkgdir:?}" cmake --install build/CBLAS
+
+}
+
+package_lapacke+clang() {
+
+  pkgdesc="C interface to LAPACK"
+  depends=(lapack+clang)
+  provides=(lapacke "lapacke=${pkgver}")
+  conflicts=(lapacke)
+
+  DESTDIR="${pkgdir:?}" cmake --install build/LAPACKE
+
+}
+
+package_lapack-doc+clang() {
+
+  pkgdesc="Man pages for BLAS/LAPACK"
+  provides=(lapack-doc "lapack-doc=${pkgver}")
+  conflicts=(lapack-doc)
+
+  mkdir -p "${pkgdir:?}/usr/share"
+  cp -r "lapack-${pkgver}/DOCS/man" "${pkgdir:?}/usr/share"
+  mv "${pkgdir:?}/usr/share/man/man3/MIN.3" "${pkgdir:?}/usr/share/man/man3/lapack-MIN.3"
+  mv "${pkgdir:?}/usr/share/man/man3/MAX.3" "${pkgdir:?}/usr/share/man/man3/lapack-MAX.3"
+
+}

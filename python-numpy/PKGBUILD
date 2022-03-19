@@ -1,0 +1,80 @@
+pkgname=python-numpy+clang
+pkgver=1.22.3
+pkgrel=1
+pkgdesc="Scientific tools for Python"
+arch=('x86_64')
+license=('custom')
+url="https://www.numpy.org/"
+provides=(python-numpy "python-numpy=${pkgver}")
+conflicts=(python-numpy)
+depends=('cblas' 'openblas' 'python' 'fftw')
+makedepends=('python-setuptools' 'gcc-fortran' 'cython' 'git')
+checkdepends=('python-pytest' 'python-hypothesis')
+options=('staticlibs')
+source=(
+  "https://github.com/numpy/numpy/archive/v${pkgver}/python-numpy-${pkgver}.tar.gz"
+  site.cfg
+)
+sha256sums=('c8f3ec591e3f17b939220f2b9eabb4c5e2db330f8af62c0a3aeee8a4d1a6c0db'
+  'd517483294f2513295cc3d203a308676ade39b1878b8a742009d90cba3d793d5')
+
+_lld=0
+
+prepare() {
+
+  if ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _lld=1
+  fi
+
+  cp "${srcdir:?}/site.cfg" "${srcdir:?}/numpy-${pkgver}/site.cfg"
+
+}
+
+build() {
+
+  cd "${srcdir:?}/numpy-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/numpy-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_lld} -eq 1 ]]; then
+
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  git clone https://github.com/numpy/SVML.git numpy/core/src/umath/svml
+  NPY_BLAS_ORDER='openblas,MKL' python setup.py build -j "$(nproc)"
+
+}
+
+check() {
+
+  cd "${srcdir:?}/numpy-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/numpy-${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  python setup.py install --root="${srcdir:?}/numpy-${pkgver}/tmp_install" --optimize=1
+
+  cd "${srcdir:?}/numpy-${pkgver}/tmp_install" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/numpy-${pkgver}/tmp_install directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  PATH="${PWD}/usr/bin:${PATH}" PYTHONPATH="${PWD}/usr/lib/python3.10/site-packages:${PYTHONPATH}" python -c 'import numpy; numpy.test()'
+
+}
+
+package() {
+
+  cd "${srcdir:?}/numpy-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/numpy-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  python setup.py install --prefix=/usr --root="${pkgdir:?}" --optimize=1
+
+  install -D -m644 LICENSE.txt -t "${pkgdir:?}/usr/share/licenses/python-numpy/"
+
+}

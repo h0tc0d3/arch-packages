@@ -1,0 +1,71 @@
+pkgname=arrayfire-opencl
+pkgver=3.8.1
+pkgrel=4
+pkgdesc="High performance software library for parallel computing with an easy-to-use API"
+arch=('x86_64')
+url='https://arrayfire.com'
+license=('BSD')
+provides=('arrayfire' "arrayfire=${pkgver}")
+conflicts=('arrayfire')
+depends=('cblas' 'openblas' 'fftw' 'lapacke' 'forge' 'freeimage' 'glfw' 'glew')
+makedepends=('cmake' 'graphviz' 'doxygen' 'opencl-headers' 'python' 'ocl-icd' 'boost' 'git' 'ninja')
+optdepends=(
+  'opencl-driver: Required for using OpenCL backend'
+  'ocl-icd: Required for OpenCL ICD Bindings')
+_commit=823e8e399fe8c120c6ec7ec75f09e6106b3074ca
+source=(
+  "arrayfire::git+https://github.com/arrayfire/arrayfire.git?commit=${_commit}"
+  'arrayfire-boost-1.76.0.patch'
+)
+sha256sums=('SKIP'
+  'b020042ad32589ebf64d3b9928d6f54165e03dfa9de61a31017629db59c26d22')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  patch -d arrayfire -Np1 -i "${srcdir:?}/arrayfire-boost-1.76.0.patch"
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -B build -S arrayfire -GNinja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=/usr/lib \
+    -DAF_COMPUTE_LIBRARY="FFTW/LAPACK/BLAS" \
+    -DAF_WITH_IMAGEIO=ON \
+    -DAF_BUILD_CPU=ON \
+    -DAF_BUILD_CUDA=OFF \
+    -DAF_BUILD_OPENCL=ON \
+    -DAF_BUILD_EXAMPLES=ON \
+    -DAF_BUILD_DOCS=ON \
+    -DGOOGLETEST_VERSION=1.9.0
+
+  ninja -C build
+
+}
+
+package() {
+
+  install -Dm644 "arrayfire/LICENSE" "${pkgdir:?}/usr/share/licenses/arrayfire/LICENSE"
+
+  DESTDIR="${pkgdir:?}" ninja -C build install
+
+  rm -r "${pkgdir}/usr/LICENSES"
+  rm -r "${pkgdir}/usr/lib/libforge"*
+
+}

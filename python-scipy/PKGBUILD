@@ -1,0 +1,76 @@
+pkgname=python-scipy+clang
+pkgver=1.8.0
+pkgrel=1
+pkgdesc='Open-source software for mathematics, science, and engineering'
+arch=(x86_64)
+url='https://www.scipy.org/'
+license=(BSD)
+depends=(python-numpy)
+provides=(scipy python-scipy "python-scipy=${pkgver}")
+conflicts=(python-scipy)
+makedepends=(gcc-fortran python-setuptools cython python-pythran pybind11)
+checkdepends=(python-pytest)
+optdepends=('python-pillow: for image saving module')
+source=(https://pypi.python.org/packages/source/s/scipy/scipy-${pkgver}.tar.gz)
+sha256sums=('31d4f2d6b724bc9a98e527b5849b8a7e589bf1ea630c33aa563eda912c9ff0bd')
+
+_lld=0
+
+prepare() {
+
+  if ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _lld=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/scipy-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/scipy-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_lld} -eq 1 ]]; then
+
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  python setup.py config_fc build -j "$(nproc)"
+
+}
+
+check() {
+
+  cd "${srcdir:?}/scipy-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/scipy-${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  python setup.py config_fc install \
+    --prefix=/usr --root="${srcdir:?}/test" --optimize=1
+
+  cd "${srcdir:?}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  PYTHONPATH="${srcdir:?}/test/usr/lib/python3.10/site-packages" \
+    python -c "from scipy import test; test('full')"
+
+}
+
+package() {
+
+  cd "${srcdir:?}/scipy-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/scipy-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  python3 setup.py config_fc install \
+    --prefix=/usr --root="${pkgdir:?}" --optimize=1
+
+  install -Dm644 LICENSE.txt -t "${pkgdir:?}/usr/share/licenses/python-scipy"
+
+}

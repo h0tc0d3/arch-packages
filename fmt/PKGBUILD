@@ -1,0 +1,63 @@
+pkgname=fmt+clang
+pkgver=8.1.1
+pkgrel=2
+pkgdesc='Open-source formatting library for C++'
+arch=(x86_64)
+url=https://fmt.dev
+license=(BSD)
+provides=(libfmt.so fmt "fmt=${pkgver}")
+conflicts=(fmt)
+depends=(gcc-libs)
+makedepends=(cmake doxygen git npm python-pip python-virtualenv)
+_commit=b6f4ceaed0a0a24ccf575fab6c56dd50ccf6f1a9
+source=("git+https://github.com/fmtlib/fmt.git#commit=${_commit}")
+sha256sums=(SKIP)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  npm install less less-plugin-clean-css
+  sed "s/'lessc',/'npx', 'lessc',/" -i fmt/doc/build.py
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -B build -S fmt \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=/usr/lib \
+    -DBUILD_SHARED_LIBS=ON
+
+  cmake --build build
+
+  cmake --build build --target doc
+
+}
+
+check() {
+
+  cmake --build build --target test
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+  install -Dm 644 fmt/LICENSE.rst -t "${pkgdir:?}/usr/share/licenses/fmt/"
+
+}

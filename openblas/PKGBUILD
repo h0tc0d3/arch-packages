@@ -1,0 +1,62 @@
+pkgname=openblas+clang
+pkgver=0.3.20
+pkgrel=1
+pkgdesc="An optimized BLAS library based on GotoBLAS2 1.13 BSD"
+arch=('x86_64')
+url="https://www.openblas.net/"
+license=('BSD')
+depends=('gcc-libs' 'cblas' 'lapack' 'lapacke')
+makedepends=('perl' 'gcc-fortran' 'cmake')
+provides=('blas=3.9.0' 'openblas' "openblas=${pkgver}")
+conflicts=('blas' 'openblas')
+source=(
+  "openblas-${pkgver}.tar.gz::https://github.com/xianyi/OpenBLAS/archive/v${pkgver}.tar.gz"
+)
+sha256sums=('8495c9affc536253648e942908e88e097f2ec7753ede55aca52e5dead3029e3c')
+
+_target=''
+
+_lld=0
+
+prepare() {
+
+  if ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _lld=1
+  fi
+
+}
+
+build() {
+
+  if [[ "${CFLAGS=}" =~ znver2 ]]; then
+    _target='ZEN'
+  else
+    _target='HASWELL'
+  fi
+
+  if [[ ${_lld} -eq 1 ]]; then
+
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  make -C "OpenBLAS-${pkgver}" NO_STATIC=1 USE_THREAD=1 USE_OPENMP=1 \
+    CFLAGS="${CFLAGS}" TARGET="${_target:?}" \
+    MAJOR_VERSION=3
+
+}
+
+package() {
+
+  make -C "OpenBLAS-${pkgver}" PREFIX="${pkgdir:?}/usr" MAJOR_VERSION=3 install
+  rm -f "${pkgdir:?}/usr/include/cblas.h" "${pkgdir:?}/usr/include/lapack"*
+  install -Dm644 "OpenBLAS-${pkgver}/LICENSE" "${pkgdir:?}/usr/share/licenses/openblas/LICENSE"
+
+  ln -s "/usr/lib/libopenblas.so" "${pkgdir:?}/usr/lib/libblas.so"
+  ln -s "/usr/lib/libopenblas.so" "${pkgdir:?}/usr/lib/libblas.so.3"
+  sed -i -e "s%${pkgdir:?}%%" "${pkgdir:?}/usr/lib/cmake/openblas/OpenBLASConfig.cmake"
+  sed -i -e "s%${pkgdir:?}%%" "${pkgdir:?}/usr/lib/pkgconfig/openblas.pc"
+
+  rmdir "${pkgdir:?}/usr/bin"
+
+}

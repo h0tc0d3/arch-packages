@@ -1,0 +1,77 @@
+pkgname=python-pandas+clang
+pkgver=1.4.1
+pkgrel=1
+pkgdesc='High-performance, easy-to-use data structures and data analysis tools for Python'
+arch=('x86_64')
+url="https://pandas.pydata.org/"
+license=('BSD')
+provides=(python-pandas "python-pandas=${pkgver}")
+conflicts=(python-pandas)
+depends=('python-numpy' 'python-dateutil' 'python-pytz' 'python-setuptools')
+makedepends=('cython')
+optdepends=('python-pandas-datareader: pandas.io.data replacement (recommended)'
+  'python-numexpr: needed for accelerating certain numerical operations (recommended)'
+  'python-bottleneck: needed for accelerating certain types of nan evaluations (recommended)'
+  'python-beautifulsoup4: needed for read_html function'
+  'python-jinja: needed for conditional HTML formatting'
+  'python-pyqt5: needed for read_clipboard function (only one needed)'
+  'python-pytables: needed for HDF5-based storage'
+  'python-sqlalchemy: needed for SQL database support'
+  'python-scipy: needed for miscellaneous statistical functions'
+  'python-xlsxwriter: alternative Excel XLSX output'
+  'python-blosc: for msgpack compression using blosc'
+  'python-html5lib: needed for read_hmlt function (and/or python-lxml)'
+  'python-lxml: needed for read_html function (and/or python-html5lib)'
+  'python-matplotlib: needed for plotting'
+  'python-openpyxl: needed for Excel XLSX input/output'
+  'python-psycopg2: needed for PostgreSQL engine for sqlalchemy'
+  'python-pymysql: needed for MySQL engine for sqlalchemy'
+  'python-qtpy: needed for read_clipboard function (only one needed)'
+  'python-tabulate: needed for printing in Markdown-friendly format'
+  'python-fsspec: needed for handling files aside from local and HTTP'
+  'xclip: needed for read_clipboard function (only one needed)'
+  'python-xlrd: needed for Excel XLS input'
+  'python-xlwt: needed for Excel XLS output'
+  'xsel: needed for read_clipboard function (only one needed)'
+  'zlib: needed for compression for msgpack')
+source=("https://github.com/pandas-dev/pandas/releases/download/v${pkgver}/pandas-${pkgver}.tar.gz")
+sha256sums=('8db93ec98ac7cb5f8ac1420c10f5e3c43533153f253fe7fb6d891cf5aa2b80d2')
+
+_lld=0
+
+prepare() {
+
+  if ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _lld=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/pandas-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/pandas-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_lld} -eq 1 ]]; then
+
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  python setup.py build -j "$(nproc)"
+
+}
+
+package() {
+
+  cd "${srcdir:?}/pandas-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/pandas-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  python setup.py install --root="${pkgdir:?}" --optimize=1
+  install -Dm644 LICENSE "${pkgdir:?}/usr/share/licenses/pandas/LICENSE"
+
+}

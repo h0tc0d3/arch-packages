@@ -1,0 +1,51 @@
+pkgname=python-numexpr+clang
+pkgver=2.8.1
+pkgrel=1
+pkgdesc="Fast numerical array expression evaluator for Python, NumPy, PyTables, pandas"
+url="https://github.com/pydata/numexpr"
+arch=('x86_64')
+license=('MIT')
+provides=(python-numexpr "python-numexpr=${pkgver}")
+conflicts=(python-numexpr)
+depends=('python-numpy')
+makedepends=('python-setuptools')
+source=("numexpr-${pkgver}.tar.gz::https://github.com/pydata/numexpr/archive/v${pkgver}.tar.gz")
+sha256sums=('a416a869f4e6a488af7cd876a326fb82f892b23570b68eecff8135c4a39dd161')
+
+_lld=0
+
+prepare() {
+
+  if ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _lld=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/numexpr-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/numexpr-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_lld} -eq 1 ]]; then
+
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  python setup.py build
+
+}
+package() {
+
+  cd "${srcdir:?}/numexpr-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/numexpr-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  python setup.py install --prefix=/usr --root="${pkgdir:?}" --optimize=1
+  install -Dm644 LICENSE.txt "${pkgdir:?}/usr/share/licenses/python-numexpr/LICENSE"
+
+}

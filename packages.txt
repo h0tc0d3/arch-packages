@@ -6,6 +6,8 @@ binutils
 libtool
 libgcrypt
 python
+lapack
+openblas
 rust
 -libsepol
 -libselinux
@@ -245,6 +247,8 @@ wlroots
 sway
 swayidle
 swaylock
+fmt
+spdlog
 waybar
 swaybg
 grim
@@ -257,6 +261,13 @@ rofi
 neovim
 neomutt
 -linux-tools
+python-numpy
+python-scipy
+python-pandas
+python-numexpr
+python-matplotlib
+arrayfire
+-python-arrayfire
 krita
 kicad
 julia
