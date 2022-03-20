@@ -1,0 +1,74 @@
+pkgname=pciutils+clang
+pkgver=3.7.0
+pkgrel=2
+pkgdesc="PCI bus configuration space access library and tools"
+arch=(x86_64)
+license=('GPL2')
+provides=('pciutils' "pciutils=${pkgver}")
+conflicts=('pciutils')
+url="https://www.kernel.org"
+depends=('glibc' 'hwdata' 'kmod')
+makedepends=('git')
+source=("https://www.kernel.org/pub/software/utils/pciutils/pciutils-${pkgver}.tar"{.xz,.sign})
+
+validpgpkeys=(
+  '5558F9399CD7836850553C6EC28E7847ED70F82D' # Martin Mares <mj@ucw.cz>
+)
+
+sha256sums=('9d40b97be8b6a2cdf96aead5a61881d1f7e4e0da9544a9bac4fba1ae9dcd40eb'
+  'SKIP')
+
+_llvm=0
+
+prepare() {
+
+  cd "${srcdir:?}/pciutils-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/pciutils-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+    sed -i "s/CC=\$(CROSS_COMPILE)gcc/CC=clang/" Makefile
+    sed -i "s/AR=\$(CROSS_COMPILE)ar/AR=llvm-ar/" Makefile
+    sed -i "s/RANLIB=\$(CROSS_COMPILE)ranlib/RANLIB=llvm-ranlib/" Makefile
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cd "${srcdir:?}/pciutils-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/pciutils-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  make OPT="${CFLAGS} -fPIC -DPIC" ZLIB=no SHARED=no PREFIX=/usr SHAREDIR=/usr/share/hwdata MANDIR=/usr/share/man SBINDIR=/usr/bin lib/libpci.a
+
+  cp lib/libpci.a "${srcdir}/"
+
+  make clean
+
+  make OPT="${CFLAGS}" ZLIB=no SHARED=yes PREFIX=/usr SBINDIR=/usr/bin SHAREDIR=/usr/share/hwdata MANDIR=/usr/share/man all
+
+}
+
+package() {
+
+  cd "${srcdir:?}/pciutils-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/pciutils-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make SHARED=yes PREFIX=/usr SBINDIR=/usr/bin SHAREDIR=/usr/share/hwdata MANDIR=/usr/share/man DESTDIR="${pkgdir:?}" install install-lib
+
+  # this is now supplied by the hwids package
+  rm -rf "${pkgdir:?}/usr/"{sbin/update-pciids,share/{man/man8/update-pciids.8,hwdata}}
+
+}

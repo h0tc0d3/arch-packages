@@ -1,0 +1,62 @@
+pkgname=libnl+clang
+pkgver=3.5.0
+pkgrel=3
+pkgdesc='Library for applications dealing with netlink sockets'
+arch=(x86_64)
+url='https://github.com/thom311/libnl/'
+license=(GPL)
+provides=('libnl' "libnl=${pkgver}")
+conflicts=('libnl')
+depends=(glibc)
+backup=(etc/libnl/classid etc/libnl/pktloc)
+source=("https://github.com/thom311/libnl/releases/download/libnl${pkgver//./_}/libnl-${pkgver}.tar.gz"{,.sig})
+sha256sums=('352133ec9545da76f77e70ccb48c9d7e5324d67f6474744647a7ed382b5e05fa'
+  'SKIP')
+validpgpkeys=('49EA7C670E0850E7419514F629C2366E4DFC5728') # Thomas Haller
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cd "${srcdir:?}/libnl-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libnl-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --sbindir=/usr/bin \
+    --disable-static
+
+  make
+
+}
+
+check() {
+
+  make -C libnl-${pkgver} check
+
+}
+
+package() {
+
+  make -C libnl-${pkgver} DESTDIR="${pkgdir:?}" install
+
+}

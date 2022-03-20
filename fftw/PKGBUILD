@@ -1,0 +1,135 @@
+pkgname=fftw+clang
+pkgver=3.3.10
+pkgrel=2
+pkgdesc="A library for computing the discrete Fourier transform (DFT)"
+arch=(x86_64)
+url="http://www.fftw.org/"
+license=(GPL2)
+depends=(bash gcc-libs glibc openmpi)
+makedepends=(cmake gcc-fortran)
+provides=(libfftw3q_threads.so libfftw3q_omp.so libfftw3q.so
+  libfftw3l_threads.so libfftw3l_omp.so libfftw3l_mpi.so libfftw3l.so
+  libfftw3f_threads.so libfftw3f_omp.so libfftw3f_mpi.so libfftw3f.so
+  libfftw3_threads.so libfftw3_omp.so libfftw3_mpi.so libfftw3.so
+  fftw "fftw=${pkgver}")
+conflicts=(fftw)
+source=("http://www.fftw.org/fftw-${pkgver}.tar.gz")
+sha256sums=('56c932549852cddcfafdab3820b0200c7742675be92179e59e6215b340e26467')
+
+_build_types=(single double long-double quad)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  # fix wrong soname in FFTW3LibraryDepends.cmake
+  sed -i 's/3.6.9/3.6.10/' "fftw-${pkgver}/CMakeLists.txt"
+
+}
+
+build() {
+
+  local _options=(
+    --prefix=/usr
+    --enable-shared
+    --enable-threads
+    --enable-openmp
+  )
+
+  local _cmake_options=(
+    -D CMAKE_INSTALL_PREFIX=/usr
+    -D CMAKE_BUILD_TYPE=None
+    -D ENABLE_OPENMP=ON
+    -D ENABLE_THREADS=ON
+    -D ENABLE_FLOAT=ON
+    -D ENABLE_LONG_DOUBLE=ON
+    -D ENABLE_QUAD_PRECISION=ON
+    -D ENABLE_AVX=ON
+    -D ENABLE_AVX2=ON
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  # create missing FFTW3LibraryDepends.cmake
+  # https://bugs.archlinux.org/task/67604
+  cmake -B build -S "fftw-${pkgver}" \
+    "${_cmake_options[@]}"
+
+  # fix broken IMPORTED_LOCATION: https://github.com/FFTW/fftw3/issues/130#issuecomment-1030280157
+  sed -e 's|\(IMPORTED_LOCATION_NONE\).*|\1 "/usr/lib/libfftw3.so.3"|' -i "build/FFTW3LibraryDepends.cmake"
+
+  export FC=/usr/bin/gfortran
+
+  for _name in "${_build_types[@]}"; do
+
+    mkdir -p "${srcdir:?}/build-${_name}"
+
+    case ${_name} in
+    single)
+      cd "${srcdir:?}/build-${_name}" &&
+        "../fftw-${pkgver}/configure" \
+          "${_options[@]}" \
+          --enable-avx \
+          --enable-mpi \
+          --enable-single
+      ;;
+    double)
+      cd "${srcdir:?}/build-${_name}" &&
+        "../fftw-${pkgver}/configure" \
+          "${_options[@]}" \
+          --enable-avx \
+          --enable-avx2 \
+          --enable-mpi
+      ;;
+    long-double)
+      cd "${srcdir:?}/build-${_name}" &&
+        "../fftw-${pkgver}/configure" \
+          "${_options[@]}" \
+          --enable-mpi \
+          --enable-long-double
+      ;;
+    quad)
+      cd "${srcdir:?}/build-${_name}" &&
+        CC=gcc CXX=g++ "../fftw-${pkgver}/configure" \
+          "${_options[@]}" \
+          --disable-mpi \
+          --enable-quad-precision
+      ;;
+    esac
+  done
+
+  for _name in "${_build_types[@]}"; do
+    echo -e "Build: \E[1;31m${_name}\E[0m"
+    make -C "${srcdir:?}/build-${_name}" -j "$(nproc)"
+  done
+
+}
+
+check() {
+
+  for _name in "${_build_types[@]}"; do
+    make check -C "build-${_name}" -j "$(nproc)"
+  done
+
+}
+
+package() {
+
+  for _name in "${_build_types[@]}"; do
+    DESTDIR="${pkgdir:?}" make install -C "build-${_name}"
+  done
+
+  install -vDm 644 "fftw-${pkgver}/"{AUTHORS,ChangeLog,NEWS,README,TODO} -t "${pkgdir:?}/usr/share/doc/fftw"
+
+  # install missing FFTW3LibraryDepends.cmake
+  install -vDm 644 "build/FFTW3LibraryDepends.cmake" -t "${pkgdir:?}/usr/lib/cmake/fftw3/"
+
+}

@@ -6,6 +6,7 @@ binutils
 libtool
 libgcrypt
 python
+libnl
 lapack
 openblas
 rust
@@ -38,6 +39,7 @@ snappy
 -zlib-ng
 zstd
 kmod
+pciutils
 kexec-tools
 libxml2
 libjpeg-turbo
@@ -187,6 +189,7 @@ lm_sensors
 jemalloc
 gperftools
 openssl
+libevent
 libsasl
 openldap
 audit
@@ -197,6 +200,7 @@ libtirpc
 libnsl
 libuv
 pam
+inetutils
 -policycoreutils
 pambase
 sudo
@@ -230,6 +234,9 @@ zita-alsa-pcmi
 zita-ajbridge
 jack2
 systemd
+hwloc
+openmpi
+fftw
 p11-kit
 xf86-video-amdgpu
 xf86-input-wacom

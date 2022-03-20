@@ -1,0 +1,87 @@
+pkgname=openmpi+clang
+pkgver=4.1.2
+pkgrel=1
+pkgdesc='High performance message passing library (MPI)'
+url='https://www.open-mpi.org'
+arch=('x86_64')
+license=('custom:OpenMPI')
+provides=('openmpi' "openmpi=${pkgver}")
+conflicts=('openmpi')
+depends=('glibc' 'libltdl' 'hwloc' 'openssh' 'zlib' 'libnl' 'perl' 'libevent')
+makedepends=('inetutils' 'valgrind' 'gcc-fortran')
+optdepends=('gcc-fortran: fortran support')
+options=('staticlibs')
+source=(
+  "https://www.open-mpi.org/software/ompi/v${pkgver%.*}/downloads/openmpi-${pkgver}.tar.bz2"
+)
+sha256sums=('9b78c7cf7fc32131c5cf43dd2ab9740149d9d87cadb2e2189f02685749a6b527')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/openmpi-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/openmpi-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  LDFLAGS="${LDFLAGS} -Wl,-z,noexecstack"
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+    CFLAGS="${CFLAGS} -fPIE"
+    FCFLAGS="${FCFLAGS} -fallow-argument-mismatch -fPIE"
+
+  fi
+
+  FC=/usr/bin/gfortran \
+    ./configure \
+    --disable-silent-rules \
+    --prefix=/usr \
+    --sysconfdir=/etc/openmpi \
+    --enable-mpi-fortran=all \
+    --libdir=/usr/lib/openmpi \
+    --enable-builtin-atomics \
+    --enable-mpi-cxx \
+    --with-valgrind \
+    --enable-memchecker \
+    --enable-pretty-print-stacktrace \
+    --without-slurm \
+    --with-hwloc=/usr \
+    --with-libltdl=/usr \
+    --with-libevent=/usr
+
+  make
+
+}
+
+check() {
+
+  make check -C openmpi-${pkgver}
+
+}
+
+package() {
+
+  make -C openmpi-${pkgver} DESTDIR="${pkgdir:?}" install
+
+  # FS#28583
+  install -dm 755 "${pkgdir:?}/usr/lib/pkgconfig"
+  for i in "${pkgdir:?}/usr/lib/openmpi/pkgconfig/"*.pc; do
+    ln -sf "/usr/lib/openmpi/pkgconfig/${i##*/}" "${pkgdir:?}/usr/lib/pkgconfig/"
+  done
+
+  install -dm 755 "${pkgdir:?}/etc/ld.so.conf.d"
+  echo "/usr/lib/openmpi" >"${pkgdir:?}/etc/ld.so.conf.d/openmpi.conf"
+  install -Dm 644 "openmpi-${pkgver}/LICENSE" -t "${pkgdir:?}/usr/share/licenses/openmpi"
+
+}

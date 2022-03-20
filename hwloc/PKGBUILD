@@ -1,0 +1,62 @@
+pkgname=hwloc+clang
+pkgver=2.7.0
+pkgrel=1
+pkgdesc='Portable Hardware Locality is a portable abstraction of hierarchical architectures'
+url='https://www.open-mpi.org/projects/hwloc/'
+arch=('x86_64')
+license=('BSD')
+provides=('hwloc' "hwloc=${pkgver}")
+conflicts=('hwloc')
+depends=('glibc' 'libtool' 'systemd-libs' 'libpciaccess')
+makedepends=('cairo' 'libxml2' 'pciutils' 'systemd' 'libx11')
+optdepends=('cairo' 'libxml2' 'pciutils' 'libx11')
+options=('!docs')
+source=("https://www.open-mpi.org/software/hwloc/v${pkgver%.*}/downloads/hwloc-${pkgver}.tar.bz2")
+sha256sums=('028cee53ebcfe048283a2b3e87f2fa742c83645fc3ae329134bf5bb8b90384e0')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cd "${srcdir:?}/hwloc-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/hwloc-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./configure \
+    --prefix=/usr \
+    --sbindir=/usr/bin \
+    --enable-plugins \
+    --sysconfdir=/etc
+
+  make
+
+}
+
+check() {
+
+  make check -C hwloc-${pkgver}
+}
+
+package() {
+
+  make -C hwloc-${pkgver} DESTDIR="${pkgdir:?}" install
+  install -Dm 644 "hwloc-${pkgver}/COPYING" -t "${pkgdir:?}/usr/share/licenses/hwloc"
+
+}

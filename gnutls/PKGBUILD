@@ -1,5 +1,5 @@
 pkgname=gnutls+clang
-pkgver=3.7.3
+pkgver=3.7.4
 pkgrel=1
 pkgdesc="A library which provides a secure layer over a reliable transport layer"
 arch=('x86_64')
@@ -13,7 +13,7 @@ depends=('gcc-libs' 'libtasn1' 'readline' 'zlib' 'nettle' 'p11-kit' 'libidn2'
 checkdepends=('net-tools')
 optdepends=('guile: for use with Guile bindings')
 source=("https://www.gnupg.org/ftp/gcrypt/gnutls/v3.7/gnutls-${pkgver}.tar.xz"{,.sig})
-sha256sums=('fc59c43bc31ab20a6977ff083029277a31935b8355ce387b634fa433f8f6c49a'
+sha256sums=('e6adbebcfbc95867de01060d93c789938cf89cc1d1f6ef9ef661890f6217451f'
   'SKIP')
 validpgpkeys=('462225C3B46F34879FC8496CD605848ED7E69871') # "Daiki Ueno <ueno@unixuser.org>"
 
@@ -57,23 +57,13 @@ build() {
 
 check() {
 
-  cd "${srcdir:?}/gnutls-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gnutls-${pkgver} directory! Check Failed! \E[0m"
-    exit 1
-  )
-
-  make check
+  make check -C "gnutls-${pkgver}"
 
 }
 
 package() {
 
-  cd "${srcdir:?}/gnutls-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gnutls-${pkgver} directory! Package Failed! \E[0m"
-    exit 1
-  )
-
-  make DESTDIR="${pkgdir:?}" install
+  make DESTDIR="${pkgdir:?}" install -C "gnutls-${pkgver}"
 
   # lots of .png files are put into infodir and are gzipped by makepkg! this needs to be fixed by using !zipman
   # gzip -9 all files in infodir and manpages manually

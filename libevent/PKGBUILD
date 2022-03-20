@@ -1,0 +1,59 @@
+pkgname=libevent+clang
+pkgver=2.1.12
+pkgrel=1
+pkgdesc="An event notification library"
+arch=('x86_64')
+url="https://libevent.org/"
+license=('BSD')
+provides=('libevent' "libevent=${pkgver}")
+conflicts=('libevent')
+depends=('openssl')
+makedepends=('cmake' 'python')
+optdepends=('python: to use event_rpcgen.py')
+source=("https://github.com/libevent/libevent/releases/download/release-${pkgver}-stable/libevent-${pkgver}-stable.tar.gz"{,.asc})
+sha256sums=('92e6de1be9ec176428fd2367677e61ceffc2ee1cb119035037a27d346b0403bb'
+  'SKIP')
+validpgpkeys=('B35BF85BF19489D04E28C33C21194EBB165733EA'
+  '9E3AC83A27974B84D1B3401DB86086848EF8686D')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -S "libevent-${pkgver}-stable" -B build \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DEVENT__LIBRARY_TYPE=SHARED
+
+  cmake --build build
+
+}
+
+check() {
+
+  cmake --build build --target test
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+  install -Dm 644 "libevent-${pkgver}-stable/LICENSE" "${pkgdir}"/usr/share/licenses/libevent/LICENSE
+
+}
