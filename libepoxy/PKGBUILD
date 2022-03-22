@@ -1,16 +1,15 @@
-pkgname=libepoxy+clang
-pkgver=1.5.9
+pkgbase=libepoxy+clang
+pkgname=(libepoxy+clang libepoxy-docs+clang)
+pkgver=1.5.10
 pkgrel=1
 pkgdesc="Library handling OpenGL function pointer management"
 url="https://github.com/anholt/libepoxy"
 arch=(x86_64)
 license=(MIT)
-provides=(libepoxy "libepoxy=${pkgver}")
-conflicts=(libepoxy)
 depends=(glibc)
-makedepends=(python mesa-libgl git meson doxygen graphviz)
-_commit=ecfa8e0f083084181d36966fa084aca9a6c97d53 # tags/1.5.8^0
-source=("git+https://github.com/anholt/libepoxy#commit=$_commit")
+makedepends=(git meson mesa-libgl systemd doxygen graphviz)
+_commit=c84bc9459357a40e46e2fec0408d04fbdde2c973 # tags/1.5.10^0
+source=("git+https://github.com/anholt/libepoxy#commit=${_commit}")
 sha256sums=('SKIP')
 
 _extra_lto_flag=""
@@ -30,7 +29,7 @@ pkgver() {
     exit 1
   )
 
-  git describe --tags | sed 's/-/+/g'
+  git describe --tags | sed 's/[^-]*-g/r&/;s/-/+/g'
 
 }
 
@@ -46,9 +45,11 @@ build() {
     -D optimization=2 \
     -D b_ndebug=true \
     -D b_lto=true ${_extra_lto_flag} \
-    -D b_pie=true
+    -D b_pie=true \
+    -D docs=true
 
   meson compile -C build
+
 }
 
 check() {
@@ -57,9 +58,24 @@ check() {
 
 }
 
-package() {
+package_libepoxy+clang() {
+
+  provides=(libepoxy.so libepoxy "libepoxy=${pkgver}")
+  conflicts=(libepoxy)
 
   meson install -C build --destdir="${pkgdir:?}"
-  install -Dm644 libepoxy/COPYING "${pkgdir:?}/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 libepoxy/COPYING "${pkgdir:?}/usr/share/licenses/libepoxy/LICENSE"
+
+  mkdir -p doc/usr/share
+  mv {"${pkgdir:?}",doc}/usr/share/doc
+
+  install -Dt "${pkgdir:?}/usr/share/licenses/libepoxy" -m644 libepoxy/COPYING
+
+}
+
+package_libepoxy-docs+clang() {
+
+  pkgdesc+=" (documentation)"
+  mv doc/* "${pkgdir:?}"
 
 }

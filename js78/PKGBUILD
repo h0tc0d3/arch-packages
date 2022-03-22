@@ -1,6 +1,6 @@
 pkgname=js78+clang
 pkgver=78.15.0
-pkgrel=3
+pkgrel=4
 pkgdesc="JavaScript interpreter and libraries - Version 78"
 arch=(x86_64)
 url="https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey"

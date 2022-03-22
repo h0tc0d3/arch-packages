@@ -1,6 +1,6 @@
 pkgname=fftw+clang
 pkgver=3.3.10
-pkgrel=2
+pkgrel=3
 pkgdesc="A library for computing the discrete Fourier transform (DFT)"
 arch=(x86_64)
 url="http://www.fftw.org/"
@@ -16,7 +16,7 @@ conflicts=(fftw)
 source=("http://www.fftw.org/fftw-${pkgver}.tar.gz")
 sha256sums=('56c932549852cddcfafdab3820b0200c7742675be92179e59e6215b340e26467')
 
-_build_types=(single double long-double quad)
+_build_types=(single long-double quad double)
 
 _llvm=0
 

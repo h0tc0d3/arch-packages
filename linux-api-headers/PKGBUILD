@@ -1,13 +1,18 @@
 pkgname=linux-api-headers
-pkgver=5.16.12
+pkgver=5.17.0
 pkgrel=1
 pkgdesc='Kernel headers sanitized for use in userspace'
 arch=(any)
 url='https://www.gnu.org/software/libc'
 license=(GPL2)
 makedepends=(rsync)
-source=("https://www.kernel.org/pub/linux/kernel/v${pkgver:0:1}.x/linux-${pkgver}.tar."{xz,sign})
-sha256sums=('bb5a1df15a10a715807a44872ff4fe775337aae445285181f1d1ba0c78b1d7f2'
+if [[ "${pkgver}" == *".0" ]]; then
+  _pkgver=${pkgver%.0}
+else
+  _pkgver=${pkgver}
+fi
+source=("https://www.kernel.org/pub/linux/kernel/v${pkgver:0:1}.x/linux-${_pkgver}.tar."{xz,sign})
+sha256sums=('555fef61dddb591a83d62dd04e252792f9af4ba9ef14683f64840e46fa20b1b1'
   'SKIP')
 validpgpkeys=(
   'ABAF11C65A2970B130ABE3C479BE3E4300411886' # Linus Torvalds
@@ -16,24 +21,13 @@ validpgpkeys=(
 
 build() {
 
-  cd "${srcdir:?}/linux-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/linux-${pkgver} directory! Build Failed! \E[0m"
-    exit 1
-  )
-
-  make mrproper
-  make headers_check
+  make mrproper -C "linux-${_pkgver}" O="linux-${_pkgver}"
 
 }
 
 package() {
 
-  cd "${srcdir:?}/linux-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/linux-${pkgver} directory! Package Failed! \E[0m"
-    exit 1
-  )
-
-  make INSTALL_HDR_PATH="${pkgdir:?}/usr" headers_install
+  make INSTALL_HDR_PATH="${pkgdir:?}/usr" headers_install -C "linux-${_pkgver}"
 
   # use headers from libdrm
   rm -r "${pkgdir:?}/usr/include/drm"
