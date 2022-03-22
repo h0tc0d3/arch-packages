@@ -1,0 +1,50 @@
+pkgname=re2+clang
+_re2ver=2022-02-01
+pkgrel=1
+epoch=1
+pkgver=${_re2ver//-/}
+pkgdesc="Fast, safe, thread-friendly regular expression engine"
+arch=('x86_64')
+provides=(re2 "re2=${pkgver}")
+conflicts=(re2)
+url="https://github.com/google/re2"
+license=('BSD')
+depends=('gcc-libs')
+source=("re2-${pkgver}.tar.gz::https://github.com/google/re2/archive/${_re2ver}.tar.gz")
+sha256sums=('9c1e6acfd0fed71f40b025a7a1dabaf3ee2ebb74d64ced1f9ee1b0b01d22fd27')
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  make -C "re2-${_re2ver}"
+
+}
+
+check() {
+
+  make test -C "re2-${_re2ver}"
+
+}
+
+package() {
+
+  make prefix=/usr DESTDIR="${pkgdir:?}" install -C "re2-${_re2ver}"
+  install -Dm644 "re2-${_re2ver}/LICENSE" "${pkgdir:?}/usr/share/licenses/re2/LICENSE"
+
+}

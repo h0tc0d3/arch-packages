@@ -18,6 +18,9 @@ libseccomp
 libunistring
 libidn2
 liburing
+re2
+attr
+acl
 ncurses
 psmisc
 readline
@@ -25,6 +28,7 @@ gdb
 bash
 findutils
 bzip2
+pcre2
 lz4
 keyutils
 libidn
