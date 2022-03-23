@@ -2,14 +2,25 @@
 
 pkgname=llvm+clang
 pkgdesc="LLVM Toolchain with clang, clang-tools-extra, compiler-rt, openmp, polly, lldb, lld"
-pkgver=13.0.1
-pkgrel=17
+pkgver=14.0.0
+pkgrel=1
 arch=('x86_64')
 url="https://llvm.org/"
 license=('custom:Apache 2.0 with LLVM Exception')
-provides=('llvm' "llvm=${pkgver}" 'llvm-libs' 'llvm-ocaml' 'clang' "clang=${pkgver}" 'clang=13.0.0' 'clang-analyzer' 'clang-tools-extra' 'openmp' 'polly' 'compiler-rt' 'lld' 'lldb')
-replaces=('llvm' 'llvm-libs' 'llvm-ocaml' 'clang' 'clang-analyzer' 'clang-tools-extra' 'openmp' 'polly' 'compiler-rt' 'lld' 'lldb')
-conflicts=('llvm' 'llvm-libs' 'llvm-ocaml' 'clang' 'clang-analyzer' 'clang-tools-extra' 'openmp' 'polly' 'compiler-rt' 'lld' 'lldb' 'llvm-git' 'llvm-libs-git' 'llvm-ocaml-git')
+
+provides=('llvm' "llvm=${pkgver}" 'llvm-libs' 'llvm-ocaml' 'clang' "clang=${pkgver}"
+  'clang=13.0.1' 'clang-analyzer' 'clang-tools-extra' 'openmp' 'polly' 'compiler-rt'
+  'lld' 'lldb' 'flang' 'libc++' 'libc++abi' 'libc++experimental')
+
+replaces=('llvm' 'llvm-libs' 'llvm-ocaml' 'clang' 'clang-analyzer'
+  'clang-tools-extra' 'openmp' 'polly' 'compiler-rt' 'lld' 'lldb' 'flang'
+  'libc++' 'libc++abi' 'libc++experimental')
+
+conflicts=('llvm' 'llvm-libs' 'llvm-ocaml' 'clang' 'clang-analyzer'
+  'clang-tools-extra' 'openmp' 'polly' 'compiler-rt' 'lld' 'lldb' 'flang'
+  'llvm-git' 'llvm-libs-git' 'llvm-ocaml-git' 'libc++'
+  'libc++abi' 'libc++experimental')
+
 depends=('libelf' 'libffi' 'libedit' 'libxml2' 'ncurses')
 _ocaml_ver=4.13.1
 makedepends=(
@@ -19,30 +30,18 @@ makedepends=(
   'python-recommonmark'
 )
 makedepends_x86_64=('lib32-gcc-libs')
-_commit=75e33f71c2dae584b13a7d1186ae0a038ba98838
+_commit=3f43d803382d57e3fc010ca19833077d1023e9c9
 source=(
   "llvm-project::git+https://github.com/llvm/llvm-project.git#commit=${_commit}"
   'llvm-config.h'
-  llvm-no-strict-aliasing-DwarfCompileUnit.patch
-  llvm-disable-bswap-for-spir.patch
-  llvm-fix-scan-build-py-executable-lookup-path.patch
-  llvm-don-t-accept-nullptr-as-GEP-element-type.patch
-  llvm-Hoist-LOAD-without-sinking-the-STORE.patch
-  llvm-don-t-move-DBG_VALUE-instructions.patch
 )
 
 sha256sums=('SKIP'
-  '597dc5968c695bbdbb0eac9e8eb5117fcd2773bc91edf5ec103ecffffab8bc48'
-  'd1eff24508e35aae6c26a943dbaa3ef5acb60a145b008fd1ef9ac6f6c4faa662'
-  'af163392fbc19d65d11ab4b1510a2eae39b417d6228023b3ba5395b138bb41f5'
-  '578b960121c42b8db80566dcb51558409d04455b618cdd608e41b35ded36c13e'
-  'a7e902a7612d0fdabe436a917468b043cc296bc89d8954bfc3126f737beb9ac4'
-  '531d1deb5d37f1f24b3936d88b2c9ed90e8670705d7251c130d924c2c4c05a12'
-  'f7d69f84241416398fdb3df8bb44f9fae3c49d89889c7ffa3b37aa2e9d78f708')
+  '597dc5968c695bbdbb0eac9e8eb5117fcd2773bc91edf5ec103ecffffab8bc48')
 
 options=('staticlibs')
 
-_extra_build_flags=""
+_extra_build_flags=()
 _build_documentation=0
 _build_tests=0
 _build_bindings=0
@@ -68,22 +67,6 @@ prepare() {
     exit 1
   )
 
-  _patch llvm-fix-scan-build-py-executable-lookup-path.patch
-  # Work around intermittent 'clang -O -g' crashes
-  # https://bugs.llvm.org/show_bug.cgi?id=50611#c3
-  _patch llvm-no-strict-aliasing-DwarfCompileUnit.patch
-  # Fix an ISPC build failure (https://github.com/ispc/ispc/issues/2189
-  _patch llvm-disable-bswap-for-spir.patch
-  # https://github.com/intel/intel-graphics-compiler/issues/204
-  _rpatch llvm-don-t-accept-nullptr-as-GEP-element-type.patch
-
-  # Performance optimization https://bugs.llvm.org/show_bug.cgi?id=51193
-  _patch llvm-Hoist-LOAD-without-sinking-the-STORE.patch
-
-  # https://github.com/llvm/llvm-project/issues/53243
-  # https://github.com/rust-lang/rust/issues/92869
-  _patch llvm-don-t-move-DBG_VALUE-instructions.patch
-
   # Attempt to convert script to Python 3
   2to3 -wn --no-diffs \
     clang-tools-extra/clang-include-fixer/find-all-symbols/tool/run-find-all-symbols.py
@@ -97,45 +80,36 @@ build() {
     exit 1
   )
 
-  local yn=0
-  while true; do
-    echo -ne "\n\E[1;33mBuild with clang and llvm toolchain? [Y/n] \E[0m"
-    read -r yn
-    case ${yn} in
-    [Yy] | "")
-      if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]"; then
-        export CC=clang
-        export CXX=clang++
-        export AR=llvm-ar
-        export AS=llvm-as
-        export NM=llvm-nm
-        export STRIP=llvm-strip
-        export OBJCOPY=llvm-objcopy
-        export OBJDUMP=llvm-objdump
-        export READELF=llvm-readelf
-        export HOSTCC=clang
-        export HOSTCXX=clang++
-        export HOSTAR=llvm-ar
-        export DEBUG_CFLAGS="-g"
-        export DEBUG_CXXFLAGS="-g"
-      else
-        echo -e "\E[1;31mClang not found. Will use default system compiler! \E[0m"
-      fi
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]"; then
+    export CC=clang
+    export CXX=clang++
+    export AR=llvm-ar
+    export AS=llvm-as
+    export NM=llvm-nm
+    export STRIP=llvm-strip
+    export OBJCOPY=llvm-objcopy
+    export OBJDUMP=llvm-objdump
+    export READELF=llvm-readelf
+    export HOSTCC=clang
+    export HOSTCXX=clang++
+    export HOSTAR=llvm-ar
+    export DEBUG_CFLAGS="-g"
+    export DEBUG_CXXFLAGS="-g"
+    _extra_build_flags+=(
+      -DCMAKE_C_COMPILER=clang
+      -DCMAKE_CXX_COMPILER=clang++
+    )
+  else
+    echo -e "\E[1;31mClang not found. Will use default system compiler! \E[0m"
+  fi
 
-      if ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
-        export LD=ld.lld
-        export CC_LD=lld
-        export CXX_LD=lld
-        export HOSTLD=ld.lld
-        _extra_build_flags="-DLLVM_USE_LINKER=lld"
-      fi
-
-      break
-      ;;
-    [Nn]) break ;;
-    *) echo -e "\E[1;31mPlease answer Y or N! \E[0m" ;;
-    esac
-  done
+  if ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    export LD=ld.lld
+    export CC_LD=lld
+    export CXX_LD=lld
+    export HOSTLD=ld.lld
+    _extra_build_flags+=(-DLLVM_USE_LINKER=lld)
+  fi
 
   while true; do
     echo -ne "\n\E[1;33mSkip build tests? [Y/n] \E[0m"
@@ -143,12 +117,12 @@ build() {
     case ${yn} in
     [Yy] | "")
       _build_tests=0
-      _extra_build_flags="${_extra_build_flags} -DLLVM_BUILD_TESTS=OFF"
+      _extra_build_flags+=(-DLLVM_BUILD_TESTS=OFF)
       break
       ;;
     [Nn])
       _build_tests=1
-      _extra_build_flags="${_extra_build_flags} -DLLVM_BUILD_TESTS=ON"
+      _extra_build_flags+=(-DLLVM_BUILD_TESTS=ON)
       break
       ;;
     *) echo -e "\E[1;31mPlease answer Y or N! \E[0m" ;;
@@ -161,29 +135,17 @@ build() {
     case ${yn} in
     [Yy] | "")
       _build_documentation=0
-      _extra_build_flags="${_extra_build_flags} -DLLVM_BUILD_DOCS=OFF"
+      _extra_build_flags+=(-DLLVM_BUILD_DOCS=OFF)
       break
       ;;
     [Nn])
       _build_documentation=1
-      _extra_build_flags="${_extra_build_flags} -DLLVM_BUILD_DOCS=ON -DLLVM_ENABLE_SPHINX=ON -DLLVM_ENABLE_DOXYGEN=OFF -DSPHINX_WARNINGS_AS_ERRORS=OFF"
-      break
-      ;;
-    *) echo -e "\E[1;31mPlease answer Y or N! \E[0m" ;;
-    esac
-  done
-
-  while true; do
-    echo -ne "\n\E[1;33mSkip build OCaml and Go bindings? [Y/n] \E[0m"
-    read -r yn
-    case ${yn} in
-    [Yy] | "")
-      _build_bindings=0
-      _extra_build_flags="${_extra_build_flags} -DLLVM_ENABLE_BINDINGS=OFF"
-      break
-      ;;
-    [Nn])
-      _build_bindings=1
+      _extra_build_flags+=(
+        -DLLVM_BUILD_DOCS=ON
+        -DLLVM_ENABLE_SPHINX=ON
+        -DLLVM_ENABLE_DOXYGEN=OFF
+        -DSPHINX_WARNINGS_AS_ERRORS=OFF
+      )
       break
       ;;
     *) echo -e "\E[1;31mPlease answer Y or N! \E[0m" ;;
@@ -203,19 +165,20 @@ build() {
     -DLLVM_INSTALL_UTILS=ON \
     -DLLVM_ENABLE_RTTI=ON \
     -DLLVM_ENABLE_FFI=ON \
-    -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;compiler-rt;openmp;polly;lld;lldb" \
+    -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;compiler-rt;lld;lldb;mlir;openmp;polly;pstl" \
+    -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi" \
     -DCLANG_LINK_CLANG_DYLIB=ON \
     -DLLDB_USE_SYSTEM_SIX=1 \
     -DLIBOMP_INSTALL_ALIASES=OFF \
     -DLLVM_INSTALL_TOOLCHAIN_ONLY=OFF \
     -DPOLLY_ENABLE_GPGPU_CODEGEN=ON \
-    ${_extra_build_flags} \
-    -Wno-dev
+    -DCLANG_DEFAULT_PIE_ON_LINUX=ON \
+    "${_extra_build_flags[@]}"
 
-  ninja -C build ${NINJAFLAGS}
+  ninja -C build
 
   if [[ _build_documentation -eq 1 && _build_bindings -ne 0 ]]; then
-    ninja -C build ${NINJAFLAGS} ocaml_doc
+    ninja -C build ocaml_doc
   fi
 
 }
@@ -228,13 +191,13 @@ check() {
   )
 
   if [[ _build_tests -eq 1 ]]; then
-    ninja -C build ${NINJAFLAGS} check-llvm
-    ninja -C build ${NINJAFLAGS} check-clang
-    ninja -C build ${NINJAFLAGS} check-clang-tools
-    ninja -C build ${NINJAFLAGS} check-openmp
-    ninja -C build ${NINJAFLAGS} check-polly
-    ninja -C build ${NINJAFLAGS} check-lldb
-    ninja -C build ${NINJAFLAGS} check-lld
+    ninja -C build check-llvm
+    ninja -C build check-clang
+    ninja -C build check-clang-tools
+    ninja -C build check-openmp
+    ninja -C build check-polly
+    ninja -C build check-lldb
+    ninja -C build check-lld
   fi
 
 }
@@ -256,7 +219,7 @@ package() {
     mkdir -p "${srcdir:?}/llvm-project/build/docs/ocamldoc/html/"
   fi
 
-  DESTDIR="${pkgdir:?}" ninja -C build ${NINJAFLAGS} install
+  DESTDIR="${pkgdir:?}" ninja -C build install
 
   pushd llvm/utils/lit || (
     echo -e "\E[1;31mpushd utils/lit - Package Failed! \E[0m"
@@ -308,13 +271,24 @@ package() {
   install -Dm644 "${srcdir:?}/llvm-project/lldb/LICENSE.TXT" "${pkgdir:?}/usr/share/licenses/${pkgname}/lldb-LICENSE"
   install -Dm644 "${srcdir:?}/llvm-project/polly/LICENSE.TXT" "${pkgdir:?}/usr/share/licenses/${pkgname}/polly-LICENSE"
   install -Dm644 "${srcdir:?}/llvm-project/openmp/LICENSE.TXT" "${pkgdir:?}/usr/share/licenses/${pkgname}/openmp-LICENSE"
+  install -Dm644 "${srcdir:?}/llvm-project/flang/LICENSE.TXT" "${pkgdir:?}/usr/share/licenses/${pkgname}/flang-LICENSE"
 
-  # Fallback for llvm 12
-  #install -Dm644 /usr/lib/libLLVM-12.so "${pkgdir:?}/usr/lib/libLLVM-12.so"
-  #install -Dm644 /usr/lib/libLTO.so.12 "${pkgdir:?}/usr/lib/libLTO.so.12"
-  #install -Dm644 /usr/lib/libRemarks.so.12 "${pkgdir:?}/usr/lib/libRemarks.so.12"
-  #install -Dm644 /usr/lib/libclang.so.12 "${pkgdir:?}/usr/lib/libclang.so.12"
-  #install -Dm644 /usr/lib/libclang-cpp.so.12 "${pkgdir:?}/usr/lib/libclang-cpp.so.12"
-  #ln -s /usr/lib/libLLVM-12.so "${pkgdir:?}/usr/lib/libLLVM-12.0.1.so"
+  # Fallback for llvm 13
+  _llvm_libs=(libLLVM-13.so libLTO.so.13 libRemarks.so.13 libclang.so.13.0.1 libclang-cpp.so.13)
+  for lib in "${_llvm_libs[@]}"; do
+    if [[ ! -e "${pkgdir:?}/usr/lib/${lib:?}" ]]; then
+      echo "- Copy ${lib:?}"
+      install -Dm644 "/usr/lib/${lib:?}" "${pkgdir:?}/usr/lib/${lib:?}"
+    else
+      echo "- ${lib:?} exist"
+    fi
+  done
+
+  if [[ ! -e "${pkgdir:?}/usr/lib/libLLVM-13.0.1.so" ]]; then
+    echo "- Copy libLLVM-13.0.1.so"
+    ln -s /usr/lib/libLLVM-13.so "${pkgdir:?}/usr/lib/libLLVM-13.0.1.so"
+  else
+    echo "- libLLVM-13.0.1.so exist"
+  fi
 
 }

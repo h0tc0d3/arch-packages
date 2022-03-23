@@ -1,0 +1,68 @@
+pkgname=xfsprogs+clang
+pkgver=5.14.2
+pkgrel=1
+pkgdesc="XFS filesystem utilities"
+arch=('x86_64')
+license=('LGPL')
+provides=(xfsprogs "xfsprogs=${pkgver}")
+conflicts=(xfsprogs)
+url="https://xfs.org"
+depends=('sh' 'util-linux-libs' 'icu' 'device-mapper' 'libinih' 'liburcu')
+optdepends=(
+  'python: for xfs_scrub_all script'
+  'smtp-forwarder: for xfs_scrub_fail script'
+)
+makedepends=('git')
+source=("xfsprogs::git+https://git.kernel.org/pub/scm/fs/xfs/xfsprogs-dev.git#tag=v${pkgver}")
+md5sums=('SKIP')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cd "${srcdir:?}/xfsprogs" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xfsprogs directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  make configure
+
+  ./configure \
+    --prefix=/usr \
+    --sbindir=/usr/bin \
+    --libdir=/usr/lib \
+    --enable-libicu=yes \
+    --enable-lib64=no \
+    --with-systemd-unit-dir=/usr/lib/systemd/system
+
+  make
+
+}
+
+package() {
+
+  make -C "xfsprogs" DIST_ROOT="${pkgdir:?}" PKG_ROOT_SBIN_DIR="/usr/bin" install install-dev
+
+  chown -R root "${pkgdir:?}"
+  chgrp -R root "${pkgdir:?}"
+  # add hack as we cannot set rootlibdir
+  mv "${pkgdir:?}/lib/libhandle.so"* "${pkgdir:?}/usr/lib/"
+  rm -rf "${pkgdir:?}/lib"
+
+}

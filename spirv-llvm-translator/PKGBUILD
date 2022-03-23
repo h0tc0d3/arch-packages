@@ -1,0 +1,65 @@
+pkgname=spirv-llvm-translator+clang
+pkgver=14.0.0
+pkgrel=1
+pkgdesc="Tool and a library for bi-directional translation between SPIR-V and LLVM IR"
+arch=(x86_64)
+url="https://github.com/KhronosGroup/SPIRV-LLVM-Translator"
+license=(custom)
+provides=('spirv-llvm-translator' "spirv-llvm-translator=${pkgver}")
+conflicts=('spirv-llvm-translator')
+depends=(llvm-libs)
+makedepends=(git cmake llvm spirv-headers spirv-tools)
+checkdepends=(python python-setuptools clang)
+_commit=e95eb30ace4954a3a7e8e17a3cc22f7382d4a47e
+source=("git+https://github.com/KhronosGroup/SPIRV-LLVM-Translator.git#commit=${_commit}")
+sha256sums=(SKIP)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -B build -S SPIRV-LLVM-Translator \
+    -DBUILD_SHARED_LIBS=ON \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DCMAKE_SKIP_RPATH=ON \
+    -DLLVM_INCLUDE_TESTS=ON \
+    -DLLVM_EXTERNAL_LIT=/usr/bin/lit \
+    -DLLVM_EXTERNAL_SPIRV_HEADERS_SOURCE_DIR=/usr/include/spirv/
+
+  cmake --build build
+
+}
+
+check() {
+
+  # https://github.com/KhronosGroup/SPIRV-LLVM-Translator/issues/1433
+  LD_LIBRARY_PATH="${srcdir:?}/build/lib/SPIRV" make -C build test || echo "Tests failed"
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+  install -Dm755 "build/tools/llvm-spirv/llvm-spirv" -t "${pkgdir:?}/usr/bin"
+  install -Dm644 "SPIRV-LLVM-Translator/LICENSE.TXT" -t "${pkgdir:?}/usr/share/licenses/spirv-llvm-translator/"
+
+}

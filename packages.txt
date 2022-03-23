@@ -13,7 +13,6 @@ rust
 -libsepol
 -libselinux
 xxhash
-libclc
 libseccomp
 libunistring
 libidn2
@@ -52,6 +51,8 @@ libxcvt
 gsl
 spirv-headers
 spirv-tools
+spirv-llvm-translator
+libclc
 glslang
 shaderc
 vulkan-headers
@@ -75,6 +76,7 @@ phonon-qt5-gstreamer
 phonon-qt5-vlc
 gwenview
 icu
+xfsprogs
 freetype2
 fontconfig
 pango
