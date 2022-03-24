@@ -10,14 +10,14 @@ license=('custom:Apache 2.0 with LLVM Exception')
 
 provides=('llvm' "llvm=${pkgver}" 'llvm-libs' 'llvm-ocaml' 'clang' "clang=${pkgver}"
   'clang=13.0.1' 'clang-analyzer' 'clang-tools-extra' 'openmp' 'polly' 'compiler-rt'
-  'lld' 'lldb' 'flang' 'libc++' 'libc++abi' 'libc++experimental')
+  'lld' 'lldb' 'libc++' 'libc++abi' 'libc++experimental')
 
 replaces=('llvm' 'llvm-libs' 'llvm-ocaml' 'clang' 'clang-analyzer'
-  'clang-tools-extra' 'openmp' 'polly' 'compiler-rt' 'lld' 'lldb' 'flang'
+  'clang-tools-extra' 'openmp' 'polly' 'compiler-rt' 'lld' 'lldb'
   'libc++' 'libc++abi' 'libc++experimental')
 
 conflicts=('llvm' 'llvm-libs' 'llvm-ocaml' 'clang' 'clang-analyzer'
-  'clang-tools-extra' 'openmp' 'polly' 'compiler-rt' 'lld' 'lldb' 'flang'
+  'clang-tools-extra' 'openmp' 'polly' 'compiler-rt' 'lld' 'lldb'
   'llvm-git' 'llvm-libs-git' 'llvm-ocaml-git' 'libc++'
   'libc++abi' 'libc++experimental')
 
@@ -271,7 +271,6 @@ package() {
   install -Dm644 "${srcdir:?}/llvm-project/lldb/LICENSE.TXT" "${pkgdir:?}/usr/share/licenses/${pkgname}/lldb-LICENSE"
   install -Dm644 "${srcdir:?}/llvm-project/polly/LICENSE.TXT" "${pkgdir:?}/usr/share/licenses/${pkgname}/polly-LICENSE"
   install -Dm644 "${srcdir:?}/llvm-project/openmp/LICENSE.TXT" "${pkgdir:?}/usr/share/licenses/${pkgname}/openmp-LICENSE"
-  install -Dm644 "${srcdir:?}/llvm-project/flang/LICENSE.TXT" "${pkgdir:?}/usr/share/licenses/${pkgname}/flang-LICENSE"
 
   # Fallback for llvm 13
   _llvm_libs=(libLLVM-13.so libLTO.so.13 libRemarks.so.13 libclang.so.13.0.1 libclang-cpp.so.13)

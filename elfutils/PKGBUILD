@@ -11,10 +11,11 @@ makedepends=('bzip2' 'curl' 'gcc-libs' 'libarchive' 'libmicrohttpd' 'sqlite'
 options=('staticlibs')
 source=(
   "https://sourceware.org/elfutils/ftp/${pkgver}/elfutils-${pkgver}.tar.bz2"{,.sig}
+  libelf-fix-buffer-overflow.patch
 )
 sha256sums=('7f6fb9149b1673d38d9178a0d3e0fb8a1ec4f53a9f4c2ff89469609879641177'
   'SKIP'
-)
+  '6a54a6ad989468e68d997a49d274ac548057729c4df0f2b8b9407e6d741c65d6')
 validpgpkeys=(
   '47CC0331081B8BC6D0FD4DA08370665B57816A6A' # Mark J. Wielaard <mark@klomp.org>
   'EC3CFE88F6CA0788774F5C1D1AA44BE649DE760A' # Mark Wielaard <mjw@gnu.org>
@@ -32,6 +33,8 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=1
   fi
+
+  patch -Np1 -i "${srcdir:?}/libelf-fix-buffer-overflow.patch"
 
   autoreconf -fiv
 

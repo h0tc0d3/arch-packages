@@ -8,8 +8,14 @@ arch=('x86_64')
 makedepends=('glibc' 'krb5' 'libcap-ng' 'libldap' 'swig' 'linux-headers' 'python')
 license=('GPL')
 options=('emptydirs')
-source=("https://people.redhat.com/sgrubb/audit/audit-${pkgver}.tar.gz")
-sha256sums=('8b4c78632a9301a1c7f859b0e38fc0b9c260b8214d6b7c771bf28b3d73a62597')
+source=(
+  "https://people.redhat.com/sgrubb/audit/audit-${pkgver}.tar.gz"
+  audit-3.0.8-flex-array-workaround.patch
+  audit-3.0.8-undo-flex-array.patch
+)
+sha256sums=('8b4c78632a9301a1c7f859b0e38fc0b9c260b8214d6b7c771bf28b3d73a62597'
+  'b5e2a01b87fcb3634b67b5899a66283fe2a5fb83a3ad324639c5cfc02fa26170'
+  '6793c3358821b0d9c00f28289e47761caf5ba40a5016058bf35e876188d09084')
 
 _llvm=0
 
@@ -24,6 +30,11 @@ prepare() {
     exit 1
   )
 
+  cp /usr/include/linux/audit.h lib/
+
+  patch -Np1 -i "${srcdir:?}/audit-3.0.8-flex-array-workaround.patch"
+
+  autoreconf -fiv
   sed 's|/var/run/auditd.pid|/run/auditd.pid|' -i init.d/auditd.service
 
 }
@@ -86,6 +97,8 @@ package_audit+clang() {
     echo -e "\E[1;31mCan't cd to ${pkgdir:?} directory! Package audit Failed! \E[0m"
     exit 1
   )
+
+  patch -Np1 -i "${srcdir:?}/audit-3.0.8-undo-flex-array.patch"
 
   install -d -m 0700 var/log/audit
   rm -rf etc/rc.d \
