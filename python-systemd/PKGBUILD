@@ -1,0 +1,60 @@
+pkgname=python-systemd+clang
+pkgver=234
+pkgrel=11
+pkgdesc="Python bindings for systemd"
+arch=(x86_64)
+url="https://github.com/systemd/python-systemd"
+license=(LGPL)
+provides=(python-systemd "python-systemd=${pkgver}")
+conflicts=(python-systemd)
+depends=(python libsystemd systemd)
+makedepends=(git)
+_commit=308ae4440c1f6ea1aff9be4cb683c52bd3a1c13a # tags/v234^0
+source=("python-systemd::git+https://github.com/systemd/python-systemd#commit=${_commit}")
+sha256sums=('SKIP')
+
+_lld=0
+
+prepare() {
+
+  if ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _lld=1
+  fi
+
+  cd "${srcdir:?}/python-systemd" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/python-systemd directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # reader: make PY_SSIZE_T_CLEAN
+  git format-patch -1 --stdout c71bbac357f0 | patch -Np1
+
+}
+
+build() {
+
+  cd "${srcdir:?}/python-systemd" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/python-systemd directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_lld} -eq 1 ]]; then
+
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  make PYTHON=/usr/bin/python
+
+}
+
+package() {
+
+  cd "${srcdir:?}/python-systemd" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/python-systemd directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  python setup.py install --root="${pkgdir:?}" --optimize=1 --skip-build
+
+}

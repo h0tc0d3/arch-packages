@@ -71,6 +71,7 @@ qt6-5compat
 qt6-svg
 qt6-tools
 qt6-translations
+qtcreator
 phonon-qt5
 phonon-qt5-gstreamer
 phonon-qt5-vlc
@@ -225,6 +226,9 @@ python-gobject
 -selinux-gui
 -selinux-sandbox
 -semodule-utils
+python-systemd
+-python-dasbus
+-setroubleshoot
 gnutls
 libcurl-gnutls
 gnupg

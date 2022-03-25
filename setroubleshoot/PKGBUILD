@@ -1,0 +1,87 @@
+pkgname=setroubleshoot+clang
+pkgver=3.3.28
+pkgrel=1
+pkgdesc="Provides tools to help diagnose SELinux problems"
+groups=('selinux')
+arch=('x86_64')
+url='https://pagure.io/setroubleshoot'
+license=('GPL2')
+conflicts=("setroubleshoot")
+provides=("setroubleshoot=${pkgver}")
+depends=('hicolor-icon-theme' 'python' 'audit' 'dbus' 'desktop-file-utils'
+  'gtk3' 'libnotify' 'policycoreutils' 'polkit' 'python-gobject'
+  'python-dasbus' 'python-systemd' 'xdg-utils')
+makedepends=('intltool')
+source=(
+  "https://gitlab.com/setroubleshoot/setroubleshoot/-/archive/${pkgver}/setroubleshoot-${pkgver}.tar.gz"
+  'setroubleshoot.logrotate'
+  'setroubleshoot.tmpfiles'
+  'setroubleshoot-sysusers.conf'
+)
+sha256sums=('fd0662d45592c36e8251d9c444542ba3525b234859c4ed132f1269ee06e1899f'
+  '894a75c33d568f908f0c3fa7fe4d7f82824369695194aa005fe42cf961298893'
+  'eb7321b7db2fd8951c7ce3c7c42680fcfe7641c3d7be9e8d69a8fbb992a9d086'
+  'fa20d1ec3522aa877fc5462d56692b318b4c8af1cd9ecb62ec41ad6647662d77')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/setroubleshoot-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/setroubleshoot-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  intltoolize --copy --force --automake
+  autoreconf -fiv
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cd "${srcdir:?}/setroubleshoot-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/setroubleshoot-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  export PYTHON=/usr/bin/python
+
+  ./configure \
+    --prefix=/usr \
+    --sbindir=/usr/bin \
+    --sysconfdir=/etc \
+    --localstatedir=/var/lib \
+    --enable-seappletlegacy=no \
+    --with-auditpluginsdir=/etc/audit/plugins.d
+
+  make
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "setroubleshoot-${pkgver}"
+
+  mkdir -p "${pkgdir:?}/var/lib/setroubleshoot-server"
+  touch "${pkgdir:?}/var/lib/setroubleshoot-server/setroubleshoot_database.xml"
+  touch "${pkgdir:?}/var/lib/setroubleshoot-server/email_alert_recipients"
+
+  install -m644 -D "${srcdir:?}/setroubleshoot.logrotate" "${pkgdir:?}/etc/logrotate.d/setroubleshoot-server"
+  install -m644 -D "${srcdir:?}/setroubleshoot.tmpfiles" "${pkgdir:?}/usr/lib/tmpfiles.d/setroubleshoot-server.conf"
+  install -m644 -D "${srcdir:?}/setroubleshoot-sysusers.conf" "${pkgdir:?}/usr/lib/sysusers.d/setroubleshoot-server.conf"
+
+  chmod 750 "${pkgdir:?}/etc/audit/plugins.d"
+
+}

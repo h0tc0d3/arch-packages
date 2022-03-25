@@ -14,7 +14,7 @@ pacman -Syu \
     pambase+clang sudo+clang coreutils+clang shadow+clang openssh+clang \
     mcstrans+clang dbus-glib+clang restorecond+clang setools+clang \
     selinux-python+clang selinux-dbus+clang python-gobject+clang \
-    selinux-gui+clang selinux-sandbox+clang
+    selinux-gui+clang selinux-sandbox+clang setroubleshoot+clang
 ```
 
 Take care, SELinux packages not include `logrotate`, `cronie`, `setroubleshoot` packages. `setroubleshoot` having bugs and not working on Arch Linux. `logrotate`, `cronie` you have to build with `--with-selinux` flag.
