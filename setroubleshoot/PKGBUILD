@@ -1,6 +1,6 @@
 pkgname=setroubleshoot+clang
 pkgver=3.3.28
-pkgrel=1
+pkgrel=2
 pkgdesc="Provides tools to help diagnose SELinux problems"
 groups=('selinux')
 arch=('x86_64')
@@ -10,7 +10,7 @@ conflicts=("setroubleshoot")
 provides=("setroubleshoot=${pkgver}")
 depends=('hicolor-icon-theme' 'python' 'audit' 'dbus' 'desktop-file-utils'
   'gtk3' 'libnotify' 'policycoreutils' 'polkit' 'python-gobject'
-  'python-dasbus' 'python-systemd' 'xdg-utils')
+  'python-dasbus' 'python-systemd' 'xdg-utils' 'libreport')
 makedepends=('intltool')
 source=(
   "https://gitlab.com/setroubleshoot/setroubleshoot/-/archive/${pkgver}/setroubleshoot-${pkgver}.tar.gz"
@@ -36,8 +36,8 @@ prepare() {
     exit 1
   )
 
-  intltoolize --copy --force --automake
   autoreconf -fiv
+  intltoolize --copy --force --automake
 
 }
 
@@ -74,14 +74,20 @@ package() {
 
   make DESTDIR="${pkgdir:?}" install -C "setroubleshoot-${pkgver}"
 
-  mkdir -p "${pkgdir:?}/var/lib/setroubleshoot-server"
-  touch "${pkgdir:?}/var/lib/setroubleshoot-server/setroubleshoot_database.xml"
-  touch "${pkgdir:?}/var/lib/setroubleshoot-server/email_alert_recipients"
+  mkdir -p "${pkgdir:?}/var/lib/setroubleshoot"
+  touch "${pkgdir:?}/var/lib/setroubleshoot/setroubleshoot_database.xml"
+  touch "${pkgdir:?}/var/lib/setroubleshoot/email_alert_recipients"
 
   install -m644 -D "${srcdir:?}/setroubleshoot.logrotate" "${pkgdir:?}/etc/logrotate.d/setroubleshoot-server"
   install -m644 -D "${srcdir:?}/setroubleshoot.tmpfiles" "${pkgdir:?}/usr/lib/tmpfiles.d/setroubleshoot-server.conf"
   install -m644 -D "${srcdir:?}/setroubleshoot-sysusers.conf" "${pkgdir:?}/usr/lib/sysusers.d/setroubleshoot-server.conf"
 
   chmod 750 "${pkgdir:?}/etc/audit/plugins.d"
+
+  rm -fr "${pkgdir:?}/usr/share/usr"
+
+  sed -i "s/\/var\/lib\/run/\/run/g" "${pkgdir:?}/etc/setroubleshoot/setroubleshoot.conf"
+  sed -i "s/\/var\/run/\/run/g" "${pkgdir:?}/etc/setroubleshoot/setroubleshoot.conf"
+  sed -i "s/\/var\/lib\/lib/\/var\/lib/g" "${pkgdir:?}/etc/setroubleshoot/setroubleshoot.conf"
 
 }

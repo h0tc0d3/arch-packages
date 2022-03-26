@@ -1,5 +1,5 @@
 pkgname=libwacom+clang
-pkgver=2.1.0
+pkgver=2.2.0
 pkgrel=1
 pkgdesc="Library to identify Wacom tablets and their features"
 arch=('x86_64')
@@ -13,7 +13,7 @@ checkdepends=('python-pytest' 'python-libevdev' 'python-pyudev')
 optdepends=('python-libevdev: for libwacom-show-stylus')
 validpgpkeys=('3C2C43D9447D5938EF4551EBE23B7E70B467F0BF')
 source=("https://github.com/linuxwacom/libwacom/releases/download/libwacom-${pkgver}/libwacom-${pkgver}.tar.xz"{,.sig})
-sha256sums=('b900899589c4c1f83e6671a2383a3437cfa70c3a275cb266bddbbc6c4eaf71a2'
+sha256sums=('e62ac9edb522d36ad2fa99adca35ddc02067383d4668eeaa13d7efccc30bb8c8'
   'SKIP')
 
 _extra_lto_flag=""

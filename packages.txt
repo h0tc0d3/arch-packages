@@ -228,9 +228,12 @@ python-gobject
 -semodule-utils
 python-systemd
 -python-dasbus
+-satyr
+-libreport
 -setroubleshoot
 gnutls
 libcurl-gnutls
+sqlite
 gnupg
 libgit2
 mpv

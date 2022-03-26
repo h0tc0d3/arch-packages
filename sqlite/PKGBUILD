@@ -1,0 +1,199 @@
+pkgbase=sqlite+clang
+pkgname=('sqlite+clang' 'sqlite-tcl+clang' 'sqlite-analyzer+clang' 'lemon+clang' 'sqlite-doc+clang')
+_srcver=3380200
+_docver=${_srcver}
+#_docver=3330000
+pkgver=3.38.2
+pkgrel=1
+pkgdesc="A C library that implements an SQL database engine"
+arch=('x86_64')
+license=('custom:Public Domain')
+url="https://www.sqlite.org/"
+makedepends=('tcl' 'readline' 'zlib')
+source=(
+  "https://www.sqlite.org/2022/sqlite-src-${_srcver}.zip"
+  "https://www.sqlite.org/2022/sqlite-doc-${_docver}.zip"
+  sqlite-lemon-system-template.patch
+  license.txt
+)
+options=('!emptydirs' '!makeflags') # json extensions breaks parallel build
+sha256sums=('c7c0f070a338c92eb08805905c05f254fa46d1c4dda3548a02474f6fb567329a'
+  '0a6e5ab06ae9074eeff74f0b60970f3bb25aeff79e970f6b1aeeff347f2832f9'
+  '55746d93b0df4b349c4aa4f09535746dac3530f9fd6de241c9f38e2c92e8ee97'
+  '4e57d9ac979f1c9872e69799c2597eeef4c6ce7224f3ede0bf9dc8d217b1e65d')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/sqlite-src-${_srcver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/sqlite-src-${_srcver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # patch taken from Fedora
+  # https://src.fedoraproject.org/rpms/sqlite/blob/master/f/sqlite.spec
+  patch -Np1 -i ../sqlite-lemon-system-template.patch
+
+  autoreconf -vfi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/sqlite-src-${_srcver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/sqlite-src-${_srcver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  export CPPFLAGS="${CPPFLAGS} \
+	-DSQLITE_ENABLE_COLUMN_METADATA=1 \
+	-DSQLITE_ENABLE_UNLOCK_NOTIFY \
+	-DSQLITE_ENABLE_DBSTAT_VTAB=1 \
+	-DSQLITE_ENABLE_FTS3_TOKENIZER=1 \
+	-DSQLITE_SECURE_DELETE \
+	-DSQLITE_ENABLE_STMTVTAB \
+	-DSQLITE_MAX_VARIABLE_NUMBER=250000 \
+	-DSQLITE_MAX_EXPR_DEPTH=10000 \
+	-DSQLITE_ENABLE_MATH_FUNCTIONS"
+
+  TCLLIBDIR=/usr/lib/sqlite${pkgver} \
+    ./configure \
+    --prefix=/usr \
+    --disable-static \
+    --disable-amalgamation \
+    --enable-fts3 \
+    --enable-fts4 \
+    --enable-fts5 \
+    --enable-rtree \
+    --enable-json1
+
+  make
+
+  # build additional tools
+  make showdb showjournal showstat4 showwal sqldiff sqlite3_analyzer
+
+}
+
+package_sqlite+clang() {
+
+  pkgdesc="A C library that implements an SQL database engine"
+  depends=('readline' 'zlib')
+  provides=("sqlite3=${pkgver}" "sqlite=${pkgver}")
+  replaces=("sqlite3")
+  conflicts=("sqlite")
+
+  cd "${srcdir:?}/sqlite-src-${_srcver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/sqlite-src-${_srcver} directory! Package sqlite Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -m755 showdb showjournal showstat4 showwal sqldiff "${pkgdir:?}/usr/bin/"
+
+  # install manpage
+  install -m755 -d "${pkgdir:?}/usr/share/man/man1"
+  install -m644 sqlite3.1 "${pkgdir:?}/usr/share/man/man1/"
+
+  # license - no linking required because pkgbase=pkgname
+  install -D -m644 "${srcdir:?}/license.txt" "${pkgdir:?}/usr/share/licenses/sqlite"
+
+  # split out tcl extension
+  mkdir "${srcdir:?}/tcl"
+  mv "${pkgdir:?}/usr/lib/sqlite"* "${srcdir:?}/tcl"
+
+}
+
+package_sqlite-tcl+clang() {
+
+  pkgdesc="sqlite Tcl Extension Architecture (TEA)"
+  depends=('sqlite')
+  provides=("sqlite3-tcl=${pkgver}" "sqlite-tcl=${pkgver}")
+  replaces=("sqlite3-tcl")
+  conflicts=("sqlite-tcl")
+
+  install -m755 -d "${pkgdir:?}/usr/lib"
+  mv "${srcdir:?}/tcl/"* "${pkgdir:?}/usr/lib"
+
+  # install manpage
+  install -m755 -d "${pkgdir:?}/usr/share/man/mann"
+  install -m644 "${srcdir:?}/sqlite-src-${_srcver}/autoconf/tea/doc/sqlite3.n" "${pkgdir:?}/usr/share/man/mann/"
+
+  # link license
+  install -m755 -d "${pkgdir:?}/usr/share/licenses"
+  ln -sf /usr/share/licenses/sqlite "${pkgdir:?}/usr/share/licenses/sqlite-tcl"
+
+}
+
+package_sqlite-analyzer+clang() {
+
+  pkgdesc="An analysis program for sqlite3 database files"
+  depends=('sqlite' 'tcl')
+  provides=("sqlite-analyzer=${pkgver}")
+  conflicts=("sqlite-analyzer")
+
+  cd "${srcdir:?}/sqlite-src-${_srcver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/sqlite-src-${_srcver} directory! Package sqlite-analyzer Failed! \E[0m"
+    exit 1
+  )
+
+  install -m755 -d "${pkgdir:?}/usr/bin"
+  install -m755 sqlite3_analyzer "${pkgdir:?}/usr/bin/"
+
+}
+
+package_lemon+clang() {
+
+  pkgdesc="A parser generator"
+  depends=('glibc')
+  provides=("lemon=${pkgver}")
+  conflicts=("lemon")
+
+  cd "${srcdir:?}/sqlite-src-${_srcver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/sqlite-src-${_srcver} directory! Package lemon Failed! \E[0m"
+    exit 1
+  )
+
+  # ELF file ('usr/bin/lemon') lacks FULL RELRO, check LDFLAGS. - no fix found so far
+  install -Dm755 lemon "${pkgdir:?}/usr/bin/lemon"
+  install -Dm644 lempar.c "${pkgdir:?}/usr/share/lemon/lempar.c"
+
+  mkdir -p "${pkgdir:?}/usr/share/doc/lemon"
+  cp "${srcdir:?}/sqlite-doc-${_docver}/lemon.html" "${pkgdir:?}/usr/share/doc/lemon/"
+
+  install -m755 -d "${pkgdir:?}/usr/share/licenses"
+  ln -sf /usr/share/licenses/sqlite "${pkgdir:?}/usr/share/licenses/lemon"
+
+}
+
+package_sqlite-doc+clang() {
+
+  pkgdesc="most of the static HTML files that comprise this website, including all of the SQL Syntax and the C/C++ interface specs and other miscellaneous documentation"
+  provides=("sqlite3-doc=${pkgver}" "sqlite-doc=${pkgver}")
+  replaces=("sqlite3-doc")
+  conflicts=("sqlite-doc")
+
+  cd "${srcdir:?}/sqlite-doc-${_srcver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/sqlite-doc-${_srcver} directory! Package sqlite-doc Failed! \E[0m"
+    exit 1
+  )
+
+  mkdir -p "${pkgdir:?}/usr/share/doc/sqlite"
+  cp -R * "${pkgdir:?}/usr/share/doc/sqlite/"
+
+  rm "${pkgdir:?}/usr/share/doc/sqlite/lemon.html"
+
+}

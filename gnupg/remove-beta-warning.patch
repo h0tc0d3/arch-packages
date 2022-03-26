@@ -1,0 +1,36 @@
+diff --git a/autogen.sh b/autogen.sh
+index 4b511bf95a4a..cba88260c072 100755
+--- a/autogen.sh
++++ b/autogen.sh
+@@ -229,27 +229,10 @@ if [ "$myhost" = "find-version" ]; then
+     esac
+ 
+     beta=no
+-    if [ -e .git ]; then
+-      ingit=yes
+-      tmp=$(git describe --match "${matchstr1}" --long 2>/dev/null)
+-      tmp=$(echo "$tmp" | sed s/^"$package"//)
+-      if [ -n "$tmp" ]; then
+-          tmp=$(echo "$tmp" | sed s/^"$package"//  \
+-                | awk -F- '$3!=0 && $3 !~ /^beta/ {print"-beta"$3}')
+-      else
+-          tmp=$(git describe --match "${matchstr2}" --long 2>/dev/null \
+-                | awk -F- '$4!=0{print"-beta"$4}')
+-      fi
+-      [ -n "$tmp" ] && beta=yes
+-      rev=$(git rev-parse --short HEAD | tr -d '\n\r')
+-      rvd=$((0x$(echo ${rev} | dd bs=1 count=4 2>/dev/null)))
+-    else
+-      ingit=no
+-      beta=yes
+-      tmp="-unknown"
+-      rev="0000000"
+-      rvd="0"
+-    fi
++    ingit=no
++    tmp=""
++    rev="0000000"
++    rvd="0"
+ 
+     echo "$package-$vers$tmp:$beta:$ingit:$vers$tmp:$vers:$tmp:$rev:$rvd:"
+     exit 0

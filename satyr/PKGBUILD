@@ -1,0 +1,58 @@
+pkgname=satyr+clang
+pkgver=0.39
+pkgrel=1
+pkgdesc='Automatic problem management with anonymous reports'
+arch=('x86_64')
+depends=('gperf' 'json-c' 'libelf' 'python')
+makedepends=('python-sphinx' 'rpm-tools')
+conflicts=("satyr")
+provides=("satyr=${pkgver}")
+url='https://github.com/abrt/satyr'
+license=('GPL')
+source=("satyr-${pkgver}.tar.xz::https://github.com/abrt/satyr/archive/${pkgver}.tar.gz")
+sha256sums=('da5f7490bbc460ee82c5d0231106d8f6909573a863ccea5443676fc88f0ae75b')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/satyr-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/satyr-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  ./autogen.sh
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cd "${srcdir:?}/satyr-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/satyr-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "satyr-${pkgver}"
+
+}

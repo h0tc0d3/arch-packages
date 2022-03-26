@@ -1,6 +1,6 @@
 pkgname=gnupg+clang
-pkgver=2.2.32
-pkgrel=2
+pkgver=2.3.4
+pkgrel=1
 pkgdesc='Complete and free implementation of the OpenPGP standard'
 url='https://www.gnupg.org/'
 license=('GPL')
@@ -17,21 +17,19 @@ optdepends=('libldap: gpg2keys_ldap'
   'pcsclite: scdaemon')
 validpgpkeys=(
   'D8692123C4065DEA5E0F3AB5249B39D24F25E3B6' # Werner Koch (dist sig)
-  '031EC2536E580D8EA286A9F22071B08A33BD3F06' # NIIBE Yutaka (GnuPG Release Key) <gniibe@fsij.org>
   '5B80C5754298F0CB55D8ED6ABCEF7E294B092E28' # Andre Heinecke (Release Signing Key)
   '6DAA6E64A76D2840571B4902528897B826403ADA' # Werner Koch (dist signing 2020)
+  'AC8E115BF73E2D8D47FA9908E98E9B2D19C6C8BD' # Niibe Yutaka (GnuPG Release Key)
 )
 source=(
   "https://gnupg.org/ftp/gcrypt/gnupg/gnupg-${pkgver}.tar.bz2"{,.sig}
-  'drop-import-clean.patch'
-  'avoid-beta-warning.patch'
+  remove-beta-warning.patch
 )
-sha256sums=('b2571b35f82c63e7d278aa6a1add0d73453dc14d3f0854be490c844fca7e0614'
+sha256sums=('f3468ecafb1d7f9ad7b51fd1db7aebf17ceb89d2efa8a05cf2f39b4d405402ae'
   'SKIP'
-  '02d375f0045f56f7dd82bacdb5ce559afd52ded8b75f6b2673c39ec666e81abc'
-  '22fdf9490fad477f225e731c417867d9e7571ac654944e8be63a1fbaccd5c62d')
+  '0016111253122514e59570c0a1fa05513fd7510298f6b5952a2009d26e6cd16c')
 
-install=install
+install=gnupg.install
 
 _llvm=0
 
@@ -46,8 +44,11 @@ prepare() {
     exit 1
   )
 
-  patch -p1 -i ../avoid-beta-warning.patch
-  patch -p1 -i ../drop-import-clean.patch
+  # Remove warning after autogen.sh:
+  # gpg: NOTE: THIS IS A DEVELOPMENT VERSION!
+  # gpg: It is only intended for test purposes and should NOT be
+  # gpg: used in a production environment or with production keys!
+  patch -Np1 -i "${srcdir:?}/remove-beta-warning.patch"
 
   # improve reproducibility
   rm doc/gnupg.info*
