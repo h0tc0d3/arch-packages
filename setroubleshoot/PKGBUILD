@@ -1,6 +1,6 @@
 pkgname=setroubleshoot+clang
 pkgver=3.3.28
-pkgrel=2
+pkgrel=3
 pkgdesc="Provides tools to help diagnose SELinux problems"
 groups=('selinux')
 arch=('x86_64')
@@ -22,6 +22,8 @@ sha256sums=('fd0662d45592c36e8251d9c444542ba3525b234859c4ed132f1269ee06e1899f'
   '894a75c33d568f908f0c3fa7fe4d7f82824369695194aa005fe42cf961298893'
   'eb7321b7db2fd8951c7ce3c7c42680fcfe7641c3d7be9e8d69a8fbb992a9d086'
   'fa20d1ec3522aa877fc5462d56692b318b4c8af1cd9ecb62ec41ad6647662d77')
+
+install=setroubleshoot.install
 
 _llvm=0
 
@@ -77,6 +79,8 @@ package() {
   mkdir -p "${pkgdir:?}/var/lib/setroubleshoot"
   touch "${pkgdir:?}/var/lib/setroubleshoot/setroubleshoot_database.xml"
   touch "${pkgdir:?}/var/lib/setroubleshoot/email_alert_recipients"
+  chmod 0600 "${pkgdir:?}/var/lib/setroubleshoot/setroubleshoot_database.xml"
+  chmod 0600 "${pkgdir:?}/var/lib/setroubleshoot/email_alert_recipients"
 
   install -m644 -D "${srcdir:?}/setroubleshoot.logrotate" "${pkgdir:?}/etc/logrotate.d/setroubleshoot-server"
   install -m644 -D "${srcdir:?}/setroubleshoot.tmpfiles" "${pkgdir:?}/usr/lib/tmpfiles.d/setroubleshoot-server.conf"
