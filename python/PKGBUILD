@@ -2,7 +2,7 @@ shopt -s extglob
 
 pkgbase=python+clang
 pkgname=(python+clang python-tests+clang)
-pkgver=3.10.3
+pkgver=3.10.4
 pkgrel=1
 _pybasever=${pkgver%.*}
 pkgdesc="Next generation of the python high-level scripting language"
@@ -12,7 +12,7 @@ url="https://www.python.org/"
 depends=('bzip2' 'expat' 'gdbm' 'libffi' 'libnsl' 'libxcrypt' 'openssl' 'zlib')
 makedepends=('tk' 'sqlite' 'bluez-libs' 'mpdecimal' 'llvm' 'gdb' 'ttf-font')
 source=("https://www.python.org/ftp/python/${pkgver%rc*}/Python-${pkgver}.tar.xz"{,.asc})
-sha256sums=('596c72de998dc39205bc4f70ef0dbf7edec740a306d09b49a9bd0a77806730dc'
+sha256sums=('80bf925f571da436b35210886cf79f6eb5fa5d6c571316b73568343451f77a19'
   'SKIP')
 validpgpkeys=(
   '0D96DF4D4110E5C43FBFB17F2D347EA6AA65421D' # Ned Deily (Python release signing key) <nad@python.org>
