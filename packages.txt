@@ -4,6 +4,7 @@ glibc
 llvm
 binutils
 libtool
+libgpg-error
 libgcrypt
 python
 libnl

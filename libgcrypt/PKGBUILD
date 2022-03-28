@@ -1,5 +1,5 @@
-pkgname=libgcrypt
-pkgver=1.9.4
+pkgname=libgcrypt+clang
+pkgver=1.10.1
 pkgrel=1
 pkgdesc="General purpose cryptographic library based on the code from GnuPG"
 arch=(x86_64)
@@ -12,49 +12,17 @@ options=('!emptydirs')
 # https://www.gnupg.org/download/integrity_check.html
 source=(
   "https://gnupg.org/ftp/gcrypt/libgcrypt/libgcrypt-${pkgver}.tar.bz2"
-
-  # Fedora patches https://src.fedoraproject.org/rpms/libgcrypt
-  libgcrypt-1.8.5-use-fipscheck.patch
-  libgcrypt-1.8.4-fips-keygen.patch
-  libgcrypt-1.8.4-tests-fipsmode.patch
-  libgcrypt-1.7.3-fips-cavs.patch
-  libgcrypt-1.8.4-use-poll.patch
-  libgcrypt-1.6.1-mpicoder-gccopt.patch
-  libgcrypt-1.7.3-ecc-test-fix.patch
-  libgcrypt-1.8.3-fips-ctor.patch
-  libgcrypt-1.8.5-getrandom.patch
-  libgcrypt-1.8.3-fips-enttest.patch
-  libgcrypt-1.8.3-md-fips-enforce.patch
-  libgcrypt-1.8.5-intel-cet.patch
-  libgcrypt-1.8.5-fips-module.patch
-  ecc-curves.c
-  curves.c
-  t-mpi-point.c
-  keygrip.c
   random.conf
 )
-sha256sums=('ea849c83a72454e3ed4267697e8ca03390aee972ab421e7df69dfe42b65caaf7'
-  'bc6647658e73aa3da5320691c1168e65e27cabf9ca1edc3c1e950108c1e82a71'
-  '8228647193388addf5f689eed44f8cf81044b4e41f0a3c2a8626e80932853837'
-  'b2fcf594b4c266bee50eb5d9fb2e20c10aa58e2c1f468a3b611291f26c80c694'
-  '389e622b989e8f14298e947a6ec148673eb35c5465f31ea65f387234c3a66ff7'
-  '9c0790b973bd499cf58d0456ebc07f271aef8b95c8476edc7146957a9c81443f'
-  '2ecd1c95ce2991c2b397e05c1bdb301c0120a29c3e18072e030a8a6aaeecc6ff'
-  '3a420cc2b238203b1d107bb20313bfdaa79f8a1358678a2f222093223132038c'
-  '50a948d21185aad91619e1586473bdd23553c15376c78d5dc77316bddebed085'
-  '50f5e4f7050ceef5b948d2e8a3be12ae55d31a6548008f344c70ce9f77b5776b'
-  '30b6c4030e5859245b1905c4babba3135c9170825b6117366f676192ded1ebbc'
-  'd039a5c509a8e36068478daf929a1992b58a5a2441bde16e5eb5b8b569d248a6'
-  'b5abb963aaec5df9c9ff47e22a2079e23000d0c8361a3446378954b856603032'
-  '47a946ffc43a80743958d56dc16d94e171f38cdcf59e8f164f5e7bf1c95f0a3f'
-  '188a7c6dbebf753e2729ffc2a4d79e7b01e247c28d4b914bf2739b94c671d055'
-  '63f862837d815505d0dc8eeea3a12cea33f542b83137843e7cf3898c6905feff'
-  'e952f5219c7095cb310da074079d154b8b638161a757dd8c8e01d6ae2bf3d4b3'
-  '51ad170b4b304d6923770d8efb29e9a706ee4d5acbbf3c57cb8eb0f244809f16'
+sha256sums=('ef14ae546b0084cd84259f61a55e07a38c3b53afc0f546bffcef2f01baffe9de'
   '639bd7d4df19f8e810433e7158f2e2c0b8d8034b9276562f255dd13b108403e5')
 validpgpkeys=('6DAA6E64A76D2840571B4902528897B826403ADA') # "Werner Koch (dist signing 2020)"
 
 _llvm=0
+
+# should be all algorithms except SM3 and SM4
+_DIGESTS='crc gostr3411-94 md4 md5 rmd160 sha1 sha256 sha512 sha3 tiger whirlpool stribog blake2'
+_CIPHERS='arcfour blowfish cast5 des aes twofish serpent rfc2268 seed camellia idea salsa20 gost28147 chacha20'
 
 _patch() {
 
@@ -66,46 +34,13 @@ _patch() {
 prepare() {
 
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
-    _llvm=0 # Not work build with clang
+    _llvm=1
   fi
 
   cd "${srcdir:?}/libgcrypt-${pkgver}" || (
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/libgcrypt-${pkgver} directory! Prepare Failed! \E[0m"
     exit 1
   )
-
-  # make FIPS hmac compatible with fipscheck - non upstreamable
-  # update on soname bump
-  _patch "libgcrypt-1.8.5-use-fipscheck.patch"
-  # modify FIPS RSA and DSA keygen to comply with requirements
-  _patch "libgcrypt-1.8.4-fips-keygen.patch"
-  # fix the tests to work correctly in the FIPS mode
-  _patch "libgcrypt-1.8.4-tests-fipsmode.patch"
-  # update the CAVS tests
-  _patch "libgcrypt-1.7.3-fips-cavs.patch"
-  # use poll instead of select when gathering randomness
-  _patch "libgcrypt-1.8.4-use-poll.patch"
-  # slight optimalization of mpicoder.c to silence Valgrind (#968288)
-  _patch "libgcrypt-1.6.1-mpicoder-gccopt.patch"
-  # fix tests to work with approved ECC
-  _patch "libgcrypt-1.7.3-ecc-test-fix.patch"
-  # Run the FIPS mode initialization in the shared library constructor
-  _patch "libgcrypt-1.8.3-fips-ctor.patch"
-  # Do not try to open /dev/urandom if getrandom() works
-  _patch "libgcrypt-1.8.5-getrandom.patch"
-  # Continuous FIPS entropy test
-  _patch "libgcrypt-1.8.3-fips-enttest.patch"
-  # Disable non-approved FIPS hashes in the enforced FIPS mode
-  _patch "libgcrypt-1.8.3-md-fips-enforce.patch"
-  # Missing Intel CET support in the library (#1954049)
-  #_patch "libgcrypt-1.8.5-intel-cet.patch"
-  # FIPS module is redefined a little bit (implicit by kernel FIPS mode)
-  _patch "libgcrypt-1.8.5-fips-module.patch"
-
-  cp "${srcdir:?}/ecc-curves.c" cipher/
-  cp "${srcdir:?}/curves.c" tests/
-  cp "${srcdir:?}/t-mpi-point.c" tests/
-  cp "${srcdir:?}/keygrip.c" tests/
 
   # tests fail due to systemd+libseccomp preventing memory syscalls when building in chroots
   #  t-secmem: line 176: gcry_control (GCRYCTL_INIT_SECMEM, pool_size, 0) failed: General error
@@ -114,7 +49,7 @@ prepare() {
   #  FAIL: t-sexp
   sed -i "s:t-secmem::" tests/Makefile.am
   sed -i "s:t-sexp::" tests/Makefile.am
-  autoreconf -f
+  autoreconf -fiv
 
 }
 
@@ -127,8 +62,8 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    CFLAGS="${CFLAGS} -flto=thin"
-    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    #CFLAGS="${CFLAGS} -flto=thin"
+    #CXXFLAGS="${CXXFLAGS} -flto=thin"
     LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
@@ -136,9 +71,8 @@ build() {
   ./configure \
     --prefix=/usr \
     --disable-static \
-    --enable-hmac-binary-check \
-    --enable-pubkey-ciphers='dsa elgamal rsa ecc' \
-    --disable-O-flag-munging
+    --enable-digests="${_DIGESTS:?}" \
+    --enable-ciphers="${_CIPHERS:?}"
 
   make
 
@@ -146,26 +80,17 @@ build() {
 
 check() {
 
-  cd "${srcdir:?}/libgcrypt-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libgcrypt-${pkgver} directory! Check Failed! \E[0m"
-    exit 1
-  )
-
-  make check
+  make check -C "libgcrypt-${pkgver}"
 
 }
 
 package() {
 
-  cd "${srcdir:?}/libgcrypt-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libgcrypt-${pkgver} directory! Package Failed! \E[0m"
-    exit 1
-  )
-
-  make DESTDIR="${pkgdir:?}" install
+  make DESTDIR="${pkgdir:?}" install -C "libgcrypt-${pkgver}"
 
   mkdir -p "${pkgdir:?}/etc/gcrypt"
   chmod 755 "${pkgdir:?}/etc/gcrypt"
+
   install -m644 "${srcdir:?}/random.conf" "${pkgdir:?}/etc/gcrypt/random.conf"
 
 }
