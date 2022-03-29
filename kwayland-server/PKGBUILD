@@ -1,5 +1,5 @@
 pkgname=kwayland-server+clang
-pkgver=5.24.3
+pkgver=5.24.4
 pkgrel=1
 pkgdesc='Wayland server components built on KDE Frameworks'
 arch=(x86_64)
@@ -13,7 +13,7 @@ groups=(plasma)
 source=(
   "https://download.kde.org/stable/plasma/${pkgver}/kwayland-server-${pkgver}.tar.xz"{,.sig}
 )
-sha256sums=('560b20a15b459c5a1e8d0b38e9d53c3a75660bc798fa544e7a9d5c36260e063b'
+sha256sums=('d1790bd7584dce9a36a432819b170ce72d34d5df79083b1b41dfe3e021b6e988'
   'SKIP')
 validpgpkeys=(
   'E0A3EB202F8E57528E13E72FD7574483BB57B18D' # Jonathan Riddell <jr@jriddell.org>
