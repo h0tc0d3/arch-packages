@@ -1,0 +1,258 @@
+diff -rup binutils.orig/binutils/NEWS binutils-2.38/binutils/NEWS
+--- binutils.orig/binutils/NEWS	2022-03-10 09:13:18.284641005 +0000
++++ binutils-2.38/binutils/NEWS	2022-03-10 09:13:26.007586352 +0000
+@@ -1,5 +1,8 @@
+ -*- text -*-
+ 
++* Add an option to objdump and readelf to prevent attempts to access debuginfod
++  servers when following links.
++
+ Changes in 2.38:
+ 
+ * elfedit: Add --output-abiversion option to update ABIVERSION.
+diff -rup binutils.orig/binutils/doc/binutils.texi binutils-2.38/binutils/doc/binutils.texi
+--- binutils.orig/binutils/doc/binutils.texi	2022-03-10 09:13:18.285640998 +0000
++++ binutils-2.38/binutils/doc/binutils.texi	2022-03-10 09:13:26.009586338 +0000
+@@ -2246,6 +2246,8 @@ objdump [@option{-a}|@option{--archive-h
+          @option{--dwarf}[=rawline,=decodedline,=info,=abbrev,=pubnames,=aranges,=macro,=frames,=frames-interp,=str,=str-offsets,=loc,=Ranges,=pubtypes,=trace_info,=trace_abbrev,=trace_aranges,=gdb_index,=addr,=cu_index,=links]]
+         [@option{-WK}|@option{--dwarf=follow-links}]
+         [@option{-WN}|@option{--dwarf=no-follow-links}]
++        [@option{-wD}|@option{--dwarf=use-debuginfod}]
++        [@option{-wE}|@option{--dwarf=do-not-use-debuginfod}]
+         [@option{-L}|@option{--process-links}]
+         [@option{--ctf=}@var{section}]
+         [@option{-G}|@option{--stabs}]
+@@ -4879,6 +4881,8 @@ readelf [@option{-a}|@option{--all}]
+          @option{--debug-dump}[=rawline,=decodedline,=info,=abbrev,=pubnames,=aranges,=macro,=frames,=frames-interp,=str,=str-offsets,=loc,=Ranges,=pubtypes,=trace_info,=trace_abbrev,=trace_aranges,=gdb_index,=addr,=cu_index,=links]]
+         [@option{-wK}|@option{--debug-dump=follow-links}]
+         [@option{-wN}|@option{--debug-dump=no-follow-links}]
++        [@option{-wD}|@option{--debug-dump=use-debuginfod}]
++        [@option{-wE}|@option{--debug-dump=do-not-use-debuginfod}]
+         [@option{-P}|@option{--process-links}]
+         [@option{--dwarf-depth=@var{n}}]
+         [@option{--dwarf-start=@var{n}}]
+@@ -5504,7 +5508,8 @@ deduced from the input file
+ @cindex separate debug files
+ 
+ debuginfod is a web service that indexes ELF/DWARF debugging resources
+-by build-id and serves them over HTTP.
++by build-id and serves them over HTTP.  For more information see:
++@emph{https://sourceware.org/elfutils/Debuginfod.html}
+ 
+ Binutils can be built with the debuginfod client library
+ @code{libdebuginfod} using the @option{--with-debuginfod} configure option.
+@@ -5516,6 +5521,10 @@ separate debug files when the files are
+ debuginfod is packaged with elfutils, starting with version 0.178.
+ You can get the latest version from `https://sourceware.org/elfutils/'.
+ 
++The DWARF info dumping tools (@command{readelf} and @command{objdump})
++have options to control when they should access the debuginfod
++servers.  By default this access is enabled.
++
+ @node Reporting Bugs
+ @chapter Reporting Bugs
+ @cindex bugs
+Only in binutils-2.38/binutils/doc: binutils.texi.orig
+diff -rup binutils.orig/binutils/doc/debug.options.texi binutils-2.38/binutils/doc/debug.options.texi
+--- binutils.orig/binutils/doc/debug.options.texi	2022-03-10 09:13:18.285640998 +0000
++++ binutils-2.38/binutils/doc/debug.options.texi	2022-03-10 09:13:26.009586338 +0000
+@@ -68,10 +68,27 @@ chosen when configuring the binutils via
+ @option{--enable-follow-debug-links=no} options.  If these are not
+ used then the default is to enable the following of debug links.
+ 
++Note - if support for the debuginfod protocol was enabled when the
++binutils were built then this option will also include an attempt to
++contact any debuginfod servers mentioned in the @var{DEBUGINFOD_URLS}
++environment variable.  This could take some time to resolve.  This
++behaviour can be disabled via the @option{=do-not-use-debuginfod} debug
++option.
++
+ @item N
+ @itemx =no-follow-links
+ Disables the following of links to separate debug info files.
+ 
++@item D
++@itemx =use-debuginfod
++Enables contacting debuginfod servers if there is a need to follow
++debug links.  This is the default behaviour.
++
++@item E
++@itemx =do-not-use-debuginfod
++Disables contacting debuginfod servers when there is a need to follow
++debug links.
++
+ @item l
+ @itemx =rawline
+ Displays the contents of the @samp{.debug_line} section in a raw
+diff -rup binutils.orig/binutils/dwarf.c binutils-2.38/binutils/dwarf.c
+--- binutils.orig/binutils/dwarf.c	2022-03-10 09:13:18.283641012 +0000
++++ binutils-2.38/binutils/dwarf.c	2022-03-10 09:13:26.010586331 +0000
+@@ -109,6 +109,9 @@ int do_debug_cu_index;
+ int do_wide;
+ int do_debug_links;
+ int do_follow_links = DEFAULT_FOR_FOLLOW_LINKS;
++#ifdef HAVE_LIBDEBUGINFOD
++int use_debuginfod = 1;
++#endif
+ bool do_checks;
+ 
+ int dwarf_cutoff_level = -1;
+@@ -11038,7 +11041,7 @@ debuginfod_fetch_separate_debug_info (st
+ 
+   return false;
+ }
+-#endif
++#endif /* HAVE_LIBDEBUGINFOD  */
+ 
+ static void *
+ load_separate_debug_info (const char *            main_filename,
+@@ -11157,9 +11160,10 @@ load_separate_debug_info (const char *
+   {
+     char * tmp_filename;
+ 
+-    if (debuginfod_fetch_separate_debug_info (xlink,
+-                                              & tmp_filename,
+-                                              file))
++    if (use_debuginfod
++	&& debuginfod_fetch_separate_debug_info (xlink,
++						 & tmp_filename,
++						 file))
+       {
+         /* File successfully downloaded from server, replace
+            debug_filename with the file's path.  */
+@@ -11207,13 +11211,15 @@ load_separate_debug_info (const char *
+       warn (_("tried: %s\n"), debug_filename);
+ 
+ #if HAVE_LIBDEBUGINFOD
+-      {
+-	char *urls = getenv (DEBUGINFOD_URLS_ENV_VAR);
+-	if (urls == NULL)
+-	  urls = "";
++      if (use_debuginfod)
++	{
++	  char *urls = getenv (DEBUGINFOD_URLS_ENV_VAR);
+ 
+-	warn (_("tried: DEBUGINFOD_URLS=%s\n"), urls);
+-      }
++	  if (urls == NULL)
++	    urls = "";
++
++	  warn (_("tried: DEBUGINFOD_URLS=%s\n"), urls);
++	}
+ #endif
+     }
+ 
+@@ -11707,6 +11713,9 @@ dwarf_select_sections_by_names (const ch
+       { "aranges", & do_debug_aranges, 1 },
+       { "cu_index", & do_debug_cu_index, 1 },
+       { "decodedline", & do_debug_lines, FLAG_DEBUG_LINES_DECODED },
++#ifdef HAVE_LIBDEBUGINFOD
++      { "do-not-use-debuginfod", & use_debuginfod, 0 },
++#endif
+       { "follow-links", & do_follow_links, 1 },
+       { "frames", & do_debug_frames, 1 },
+       { "frames-interp", & do_debug_frames_interp, 1 },
+@@ -11730,6 +11739,9 @@ dwarf_select_sections_by_names (const ch
+       { "trace_abbrev", & do_trace_abbrevs, 1 },
+       { "trace_aranges", & do_trace_aranges, 1 },
+       { "trace_info", & do_trace_info, 1 },
++#ifdef HAVE_LIBDEBUGINFOD
++      { "use-debuginfod", & use_debuginfod, 1 },
++#endif
+       { NULL, NULL, 0 }
+     };
+ 
+@@ -11783,6 +11795,10 @@ dwarf_select_sections_by_letters (const
+       case 'A':	do_debug_addr = 1; break;
+       case 'a':	do_debug_abbrevs = 1; break;
+       case 'c':	do_debug_cu_index = 1; break;
++#ifdef HAVE_LIBDEBUGINFOD
++      case 'D': use_debuginfod = 1; break;
++      case 'E': use_debuginfod = 0; break;
++#endif
+       case 'F':	do_debug_frames_interp = 1; /* Fall through.  */
+       case 'f':	do_debug_frames = 1; break;
+       case 'g':	do_gdb_index = 1; break;
+diff -rup binutils.orig/binutils/dwarf.h binutils-2.38/binutils/dwarf.h
+--- binutils.orig/binutils/dwarf.h	2022-03-10 09:13:18.284641005 +0000
++++ binutils-2.38/binutils/dwarf.h	2022-03-10 09:13:26.010586331 +0000
+@@ -224,6 +224,9 @@ extern int do_debug_cu_index;
+ extern int do_wide;
+ extern int do_debug_links;
+ extern int do_follow_links;
++#ifdef HAVE_LIBDEBUGINFOD
++extern int use_debuginfod;
++#endif
+ extern bool do_checks;
+ 
+ extern int dwarf_cutoff_level;
+diff -rup binutils.orig/binutils/objdump.c binutils-2.38/binutils/objdump.c
+--- binutils.orig/binutils/objdump.c	2022-03-10 09:13:18.283641012 +0000
++++ binutils-2.38/binutils/objdump.c	2022-03-10 09:13:26.011586324 +0000
+@@ -281,6 +281,14 @@ usage (FILE *stream, int status)
+                            Do not follow links to separate debug info files\n\
+                             (default)\n"));
+ #endif
++#if HAVE_LIBDEBUGINFOD
++  fprintf (stream, _("\
++  -WD --dwarf=use-debuginfod\n\
++                           When following links, also query debuginfod servers (default)\n"));
++  fprintf (stream, _("\
++  -WE --dwarf=do-not-use-debuginfod\n\
++                           When following links, do not query debuginfod servers\n"));
++#endif
+   fprintf (stream, _("\
+   -L, --process-links      Display the contents of non-debug sections in\n\
+                             separate debuginfo files.  (Implies -WK)\n"));
+Only in binutils-2.38/binutils/: objdump.c.orig
+diff -rup binutils.orig/binutils/readelf.c binutils-2.38/binutils/readelf.c
+--- binutils.orig/binutils/readelf.c	2022-03-10 09:13:18.302640878 +0000
++++ binutils-2.38/binutils/readelf.c	2022-03-10 09:13:26.012586316 +0000
+@@ -5126,6 +5126,14 @@ usage (FILE * stream)
+                          Do not follow links to separate debug info files\n\
+                           (default)\n"));
+ #endif
++#if HAVE_LIBDEBUGINFOD
++  fprintf (stream, _("\
++  -wD --debug-dump=use-debuginfod\n\
++                         When following links, also query debuginfod servers (default)\n"));
++  fprintf (stream, _("\
++  -wE --debug-dump=do-not-use-debuginfod\n\
++                         When following links, do not query debuginfod servers\n"));
++#endif
+   fprintf (stream, _("\
+   --dwarf-depth=N        Do not display DIEs at depth N or greater\n"));
+   fprintf (stream, _("\
+Only in binutils-2.38/binutils/: readelf.c.orig
+diff -rup binutils.orig/binutils/testsuite/binutils-all/debuginfod.exp binutils-2.38/binutils/testsuite/binutils-all/debuginfod.exp
+--- binutils.orig/binutils/testsuite/binutils-all/debuginfod.exp	2022-03-10 09:13:18.291640956 +0000
++++ binutils-2.38/binutils/testsuite/binutils-all/debuginfod.exp	2022-03-10 09:13:26.012586316 +0000
+@@ -185,8 +185,14 @@ proc test_fetch_debugaltlink { prog prog
+ }
+ 
+ if { [regexp ".*DEBUGINFOD.*" $conf_objdump] } {
+-    test_fetch_debuglink $OBJDUMP "-W"
++    test_fetch_debuglink $OBJDUMP "-W -WD"
+     test_fetch_debugaltlink $OBJDUMP "-Wk"
++
++    set test "disabling debuginfod access"
++    setup_xfail *-*-*
++    test_fetch_debuglink $OBJDUMP "-W -WE"
++    set test "debuginfod"
++
+ } else {
+     untested "$test (objdump not configured with debuginfod)"
+ }
+@@ -194,6 +200,12 @@ if { [regexp ".*DEBUGINFOD.*" $conf_objd
+ if { [regexp ".*DEBUGINFOD.*" $conf_readelf] } {
+     test_fetch_debuglink $READELF "-w"
+     test_fetch_debugaltlink $READELF "-wk"
++
++    set test "disabling debuginfod access"
++    setup_xfail *-*-*
++    test_fetch_debuglink $READELF "-w -wE"
++    set test "debuginfod"
++
+ } else {
+     untested "$test (readelf not configured with debuginfod)"
+ }

@@ -1,0 +1,52 @@
+pkgname=libaio+clang
+pkgver=0.3.112
+pkgrel=2
+pkgdesc="The Linux-native asynchronous I/O facility (aio) library"
+arch=('x86_64')
+url="https://pagure.io/libaio"
+license=('LGPL')
+provides=('libaio' "libaio=${pkgver}")
+conflicts=('libaio')
+source=("https://releases.pagure.org/libaio/libaio-${pkgver}.tar.gz")
+sha256sums=('ab0462f2c9d546683e5147b1ce9c195fe95d07fac5bf362f6c01637955c3b492')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  make -C "libaio-${pkgver}"
+}
+
+check() {
+
+  # work around gcc warning (-Werror) in test suite
+  sed -i '/strncpy/s#sizeof(TEMPLATE)#sizeof(template)#' "libaio-${pkgver}/harness/cases/19.t"
+  sed -i '/strncpy/s#sizeof(TEMPLATE)#sizeof(temp_file)#' "libaio-${pkgver}/harness/cases/21.t"
+
+  sed -i 's#tv_sec:#.tv_sec = #;s#tv_nsec:#.tv_nsec = #' "libaio-${pkgver}/harness/cases/13.t"
+
+  make partcheck -C "libaio-${pkgver}"
+
+}
+
+package() {
+
+  make prefix="${pkgdir:?}/usr" install -C "libaio-${pkgver}"
+
+}

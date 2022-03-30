@@ -5,8 +5,10 @@ llvm
 binutils
 libtool
 libgpg-error
+libassuan
 libgcrypt
 python
+libaio
 libnl
 lapack
 openblas
@@ -197,6 +199,7 @@ lm_sensors
 jemalloc
 gperftools
 openssl
+libarchive
 libevent
 libsasl
 openldap

@@ -1,0 +1,68 @@
+pkgname=libarchive+clang
+pkgver=3.6.0
+pkgrel=2
+pkgdesc='Multi-format archive and compression library'
+arch=('x86_64')
+url='https://libarchive.org/'
+license=('BSD')
+depends=('acl' 'libacl.so' 'bzip2' 'expat' 'lz4' 'openssl' 'xz' 'zlib' 'zstd')
+provides=('libarchive.so' libarchive "libarchive=${pkgver}")
+conflicts=(libarchive)
+validpgpkeys=('A5A45B12AD92D964B89EEE2DEC560C81CEC2276E') # Martin Matuska <mm@FreeBSD.org>
+source=(
+  "https://github.com/libarchive/libarchive/releases/download/v${pkgver}/libarchive-${pkgver}.tar.xz"{,.asc}
+  '0001-ZIP-reader-fix-possible-out-of-bounds-read-in-zipx_l.patch'
+)
+sha256sums=('df283917799cb88659a5b33c0a598f04352d61936abcd8a48fe7b64e74950de7'
+  'SKIP'
+  'fb0ccefdce771ac1f19e4d2f991f6ed4201313f55af0dcbb3abb0e7b0f25696e')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  patch -d "libarchive-${pkgver}" -Np1 -i "${srcdir:?}/0001-ZIP-reader-fix-possible-out-of-bounds-read-in-zipx_l.patch"
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libarchive-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libarchive-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --without-xml2 \
+    --without-nettle \
+    --disable-static
+
+  make
+
+}
+
+check() {
+
+  LC_ALL=C make check -C "libarchive-${pkgver}"
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "libarchive-${pkgver}"
+  install -Dm0644 "libarchive-${pkgver}/COPYING" "${pkgdir:?}/usr/share/licenses/libarchive/COPYING"
+
+}

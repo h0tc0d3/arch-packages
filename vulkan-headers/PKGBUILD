@@ -1,5 +1,5 @@
 pkgname=vulkan-headers+clang
-pkgver=1.3.208
+pkgver=1.3.210
 pkgrel=1
 epoch=1
 pkgdesc="Vulkan header files"
@@ -11,7 +11,7 @@ provides=("vulkan-hpp=${pkgver}" "vulkan-headers" "vulkan-headers=${pkgver}")
 conflicts=("vulkan-headers")
 groups=(vulkan-devel)
 source=("vulkan-headers-${pkgver}.tar.gz::https://github.com/KhronosGroup/Vulkan-Headers/archive/v${pkgver}.tar.gz")
-sha256sums=('15050e9748633484957a166150f680a0ba8030074db599aad7c2d432191712af')
+sha256sums=('e3a1bb9e089c62a8ad62b19f9617f382e974536d00dac39d190a2a1b95d1ea89')
 
 _llvm=0
 

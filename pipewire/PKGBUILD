@@ -2,7 +2,7 @@ pkgbase=pipewire+clang
 pkgname=(pipewire+clang alsa-card-profiles+clang pipewire-docs+clang
   pipewire-alsa+clang pipewire-jack+clang pipewire-pulse+clang gst-plugin-pipewire+clang
   pipewire-zeroconf+clang pipewire-v4l2+clang pipewire-x11-bell+clang)
-pkgver=0.3.48
+pkgver=0.3.49
 pkgrel=1
 epoch=1
 pkgdesc="Low-latency audio/video router and processor"
@@ -14,7 +14,7 @@ makedepends=(git meson doxygen graphviz python-docutils valgrind libpulse
   bluez-libs sbc libldac libfreeaptx libfdk-aac avahi lilv
   webrtc-audio-processing libx11 libxfixes)
 checkdepends=(desktop-file-utils)
-_commit=6c4d3a51583f823b789b0de2df1e36d6c2f8dff8 # tags/0.3.48
+_commit=075e7b266876802eab0077afd13ea8e1cee5e1fd # tags/0.3.49
 source=("git+https://gitlab.freedesktop.org/pipewire/pipewire.git#commit=${_commit}")
 sha256sums=('SKIP')
 
@@ -43,7 +43,7 @@ pkgver() {
     exit 1
   )
 
-  git describe --tags | sed 's/[^-]*-g/r&/;s/-/+/g'
+  git describe --tags | sed 's/\([^-]*-g\)/r\1/;s/-/./g'
 
 }
 
