@@ -1,8 +1,8 @@
 pkgname=chromium+clang
-pkgver=99.0.4844.84
+pkgver=100.0.4896.60
 pkgrel=1
 _launcher_ver=8
-_gcc_patchset=3
+_gcc_patchset=4
 pkgdesc="A web browser built for speed, simplicity, and security"
 arch=('x86_64')
 url="https://www.chromium.org/Home"
@@ -32,15 +32,12 @@ source=(
   chromium-EnumTable-crash.patch
   chromium-gcc11.patch
   chromium-InkDropHost-crash.patch
-  fix-build-break-with-system-libdrm.patch
-  use-FT_Done_MM_Var-in-CFX_Font-AdjustMMParams.patch
   webcodecs-stop-using-AudioOpusEncoder.patch
-  chromium-glibc-2.34.patch
   chromium-gtk4-build.patch
 )
-sha256sums=('20ec184ed34bdc7e660ccf6c007b2db37007de423b3a5a51698a96aa29527515'
+sha256sums=('0e5ea5f3061ad090cf6bd57ca037496d95ea8956de021aff902f7d0ded7bffdc'
   '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
-  '9cd2570e92e9bfeff3faf0d5b56334535cb2313f99ab0d9019b74d18ae1c7d0a'
+  'a6120e7d4eb5e131b87b6ab3b922e0c6cd78e15501e54cfb2019875173688d80'
   '70a2805a63df15817a3435e983c0350c5d04ff62deffd8214cbb040b904f54a5'
   '15c93da644dbc533a6b74bd7f86a07dc59023c7b369298acd649715b9a9209a5'
   'c162eafc1f128e616281e719d860ec8726eec89660f449ed0e9af7dfe07c8cc9'
@@ -49,10 +46,7 @@ sha256sums=('20ec184ed34bdc7e660ccf6c007b2db37007de423b3a5a51698a96aa29527515'
   'bb4560e067eb6ff6d4c4a5c4f149d1cc1c9c705a14be4721ead2ebb8ec84ded1'
   '5690089b8bd6946dfa975b8022531213b882b3396a3c968eeef9836b131725b7'
   '04bba6fb19ea5a4ab3949b65f06c88728a00ab296f42022ece62ca2fa25ec2e7'
-  'edf4d973ff197409d319bb6fbbaa529e53bc62347d26b0733c45a116a1b23f37'
-  '38348ec177c65ddfcb7201cbcd36b8d5bd69bc00683f1cd2cb929c26c431ae6b'
   '064daaa2b9d95b96ec04d8ddebf4af441f92263d123365b58fe73966866080af'
-  '57ca10547d9cfdc94f710a2edfcd51817bb73839c1d0ab73a496a19a036fa866'
   '63bebd6b68ddcd807f859ab395d0a605b165195d6514425fa9888ff781b9eb65')
 #noextract=("${source[@]##*/}")
 # Possible replacements are listed in build/linux/unbundle/replace_gn_files.py
@@ -140,14 +134,8 @@ prepare() {
   _patch chromium-gcc11.patch
   _patch chromium-InkDropHost-crash.patch
 
-  _patch fix-build-break-with-system-libdrm.patch
-  _patch use-FT_Done_MM_Var-in-CFX_Font-AdjustMMParams.patch
   _patch webcodecs-stop-using-AudioOpusEncoder.patch
   _patch chromium-gtk4-build.patch
-
-  # Fix build with glibc 3.34
-  # sandbox/linux/services/credentials.cc:101:16: error: variable-sized object may not be initialized
-  _patch chromium-glibc-2.34.patch
 
   # Link to system tools required by the build
   mkdir -p third_party/node/linux/node-linux-x64/bin
