@@ -1,0 +1,61 @@
+pkgname=gmp+clang
+pkgver=6.2.1
+pkgrel=1
+pkgdesc='A free library for arbitrary precision arithmetic'
+arch=(x86_64)
+url='https://gmplib.org/'
+depends=(gcc-libs sh)
+license=(LGPL3 GPL)
+provides=(gmp "gmp=${pkgver}")
+conflicts=(gmp)
+source=("https://gmplib.org/download/gmp/gmp-${pkgver}.tar.lz"{,.sig})
+sha256sums=('2c7f4f0d370801b2849c48c9ef3f59553b5f1d3791d070cffb04599f9fc67b41'
+  'SKIP')
+validpgpkeys=('343C2FF0FBEE5EC2EDBEF399F3599FF828C67298') # Niels Möller
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    #CFLAGS="${CFLAGS} -flto=thin"
+    #CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cd "${srcdir:?}/gmp-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gmp-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./configure \
+    --build="${CHOST:?}" \
+    --prefix=/usr \
+    --enable-cxx \
+    --enable-fat
+
+  make
+
+}
+
+check() {
+
+  make check -C "gmp-${pkgver}"
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "gmp-${pkgver}"
+
+}

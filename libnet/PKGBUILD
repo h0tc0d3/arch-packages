@@ -1,0 +1,55 @@
+pkgname=libnet+clang
+pkgver=1.1.6
+pkgrel=1
+epoch=1
+pkgdesc="A library which provides API for commonly used low-level net functions"
+arch=('x86_64')
+url="https://github.com/libnet/libnet"
+license=('BSD')
+provides=(libnet "libnet=${pkgver}")
+conflicts=(libnet)
+depends=('glibc' 'sh')
+makedepends=('help2man' 'doxygen')
+source=("https://github.com/libnet/libnet/releases/download/v${pkgver}/libnet-${pkgver}.tar.gz")
+sha256sums=('d392bb5825c4b6b672fc93a0268433c86dc964e1500c279dc6d0711ea6ec467a')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libnet-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libnet-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "libnet-${pkgver}"
+
+  install -Dm644 "libnet-${pkgver}/doc/COPYING" \
+    "${pkgdir:?}/usr/share/licenses/libnet/LICENSE"
+
+}

@@ -1,0 +1,58 @@
+pkgname=diffutils+clang
+pkgver=3.8
+pkgrel=1
+pkgdesc='Utility programs used for creating patch files'
+arch=('x86_64')
+url='https://www.gnu.org/software/diffutils'
+license=('GPL3')
+provides=(diffutils "diffutils=${pkgver}")
+conflicts=(diffutils)
+depends=('glibc' 'bash')
+validpgpkeys=('155D3FC500C834486D1EEA677FD9FCCB000BEEEE') # Jim Meyering
+source=("https://ftp.gnu.org/gnu/diffutils/diffutils-${pkgver}.tar.xz"{,.sig})
+sha256sums=('a6bdd7d1b31266d11c4f4de6c1b748d4607ab0231af5188fc2533d0ae2438fec'
+  'SKIP')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cd "${srcdir:?}/diffutils-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/diffutils-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+check() {
+
+  make check -C "diffutils-${pkgver}"
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "diffutils-${pkgver}"
+
+}

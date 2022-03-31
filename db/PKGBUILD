@@ -1,0 +1,139 @@
+pkgname=db+clang
+pkgver=5.3.28
+pkgrel=5
+pkgdesc="The Berkeley DB embedded database system"
+arch=('x86_64')
+url="https://www.oracle.com/technology/software/products/berkeley-db/index.html"
+license=('custom')
+provides=(db "db=${pkgver}")
+conflicts=(db)
+depends=('gcc-libs' 'sh')
+source=(
+  "https://download.oracle.com/berkeley-db/db-${pkgver}.tar.gz"
+  libdb-limit-cpu.patch
+  libdb-multiarch.patch
+  db-4.5.20-jni-include-dir.patch
+  db-5.3.21-memp_stat-upstream-fix.patch
+  db-5.3.21-mutex_leak.patch
+  db-5.3.28-lemon_hash.patch
+  db-5.3.28-condition_variable.patch
+  db-5.3.28-condition-variable-ppc.patch
+  db-5.3.28-cwd-db_config.patch
+  db-5.3.21-region-size-check.patch
+  db-5.3.21-checkpoint-opd-deadlock.patch
+  db-5.3.28-atomic_compare_exchange.patch
+  db-5.3.21-cbd-race.patch
+  db-5.3.21-trickle_cpu.patch
+  db-5.3.28_cve-2019-2708.patch
+  db-5.3.28-mmap-high-cpu-usage.patch
+)
+sha256sums=('e0a992d740709892e81f9d93f06daf305cf73fb81b545afe72478043172c3628'
+  '32039a7bd1670532e0b34e329805336497164ddff748c180729407d607e2d0dc'
+  'd0d2c678adfc0c4b65a6b0bf591e8f0167812bfae0466d508bfa47d6d501791d'
+  'b5fd42eaa3af12cbaab06c0d98029ac65d6c3411d3cec93f357f7a3e60927ba8'
+  '80714b9fc9f15f83452e85849897e53526685c5f611cb156decc48ebcac4009d'
+  '0bba53c23da0c15eae7ddf409e0c70f25946d7bcd5565ffcf9df1fadbff3e308'
+  '285e210c4e722b6644f0c7de43fa0ef324881875d3c083aa7b6cad0ed666e8e4'
+  '6bb0a15651d7f066e3d809173edb3fa39b07fd42f657336aed1e04dca6f7bfa4'
+  '313a6c49e82d866e0cfd22cfe185e26dec7a38a72cea2927509fb6df70172e5d'
+  '13e6b1649b432b29f15a2a0b53cbe93cba42c253e68f8d941d7038a6eedf0a3a'
+  '9bcc2ba8d357b144359d29dff055b86129d93ff922eb0ad87cd9c9b9d5c89284'
+  '0759713657a94a29779c99237b2155602c417e2c9174d537a83cdf77b4d809ee'
+  'eb58b5764e16c6f81df8ff80964ef2e071ca5cbb9e24d37f45a831107afb68cc'
+  '1c2192cc2a79ecb04fdcefbe62ea5c5c505f4ef4e5f775bfd95455c8bf8b3a6d'
+  'c1d8f89675320173fde4fcca23865fb9f3aad222044451183e4709db2a12ed59'
+  'f538d843acf0708b4a2d15678dfc6ee53b1e4e52a6c6a782dfc1a058395952c6'
+  '45b76375ffab07882df57999a492463e7bed36c25edf3b1d2d5dbca8c11c93ac')
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -d "db-${pkgver}" -p1 -i "${srcdir:?}/${1}"
+
+}
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  # Multiarch
+  _patch libdb-multiarch.patch
+
+  # Limit concurrency to max 1024 CPUs (rhbz#1245410)
+  # A fix for the issue should be in an upstream release already
+  # https://community.oracle.com/message/13274780#13274780
+  _patch libdb-limit-cpu.patch
+
+  _patch db-4.5.20-jni-include-dir.patch
+
+  # memp_stat fix provided by upstream (rhbz#1211871)
+  _patch db-5.3.21-memp_stat-upstream-fix.patch
+  # fix for mutexes not being released provided by upstream (rhbz#1277887)
+  _patch db-5.3.21-mutex_leak.patch
+  # fix for overflowing hash variable inside bundled lemon
+  _patch db-5.3.28-lemon_hash.patch
+  # upstream patch adding the ability to recreate libdb's environment on version mismatch
+  # or when libpthread.so is modified (rhbz#1394862)
+  _patch db-5.3.28-condition_variable.patch
+  # additional changes to the upstream patch to address rhbz#1460003
+  _patch db-5.3.28-condition-variable-ppc.patch
+  # downstream patch to hotfix rhbz#1464033, sent upstream
+  _patch db-5.3.28-cwd-db_config.patch
+  _patch db-5.3.21-region-size-check.patch
+  # Patch sent upstream
+  _patch db-5.3.21-checkpoint-opd-deadlock.patch
+  _patch db-5.3.28-atomic_compare_exchange.patch
+  # CDB race (rhbz #1099509)
+  _patch db-5.3.21-cbd-race.patch
+  # rhbz#1608749 Patch sent upstream
+  # Expects libdb-5.3.21-mutex_leak.patch applied
+  _patch db-5.3.21-trickle_cpu.patch
+  # cve-2019-2708 fixed by mmuzila
+  _patch db-5.3.28_cve-2019-2708.patch
+  # Prevents high CPU usage
+  _patch db-5.3.28-mmap-high-cpu-usage.patch
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cd "${srcdir:?}/db-${pkgver}/build_unix" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/db-${pkgver}/build_unix directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ../dist/configure \
+    --prefix=/usr \
+    --enable-compat185 \
+    --enable-shared \
+    --enable-static \
+    --enable-cxx \
+    --enable-dbm \
+    --enable-stl
+
+  make LIBSO_LIBS=-lpthread
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "db-${pkgver}/build_unix"
+
+  rm -r "${pkgdir:?}/usr/docs"
+
+  install -Dm644 "db-${pkgver}/LICENSE" \
+    "${pkgdir}/usr/share/licenses/db"
+
+}

@@ -1,0 +1,62 @@
+pkgname=gawk+clang
+pkgver=5.1.1
+pkgrel=1
+pkgdesc="GNU version of awk"
+arch=('x86_64')
+url="https://www.gnu.org/software/gawk/"
+license=('GPL')
+groups=('base-devel')
+depends=('sh' 'glibc' 'mpfr')
+provides=('awk' 'gawk' "gawk=${pkgver}")
+conflicts=('gawk')
+source=("https://ftp.gnu.org/pub/gnu/gawk/gawk-${pkgver}.tar.gz"{,.sig})
+validpgpkeys=('D1967C63788713177D861ED7DF597815937EC0D2') # Arnold Robbins
+sha256sums=('6168d8d1dc8f74bd17d9dc22fa9634c49070f232343b744901da15fb4f06bffd'
+  'SKIP')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cd "${srcdir:?}/gawk-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gawk-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./configure \
+    --prefix=/usr \
+    --libexecdir=/usr/lib \
+    --sysconfdir=/etc \
+    --without-libsigsegv
+
+  make
+
+}
+
+check() {
+
+  make check -C "gawk-${pkgver}"
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "gawk-${pkgver}"
+
+}

@@ -1,0 +1,86 @@
+pkgname=mpfr+clang
+_pkgver=4.1.0
+_patchver=13
+pkgrel=2
+pkgver=${_pkgver}.p${_patchver}
+pkgdesc='Multiple-precision floating-point library'
+arch=(x86_64)
+url='https://www.mpfr.org/'
+license=('GPL3' 'LGPL3')
+provides=('mpfr' "mpfr=${pkgver}")
+conflicts=('mpfr')
+depends=('glibc' 'gmp')
+makedepends=('autoconf-archive')
+source=(
+  "https://ftp.gnu.org/gnu/mpfr/mpfr-${_pkgver}.tar.xz"{,.sig}
+  patches.diff # wget https://www.mpfr.org/mpfr-4.1.0/allpatches -O patches.diff
+  fix-128bit-float.patch
+)
+
+sha256sums=('0c98a3f1732ff6ca4ea690552079da9c597872d30e96ec28414ee23c95558a7f'
+  'SKIP'
+  '75af77904037442fcd3061a4fee2394194716c542e96989dcfac2445c842daf1'
+  '6b95eb2b396cfa90926b74ae8140930b743427d6dce6db8406f395efffdb1377')
+
+# NOTE: key holder contacted about unsafe key (2021-05-03)
+validpgpkeys=('07F3DBBECC1A39605078094D980C197698C3739D') # Vincent Lefevre <vincent@vinc17.net>
+
+_llvm=0
+
+prepare() {
+
+  cd "${srcdir:?}/mpfr-${_pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/mpfr-${_pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  patch -p1 -i "${srcdir:?}/patches.diff"
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+    patch -p1 -i "${srcdir:?}/fix-128bit-float.patch"
+  fi
+
+  autoreconf -fiv
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cd "${srcdir:?}/mpfr-${_pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/mpfr-${_pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./configure \
+    --prefix=/usr \
+    --disable-assert \
+    --disable-static \
+    --enable-thread-safe \
+    --enable-shared \
+    --enable-float128
+
+  make
+
+}
+
+check() {
+
+  make check -C "mpfr-${_pkgver}" || true
+  make check-exported-symbols -C "mpfr-${_pkgver}"
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "mpfr-${_pkgver}"
+
+}

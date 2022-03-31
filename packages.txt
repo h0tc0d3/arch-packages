@@ -9,6 +9,10 @@ libassuan
 libgcrypt
 python
 libaio
+libnet
+db
+argon2
+diffutils
 libnl
 lapack
 openblas
@@ -26,8 +30,13 @@ acl
 ncurses
 psmisc
 readline
+gdbm
 gdb
 bash
+m4
+gmp
+mpfr
+gawk
 findutils
 bzip2
 pcre2
@@ -36,6 +45,9 @@ keyutils
 libidn
 libcap-ng
 libxcrypt
+perl
+autoconf
+automake
 util-linux
 elfutils
 iproute2
@@ -251,6 +263,7 @@ zita-alsa-pcmi
 zita-ajbridge
 jack2
 systemd
+procps-ng
 hwloc
 openmpi
 fftw
