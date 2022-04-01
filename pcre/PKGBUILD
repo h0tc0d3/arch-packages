@@ -1,0 +1,80 @@
+pkgname=pcre+clang
+pkgver=8.45
+pkgrel=1
+pkgdesc='A library that implements Perl 5-style regular expressions'
+arch=('x86_64')
+url='https://www.pcre.org/'
+license=('BSD')
+provides=(pcre "pcre=${pkgver}")
+conflicts=(pcre)
+depends=('gcc-libs' 'readline' 'zlib' 'bzip2' 'bash')
+validpgpkeys=('45F68D54BBE23FB3039B46E59766E084FB0F43D8') # Philip Hazel
+source=("https://ftp.exim.org/pub/pcre/pcre-${pkgver}.tar.bz2"{,.sig})
+sha256sums=('4dae6fdcd2bb0bb6c37b5f97c33c2be954da743985369cddac3546e3218bffb8'
+  'SKIP')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/pcre-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/pcre-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  for src in "${source[@]}"; do
+    src="${src%%::*}"
+    src="${src##*/}"
+    [[ ${src} = *.patch ]] || continue
+    msg2 "Applying patch ${src}..."
+    patch -Np1 -i "${srcdir:?}/${src}"
+  done
+
+}
+
+build() {
+
+  cd "${srcdir:?}/pcre-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/pcre-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+  
+  ./configure \
+    --prefix=/usr \
+    --enable-unicode-properties \
+    --enable-pcre16 \
+    --enable-pcre32 \
+    --enable-jit \
+    --enable-pcregrep-libz \
+    --enable-pcregrep-libbz2 \
+    --enable-pcretest-libreadline
+
+  make
+
+}
+
+check() {
+
+  make -j1 check -C "pcre-${pkgver}"
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "pcre-${pkgver}"
+
+  install -Dm644 "pcre-${pkgver}/LICENCE" "${pkgdir:?}/usr/share/licenses/pcre/LICENSE"
+
+}

@@ -1,0 +1,91 @@
+pkgname=tpm2-tss+clang
+pkgver=3.2.0
+pkgrel=1
+pkgdesc='Implementation of the TCG Trusted Platform Module 2.0 Software Stack (TSS2)'
+arch=('x86_64')
+url='https://github.com/tpm2-software/tpm2-tss'
+license=('BSD')
+conflicts=(tpm2-tss)
+depends=('curl' 'json-c' 'openssl' 'libjson-c.so')
+makedepends=('cmocka' 'doxygen' 'libtpms')
+checkdepends=('iproute2' 'swtpm' 'uthash')
+provides=('libtss2-esys.so' 'libtss2-fapi.so' 'libtss2-mu.so' 'libtss2-rc.so'
+  'libtss2-sys.so' 'libtss2-tctildr.so' tpm2-tss "tpm2-tss=${pkgver}")
+backup=(
+  'etc/tpm2-tss/fapi-config.json'
+  'etc/tpm2-tss/fapi-profiles/P_ECCP256SHA256.json'
+  'etc/tpm2-tss/fapi-profiles/P_RSA2048SHA256.json'
+)
+options=('!emptydirs')
+source=(
+  "https://github.com/tpm2-software/tpm2-tss/releases/download/${pkgver}/tpm2-tss-${pkgver}.tar.gz"{,.asc}
+  'https://raw.githubusercontent.com/tpm2-software/tpm2-tss/e237e4d33cbf280292a480edd8ad061dcd3a37a2/lib/tss2-tcti-libtpms.map'
+)
+sha256sums=('48305e4144dcf6d10f3b25b7bccf0189fd2d1186feafd8cd68c6b17ecf0d7912'
+  'SKIP'
+  '41c37dc4b10b1e86023619150e5047739aeee93fd8f77315157d3eeb5fe6a981')
+validpgpkeys=(
+  'D6B4D8BAC7E0CC97DCD4AC7272E88B53F7A95D84' # Andreas Fuchs <andreas.fuchs@sit.fraunhofer.de>
+  '5B482B8E3E19DA7C978E1D016DE2E9078E1F50C1' # William Roberts (Bill Roberts) <william.c.roberts@intel.com>
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/tpm2-tss-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/tpm2-tss-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # Add file missing from release tarball (https://github.com/tpm2-software/tpm2-tss/issues/2313)
+  cp "${srcdir:?}/tss2-tcti-libtpms.map" lib
+
+}
+
+build() {
+
+  cd "${srcdir:?}/tpm2-tss-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/tpm2-tss-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --localstatedir=/var \
+    --with-runstatedir=/run \
+    --with-sysusersdir=/usr/lib/sysusers.d \
+    --with-tmpfilesdir=/usr/lib/tmpfiles.d \
+    --with-udevrulesprefix=60- \
+    --enable-unit \
+    --enable-integration
+
+  make
+
+}
+
+check() {
+
+  make check -C "tpm2-tss-${pkgver}"
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "tpm2-tss-${pkgver}"
+  install -Dm644 "tpm2-tss-${pkgver}/LICENSE" -t "${pkgdir:?}/usr/share/licenses/tpm2-tss"
+
+}

@@ -1,0 +1,64 @@
+pkgname=thin-provisioning-tools+clang
+pkgver=0.9.0
+pkgrel=1
+pkgdesc='Suite of tools for manipulating the metadata of the dm-thin device-mapper target'
+arch=('x86_64')
+url="https://github.com/jthornber/thin-provisioning-tools"
+license=('GPL3')
+provides=(thin-provisioning-tools "thin-provisioning-tools=${pkgver}")
+conflicts=(thin-provisioning-tools)
+depends=('expat' 'gcc-libs' 'libaio')
+makedepends=('boost')
+source=("thin-provisioning-tools-${pkgver}.tar.gz::https://github.com/jthornber/thin-provisioning-tools/archive/v${pkgver}.tar.gz")
+sha256sums=('a2508d9933ed8a3f6c8d302280d838d416668a1d914a83c4bd0fb01eaf0676e8')
+
+_llvm=0
+
+prepare() {
+
+  cd "${srcdir:?}/thin-provisioning-tools-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/thin-provisioning-tools-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+    sed -i "s/gcc/clang/g;s/g++/clang++/g" configure.ac
+  fi
+
+  autoreconf -vfi
+  autoconf
+
+}
+
+build() {
+
+  cd "${srcdir:?}/thin-provisioning-tools-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/thin-provisioning-tools-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --with-optimisation="${CFLAGS}"
+
+  make
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" \
+    BINDIR="${pkgdir:?}/usr/bin" \
+    MANDIR="${pkgdir:?}/usr/share/man install" \
+    -C "thin-provisioning-tools-${pkgver}"
+
+}

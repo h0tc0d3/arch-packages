@@ -1,0 +1,77 @@
+pkgname=ed+clang
+pkgver=1.18
+pkgrel=1
+pkgdesc="A POSIX-compliant line-oriented text editor"
+arch=('x86_64')
+license=('GPL')
+provides=(ed "ed=${pkgver}")
+conflicts=(ed)
+url="https://www.gnu.org/software/ed/ed.html"
+depends=('glibc' 'sh')
+options=('!emptydirs')
+validpgpkeys=('1D41C14B272A2219A739FA4F8FE99503132D7742') # Antonio Diaz Diaz
+source=("https://ftp.gnu.org/gnu/ed/ed-${pkgver}.tar.lz"{,.sig})
+sha256sums=('aca8efad9800c587724a20b97aa8fc47e6b5a47df81606feaba831b074462b4f'
+  'SKIP')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/ed-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/ed-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+    ./configure \
+      --prefix=/usr \
+      --bindir=/usr/bin \
+      --mandir=/usr/share/man \
+      --infodir=/usr/share/info \
+      CPPFLAGS="${CPPFLAGS}" \
+      CFLAGS="${CFLAGS}" \
+      LDFLAGS="${LDFLAGS}" \
+      CC=clang
+
+  else
+
+    ./configure \
+      --prefix=/usr \
+      --bindir=/usr/bin \
+      --mandir=/usr/share/man \
+      --infodir=/usr/share/info \
+      "CPPFLAGS=${CPPFLAGS}" \
+      "CFLAGS=${CFLAGS}" \
+      "LDFLAGS=${LDFLAGS}"
+
+  fi
+
+  make
+
+}
+
+check() {
+
+  make -C "ed-${pkgver}" check
+
+}
+
+package() {
+
+  make -C "ed-${pkgver}" "DESTDIR=${pkgdir:?}" install
+
+}

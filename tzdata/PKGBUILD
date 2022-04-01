@@ -1,0 +1,72 @@
+pkgname=tzdata+clang
+pkgver=2022a
+_tzcode=2022a
+_tzdata=2022a
+pkgrel=1
+pkgdesc="Sources for time zone and daylight saving time data"
+arch=('x86_64')
+provides=(tzdata "tzdata=${pkgver}")
+conflicts=(tzdata)
+url="https://www.iana.org/time-zones"
+license=('custom: public domain')
+options=('!emptydirs')
+source=(
+  "https://www.iana.org/time-zones/repository/releases/tzcode${_tzcode}.tar.gz"{,.asc}
+  "https://www.iana.org/time-zones/repository/releases/tzdata${_tzdata}.tar.gz"{,.asc})
+sha256sums=('f8575e7e33be9ee265df2081092526b81c80abac3f4a04399ae9d4d91cdadac7'
+  'SKIP'
+  'ef7fffd9f4f50f4f58328b35022a32a5a056b245c5cb3d6791dddb342f871664'
+  'SKIP')
+validpgpkeys=('7E3792A9D8ACF7D633BC1588ED97E90E62AA7E34') # Paul Eggert <eggert@cs.ucla.edu>
+
+_timezones=('africa' 'antarctica' 'asia' 'australasia'
+  'europe' 'northamerica' 'southamerica'
+  'etcetera' 'backward' 'factory')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+    sed -i "s:cc=\s*cc:cc= clang:g;s:AR=\s*ar:AR= llvm-ar:g" Makefile
+  fi
+
+  sed -i "s:sbin:bin:g;" Makefile
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  make LFLAGS="${LDFLAGS}" CFLAGS="${CFLAGS}"
+
+}
+
+package() {
+
+  # install tzcode stuff
+  make DESTDIR="${pkgdir:?}" install
+
+  # install tzdata stuff
+  ./zic -b fat -d "${pkgdir:?}/usr/share/zoneinfo" "${_timezones[@]}"
+  ./zic -b fat -d "${pkgdir:?}/usr/share/zoneinfo/posix" "${_timezones[@]}"
+  ./zic -b fat -d "${pkgdir:?}/usr/share/zoneinfo/right" -L leapseconds "${_timezones[@]}"
+  # This creates the posixrules file. We use New York because POSIX requires the daylight savings time rules to be in accordance with US rules.
+  ./zic -b fat -d "${pkgdir:?}/usr/share/zoneinfo" -p America/New_York
+  install -m644 -t "${pkgdir:?}/usr/share/zoneinfo" iso3166.tab leap-seconds.list zone1970.tab zone.tab SECURITY # zone.tab is depricated and will go soon
+
+  # cleanup
+  rm "${pkgdir:?}/etc/localtime"
+
+  # install license
+  install -Dm644 LICENSE "${pkgdir:?}/usr/share/licenses/tzdata/LICENSE"
+
+}

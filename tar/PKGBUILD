@@ -1,0 +1,73 @@
+pkgname=tar+clang
+pkgver=1.34
+pkgrel=1
+pkgdesc='Utility used to store, backup, and transport files'
+arch=('x86_64')
+url='https://www.gnu.org/software/tar/'
+license=('GPL3')
+provides=(tar "tar=${pkgver}")
+conflicts=(tar)
+depends=('glibc' 'acl' 'attr')
+options=('!emptydirs')
+validpgpkeys=('325F650C4C2B6AD58807327A3602B07F55D0C732') # Sergey Poznyakoff
+source=("https://ftp.gnu.org/gnu/tar/tar-${pkgver}.tar.xz"{,.sig})
+sha256sums=('63bebd26879c5e1eea4352f0d03c991f966aeb3ddeb3c7445c902568d5411d28'
+  'SKIP')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/tar-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/tar-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  for src in "${source[@]}"; do
+    src="${src%%::*}"
+    src="${src##*/}"
+    [[ ${src} = *.patch ]] || continue
+    msg2 "Applying patch ${src}..."
+    patch -Np1 -i "${srcdir:?}/${src}"
+  done
+
+}
+
+build() {
+
+  cd "${srcdir:?}/tar-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/tar-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --libexecdir=/usr/lib/tar
+
+  make
+
+}
+
+check() {
+
+  make check -C "tar-${pkgver}"
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "tar-${pkgver}"
+
+}

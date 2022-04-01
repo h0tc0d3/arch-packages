@@ -1,0 +1,59 @@
+pkgname=json-c+clang
+pkgver=0.15
+pkgrel=3
+pkgdesc="A JSON implementation in C"
+url="https://github.com/json-c/json-c/wiki"
+license=(MIT)
+arch=(x86_64)
+depends=(glibc)
+makedepends=(git cmake)
+provides=(libjson-c.so json-c "json-c=${pkgver}")
+conflicts=(json-c)
+_commit=9021cdcdd01fc9dbcbe1f06391848c2ac915212f # tags/json-c-0.15-20200726^0
+source=("git+https://github.com/json-c/json-c#commit=${_commit}")
+sha256sums=('SKIP')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -S json-c -B build \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=/usr/lib \
+    -DBUILD_STATIC_LIBS=OFF \
+    -DENABLE_THREADING=ON \
+    -DENABLE_RDRAND=ON
+
+  cmake --build build
+
+}
+
+check() {
+
+  cmake --build build --target test
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+  install -Dt "${pkgdir:?}/usr/share/licenses/$pkgname" -m644 "json-c/COPYING"
+
+}
