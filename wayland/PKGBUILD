@@ -1,13 +1,13 @@
 pkgbase=wayland+clang
 pkgname=(wayland+clang wayland-docs+clang)
 pkgver=1.20.0
-pkgrel=1
+pkgrel=2
 pkgdesc='A computer display server protocol'
 arch=('x86_64')
 url='https://wayland.freedesktop.org/'
 license=('MIT')
 depends=('glibc' 'libffi' 'expat' 'libxml2')
-makedepends=('meson' 'ninja' 'libxslt' 'doxygen' 'xmlto' 'graphviz' 'docbook-xsl')
+makedepends=('meson' 'libxslt' 'doxygen' 'xmlto' 'graphviz' 'docbook-xsl')
 validpgpkeys=(
   'C7223EBE4EF66513B892598911A30156E0E67611' # Bryce Harrington
   'C0066D7DB8E9AC6844D728715E54498E697F11D7' # Derek Foreman
@@ -40,22 +40,23 @@ build() {
     -D b_lto=true ${_extra_lto_flag} \
     -D b_pie=true
 
-  ninja -C build
+  meson compile -C build
 
 }
 
 check() {
 
-  ninja -C build test
+  meson test -C build --print-errorlogs
 
 }
 
 package_wayland+clang() {
 
-  provides=(wayland "wayland=${pkgver}")
+  provides=(wayland "wayland=${pkgver}" libwayland-{client,cursor,egl,server}.so)
   conflicts=(wayland)
 
-  DESTDIR="${pkgdir:?}" ninja -C build install
+  meson install -C build --destdir "${pkgdir:?}"
+
   mkdir -p docs/share
   mv "${pkgdir:?}/usr/share/"{doc,man} docs/share
   install -Dm 644 "wayland-${pkgver}/COPYING" "${pkgdir:?}/usr/share/licenses/${pkgname:?}/COPYING"

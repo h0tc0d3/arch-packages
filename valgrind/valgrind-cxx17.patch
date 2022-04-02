@@ -1,0 +1,17 @@
+diff --git a/memcheck/tests/cxx17_aligned_new.cpp b/memcheck/tests/cxx17_aligned_new.cpp
+index 6f574d0..0eeec2b 100644
+--- a/memcheck/tests/cxx17_aligned_new.cpp
++++ b/memcheck/tests/cxx17_aligned_new.cpp
+@@ -22,10 +22,10 @@ int main() {
+ 
+     // sized versions
+     myClass = new MyClass();
+-    operator delete(myClass, 64U, std::align_val_t(64U));
++    operator delete(myClass, std::align_val_t(64U));
+ 
+     myClass5 = new MyClass[5];
+-    operator delete [](myClass5, 320U, std::align_val_t(64U));
++    operator delete [](myClass5, std::align_val_t(64U));
+ 
+     MyClass* myClassNt = new (std::nothrow) MyClass;
+     operator delete(myClassNt, std::align_val_t(64U),  std::nothrow);

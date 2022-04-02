@@ -316,6 +316,10 @@ python-scipy
 python-pandas
 python-numexpr
 python-matplotlib
+rizin
+rz-cutter
+rz-ghidra
+valgrind
 arrayfire
 -python-arrayfire
 krita

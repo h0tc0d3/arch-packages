@@ -1,0 +1,84 @@
+pkgname=rz-ghidra+clang
+pkgver=0.3.0
+pkgrel=3
+pkgdesc='Deep ghidra decompiler integration for rizin and rz-cutter'
+url='https://github.com/rizinorg/rz-ghidra'
+arch=('x86_64')
+license=('LGPL3')
+provides=(rz-ghidra "rz-ghidra=${pkgver}") \
+conflicts=(rz-ghidra)
+depends=('rizin' 'glibc')
+makedepends=('git' 'cmake' 'qt5-base')
+_commit=81090e68ec17ab4e9c9963c5e15638665c87696c
+_cuttercommit=f5a7a79ee8efc04514189565b1d319c7a39bf0de
+source=(
+  "git+https://github.com/rizinorg/rz-ghidra.git#commit=${_commit:?}"
+  "git+https://github.com/rizinorg/cutter#commit=${_cuttercommit:?}"
+  "rizin-ghidra::git+https://github.com/rizinorg/ghidra.git"
+  "git+https://github.com/zeux/pugixml.git"
+  fix-build.patch
+  crc32.h
+)
+sha256sums=('SKIP'
+  'SKIP'
+  'SKIP'
+  'SKIP'
+  '0894cf0274605bb60f978f9eb7dd9fbc5be87b04218597fa452a8b1ea7ad297b'
+  '0d80b4966b3d26bd75c2ea4dcffb9ef916327d06400edd9ef3f52767d1e8dbb4')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/rz-ghidra" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/rz-ghidra directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  git submodule init
+  git config submodule."third-party/pugixml".url "${srcdir:?}/pugixml"
+  git config submodule."ghidra/ghidra".url "${srcdir:?}/rizin-ghidra"
+  git submodule update --recursive
+
+  patch -p1 -i "${srcdir:?}/fix-build.patch"
+
+  cp -v "${srcdir:?}/crc32.h" \
+    ghidra/ghidra/Ghidra/Features/Decompiler/src/decompile/cpp/crc32.hh
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -B build -S rz-ghidra \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_CUTTER_PLUGIN=ON \
+    -DBUILD_SLASPECS=ON \
+    -DCUTTER_SOURCE_DIR="${srcdir:?}/cutter"
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+  # move shared library into RZ_LIBR_PLUGINS
+  rzversion=$(rizin -version | grep rizin | sed -E 's/rizin ([0-9\.]+) .*/\1/')
+  install -d "${pkgdir:?}/usr/lib/rizin/${rzversion}"
+  mv "${pkgdir:?}/usr/share/rizin/plugins/"*.so "${pkgdir:?}/usr/lib/rizin/${rzversion}"
+  ln -s "/usr/lib/rizin/${rzversion}" "${pkgdir:?}/usr/lib/rizin/last"
+
+}

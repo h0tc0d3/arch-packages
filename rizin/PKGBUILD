@@ -1,0 +1,79 @@
+pkgname=rizin+clang
+pkgver=0.3.4
+pkgrel=1
+pkgdesc='Open-source tools to disasm, debug, analyze and manipulate binary files'
+url='https://rizin.re'
+arch=('x86_64')
+license=('GPL3' 'LGPL3')
+provides=(rizin "rizin=${pkgver}")
+conflicts=('rizin')
+depends=(
+  'sh' 'capstone' 'libcapstone.so' 'openssl' 'libzip' 'zlib' 'lz4' 'xxhash'
+  'libxxhash.so' 'file' 'libuv' 'tree-sitter' 'libtree-sitter.so'
+  'libzip.so' 'libmagic.so')
+makedepends=('meson' 'ninja' 'python' 'git')
+optdepends=('rz-ghidra: ghidra decompiler plugin')
+options=('!emptydirs')
+_commit=2373c53880e017be86afed5454bca5b5017b920e
+source=(
+  "rizin::git+https://github.com/rizinorg/rizin.git#commit=${_commit}"
+  fix-build.patch
+)
+sha256sums=('SKIP'
+  '9662a4083a5b96266c958ceddf3a61dd820b3ee4462a739830268d7df5eb4616')
+
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+  cd "${srcdir:?}/rizin" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/rizin directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  patch -p1 -i "${srcdir:?}/fix-build.patch"
+
+}
+
+build() {
+
+  CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
+
+  meson setup rizin build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true \
+    -D use_sys_capstone=enabled \
+    -D use_capstone_version=v4 \
+    -D use_sys_magic=enabled \
+    -D use_sys_libzip=enabled \
+    -D use_sys_zlib=enabled \
+    -D use_sys_lz4=enabled \
+    -D use_sys_xxhash=enabled \
+    -D use_sys_openssl=enabled \
+    -D use_sys_tree_sitter=enabled \
+    -D use_libuv=true \
+    -D use_webui=true \
+    -D local=disabled
+
+  ninja -C build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" ninja -C build install
+  install -d "${pkgdir:?}/usr/share/doc/rizin"
+  cp -r "${srcdir:?}/rizin/doc/"* "${pkgdir:?}/usr/share/doc/rizin"
+
+}
