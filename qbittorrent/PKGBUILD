@@ -1,0 +1,77 @@
+pkgbase=qbittorrent+clang
+pkgname=(qbittorrent+clang qbittorrent-nox+clang)
+pkgver=4.4.2
+pkgrel=1
+arch=(x86_64)
+url='https://www.qbittorrent.org'
+license=(custom GPL)
+depends=(libtorrent-rasterbar qt5-base)
+makedepends=(cmake boost qt5-tools qt5-svg)
+optdepends=('python: needed for torrent search tab')
+source=("https://downloads.sourceforge.net/sourceforge/qbittorrent/qbittorrent-${pkgver}.tar.xz"{,.asc})
+sha256sums=('efa580924e96605bae916b9a8ae1f3fce82a5130647ae41d74d689761262463d'
+  'SKIP')
+validpgpkeys=('D8F3DA77AAC6741053599C136E4A2D025B7CC9A2') # sledgehammer999 <sledgehammer999@qbittorrent.org>
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -B build \
+    -S "qbittorrent-${pkgver}" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DQT6=OFF
+
+  cmake --build build
+
+  cmake -B build-nox \
+    -S "qbittorrent-${pkgver}" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DQT6=OFF \
+    -DGUI=OFF \
+    -DSYSTEMD=ON
+
+  cmake --build build-nox
+
+}
+
+package_qbittorrent+clang() {
+
+  pkgdesc='An advanced BitTorrent client programmed in C++, based on Qt toolkit and libtorrent-rasterbar'
+  depends+=(qt6-svg hicolor-icon-theme)
+  provides=('qbittorrent' "qbittorrent=${pkgver}")
+  conflicts=('qbittorrent' 'qbittorrent-nox' 'qbittorrent-nox+clang')
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+  install -Dm644 qbittorrent-${pkgver}/COPYING -t "${pkgdir:?}/usr/share/licenses/qbittorrent"
+
+}
+
+package_qbittorrent-nox+clang() {
+
+  pkgdesc='An advanced BitTorrent client programmed in C++, based on Qt toolkit and libtorrent-rasterbar, w/o gui'
+  provides=('qbittorrent-nox' "qbittorrent-nox=${pkgver}")
+  conflicts=('qbittorrent' 'qbittorrent-nox' 'qbittorrent+clang')
+
+  DESTDIR="${pkgdir:?}" cmake --install build-nox
+  install -Dm644 "qbittorrent-${pkgver}/COPYING" -t "${pkgdir:?}/usr/share/licenses/qbittorrent-nox"
+
+}

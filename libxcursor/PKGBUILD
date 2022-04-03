@@ -1,0 +1,68 @@
+pkgname=libxcursor+clang
+pkgver=1.2.1
+pkgrel=1
+pkgdesc="X cursor management library"
+arch=(x86_64)
+url="https://xorg.freedesktop.org/"
+license=('custom')
+provides=("libxcursor" "libxcursor=${pkgver}")
+conflicts=("libxcursor")
+depends=('libxfixes' 'libxrender')
+optdepends=('gnome-themes-standard: fallback icon theme')
+makedepends=('xorg-util-macros')
+backup=(usr/share/icons/default/index.theme)
+source=(
+  "https://xorg.freedesktop.org/releases/individual/lib/libXcursor-${pkgver}.tar.xz"{,.sig}
+  index.theme
+)
+sha256sums=('46c143731610bafd2070159a844571b287ac26192537d047a39df06155492104'
+  'SKIP'
+  '7904b438ff3b0d50e70bc875b20e77acf75a0fd69ef09161d3995e38e6d9b786')
+#validpgpkeys=('C41C985FDCF1E5364576638B687393EE37D128F8') # "Matthieu Herrb <matthieu.herrb@laas.fr>"
+validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E') # "Alan Coopersmith <alan.coopersmith@oracle.com>"
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libXcursor-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir}/libXcursor-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --disable-static
+
+  make
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "libXcursor-${pkgver}"
+
+  install -m755 -d "${pkgdir:?}/usr/share/icons/default"
+  install -m644 "${srcdir:?}/index.theme" "${pkgdir:?}/usr/share/icons/default/"
+
+  install -m755 -d "${pkgdir:?}/usr/share/licenses"
+  install -m644 "libXcursor-${pkgver}/COPYING" "${pkgdir:?}/usr/share/licenses/${pkgname}"
+
+}

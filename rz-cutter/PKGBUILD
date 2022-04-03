@@ -1,13 +1,13 @@
 pkgname=rz-cutter+clang
 pkgver=2.0.5
-pkgrel=2
+pkgrel=3
 pkgdesc='Qt and C++ GUI for rizin reverse engineering framework'
 url='https://github.com/rizinorg/cutter'
 arch=('x86_64')
 license=('GPL3')
 provides=(rz-cutter "rz-cutter=${pkgver}")
 conflicts=(rz-cutter)
-depends=('rizin' 'capstone' 'qt5-base' 'qt5-svg' 'qt5-webengine' 'icu' 'python' 'jupyter'
+depends=('rizin' 'capstone' 'qt5-base' 'qt5-svg' 'qt5-webengine' 'icu' 'python'
   'pyside2' 'python-shiboken2' 'graphviz' 'syntax-highlighting')
 makedepends=('git' 'cmake' 'ninja' 'shiboken2' 'qt5-tools')
 optdepends=('rz-ghidra: ghidra decompiler plugin')
@@ -48,7 +48,7 @@ build() {
     LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
-  
+
   cmake -B build -S cutter \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_BUILD_TYPE=Release \

@@ -1,6 +1,6 @@
 pkgname=libinput+clang
 pkgver=1.20.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Input device management and event handling library"
 url="https://www.freedesktop.org/wiki/Software/libinput/"
 arch=(x86_64)
@@ -9,10 +9,12 @@ provides=('libinput' "libinput=${pkgver}")
 conflicts=('libinput')
 depends=('mtdev' 'systemd' 'libevdev' 'libwacom')
 # upstream doesn't recommend building docs
-makedepends=('gtk4' 'meson') # 'doxygen' 'graphviz' 'python-sphinx' 'python-recommonmark'
-optdepends=('gtk4: libinput debug-gui'
+makedepends=('gtk4' 'meson' 'wayland-protocols' 'check') # 'doxygen' 'graphviz' 'python-sphinx' 'python-recommonmark'
+optdepends=(
+  'gtk4: libinput debug-gui'
   'python-pyudev: libinput measure'
-  'python-libevdev: libinput measure')
+  'python-libevdev: libinput measure'
+)
 source=(
   #"https://freedesktop.org/software/libinput/libinput-${pkgver}.tar.xz"{,.sig}
   "https://gitlab.freedesktop.org/libinput/libinput/-/archive/${pkgver}/libinput-${pkgver}.tar.bz2"
@@ -44,16 +46,21 @@ build() {
     -D b_lto=true ${_extra_lto_flag} \
     -D b_pie=true \
     -D udev-dir=/usr/lib/udev \
-    -D tests=false \
     -D documentation=false
 
   meson compile -C build
 
 }
 
+check() {
+
+  meson test -C build --print-errorlogs
+
+}
+
 package() {
 
-  DESTDIR="${pkgdir:?}" meson install -C build
+  meson install -C build --destdir "${pkgdir:?}"
 
   install -Dvm644 libinput-${pkgver}/COPYING \
     "${pkgdir:?}/usr/share/licenses/${pkgname}/LICENSE"

@@ -149,6 +149,7 @@ libxpm
 libxmu
 libxaw
 libxrender
+libxcursor
 libxft
 libxrandr
 libepoxy
@@ -223,6 +224,8 @@ lm_sensors
 jemalloc
 gperftools
 openssl
+libtorrent-rasterbar
+qbittorrent
 libarchive
 libevent
 libsasl
@@ -279,6 +282,7 @@ systemd
 procps-ng
 hwloc
 openmpi
+boost
 fftw
 p11-kit
 xf86-video-amdgpu

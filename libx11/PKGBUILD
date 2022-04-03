@@ -1,5 +1,5 @@
 pkgname=libx11+clang
-pkgver=1.7.4
+pkgver=1.7.5
 pkgrel=1
 pkgdesc="X11 client-side library"
 arch=(x86_64)
@@ -12,7 +12,7 @@ depends=('libxcb' 'xorgproto')
 makedepends=('xorg-util-macros' 'xtrans')
 license=('custom')
 source=("https://xorg.freedesktop.org/releases/individual/lib/libX11-${pkgver}.tar.xz"{,.sig})
-sha256sums=('0e7d48bfa0b0ee5705d14fe140cf4310744ed131f0a6241b7cf03db06000fe51'
+sha256sums=('5a1847e2e2c248e1a203a24a1338a5586d6f48472eac58f6f08539110a965151'
   'SKIP')
 validpgpkeys=(
   #'4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E' # Alan Coopersmith <alanc@freedesktop.org>
