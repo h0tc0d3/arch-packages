@@ -3,6 +3,6 @@ post_install() {
     echo -n "Creating X fontdir indices..."
     find /usr/share/fonts -mindepth 1 -path /usr/share/fonts/encodings -prune \
       -o -type d -printf '%p/\n' | /usr/share/libalpm/scripts/xorg-mkfontscale
-    echo " done."
+    echo "Done"
   fi
 }

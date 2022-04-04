@@ -1,9 +1,9 @@
-#!/bin/bash
+#!/usr/bin/bash
 
-sort -r | while read -r d; do
-  [[ -d $d ]] || continue
-  mkfontscale "$d"
-  mkfontdir "$d"
-  find "$d"fonts.{scale,dir} -maxdepth 0 -size -3c -delete
-  rmdir --ignore-fail-on-non-empty "$d"
+sort -r | while read -r dir; do
+  if [[ -d ${dir} ]]; then
+    find "${dir}" \( -name fonts.scale -o -name fonts.dir \) -type f -maxdepth 0 -delete
+    mkfontscale "${dir}"
+    mkfontdir "${dir}"
+  fi
 done

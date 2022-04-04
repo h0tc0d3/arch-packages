@@ -1,6 +1,6 @@
 pkgname=xorg-mkfontscale+clang
-pkgver=1.2.1
-pkgrel=2
+pkgver=1.2.2
+pkgrel=1
 pkgdesc="Create an index of scalable font files for X"
 arch=(x86_64)
 url="https://xorg.freedesktop.org/"
@@ -12,13 +12,13 @@ groups=('xorg-apps' 'xorg')
 provides=('xorg-mkfontscale' "xorg-mkfontscale=${pkgver}" 'xorg-mkfontdir')
 conflicts=('xorg-mkfontscale' 'xorg-mkfontdir')
 replaces=('xorg-mkfontdir')
-source=("https://xorg.freedesktop.org/archive/individual/app/mkfontscale-${pkgver}.tar.bz2"{,.sig}
+source=("https://xorg.freedesktop.org/archive/individual/app/mkfontscale-${pkgver}.tar.xz"{,.sig}
   xorg-mkfontscale.hook
   xorg-mkfontscale.script)
-sha512sums=('4d243160e1f7f8dfa6a8f53349c1a42a55fc99426455ebdef58352c5e951fce8b4f1fbd1061a76c9a148095b002eac372db1ae5e2647d2ccb4886635b317b18c'
+sha256sums=('8ae3fb5b1fe7436e1f565060acaa3e2918fe745b0e4979b5593968914fe2d5c4'
   'SKIP'
-  '3c42bd72d88200a63159e84f8b04045aaf5c176ef98711a4196fad92a96467103368212e13571a8eeef929b2c7affe6c40797f67596fccc955750dcf7c1b3646'
-  '2a53d38c85b962eaee534f6f3fad4122412a7200c6787fd8216eb191904e2e3727400606a73d6f09017016f6c1360e5148afbb8fbe16e35c5e5cd55dec635387')
+  'bce03fee6597504bae05a9812bbd105c0bb7e99f90a115a1ff03aa2dc86ee1d1'
+  '274310baa52dc4d4627b10ee6aff1460ce83d8e4929000278dc7d7cd4242eb94')
 validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E') # Alan Coopersmith <alan.coopersmith@oracle.com>
 
 _llvm=0

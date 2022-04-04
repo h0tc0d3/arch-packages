@@ -1,6 +1,6 @@
 pkgname=xorg-setxkbmap+clang
-pkgver=1.3.2
-pkgrel=2
+pkgver=1.3.3
+pkgrel=1
 pkgdesc='Set the keyboard using the X Keyboard Extension'
 url='https://xorg.freedesktop.org/'
 license=('custom')
@@ -9,8 +9,8 @@ conflicts=('xorg-setxkbmap')
 arch=('x86_64')
 depends=('libxkbfile')
 makedepends=('xorg-util-macros')
-source=("${url}/releases/individual/app/setxkbmap-${pkgver}.tar.bz2"{,.sig})
-sha512sums=('bfa8015dee0d8d3fdbbd89afbd71c8606ce168d6edca8521d5ed05a00fecbea39bc4bfcce84b71458bdeb34c60bd80a5df27e0691ccee3966443ecdc937faf38'
+source=("https://xorg.freedesktop.org/releases/individual/app/setxkbmap-${pkgver}.tar.xz"{,.sig})
+sha256sums=('b560c678da6930a0da267304fa3a41cc5df39a96a5e23d06f14984c87b6f587b'
   'SKIP')
 validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E') # Alan Coopersmith <alan.coopersmith@oracle.com>
 groups=('xorg-apps' 'xorg')
