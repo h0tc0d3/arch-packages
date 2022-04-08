@@ -271,6 +271,7 @@ curl
 tpm2-tss
 sqlite
 gnupg
+gpgme
 libgit2
 mpv
 speexdsp

@@ -1,0 +1,116 @@
+pkgbase=gpgme+clang
+pkgname=(gpgme+clang qgpgme+clang python-gpgme+clang)
+pkgver=1.17.1
+pkgrel=1
+_python_ver=3.10
+pkgdesc='A C wrapper library for GnuPG'
+arch=('x86_64')
+url='https://www.gnupg.org/related_software/gpgme/'
+license=('LGPL')
+makedepends=('libgpg-error' 'gnupg' 'qt5-base' 'python' 'swig')
+validpgpkeys=('6DAA6E64A76D2840571B4902528897B826403ADA') # Werner Koch (dist signing 2020)
+source=(
+  "https://www.gnupg.org/ftp/gcrypt/gpgme/gpgme-${pkgver}.tar.bz2"{,.sig}
+  python310.patch
+)
+sha256sums=('711eabf5dd661b9b04be9edc9ace2a7bc031f6bd9d37a768d02d0efdef108f5f'
+  'SKIP'
+  '5de2f6bcb6b30642d0cbc3fbd86803c9460d732f44a526f44cedee8bb78d291a')
+
+_llvm=1
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  patch -d "gpgme-${pkgver}" -Np1 -i "${srcdir:?}/python310.patch"
+
+}
+
+build() {
+
+  cd "${srcdir:?}/gpgme-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir}/gpgme-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --disable-fd-passing \
+    --disable-static \
+    --disable-gpgsm-test
+
+  make
+
+  # ensure reproducibility of .pyc files
+  touch -d "@$SOURCE_DATE_EPOCH" "lang/python/version.py"
+  touch -d "@$SOURCE_DATE_EPOCH" "lang/python/python${_python_ver}-gpg/lib.linux-x86_64-${_python_ver}/gpg/gpgme.py"
+
+  # .pyc files will be created if check() is used - generate them here
+
+}
+
+check() {
+
+  cd "${srcdir:?}/gpgme-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir}/gpgme-${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  # this test fails with gnupg (FS#66572)
+  sed -i 's#"t-keylist-secret",##' tests/json/t-json.c
+
+  make check
+
+  # ensure reproducibilty whether test-suite is run or not
+  find . -name *.pyc -exec rm {} +
+
+}
+
+package_gpgme+clang() {
+
+  depends=('libgpg-error' 'gnupg>=2')
+  options+=('!emptydirs')
+  provides=('libgpgme.so' 'libgpgmepp.so' gpgme "gpgme=${pkgver}")
+  conflicts=(gpgme)
+
+  make DESTDIR="${pkgdir:?}" install -C "gpgme-${pkgver}"
+
+  # split qgpgme
+  rm -r "${pkgdir:?}/usr/include/"{qgpgme,QGpgME}/
+  rm -r "${pkgdir:?}/usr/lib/"{cmake/QGpgme/,libqgpgme.*}
+  rm -r "${pkgdir:?}/usr/lib/python"*
+
+}
+
+package_qgpgme+clang() {
+
+  pkgdesc="Qt bindings for GPGme"
+  depends=('gpgme' 'qt5-base')
+  provides=(qgpgme "qgpgme=${pkgver}")
+  conflicts=(qgpgme)
+
+  make DESTDIR="${pkgdir:?}" install -C "gpgme-${pkgver}/lang/qt"
+
+}
+
+package_python-gpgme+clang() {
+
+  pkgdesc="Python bindings for GPGme"
+  depends=('gpgme' 'python')
+  provides=(python-gpgme "python-gpgme=${pkgver}")
+  conflicts=(python-gpgme)
+
+  make DESTDIR="${pkgdir:?}" install -C "gpgme-${pkgver}/lang/python"
+
+}

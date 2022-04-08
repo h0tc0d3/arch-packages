@@ -1,6 +1,6 @@
 pkgname=neomutt+clang
-pkgver=20211029
-pkgrel=2
+pkgver=20220408
+pkgrel=1
 pkgdesc='A version of mutt with added features'
 url='https://neomutt.org/'
 license=('GPL')
@@ -17,7 +17,7 @@ makedepends=('git' 'gnupg' 'libxslt' 'docbook-xsl' 'w3m')
 source=("neomutt-${pkgver}.tar.gz::https://github.com/neomutt/neomutt/archive/${pkgver}.tar.gz"
   "neomutt-${pkgver}.tar.gz.sig::https://github.com/neomutt/neomutt/releases/download/${pkgver}/${pkgver}.tar.gz.sig"
   "default-ca-certificates.patch")
-sha256sums=('08245cfa7aec80b895771fd1adcbb7b86e9c0434dfa64574e3c8c4d692aaa078'
+sha256sums=('bb138adb09b1f164fe690749e991a5505bf4f50b6ad478ffb085c609d5617cc7'
   'SKIP'
   '571716b8979e9b43328416c3c56eff228b6c58355d7c080b8987ea89c6360776')
 validpgpkeys=('86C2397270DD7A561263CA4E5FAF0A6EE7371805') # Richard Russon (flatcap) <rich@flatcap.org>
