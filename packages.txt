@@ -159,6 +159,9 @@ libxshmfence
 libva
 libvdpau
 libva-vdpau-driver
+glu
+freeglut
+glfw-x11
 xorg-server
 kwayland
 kwayland-server
@@ -187,6 +190,7 @@ kdeclarative
 kcmutils
 kinit
 libqalculate
+qalculate-qt
 plasma-framework
 plasma-workspace
 imath

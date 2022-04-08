@@ -1,0 +1,88 @@
+pkgbase=glfw+clang
+pkgname=('glfw-x11+clang' 'glfw-wayland+clang' 'glfw-doc+clang')
+pkgver=3.3.7
+pkgrel=1
+arch=('x86_64')
+url="https://www.glfw.org/"
+license=('custom:ZLIB')
+makedepends=('mesa' 'cmake' 'doxygen' 'vulkan-headers' 'vulkan-icd-loader'
+  'extra-cmake-modules' 'wayland-protocols' 'libxi' 'libxrandr'
+  'libxcursor' 'libxkbcommon' 'libxinerama')
+source=("glfw-${pkgver}.tar.gz::https://github.com/glfw/glfw/archive/${pkgver}.tar.gz")
+sha256sums=('fd21a5f65bcc0fc3c76e0f8865776e852de09ef6fbc3620e09ce96d2b2807e04')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -S "glfw-${pkgver}" -B build-x11 \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DBUILD_SHARED_LIBS=ON
+
+  cmake --build build-x11
+  cmake --build build-x11 --target docs
+
+  cmake "glfw-${pkgver}" -B build-wayland \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DBUILD_SHARED_LIBS=ON \
+    -DGLFW_USE_WAYLAND=ON
+
+  cmake --build build-wayland
+
+}
+
+package_glfw-x11+clang() {
+
+  pkgdesc="A free, open source, portable framework for graphical application development (x11)"
+  depends=('libxi' 'libxrandr' 'libxinerama' 'libxcursor' 'libgl')
+  replaces=('glfw')
+  conflicts=('glfw' 'glfw-x11')
+  provides=("glfw=${pkgver}" "glfw-x11=${pkgver}")
+
+  DESTDIR="${pkgdir:?}" cmake --install build-x11
+
+  install -Dm644 "glfw-${pkgver}/LICENSE.md" "${pkgdir:?}/usr/share/licenses/glfw-x11/LICENSE.md"
+
+}
+
+package_glfw-wayland+clang() {
+
+  pkgdesc="A free, open source, portable framework for graphical application development (wayland)"
+  depends=('wayland' 'libxkbcommon' 'libgl')
+  conflicts=('glfw' 'glfw-wayland')
+  provides=("glfw=${pkgver}" "glfw-wayland=${pkgver}")
+
+  DESTDIR="${pkgdir:?}" cmake --install build-wayland
+
+  install -Dm644 "glfw-${pkgver}/LICENSE.md" "${pkgdir:?}/usr/share/licenses/glfw-wayland/LICENSE.md"
+
+}
+
+package_glfw-doc+clang() {
+
+  conflicts=('glfw-doc')
+  provides=("glfw-doc=${pkgver}")
+  pkgdesc="Set of HTML documentation for GLFW"
+
+  mkdir -p "${pkgdir:?}/usr/share/doc/glfw/"
+  cp -r "build-x11/docs/html" "${pkgdir}/usr/share/doc/glfw"
+
+}

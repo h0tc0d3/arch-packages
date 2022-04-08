@@ -1,5 +1,5 @@
 pkgname=qt5-wayland+clang
-pkgver=5.15.3+kde+r40
+pkgver=5.15.3+kde+r41
 pkgrel=1
 arch=('x86_64')
 url='https://www.qt.io'
@@ -10,7 +10,7 @@ pkgdesc='Provides APIs for Wayland'
 depends=('qt5-declarative' 'libxcomposite')
 makedepends=('vulkan-headers' 'git')
 groups=('qt' 'qt5')
-_commit=118674630cdb5933e66a8b4415afe7c716ad4662
+_commit=a06fde8dae162166435833fca7844e2695e8480b
 source=("git+https://invent.kde.org/qt/qt/qtwayland#commit=${_commit}")
 sha256sums=('SKIP')
 

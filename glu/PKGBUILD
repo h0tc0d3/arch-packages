@@ -1,0 +1,74 @@
+pkgname=glu+clang
+pkgver=9.0.2
+pkgrel=2
+pkgdesc="Mesa OpenGL Utility library"
+arch=('x86_64')
+url="https://cgit.freedesktop.org/mesa/glu/"
+license=('LGPL')
+provides=('glu' "glu=${pkgver}")
+conflicts=('glu')
+depends=('libgl')
+makedepends=('meson')
+source=("https://mesa.freedesktop.org/archive/glu/glu-${pkgver}.tar.xz"{,.sig}
+  0001-pkgconfig-Depend-on-opengl-when-built-with-libglvnd.patch
+  0002-pkgconfig-Drop-unneeded-lines-from-autotools-build.patch
+  0003-pkgconfig-meson-build-should-match-autotools-require.patch)
+sha256sums=('6e7280ff585c6a1d9dfcdf2fca489251634b3377bfc33c29e4002466a38d02d4'
+  'SKIP'
+  'c3342074c7fbfb6a3e7f82cbdc4bde23177409dc0ae6b5ee1438bd878a575c8a'
+  'a165233110bd5fd8436da7958e0dfd1dd91d80453aef342ca820df38bf5aadb1'
+  'e1d45a83d58a530033f41e32504fd4efebd24353ad070c035d2b321c6f2ad3ae')
+validpgpkeys=('3BB639E56F861FA2E86505690FDD682D974CA72A') # "Matt Turner <mattst88@gmail.com>"
+
+_extra_lto_flag=""
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -d "glu-${pkgver}" -p1 -i "${srcdir:?}/${1}"
+
+}
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+  # merged upstream
+  _patch 0001-pkgconfig-Depend-on-opengl-when-built-with-libglvnd.patch
+  _patch 0002-pkgconfig-Drop-unneeded-lines-from-autotools-build.patch
+  _patch 0003-pkgconfig-meson-build-should-match-autotools-require.patch
+
+}
+
+build() {
+
+  meson setup "glu-${pkgver}" build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true \
+    -D default_library=shared
+
+  meson compile -C build
+
+}
+
+check() {
+
+  meson test -C build --print-errorlogs
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" meson install -C build
+
+}

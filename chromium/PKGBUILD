@@ -1,5 +1,5 @@
 pkgname=chromium+clang
-pkgver=100.0.4896.60
+pkgver=100.0.4896.75
 pkgrel=1
 _launcher_ver=8
 _gcc_patchset=4
@@ -34,8 +34,9 @@ source=(
   chromium-InkDropHost-crash.patch
   webcodecs-stop-using-AudioOpusEncoder.patch
   chromium-gtk4-build.patch
+  webrtc-check-existence-of-cursor-metadata.patch
 )
-sha256sums=('0e5ea5f3061ad090cf6bd57ca037496d95ea8956de021aff902f7d0ded7bffdc'
+sha256sums=('244ed352dfaa1ab6b1f0877c4884fd17aa7d7133fa52f129a9fb01325ea0c0c0'
   '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
   'a6120e7d4eb5e131b87b6ab3b922e0c6cd78e15501e54cfb2019875173688d80'
   '70a2805a63df15817a3435e983c0350c5d04ff62deffd8214cbb040b904f54a5'
@@ -47,7 +48,8 @@ sha256sums=('0e5ea5f3061ad090cf6bd57ca037496d95ea8956de021aff902f7d0ded7bffdc'
   '5690089b8bd6946dfa975b8022531213b882b3396a3c968eeef9836b131725b7'
   '04bba6fb19ea5a4ab3949b65f06c88728a00ab296f42022ece62ca2fa25ec2e7'
   '064daaa2b9d95b96ec04d8ddebf4af441f92263d123365b58fe73966866080af'
-  '63bebd6b68ddcd807f859ab395d0a605b165195d6514425fa9888ff781b9eb65')
+  '63bebd6b68ddcd807f859ab395d0a605b165195d6514425fa9888ff781b9eb65'
+  '7480eebd2f96769606b2fb39fbaa57e81263252d66edecac134fcefebed8e7b0')
 #noextract=("${source[@]##*/}")
 # Possible replacements are listed in build/linux/unbundle/replace_gn_files.py
 # Keys are the names in the above script; values are the dependencies in Arch
@@ -133,9 +135,9 @@ prepare() {
   _patch chromium-EnumTable-crash.patch
   _patch chromium-gcc11.patch
   _patch chromium-InkDropHost-crash.patch
-
   _patch webcodecs-stop-using-AudioOpusEncoder.patch
   _patch chromium-gtk4-build.patch
+  _patch webrtc-check-existence-of-cursor-metadata.patch
 
   # Link to system tools required by the build
   mkdir -p third_party/node/linux/node-linux-x64/bin

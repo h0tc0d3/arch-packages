@@ -1,0 +1,54 @@
+pkgname=freeglut+clang
+pkgver=3.2.2
+pkgrel=1
+pkgdesc="Provides functionality for small OpenGL programs"
+url="http://freeglut.sourceforge.net/"
+arch=(x86_64)
+license=(MIT)
+depends=(libxi libxrandr libgl)
+makedepends=(mesa glu libxxf86vm cmake ninja)
+replaces=(glut)
+provides=(glut freeglut "freeglut=${pkgver}")
+conflicts=(glut freeglut)
+source=("https://downloads.sourceforge.net/freeglut/freeglut-${pkgver}.tar.gz")
+sha256sums=('c5944a082df0bba96b5756dddb1f75d0cd72ce27b5395c6c1dde85c2ff297a50')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -S "freeglut-${pkgver}" -B build \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DFREEGLUT_BUILD_STATIC_LIBS=OFF
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+  ln -s glut.pc "${pkgdir:?}/usr/lib/pkgconfig/freeglut.pc"
+
+  install -Dm644 "freeglut-${pkgver}/COPYING" "${pkgdir:?}/usr/share/licenses/freeglut"
+
+}

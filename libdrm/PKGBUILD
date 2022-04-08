@@ -11,10 +11,14 @@ depends=('libpciaccess')
 makedepends=('valgrind' 'python-docutils' 'meson')
 checkdepends=('cairo')
 replaces=('libdrm-new' 'libdrm-nouveau')
-source=("https://dri.freedesktop.org/libdrm/libdrm-${pkgver}.tar.xz"
-  COPYING)
+source=(
+  "https://dri.freedesktop.org/libdrm/libdrm-${pkgver}.tar.xz"
+  COPYING
+  libdrm-2.4.0-no-bc.patch
+)
 sha256sums=('eecee4c4b47ed6d6ce1a9be3d6d92102548ea35e442282216d47d05293cf9737'
-  '9631d4f694952e3e6ae5a05534c2e93e994e47d3413677a3a00e45c8cef6db93')
+  '9631d4f694952e3e6ae5a05534c2e93e994e47d3413677a3a00e45c8cef6db93'
+  '86aef9a371fab4dcb758b05baf9f797b622f443b1f63e3cf2205353de4a09341')
 validpgpkeys=(
   '10A6D91DA1B05BD29F6DEBAC0C74F35979C486BE' # David Airlie <airlied@redhat.com>
   '34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48' # emersion <contact@emersion.fr>
@@ -30,25 +34,32 @@ prepare() {
     _extra_lto_flag='-D b_lto_mode=thin'
   fi
 
+  patch -d "libdrm-${pkgver}" -p1 -i "${srcdir:?}/libdrm-2.4.0-no-bc.patch"
+
 }
 
 build() {
 
-  meson setup libdrm-${pkgver} build \
+  meson setup "libdrm-${pkgver}" build \
     --prefix /usr \
     --libexecdir lib \
     --sbindir bin \
-    --auto-features enabled \
     --wrap-mode nodownload \
     -D debug=false \
     -D optimization=2 \
     -D b_ndebug=true \
     -D b_lto=true ${_extra_lto_flag} \
     -D b_pie=true \
-    -Dudev=false \
-    -Dvalgrind=false
+    -D default_library=both \
+    -D radeon=true \
+    -D amdgpu=true \
+    -D nouveau=true \
+    -D intel=true \
+    -D libkms=false \
+    -D udev=true \
+    -D valgrind=false
 
-  ninja -C build
+  meson compile -C build
 
 }
 
