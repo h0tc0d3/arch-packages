@@ -1,0 +1,62 @@
+pkgname=ndctl+clang
+pkgver=72.1
+pkgrel=1
+pkgdesc='Utility library for managing the libnvdimm (non-volatile memory device) sub-system in the Linux kernel'
+arch=('x86_64')
+url="https://github.com/pmem/ndctl"
+license=('LGPL')
+provides=("ndctl" "ndctl=${pkgver}")
+conflicts=(ndctl)
+depends=('iniparser' 'json-c' 'keyutils' 'kmod' 'systemd-libs' 'util-linux-libs')
+makedepends=('asciidoctor' 'bash-completion' 'systemd' 'xmlto')
+source=("https://github.com/pmem/ndctl/archive/v${pkgver}/ndctl-${pkgver}.tar.gz")
+sha512sums=('7304e23121c99457fa6e22a399fb636f6a66d6d07b090463ec41e424687b06e7e8a1a18623ab9dd5783aaccfa09ff964e3477b63aaa4614ac60f6e6050452f12')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/ndctl-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/ndctl-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # fix location of modprobe.d conf
+  sed -i 's|^modprobedir =.*|modprobedir = /usr/lib/modprobe.d/|' Makefile.am
+
+  ./autogen.sh
+
+}
+
+build() {
+
+  cd "${srcdir:?}/ndctl-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/ndctl-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc
+
+  make
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "ndctl-${pkgver}"
+
+}

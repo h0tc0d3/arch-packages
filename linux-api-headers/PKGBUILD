@@ -1,5 +1,5 @@
 pkgname=linux-api-headers
-pkgver=5.17.0
+pkgver=5.17.2
 pkgrel=1
 pkgdesc='Kernel headers sanitized for use in userspace'
 arch=(any)
@@ -12,7 +12,7 @@ else
   _pkgver=${pkgver}
 fi
 source=("https://www.kernel.org/pub/linux/kernel/v${pkgver:0:1}.x/linux-${_pkgver}.tar."{xz,sign})
-sha256sums=('555fef61dddb591a83d62dd04e252792f9af4ba9ef14683f64840e46fa20b1b1'
+sha256sums=('2da20f8437cfe813ddee7dcb95e2c4e9e4e8f6168060c05787668ac3ff3f0b99'
   'SKIP')
 validpgpkeys=(
   'ABAF11C65A2970B130ABE3C479BE3E4300411886' # Linus Torvalds

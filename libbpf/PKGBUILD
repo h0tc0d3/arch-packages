@@ -1,0 +1,45 @@
+pkgname=libbpf+clang
+pkgver=0.7.0
+pkgrel=1
+pkgdesc='Library for loading eBPF programs and reading and manipulating eBPF objects from user-space'
+url='https://github.com/libbpf/libbpf'
+arch=('x86_64')
+license=('LGPL2.1')
+depends=('glibc' 'libelf' 'linux-api-headers')
+makedepends=('rsync')
+provides=('libbpf.so' libbpf "libbpf=${pkgver}")
+conflicts=(libbpf)
+source=("https://github.com/libbpf/libbpf/archive/v${pkgver}/libbpf-${pkgver}.tar.gz")
+sha256sums=('5083588ce5a3a620e395ee1e596af77b4ec5771ffc71cff2af49dfee38c06361')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -fPIC"
+    CXXFLAGS="${CXXFLAGS} -fPIC"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  make -C "libbpf-${pkgver}/src"
+
+}
+
+package() {
+
+  make -C "libbpf-${pkgver}/src" DESTDIR="${pkgdir:?}" LIBSUBDIR=lib install install_headers
+  install -Dm 644 "libbpf-${pkgver}/LICENSE"* -t "${pkgdir:?}/usr/share/licenses/libbpf"
+  install -Dm 644 "libbpf-${pkgver}/README.md" -t "${pkgdir:?}/usr/share/doc/libbpf"
+
+}

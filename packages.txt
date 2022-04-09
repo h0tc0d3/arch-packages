@@ -11,6 +11,8 @@ libgcrypt
 python
 libaio
 libnet
+fribidi
+libnfs
 ed
 json-c
 db
@@ -61,6 +63,7 @@ autoconf
 automake
 util-linux
 elfutils
+libbpf
 iproute2
 libedit
 musl
@@ -153,6 +156,7 @@ libxcursor
 libxft
 libxrandr
 libepoxy
+virglrenderer
 libglvnd
 libplacebo
 libxshmfence
@@ -209,6 +213,7 @@ dolphin-plugins
 glib2
 gtk2
 gtk3
+libslirp
 libwacom
 libinput
 xf86-input-libinput
@@ -228,6 +233,7 @@ lm_sensors
 jemalloc
 gperftools
 openssl
+vde2
 libtorrent-rasterbar
 qbittorrent
 libarchive
@@ -284,6 +290,8 @@ zita-alsa-pcmi
 zita-ajbridge
 jack2
 systemd
+hidapi
+ibus
 procps-ng
 hwloc
 openmpi
@@ -294,6 +302,10 @@ xf86-video-amdgpu
 xf86-input-wacom
 e2fsprogs
 libusb
+usbredir
+sdl2
+ndctl
+vte3
 js78
 polkit
 rtkit
@@ -319,6 +331,7 @@ mako
 rofi
 neovim
 neomutt
+qemu
 -linux-tools
 python-numpy
 python-scipy

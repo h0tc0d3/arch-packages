@@ -1,0 +1,80 @@
+pkgname=vde2+clang
+pkgver=2.3.2
+pkgrel=21
+pkgdesc="Virtual Distributed Ethernet for emulators like qemu"
+arch=(x86_64)
+url="https://github.com/virtualsquare/vde-2"
+license=(GPL2 LGPL2.1 BSD)
+provides=(vde2 "vde2=${pkgver}")
+conflicts=(vde2)
+depends=(bash libpcap openssl python)
+source=(
+  "https://downloads.sourceforge.net/vde/vde2-${pkgver}.tar.bz2"
+  dhcpd.conf.sample
+  iptables.rules.sample
+  vde-config.sample
+  vde-connection.sample
+  vde2-2.3.2-openssl-1.1.patch
+  vde2-2.3.2-format-security.patch
+)
+install=vde2.install
+sha256sums=('cbea9b7e03097f87a6b5e98b07890d2275848f1fe4b9fcda77b8994148bc9542'
+  'da0e2766dc63069da929c28126831ad5fdddcc4a04105a21217d78832c7ca1bc'
+  '99076d7466cd99673dbe91ef83865187e7868177959b38e125df63eea957f83e'
+  '5727c215646333c37b26388146cd3e6b3814b88d60d54051d7da99e00c0aef87'
+  '5139110ed6d5d1174bf12971512dac5196d9d07df46dd393d7b1cd083118fe9b'
+  '110370a5f48f1e241d43f8bb5e3ea6d2ca7d2c1949e1cf672d03bfc897f2e11f'
+  'af087758609338365b9f331c498e330fc67efdac6d0dd9ce699e2bd1645e52b5')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  # allow compilation with openssl 1.1
+  patch -Np1 -d "vde2-${pkgver}" -i "${srcdir:?}/vde2-2.3.2-openssl-1.1.patch"
+  # Fix format-security build errors
+  patch -Np1 -d "vde2-${pkgver}" -i "${srcdir:?}/vde2-2.3.2-format-security.patch"
+
+}
+
+build() {
+
+  cd "${srcdir:?}/vde2-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/vde2-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure --prefix=/usr \
+    --sbindir=/usr/bin \
+    --sysconfdir=/etc \
+    --libexecdir=/usr/lib/vde2 \
+    --enable-experimental
+
+  # NOTE: build can not be parallelized
+  make -j1
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C vde2-${pkgver}
+
+  install -Dm 644 vde-{config,connection}.sample -t "${pkgdir:?}/etc/vde/"
+  install -Dm 644 {dhcpd.conf,iptables.rules}.sample -t "${pkgdir:?}/usr/share/vde2/"
+
+  # install slirpvde license
+  install -Dm 644 "vde2-${pkgver}/COPYING.slirpvde" -t "${pkgdir:?}/usr/share/licenses/vde2/"
+
+}

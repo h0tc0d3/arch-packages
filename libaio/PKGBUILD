@@ -1,11 +1,11 @@
 pkgname=libaio+clang
 pkgver=0.3.112
-pkgrel=2
+pkgrel=3
 pkgdesc="The Linux-native asynchronous I/O facility (aio) library"
 arch=('x86_64')
 url="https://pagure.io/libaio"
 license=('LGPL')
-provides=('libaio' "libaio=${pkgver}")
+provides=('libaio' "libaio=${pkgver}" libaio.so)
 conflicts=('libaio')
 source=("https://releases.pagure.org/libaio/libaio-${pkgver}.tar.gz")
 sha256sums=('ab0462f2c9d546683e5147b1ce9c195fe95d07fac5bf362f6c01637955c3b492')

@@ -1,0 +1,63 @@
+pkgname=sdl2+clang
+pkgver=2.0.20
+pkgrel=2
+pkgdesc="A library for portable low-level access to a video framebuffer, audio output, mouse, and keyboard (Version 2)"
+arch=('x86_64')
+url="https://www.libsdl.org"
+license=('MIT')
+provides=('sdl2' "sdl2=${pkgver}")
+conflicts=('sdl2')
+depends=('glibc' 'libxext' 'libxrender' 'libx11' 'libgl' 'libxcursor' 'libibus' 'hidapi' 'libusb')
+makedepends=('alsa-lib' 'mesa' 'libpulse' 'libxrandr' 'libxinerama' 'wayland' 'libxkbcommon'
+  'wayland-protocols' 'ibus' 'fcitx5' 'libxss' 'cmake' 'jack' 'ninja' 'pipewire'
+  'libdecor')
+optdepends=('alsa-lib: ALSA audio driver'
+  'libpulse: PulseAudio audio driver'
+  'jack: JACK audio driver'
+  'pipewire: PipeWire audio driver'
+  'libdecor: Wayland client decorations')
+source=("https://www.libsdl.org/release/SDL2-${pkgver}.tar.gz"{,.sig})
+sha256sums=('c56aba1d7b5b0e7e999e4a7698c70b63a3394ff9704b5f6e1c57e0c16f04dd06'
+  'SKIP')
+validpgpkeys=('1528635D8053A57F77D1E08630A59377A7763BE6') # Sam Lantinga
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -S "SDL2-${pkgver}" -B build \
+    -D CMAKE_INSTALL_PREFIX=/usr \
+    -D SDL_STATIC=OFF \
+    -D SDL_DLOPEN=ON \
+    -D SDL_RPATH=OFF
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+  # For some reason, this isn't named correctly and we have to fix it to reflect the actual staticlib name.
+  sed -i "s/libSDL2\.a/libSDL2main.a/g" "${pkgdir:?}/usr/lib/cmake/SDL2/SDL2Targets-noconfig.cmake"
+
+  install -Dm644 "SDL2-${pkgver}/LICENSE.txt" "${pkgdir:?}/usr/share/licenses/sdl2/LICENSE"
+
+}

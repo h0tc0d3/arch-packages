@@ -1,0 +1,75 @@
+pkgbase=vte3+clang
+pkgname=(vte3+clang vte-common+clang)
+pkgver=0.68.0
+pkgrel=1
+pkgdesc="Virtual Terminal Emulator widget"
+url="https://wiki.gnome.org/Apps/Terminal/VTE"
+arch=(x86_64)
+license=(LGPL)
+depends=(gtk3 pcre2 gnutls fribidi systemd)
+makedepends=(gobject-introspection vala git gtk-doc gperf meson)
+_commit=0f438924f9f8a858b1b82434c876e31c2de180d4 # tags/0.68.0^0
+source=("git+https://gitlab.gnome.org/GNOME/vte.git#commit=${_commit}")
+sha256sums=('SKIP')
+
+build() {
+
+  meson setup "vte" build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=false \
+    -D b_lto=false \
+    -D b_pie=true \
+    -D docs=true
+
+  meson compile -C build
+
+}
+
+check() {
+
+  meson test -C build --print-errorlogs
+
+}
+
+_pick() {
+
+  local p="${1:?}" f d
+  shift
+  for f; do
+    d="${srcdir:?}/${p}/${f#"${pkgdir:?}"/}"
+    mkdir -p "${d%/*}"
+    mv "${f}" "${d}"
+    rmdir -p --ignore-fail-on-non-empty "${f%/*}"
+  done
+
+}
+
+package_vte3+clang() {
+
+  depends+=(vte-common)
+  provides=(libvte-2.91.so 'vte3' "vte3=${pkgver}")
+  conflicts=('vte3')
+
+  meson install -C build --destdir="${pkgdir:?}"
+
+  _pick vte-common "${pkgdir:?}/etc/profile.d"
+  _pick vte-common "${pkgdir:?}/usr/lib/"{systemd,vte-urlencode-cwd}
+
+}
+
+package_vte-common+clang() {
+
+  pkgdesc="Files shared by VTE libraries"
+  provides=('vte-common' "vte-common=${pkgver}")
+  conflicts=('vte-common')
+  depends=(sh)
+
+  mv vte-common/* "${pkgdir:?}"
+
+}

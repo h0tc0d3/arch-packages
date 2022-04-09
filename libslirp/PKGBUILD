@@ -1,0 +1,49 @@
+pkgname=libslirp+clang
+pkgver=4.6.1
+pkgrel=1
+pkgdesc='General purpose TCP-IP emulator'
+arch=(x86_64)
+url='https://gitlab.freedesktop.org/slirp/libslirp'
+license=(BSD MIT)
+depends=(glib2)
+makedepends=(meson)
+provides=('libslirp.so' libslirp "libslirp=${pkgver}")
+conflicts=('libslirp')
+source=("https://gitlab.freedesktop.org/slirp/libslirp/-/archive/v${pkgver}/libslirp-v${pkgver}.tar.gz")
+sha256sums=('69ad4df0123742a29cc783b35de34771ed74d085482470df6313b6abeb799b11')
+
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+}
+
+build() {
+
+  meson setup "libslirp-v${pkgver}" build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true
+
+  meson compile -C build
+
+}
+
+package() {
+
+  meson install -C build --destdir="${pkgdir:?}"
+
+  install -vDm 644 "libslirp-v${pkgver}/COPYRIGHT" "${pkgdir:?}/usr/share/licenses/libslirp/LICENSE"
+
+}

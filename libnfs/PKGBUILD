@@ -1,0 +1,59 @@
+pkgname=libnfs+clang
+pkgver=5.0.1
+pkgrel=2
+pkgdesc="client library for accessing NFS shares"
+arch=('x86_64')
+url="https://github.com/sahlberg/libnfs"
+license=('GPL')
+provides=(libnfs "libnfs=${pkgver}")
+conflicts=(libnfs)
+depends=('glibc')
+source=(
+  "https://github.com/sahlberg/libnfs/archive/libnfs-$pkgver.tar.gz"
+)
+sha256sums=('7ef445410b42f36b9bad426608b53ccb9ccca4101e545c383f564c11db672ca8')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/libnfs-libnfs-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libnfs-libnfs-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  autoreconf -fiv
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libnfs-libnfs-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libnfs-libnfs-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "libnfs-libnfs-${pkgver}"
+
+}

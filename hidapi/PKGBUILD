@@ -1,0 +1,63 @@
+pkgname=hidapi+clang
+pkgver=0.11.2
+pkgrel=1
+pkgdesc='Simple library for communicating with USB and Bluetooth HID devices'
+arch=(x86_64)
+url='https://github.com/libusb/hidapi'
+license=('GPL3' 'BSD' 'custom')
+makedepends=('systemd' 'systemd-libs' 'libusb')
+optdepends=('libusb: for the libusb backend -- hidapi-libusb.so'
+  'libudev.so: for the hidraw backend -- hidapi-hidraw.so')
+provides=('libhidapi-hidraw.so' 'libhidapi-libusb.so' 'hidapi' "hidapi=${pkgver}")
+conflicts=('hidapi')
+source=("https://github.com/libusb/hidapi/archive/hidapi-${pkgver}.tar.gz")
+sha256sums=('bc4ac0f32a6b21ef96258a7554c116152e2272dacdec1e4620fc44abeea50c27')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/hidapi-hidapi-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir}/hidapi-hidapi-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  ./bootstrap
+
+}
+
+build() {
+
+  cd "${srcdir:?}/hidapi-hidapi-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir}/hidapi-hidapi-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "hidapi-hidapi-${pkgver}"
+
+  mkdir -p "${pkgdir:?}/usr/share/licenses/hidapi"
+  rm -f "${pkgdir:?}/usr/share/doc/hidapi/LICENSE"*
+  install -m0644 "hidapi-hidapi-${pkgver}/"{LICENSE.txt,LICENSE-bsd.txt,LICENSE-orig.txt} "${pkgdir:?}/usr/share/licenses/hidapi/"
+
+}
