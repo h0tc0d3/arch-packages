@@ -1,6 +1,6 @@
 pkgname=libffi+clang
 pkgver=3.4.2
-pkgrel=4
+pkgrel=5
 pkgdesc='Portable foreign function interface library'
 arch=('x86_64')
 url='https://sourceware.org/libffi/'
