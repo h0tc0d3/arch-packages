@@ -1,0 +1,63 @@
+pkgname=amdvlk+clang
+pkgver=2022.Q2.1
+pkgrel=1
+pkgdesc="AMD's standalone Vulkan driver"
+arch=(x86_64)
+url="https://github.com/GPUOpen-Drivers"
+license=('MIT')
+provides=('vulkan-driver' 'amdvlk' "amdvlk=${pkgver}")
+conflicts=('amdvlk')
+makedepends=('python' 'wayland' 'libxrandr' 'xorg-server-devel'
+  'cmake' 'git' 'clang' 'lld' 'glslang' 'spirv-tools'
+  'spirv-headers')
+# Please use a script generate-source.py for reduce git requests
+source=(
+  "amdvlk/xgl::git+https://github.com/GPUOpen-Drivers/xgl#commit=25569e8bf7ade7cd304697c18f49a8ff893b07fa"
+  "amdvlk/pal::git+https://github.com/GPUOpen-Drivers/pal#commit=1ff58cafbae03aa571b0dde83aefd0d1fdfb8a9b"
+  "amdvlk/llpc::git+https://github.com/GPUOpen-Drivers/llpc#commit=c0dbc976ccaed1873272f99e1e254b2a1114a50b"
+  "amdvlk/spvgen::git+https://github.com/GPUOpen-Drivers/spvgen#commit=87983dba34c24ce5ac4f9c17d9ddea0890758e33"
+  "amdvlk/AMDVLK::git+https://github.com/GPUOpen-Drivers/AMDVLK#commit=d20db30145926098beab68915f235491a519aac6"
+  "amdvlk/llvm-project::git+https://github.com/GPUOpen-Drivers/llvm-project#commit=219f568b0b603b2d9a64a44264db5f64ec5e9802"
+  "amdvlk/MetroHash::git+https://github.com/GPUOpen-Drivers/MetroHash#commit=3c566dd9cda44ca7fd97659e0b53ac953f9037d2"
+  "amdvlk/CWPack::git+https://github.com/GPUOpen-Drivers/CWPack#commit=39f8940199e60c44d4211cf8165dfd12876316fa"
+)
+sha256sums=('SKIP'
+  'SKIP'
+  'SKIP'
+  'SKIP'
+  'SKIP'
+  'SKIP'
+  'SKIP'
+  'SKIP')
+
+build() {
+
+  CFLAGS="${CFLAGS} -flto=thin"
+  CXXFLAGS="${CXXFLAGS} -flto=thin"
+  LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  cmake -S xgl -B build \
+    -DLLVM_USE_LINKER=lld \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_WAYLAND_SUPPORT=On
+
+  cmake --build build
+
+}
+
+package() {
+
+  install -m755 -d "${pkgdir:?}/usr/lib"
+  install -m755 -d "${pkgdir:?}/usr/share/vulkan/icd.d"
+  install -m755 -d "${pkgdir:?}/usr/share/vulkan/implicit_layer.d"
+  install -m755 -d "${pkgdir:?}/usr/share/licenses"
+
+  install -Dm644 build/icd/amdvlk64.so "${pkgdir:?}/usr/lib/"
+  install -Dm644 build/icd/amd_icd64.json "${pkgdir:?}/usr/share/vulkan/icd.d/"
+  install -Dm644 build/icd/amd_icd64.json "${pkgdir:?}/usr/share/vulkan/implicit_layer.d/"
+  install -Dm644 AMDVLK/LICENSE.txt "${pkgdir:?}/usr/share/licenses/amdvlk"
+
+  sed -i "s#/lib64#/lib#g" "${pkgdir:?}/usr/share/vulkan/icd.d/amd_icd64.json"
+  sed -i "s#/lib64#/lib#g" "${pkgdir:?}/usr/share/vulkan/implicit_layer.d/amd_icd64.json"
+
+}
