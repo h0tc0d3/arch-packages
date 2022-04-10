@@ -1,0 +1,49 @@
+pkgname=qt5ct+clang
+pkgver=1.5
+pkgrel=2
+pkgdesc='Qt5 Configuration Utility'
+arch=(x86_64)
+url='https://qt5ct.sourceforge.io/'
+license=(BSD)
+provides=('qt5ct' "qt5ct=${pkgver}")
+conflicts=('qt5ct')
+depends=(qt5-svg)
+makedepends=(cmake qt5-tools)
+source=("https://downloads.sourceforge.net/project/qt5ct/qt5ct-${pkgver}.tar.bz2")
+sha256sums=('d63d0ce16e02427207d86531f70a71c5b9c850044dd5b2dcb2285531f416e490')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -B build -S "qt5ct-${pkgver}" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+  install -Dm644 "qt5ct-${pkgver}/COPYING" "${pkgdir:?}/usr/share/licenses/qt5ct/LICENSE"
+
+}

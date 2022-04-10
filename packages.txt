@@ -92,6 +92,7 @@ mesa
 qt5-base
 qt5-declarative
 qt5-tools
+qt5ct
 qt5-imageformats
 qt5-x11extras
 qt5-translations
@@ -186,6 +187,7 @@ qt6-wayland
 kded
 plasma-wayland-protocols
 kwindowsystem
+kvantum
 frameworkintegration
 breeze
 plasma-integration
