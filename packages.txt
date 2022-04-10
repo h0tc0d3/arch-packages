@@ -332,6 +332,7 @@ mako
 rofi
 neovim
 neomutt
+kitty
 qemu
 -linux-tools
 python-numpy

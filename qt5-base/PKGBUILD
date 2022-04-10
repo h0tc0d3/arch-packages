@@ -1,14 +1,14 @@
 pkgbase=qt5-base+clang
 pkgname=(qt5-base+clang qt5-xcb-private-headers+clang)
 pkgver=5.15.3+kde+r137
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 url='https://www.qt.io'
 license=('GPL3' 'LGPL3' 'FDL' 'custom')
 pkgdesc='A cross-platform application and UI framework'
 depends=('libjpeg-turbo' 'xcb-util-keysyms' 'xcb-util-renderutil' 'libgl' 'fontconfig' 'xdg-utils'
   'shared-mime-info' 'xcb-util-wm' 'libxrender' 'libxi' 'sqlite' 'xcb-util-image' 'mesa'
-  'tslib' 'libinput' 'libxkbcommon-x11' 'libproxy' 'libcups' 'double-conversion' 'md4c')
+  'tslib' 'libinput' 'libxkbcommon-x11' 'libproxy' 'libcups' 'double-conversion' 'md4c' 'zstd' 'libglvnd')
 makedepends=('libfbclient' 'mariadb-libs' 'unixodbc' 'postgresql-libs' 'alsa-lib' 'gst-plugins-base-libs'
   'gtk3' 'libpulse' 'cups' 'freetds' 'vulkan-headers' 'git')
 optdepends=('qt5-svg: to use SVG icon themes'
@@ -33,6 +33,8 @@ source=(
   qt5-base-everywhere-no_relocatable.patch
   qt5-base-qmake_LFLAGS.patch
   qt5-base-everywhere-src-5.15.2-libglvnd.patch
+  qt5-base-everywhere-src-5.12.1-qt5gui_cmake_isystem_includes.patch
+  qt5-base-use-wayland-on-gnome.patch
 )
 
 sha256sums=('SKIP'
@@ -42,7 +44,9 @@ sha256sums=('SKIP'
   '9378afd071ad5c0ec8f7aef48421e4b9fab02f24c856bee9c0951143941913c5'
   '1fed8b9e4eb5749e70d85d7678f08a5abc881e2a2ecab85fb21f59cb124500e5'
   '5063b93e72e6737bcec64ec05a2306286f936c8e43dea2ba7b3cf145ed09bd34'
-  '6dd54f841127f20c27300874833636105f15e7481f549c007504bb82cf26c177')
+  '6dd54f841127f20c27300874833636105f15e7481f549c007504bb82cf26c177'
+  '093c44cc4da61a9a8310993edcfb950b4f873adf84b74caeaabfcff52b873ea0'
+  'd62367c679e655a472f2777b9a7a97e17bd1340c0f0b2d40d1621217743122b8')
 
 options=(!strip)
 _llvm=0
@@ -85,6 +89,10 @@ prepare() {
   _patch qt5-base-everywhere-src-5.15.2-libglvnd.patch
   _patch qt5-base-nostrip.patch # Don't strip binaries with qmake
 
+  # CMake generates wrong -isystem /usr/include compilations flags with Qt5::Gui
+  _patch qt5-base-everywhere-src-5.12.1-qt5gui_cmake_isystem_includes.patch
+  _patch qt5-base-use-wayland-on-gnome.patch
+
 }
 
 build() {
@@ -114,6 +122,8 @@ build() {
       -no-reduce-relocations \
       -no-feature-relocatable \
       -ltcg \
+      -dbus-runtime \
+      -egl -eglfs \
       -system-zlib \
       -system-libjpeg \
       -system-libpng \
