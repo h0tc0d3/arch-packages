@@ -2,7 +2,7 @@ pkgname=openssl+clang
 _ver=1.1.1n
 # use a pacman compatible version scheme
 pkgver=${_ver/[a-z]/.${_ver//[0-9.]/}}
-pkgrel=1
+pkgrel=2
 pkgdesc='The Open Source toolkit for Secure Sockets Layer and Transport Layer Security'
 arch=('x86_64')
 url='https://www.openssl.org'
@@ -16,9 +16,11 @@ replaces=('openssl-perl' 'openssl-doc')
 backup=('etc/ssl/openssl.cnf')
 source=(
   "https://www.openssl.org/source/openssl-${_ver}.tar.gz"{,.asc}
+  https://github.com/openssl/openssl/commit/d6bf4a2218aeb246ba7d34f02e895c37569c8265.patch
 )
 sha256sums=('40dceb51a4f6a5275bde0e6bf20ef4b91bfc32ed57c0552e2e8e15463372b17a'
-  'SKIP')
+  'SKIP'
+  '00e3e7c69f962d4bb823644179527b12060cc32dbf26869ad4594308d592eccb')
 validpgpkeys=(
   '8657ABB260F056B1E5190839D9C4D26D0E604491'
   '7953AC1FBC3DC8B3B292393ED5E9E43F7DF9EE8C'
@@ -36,6 +38,10 @@ prepare() {
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/openssl-${_ver} directory! Prepare Failed! \E[0m"
     exit 1
   )
+
+  # Fix undefined symbol: EVP_PKEY_get_base_id
+  # https://github.com/openssl/openssl/issues/17962
+  patch -p1 -i "${srcdir:?}/d6bf4a2218aeb246ba7d34f02e895c37569c8265.patch"
 
   # set ca dir to /etc/ssl by default
   sed -i -e 's/\.\/demoCA/\/etc\/ssl/g' apps/CA.pl.in

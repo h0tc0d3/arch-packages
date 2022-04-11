@@ -236,6 +236,7 @@ lm_sensors
 jemalloc
 gperftools
 openssl
+-gost-engine
 vde2
 libtorrent-rasterbar
 qbittorrent

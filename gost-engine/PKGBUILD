@@ -1,9 +1,6 @@
 # Maintainer: Grigory Vasilyev <echo "h0tc0d3(-*A*-)g-m*a-i-l(-d#t-)c#m" | sed -e 's/-//ig;s/*//ig;s/(A)/@/i;s/#/o/ig;s/(dot)/./i'>
-
-validpgpkeys=('33ED753E14757D79FA17E57DC4C1F715B2B66B95')
-
 pkgname=gost-engine
-pkgver=1.1.1.r496.9b492b3
+pkgver=1.1.1.r507.aba6613
 pkgrel=1
 pkgdesc='Russian GOST R 34.10 and GOST R 34.11-2012 Crypto Algorithms for OpenSSL'
 arch=('x86_64')
@@ -13,23 +10,17 @@ depends=('openssl')
 makedepends=('cmake' 'git')
 conflicts=('openssl-gost')
 provides=('openssl-gost')
-
-_commit=9b492b334213ea6dfb76d746e93c4b69a4b36175
-
+_commit=aba6613c5cbd06ebee723dd64aae8f9c23328dce
 source=(
   "gost-engine::git+https://github.com/gost-engine/engine.git#commit=${_commit}"
   'gost.cnf'
-  "${pkgname:?}.install"
+  "gost-engine.install"
 )
-
 sha256sums=('SKIP'
-            '04c3483d758e393d9831d2be4cee1eafd806eea15055438be7c7b4caeeccbfe6'
-            '92a02f99c0e969e90f95bf43530359380134fcee54ccc52bf1f4c5607e4175a6')
-sha512sums=('SKIP'
-            '431f810f822a347135d10c99f98ed2516e6afe310def77fc9aa0b41dc0578b05e2684f77e1062ea934961720f6d11f73f27e38548bccfe61709e81f8d53c484e'
-            'b352a4a127ae671a7175336d9ea47d8bad4338b25173e916cc07afdcb54d9da833302ea80eb965aec2828bbc99b65721e72c603feed0fefa70712ba0c0f5bb2c')
+  '04c3483d758e393d9831d2be4cee1eafd806eea15055438be7c7b4caeeccbfe6'
+  '92a02f99c0e969e90f95bf43530359380134fcee54ccc52bf1f4c5607e4175a6')
 
-install=${pkgname:?}.install
+install=gost-engine.install
 
 _llvm=0
 
@@ -56,13 +47,6 @@ prepare() {
     exit 1
   fi
 
-  # Fix ==> WARNING: Package contains reference to $srcdir
-  # gost.so.1.1 contain path to source files
-  # strings gost.so.1.1 | grep "src\/gost-engine"
-  # Show containing strings
-  sed -i "$ a\ \nset(CMAKE_C_FLAGS \"\${CMAKE_C_FLAGS} -fdebug-prefix-map=\\\\\"\${CMAKE_SOURCE_DIR}\\\\\"=. -Wno-builtin-macro-redefined -D'__FILE__=\\\\\"\$(subst \$(realpath \${CMAKE_SOURCE_DIR})/,,\$(abspath \$<))\\\\\"'\")" \
-    "${srcdir:?}/${pkgname:?}/CMakeLists.txt"
-
 }
 
 build() {
@@ -76,12 +60,12 @@ build() {
   fi
 
   cmake -B build -S gost-engine \
+    -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DOPENSSL_ROOT_DIR=/usr \
     -DOPENSSL_INCLUDE_DIR=/usr/include \
     -DOPENSSL_LIBRARIES=/usr/lib \
-    -DOPENSSL_ENGINES_DIR=/usr/lib/engines-1.1 \
-    -DCMAKE_BUILD_TYPE=Release
+    -DOPENSSL_ENGINES_DIR=/usr/lib/engines-1.1
 
   cmake --build build
 
@@ -91,6 +75,6 @@ package() {
 
   DESTDIR="${pkgdir:?}" cmake --install build
   install -Dm644 "${srcdir:?}/gost.cnf" "${pkgdir:?}/etc/ssl/gost.cnf"
-  install -Dm644 "${srcdir:?}/${pkgname:?}/LICENSE" "${pkgdir:?}/usr/share/licenses/${pkgname:?}/LICENSE"
+  install -Dm644 "${srcdir:?}/gost-engine/LICENSE" "${pkgdir:?}/usr/share/licenses/gost-engine"
 
 }
