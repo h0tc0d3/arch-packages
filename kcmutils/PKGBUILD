@@ -1,5 +1,5 @@
 pkgname=kcmutils+clang
-pkgver=5.92.0
+pkgver=5.93.0
 pkgrel=1
 pkgdesc='Utilities for interacting with KCModules'
 arch=(x86_64)
@@ -11,40 +11,40 @@ depends=(kdeclarative)
 makedepends=(extra-cmake-modules doxygen qt5-tools qt5-doc)
 groups=(kf5)
 source=("https://download.kde.org/stable/frameworks/${pkgver%.*}/kcmutils-${pkgver}.tar.xz"{,.sig})
-sha256sums=('dd49e658fc85c215442a7fa9d2435819f0bef13c997a6c2a51557b82e1bc8d3a'
-    'SKIP')
+sha256sums=('1445f978b7ffd69fd7c25d965812755679c4fdba23eb9837da37a8b5b2d30d6d'
+  'SKIP')
 validpgpkeys=(53E6B47B45CEA3E0D5B7457758D0EE648A48B3BB) # David Faure <faure@kde.org>
 
 _llvm=0
 
 prepare() {
 
-    if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
-        _llvm=1
-    fi
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
 
 }
 
 build() {
 
-    if [[ ${_llvm} -eq 1 ]]; then
+  if [[ ${_llvm} -eq 1 ]]; then
 
-        CFLAGS="${CFLAGS} -flto=thin"
-        CXXFLAGS="${CXXFLAGS} -flto=thin"
-        LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
-    fi
+  fi
 
-    cmake -B build -S kcmutils-${pkgver} \
-        -DBUILD_TESTING=OFF \
-        -DBUILD_QCH=ON
+  cmake -B build -S kcmutils-${pkgver} \
+    -DBUILD_TESTING=OFF \
+    -DBUILD_QCH=ON
 
-    cmake --build build
+  cmake --build build
 
 }
 
 package() {
 
-    DESTDIR="${pkgdir:?}" cmake --install build
+  DESTDIR="${pkgdir:?}" cmake --install build
 
 }
