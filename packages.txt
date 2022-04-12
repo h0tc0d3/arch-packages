@@ -317,7 +317,6 @@ pipewire
 pipewire-media-session
 lib2geom
 ffmpeg
-alacritty
 wlroots
 sway
 swayidle

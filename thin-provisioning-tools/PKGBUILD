@@ -1,6 +1,6 @@
 pkgname=thin-provisioning-tools+clang
 pkgver=0.9.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Suite of tools for manipulating the metadata of the dm-thin device-mapper target'
 arch=('x86_64')
 url="https://github.com/jthornber/thin-provisioning-tools"
@@ -58,7 +58,7 @@ package() {
 
   make DESTDIR="${pkgdir:?}" \
     BINDIR="${pkgdir:?}/usr/bin" \
-    MANDIR="${pkgdir:?}/usr/share/man install" \
+    MANDIR="${pkgdir:?}/usr/share/man" install \
     -C "thin-provisioning-tools-${pkgver}"
 
 }
