@@ -1,0 +1,32 @@
+diff --git a/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c b/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
+index 5fd9e594079c..5fd7e2d4cd0e 100644
+--- a/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
++++ b/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
+@@ -308,7 +308,7 @@ int parse_cmdline_turbo(int i)
+ 
+ int parse_optarg_string(char *s)
+ {
+-	int i;
++	long i;
+ 	char *endptr;
+ 
+ 	if (!strncmp(s, "default", 7))
+@@ -334,15 +334,11 @@ int parse_optarg_string(char *s)
+ 		fprintf(stderr, "no digits in \"%s\"\n", s);
+ 		usage();
+ 	}
+-	if (i == LONG_MIN || i == LONG_MAX)
+-		errx(-1, "%s", s);
+ 
+-	if (i > 0xFF)
+-		errx(-1, "%d (0x%x) must be < 256", i, i);
++	if (i < 0 || i > 255)
++		errx(-1, "%ld (0x%lx) must be >= 0 and < 256", i, i);
+ 
+-	if (i < 0)
+-		errx(-1, "%d (0x%x) must be >= 0", i, i);
+-	return i;
++	return (int)i;
+ }
+ 
+ void parse_cmdline_all(char *s)

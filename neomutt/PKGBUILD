@@ -14,11 +14,12 @@ optdepends=('python: keybase.py'
   'perl: smime_keys'
   'ca-certificates: default CA certificates')
 makedepends=('git' 'gnupg' 'libxslt' 'docbook-xsl' 'w3m')
-source=("neomutt-${pkgver}.tar.gz::https://github.com/neomutt/neomutt/archive/${pkgver}.tar.gz"
-  "neomutt-${pkgver}.tar.gz.sig::https://github.com/neomutt/neomutt/releases/download/${pkgver}/${pkgver}.tar.gz.sig"
-  "default-ca-certificates.patch")
-sha256sums=('bb138adb09b1f164fe690749e991a5505bf4f50b6ad478ffb085c609d5617cc7'
-  'SKIP'
+_commit=4319dddfbbc8ef68dfe5d0fa7a87ddd5e76af730
+source=(
+  "git+https://github.com/neomutt/neomutt.git#commit=${_commit:?}"
+  "default-ca-certificates.patch"
+)
+sha256sums=('SKIP'
   '571716b8979e9b43328416c3c56eff228b6c58355d7c080b8987ea89c6360776')
 validpgpkeys=('86C2397270DD7A561263CA4E5FAF0A6EE7371805') # Richard Russon (flatcap) <rich@flatcap.org>
 
@@ -30,8 +31,8 @@ prepare() {
     _llvm=1
   fi
 
-  cd "${srcdir:?}/neomutt-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir}/neomutt-${pkgver} directory! Prepare Failed! \E[0m"
+  cd "${srcdir:?}/neomutt" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir}/neomutt directory! Prepare Failed! \E[0m"
     exit 1
   )
 
@@ -41,8 +42,8 @@ prepare() {
 
 build() {
 
-  cd "${srcdir:?}/neomutt-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir}/neomutt-${pkgver} directory! Build Failed! \E[0m"
+  cd "${srcdir:?}/neomutt" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir}/neomutt directory! Build Failed! \E[0m"
     exit 1
   )
 
@@ -84,8 +85,8 @@ build() {
 
 package() {
 
-  cd "${srcdir:?}/neomutt-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir}/neomutt-${pkgver} directory! Package Failed! \E[0m"
+  cd "${srcdir:?}/neomutt" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir}/neomutt directory! Package Failed! \E[0m"
     exit 1
   )
 

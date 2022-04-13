@@ -1,14 +1,14 @@
 pkgname=libaio+clang
-pkgver=0.3.112
-pkgrel=3
+pkgver=0.3.113
+pkgrel=1
 pkgdesc="The Linux-native asynchronous I/O facility (aio) library"
 arch=('x86_64')
 url="https://pagure.io/libaio"
 license=('LGPL')
 provides=('libaio' "libaio=${pkgver}" libaio.so)
 conflicts=('libaio')
-source=("https://releases.pagure.org/libaio/libaio-${pkgver}.tar.gz")
-sha256sums=('ab0462f2c9d546683e5147b1ce9c195fe95d07fac5bf362f6c01637955c3b492')
+source=("https://pagure.io/libaio/archive/libaio-${pkgver}/libaio-libaio-${pkgver}.tar.gz")
+sha256sums=('716c7059703247344eb066b54ecbc3ca2134f0103307192e6c2b7dab5f9528ab')
 
 _llvm=0
 
@@ -16,6 +16,7 @@ prepare() {
 
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=1
+    sed -i 's#CFLAGS+=-Wno-stringop-overflow##' "libaio-libaio-${pkgver}/harness/Makefile"
   fi
 
 }
@@ -30,23 +31,23 @@ build() {
 
   fi
 
-  make -C "libaio-${pkgver}"
+  make -C "libaio-libaio-${pkgver}"
 }
 
 check() {
 
   # work around gcc warning (-Werror) in test suite
-  sed -i '/strncpy/s#sizeof(TEMPLATE)#sizeof(template)#' "libaio-${pkgver}/harness/cases/19.t"
-  sed -i '/strncpy/s#sizeof(TEMPLATE)#sizeof(temp_file)#' "libaio-${pkgver}/harness/cases/21.t"
+  sed -i '/strncpy/s#sizeof(TEMPLATE)#sizeof(template)#' "libaio-libaio-${pkgver}/harness/cases/19.t"
+  sed -i '/strncpy/s#sizeof(TEMPLATE)#sizeof(temp_file)#' "libaio-libaio-${pkgver}/harness/cases/21.t"
 
-  sed -i 's#tv_sec:#.tv_sec = #;s#tv_nsec:#.tv_nsec = #' "libaio-${pkgver}/harness/cases/13.t"
+  sed -i 's#tv_sec:#.tv_sec = #;s#tv_nsec:#.tv_nsec = #' "libaio-libaio-${pkgver}/harness/cases/13.t"
 
-  make partcheck -C "libaio-${pkgver}"
+  make partcheck -C "libaio-libaio-${pkgver}"
 
 }
 
 package() {
 
-  make prefix="${pkgdir:?}/usr" install -C "libaio-${pkgver}"
+  make prefix="${pkgdir:?}/usr" install -C "libaio-libaio-${pkgver}"
 
 }

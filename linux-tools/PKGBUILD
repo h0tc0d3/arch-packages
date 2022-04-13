@@ -11,7 +11,7 @@ pkgname=(
   'usbip+clang'
   'x86_energy_perf_policy+clang'
 )
-pkgver=5.17.0
+pkgver=5.17.3
 pkgrel=1
 license=('GPL2')
 arch=('x86_64')
@@ -46,17 +46,19 @@ source=(
   'cpupower.systemd'
   'cpupower.service'
   'usbipd.service'
+  fix-comparison-error-int-with-long-min-max.patch
 )
 validpgpkeys=(
   'ABAF11C65A2970B130ABE3C479BE3E4300411886' # Linus Torvalds
   '647F28654894E3BD457199BE38DBBDC86092693E' # Greg Kroah-Hartman
 )
-sha256sums=('555fef61dddb591a83d62dd04e252792f9af4ba9ef14683f64840e46fa20b1b1'
-            'SKIP'
-            '4fa509949d6863d001075fa3e8671eff2599c046d20c98bb4a70778595cd1c3f'
-            'b692f4859ed3fd9831a058a450a84d8c409bf7e3e45aac1c2896a14bb83f3d7a'
-            '42d2ec9f1d9cc255ee7945a27301478364ef482f5a6ddfc960189f03725ccec2'
-            '2e187734d8aec58a3046d79883510d779aa93fb3ab20bd3132c1a607ebe5498f')
+sha256sums=('32d0a8e366b87e1cbde951b9f7a01287546670ba60fac35cccfc8a7c005a162c'
+  'SKIP'
+  '4fa509949d6863d001075fa3e8671eff2599c046d20c98bb4a70778595cd1c3f'
+  'b692f4859ed3fd9831a058a450a84d8c409bf7e3e45aac1c2896a14bb83f3d7a'
+  '42d2ec9f1d9cc255ee7945a27301478364ef482f5a6ddfc960189f03725ccec2'
+  '2e187734d8aec58a3046d79883510d779aa93fb3ab20bd3132c1a607ebe5498f'
+  '9997f006314aa01172a6aa61296a5c14890f8351f46b784b12e42479223bf222')
 
 _llvm=0
 
@@ -84,6 +86,8 @@ prepare() {
       tools/power/x86/turbostat/Makefile
 
   fi
+
+  _patch fix-comparison-error-int-with-long-min-max.patch
 
 }
 
