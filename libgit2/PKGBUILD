@@ -1,5 +1,5 @@
 pkgname=libgit2+clang
-pkgver=1.4.2
+pkgver=1.4.3
 pkgrel=1
 epoch=1
 pkgdesc="A linkable library for Git"
@@ -15,7 +15,7 @@ source=(
   libgit2-1.2.0-remove_http-parse_incompatible_tests.patch
 )
 
-sha256sums=('901c2b4492976b86477569502a41c31b274b69adc177149c02099ea88404ef19'
+sha256sums=('f48b961e463a9e4e7e7e58b21a0fb5a9b2a1d24d9ba4d15870a0c9b8ad965163'
   'e95000dd7e2a3c56015114d0b67cf1a6d2ff382d2e2a2567dbb4731300a1deb1')
 
 _llvm=0
@@ -27,7 +27,7 @@ prepare() {
   fi
   # remove tests that are only compatible with the (modified) vendored version
   # of http-parser, but not with upstream http-parser
-  patch -d libgit2-${pkgver} -Np1 -i ../libgit2-1.2.0-remove_http-parse_incompatible_tests.patch
+  patch -d libgit2-${pkgver} -Np1 -i "${srcdir:?}/libgit2-1.2.0-remove_http-parse_incompatible_tests.patch"
 
 }
 
@@ -43,7 +43,7 @@ build() {
 
   cmake -S libgit2-${pkgver} -B build \
     -DCMAKE_INSTALL_PREFIX=/usr \
-    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_BUILD_TYPE=Release \
     -DUSE_HTTP_PARSER=system \
     -DUSE_SSH=ON \
     -DTHREADSAFE=ON \

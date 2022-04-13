@@ -1,6 +1,6 @@
 pkgname=krita+clang
-pkgver=5.0.2
-pkgrel=3
+pkgver=5.0.5
+pkgrel=1
 pkgdesc='Edit and paint images'
 arch=(x86_64)
 url='https://krita.org'
@@ -11,12 +11,14 @@ depends=(kitemviews kitemmodels ki18n kcompletion kguiaddons kcrash qt5-svg qt5-
   gsl libraw exiv2 openexr fftw openjpeg2 opencolorio libwebp hicolor-icon-theme)
 makedepends=(extra-cmake-modules kdoctools boost eigen vc poppler-qt5 python-pyqt5 libheif
   qt5-tools sip kseexpr libmypaint git)
-optdepends=('poppler-qt5: PDF filter' 'ffmpeg: to save animations'
+optdepends=(
+  'poppler-qt5: PDF filter' 'ffmpeg: to save animations'
   'python-pyqt5: for the Python plugins' 'libheif: HEIF filter'
   'kseexpr: SeExpr generator layer' 'kimageformats: PSD support'
-  'libmypaint: support for MyPaint brushes')
+  'libmypaint: support for MyPaint brushes'
+)
 
-_commit=498a836b01d949e23f177c753d9dfc6e3b83095e
+_commit=fd51fc87921a0eafda107283a04a1afc4050cb1e
 source=(
   "krita::git+https://invent.kde.org/graphics/krita.git#commit=${_commit}"
 )
@@ -57,8 +59,8 @@ build() {
   if [[ ${_llvm} -eq 1 ]]; then
 
     CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
-    CFLAGS="${CFLAGS} -flto=thin -latomic -Wno-unused-command-line-argument"
-    CXXFLAGS="${CXXFLAGS} -flto=thin -latomic -Wno-unused-command-line-argument"
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
     #LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi

@@ -283,6 +283,7 @@ sqlite
 gnupg
 gpgme
 libgit2
+git
 mpv
 speexdsp
 alsa-lib
