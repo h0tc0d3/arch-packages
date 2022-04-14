@@ -295,6 +295,7 @@ zita-alsa-pcmi
 zita-ajbridge
 jack2
 systemd
+dracut
 hidapi
 ibus
 procps-ng

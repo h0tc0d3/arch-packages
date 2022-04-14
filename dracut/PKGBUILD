@@ -1,0 +1,67 @@
+pkgname=dracut+clang
+pkgver=056
+pkgrel=1
+pkgdesc="An event driven initramfs infrastructure"
+arch=('x86_64')
+url="https://dracut.wiki.kernel.org"
+license=('GPL')
+depends=('bash' 'coreutils' 'cpio' 'filesystem' 'findutils' 'grep' 'gzip'
+  'kmod' 'pkgconf' 'procps-ng' 'sed' 'systemd' 'util-linux' 'xz')
+makedepends=('asciidoc' 'bash-completion' 'git')
+optdepends=(
+  'binutils: --uefi option support'
+  'elfutils: strip binaries to reduce initramfs size'
+  'multipath-tools: dmraid dracut module support'
+  'pigz: faster gzip compression'
+  'sbsigntools: uefi_secureboot_cert/key configuration option support'
+)
+provides=('initramfs' 'dracut')
+conflicts=('dracut')
+backup=('etc/dracut.conf')
+source=("git+https://git.kernel.org/pub/scm/boot/dracut/dracut.git#tag=${pkgver}")
+sha256sums=('SKIP')
+validpgpkeys=(
+  '7F3D64824AC0B6B8009E50504BC0896FB5693595' # Harald Hoyer <harald@redhat.com>
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/dracut" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/dracut directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --sysconfdir=/etc \
+    --prefix=/usr \
+    --libdir=/usr/lib \
+    --systemdsystemunitdir=/usr/lib/systemd/system \
+    --bashcompletiondir=/usr/share/bash-completion/completions
+
+  make
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" make install -C dracut
+
+}

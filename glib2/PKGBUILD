@@ -3,7 +3,7 @@ pkgname=(
   glib2+clang
   glib2-docs+clang
 )
-pkgver=2.72.0
+pkgver=2.72.1
 pkgrel=1
 pkgdesc="Low level core library"
 url="https://wiki.gnome.org/Projects/GLib"
@@ -89,8 +89,11 @@ package_glib2+clang() {
   provides+=(glib2 "glib2=${pkgver}" libgio-2.0.so libglib-2.0.so libgmodule-2.0.so libgobject-2.0.so
     libgthread-2.0.so)
   conflicts=(glib2)
-  optdepends=('python: gdbus-codegen, glib-genmarshal, glib-mkenums, gtester-report'
-    'libelf: gresource inspection tool')
+  optdepends=(
+    'python: gdbus-codegen, glib-genmarshal, glib-mkenums, gtester-report'
+    'libelf: gresource inspection tool'
+    'gvfs: most gio functionality'
+  )
 
   meson install -C build --destdir "${pkgdir:?}"
 
