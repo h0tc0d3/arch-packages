@@ -1,5 +1,5 @@
 pkgname=neomutt+clang
-pkgver=20220408
+pkgver=20220415
 pkgrel=1
 pkgdesc='A version of mutt with added features'
 url='https://neomutt.org/'
@@ -14,7 +14,7 @@ optdepends=('python: keybase.py'
   'perl: smime_keys'
   'ca-certificates: default CA certificates')
 makedepends=('git' 'gnupg' 'libxslt' 'docbook-xsl' 'w3m')
-_commit=4319dddfbbc8ef68dfe5d0fa7a87ddd5e76af730
+_commit=ea3101c62e48824068ef1be34be6f44386b45084
 source=(
   "git+https://github.com/neomutt/neomutt.git#commit=${_commit:?}"
   "default-ca-certificates.patch"
