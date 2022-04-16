@@ -1,8 +1,8 @@
 pkgbase=jack2+clang
 pkgname=('jack2+clang' 'jack2-dbus+clang' 'jack2-docs+clang')
 pkgdesc="The JACK low-latency audio server"
-pkgver=1.9.20
-pkgrel=4
+pkgver=1.9.21
+pkgrel=1
 arch=('x86_64')
 url="https://github.com/jackaudio/jack2"
 license=('GPL2' 'LGPL2.1')

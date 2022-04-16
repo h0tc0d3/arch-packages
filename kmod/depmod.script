@@ -4,7 +4,7 @@ while read -r f; do
 
   if [[ -e "${f}/modules.order" ]]; then
 
-    depmod "${f##*/}"
+    depmod "$(basename "${f}")"
 
   elif [[ -d ${f} ]]; then
 

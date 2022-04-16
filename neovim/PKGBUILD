@@ -1,12 +1,13 @@
-pkgname=neovim
-pkgver=0.6.1
-pkgrel=2
+pkgname=neovim+clang
+pkgver=0.7.0
+pkgrel=1
 pkgdesc='Fork of Vim aiming to improve user experience, plugins, and GUIs'
 arch=('x86_64')
 url='https://neovim.io'
 backup=('etc/xdg/nvim/sysinit.vim')
 license=('custom:neovim')
-provides=('vim-plugin-runtime')
+provides=('vim-plugin-runtime' 'neovim')
+conflicts=('neovim')
 depends=('libtermkey' 'libuv' 'msgpack-c' 'unibilium' 'libvterm' 'luajit' 'libluv' 'tree-sitter')
 makedepends=('cmake' 'lua51-mpack' 'lua51-lpeg' 'gperf')
 optdepends=('python-neovim: for Python 3 plugin support (see :help python)'
@@ -14,10 +15,10 @@ optdepends=('python-neovim: for Python 3 plugin support (see :help python)'
   'xsel: for clipboard support on X11 (or xclip) (see :help clipboard)'
   'wl-clipboard: for clipboard support on wayland (see :help clipboard)')
 source=(
-  "https://github.com/neovim/neovim/archive/v${pkgver}/${pkgname}-${pkgver}.tar.gz"
+  "https://github.com/neovim/neovim/archive/v${pkgver}/neovim-${pkgver}.tar.gz"
   fix-build.patch
 )
-sha256sums=('dd882c21a52e5999f656cae3f336b5fc702d52addd4d9b5cd3dc39cfff35e864'
+sha256sums=('792a9c55d5d5f4a5148d475847267df309d65fb20f05523f21c1319ea8a6c7df'
   'bceb977645b38d4cf0c6c3fcb87ebaaf12b81553da5981e472d80fd3f1c8b8a0')
 
 _llvm=0
@@ -43,7 +44,7 @@ build() {
   fi
 
   cmake -S "neovim-${pkgver}" \
-    -Bbuild \
+    -B build \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DUSE_BUNDLED=OFF
@@ -68,7 +69,7 @@ package() {
     exit 1
   )
 
-  install -Dm644 LICENSE "${pkgdir:?}/usr/share/licenses/${pkgname}/LICENSE"
+  install -Dm644 LICENSE.txt "${pkgdir:?}/usr/share/licenses/neovim"
   install -Dm644 runtime/nvim.desktop "${pkgdir:?}/usr/share/applications/nvim.desktop"
   install -Dm644 runtime/nvim.appdata.xml "${pkgdir:?}/usr/share/metainfo/nvim.appdata.xml"
   install -Dm644 runtime/nvim.png "${pkgdir:?}/usr/share/pixmaps/nvim.png"
