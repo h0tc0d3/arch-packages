@@ -1,0 +1,61 @@
+pkgname=menu-cache+clang
+pkgver=1.1.0
+pkgrel=2
+pkgdesc='Caching mechanism for freedesktop.org compliant menus'
+arch=('x86_64')
+license=('GPL2')
+provides=(menu-cache "menu-cache=${pkgver}")
+conflicts=(menu-cache)
+url='https://lxde.org/'
+depends=('libfm-extra')
+makedepends=('gtk-doc')
+source=(
+  "https://downloads.sourceforge.net/lxde/menu-cache-${pkgver}.tar.xz"
+  menu-cache-1.1.0-0001-Support-gcc10-compilation.patch
+)
+sha256sums=('ed02eb459dcb398f69b9fa5bf4dd813020405afc84331115469cdf7be9273ec7'
+  '393723ca805cb5ffb5eee2ad00a1c4624b513ca72bfb6a880d71907fb96e83de')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  # Fix build (taken from Fedora)
+  patch -d "menu-cache-${pkgver}" -Np1 -i "${srcdir:?}/menu-cache-1.1.0-0001-Support-gcc10-compilation.patch"
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cd "${srcdir:?}/menu-cache-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/menu-cache-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --libexecdir=/usr/lib \
+    --enable-gtk-doc
+
+  make
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "menu-cache-${pkgver}"
+
+}

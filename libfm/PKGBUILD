@@ -1,0 +1,171 @@
+pkgbase=libfm+clang
+pkgname=(libfm+clang libfm-extra+clang libfm-gtk2+clang libfm-gtk3+clang)
+pkgver=1.3.2
+pkgrel=1
+pkgdesc='Library for file management'
+url='https://lxde.org/'
+arch=('x86_64')
+license=('GPL')
+depends=('gtk2' 'gtk3' 'libexif' 'menu-cache')
+makedepends=('intltool' 'gtk-doc' 'vala')
+source=("https://downloads.sourceforge.net/pcmanfm/libfm-${pkgver}.tar.xz")
+sha256sums=('a5042630304cf8e5d8cff9d565c6bd546f228b48c960153ed366a34e87cad1e5')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  mkdir -p gtk2 gtk3
+
+  cd "${srcdir:?}/libfm-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libfm-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+  # Update xarchiver option
+  # https://github.com/lxde/libfm/issues/35
+  sed -i 's/create=xarchiver --add-to %F/create=xarchiver --compress %F/' data/archivers.list
+
+  autoreconf -fiv
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cd "${srcdir:?}/gtk2" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gtk2 directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  "${srcdir:?}/libfm-${pkgver}/configure" \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --with-gnu-ld \
+    --enable-gtk-doc
+
+  make
+
+  cd "${srcdir:?}/gtk3" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gtk3 directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  "${srcdir:?}/libfm-${pkgver}/configure" \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --with-gnu-ld \
+    --with-gtk=3
+
+  make
+
+}
+
+package_libfm+clang() {
+
+  depends=('libexif' "libfm-extra=${pkgver}" 'menu-cache')
+  provides=('libfm' "libfm=${pkgver}")
+  conflicts=('libfm')
+
+  make DESTDIR="${pkgdir:?}" install -C gtk2
+
+  # Temporary fix to FS#32361
+  rm -rf "${pkgdir:?}/usr/include/libfm"
+  mv "${pkgdir:?}/usr/include/libfm-1.0/" "${pkgdir:?}/usr/include/libfm"
+
+  # Split libfm-extra
+  [[ -d "${srcdir:?}/libfm-extra" ]] && rm -r "${srcdir:?}/libfm-extra/"
+  mkdir "${srcdir:?}/libfm-extra"
+  mv "${pkgdir:?}/usr/include/libfm/fm-"{extra,version,xml-file}.h \
+    "${pkgdir:?}/usr/lib/libfm-extra."* \
+    "${pkgdir:?}/usr/lib/pkgconfig/libfm-extra.pc" \
+    "${srcdir:?}/libfm-extra/"
+
+  # Split libfm-gtk2
+  [[ -d "${srcdir:?}/libfm-gtk2" ]] && rm -r "${srcdir:?}/libfm-gtk2/"
+  mkdir "${srcdir:?}/libfm-gtk2"
+  mv "${pkgdir:?}/usr/bin" \
+    "${pkgdir:?}/usr/lib/libfm-gtk."* \
+    "${pkgdir:?}/usr/lib/libfm/modules/gtk-"* \
+    "${pkgdir:?}/usr/lib/pkgconfig/libfm-gtk.pc" \
+    "${pkgdir:?}/usr/share/applications" \
+    "${pkgdir:?}/usr/share/man" \
+    "${srcdir:?}/libfm-gtk2/"
+
+}
+
+package_libfm-extra+clang() {
+
+  pkgdesc="Extra library for file management"
+  depends=('glib2')
+  provides=('libfm-extra' "libfm-extra=${pkgver}")
+  conflicts=('libfm-extra')
+
+  cd "${srcdir:?}/libfm-extra" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libfm-extra directory! Package libfm-extra Failed! \E[0m"
+    exit 1
+  )
+
+  mkdir -p "${pkgdir:?}/usr/"{include/libfm,lib/pkgconfig}
+  mv *.h "${pkgdir:?}/usr/include/libfm"
+  mv libfm-extra.so* "${pkgdir:?}/usr/lib"
+  mv libfm-extra.pc "${pkgdir:?}/usr/lib/pkgconfig"
+
+}
+
+package_libfm-gtk2+clang() {
+
+  pkgdesc='GTK+ 2 library for file management'
+  depends=('gtk2' 'menu-cache' "libfm=${pkgver}")
+  replaces=('lxshortcut')
+  provides=('lxshortcut' 'libfm-gtk2' "libfm-gtk2=${pkgver}")
+  conflicts=('lxshortcut' 'libfm-gtk2' 'libfm-gtk3')
+
+  cd "${srcdir:?}/libfm-gtk2" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libfm-gtk2 directory! Package libfm-gtk2 Failed! \E[0m"
+    exit 1
+  )
+
+  mkdir -p "${pkgdir:?}/usr/"{lib/{libfm/modules,pkgconfig},share}
+  mv bin "${pkgdir:?}/usr"
+  mv libfm-gtk.so* "${pkgdir:?}/usr/lib"
+  mv gtk-* "${pkgdir:?}/usr/lib/libfm/modules"
+  mv libfm-gtk.pc "${pkgdir:?}/usr/lib/pkgconfig"
+  mv applications "${pkgdir:?}/usr/share"
+  mv man "${pkgdir:?}/usr/share"
+
+}
+
+package_libfm-gtk3+clang() {
+
+  pkgdesc='GTK+ 3 library for file management'
+  depends=('gtk3' 'menu-cache' "libfm=${pkgver}")
+  provides=('libfm-gtk3' "libfm-gtk3=${pkgver}")
+  conflicts=('lxshortcut' 'libfm-gtk2' 'libfm-gtk3')
+
+  make DESTDIR="${srcdir:?}/libfm-gtk3" install -C gtk3
+
+  cd "${srcdir:?}/libfm-gtk3" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libfm-gtk2 directory! Package libfm-gtk3 Failed! \E[0m"
+    exit 1
+  )
+
+  mkdir -p "${pkgdir:?}/usr/"{lib/{libfm/modules,pkgconfig},share}
+  mv usr/bin "${pkgdir:?}/usr"
+  mv usr/lib/libfm-gtk3.so* "${pkgdir:?}/usr/lib"
+  mv usr/lib/libfm/modules/gtk-* "${pkgdir:?}/usr/lib/libfm/modules"
+  mv usr/lib/pkgconfig/libfm-gtk3.pc "${pkgdir:?}/usr/lib/pkgconfig"
+  mv usr/share/applications "${pkgdir:?}/usr/share"
+  mv usr/share/man "${pkgdir:?}/usr/share"
+
+}

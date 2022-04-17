@@ -1,6 +1,6 @@
 pkgname=kwayland+clang
 pkgver=5.93.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Qt-style Client and Server library wrapper for the Wayland libraries'
 arch=(x86_64)
 url='https://www.kde.org'

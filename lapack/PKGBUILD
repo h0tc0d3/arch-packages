@@ -1,6 +1,6 @@
 pkgbase=lapack+clang
 pkgname=(lapack+clang blas+clang cblas+clang lapacke+clang lapack-doc+clang)
-pkgver=3.10.0
+pkgver=3.10.1
 pkgrel=1
 url='https://www.netlib.org/lapack'
 pkgdesc='Linear Algebra PACKage'
@@ -10,11 +10,9 @@ arch=(x86_64)
 license=(custom)
 source=(
   "https://github.com/Reference-LAPACK/lapack/archive/v${pkgver}/lapack-${pkgver}.tar.gz"
-  fix-out-of-bounds-read-in-larrv-CVE-2021-4048.patch
 )
 
-sha256sums=('328c1bea493a32cac5257d84157dc686cc3ab0b004e2bea22044e0a59f6f8a19'
-  'c1c2869d0d69a74f4f772367d416af690a44ca510994eee8941e35b6bd9d10a6')
+sha256sums=('cd005cd021f144d7d5f7f33c943942db9f03a28d110d6a3b80d718a295f7f714')
 
 _lld=0
 
@@ -23,8 +21,6 @@ prepare() {
   if ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _lld=1
   fi
-
-  patch -d lapack-${pkgver} -Np1 -i "${srcdir:?}/fix-out-of-bounds-read-in-larrv-CVE-2021-4048.patch"
 
 }
 

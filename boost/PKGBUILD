@@ -1,7 +1,7 @@
 pkgbase=boost+clang
 pkgname=('boost+clang' 'boost-libs+clang')
 pkgver=1.78.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Free peer-reviewed portable C++ source libraries"
 arch=('x86_64')
 url="https://www.boost.org/"

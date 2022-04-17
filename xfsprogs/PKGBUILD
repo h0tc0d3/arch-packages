@@ -1,6 +1,6 @@
 pkgname=xfsprogs+clang
 pkgver=5.15.0
-pkgrel=1
+pkgrel=2
 pkgdesc="XFS filesystem utilities"
 arch=('x86_64')
 license=('LGPL')

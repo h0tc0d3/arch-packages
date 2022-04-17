@@ -337,6 +337,11 @@ rofi
 neovim
 neomutt
 kitty
+menu-cache
+libfm
+lxqt-build-tools
+libfm-qt
+pcmanfm-qt
 qemu
 -linux-tools
 python-numpy
