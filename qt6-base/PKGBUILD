@@ -1,7 +1,7 @@
 pkgname=qt6-base
 _qtver=6.3.0
 pkgver=${_qtver/-/}
-pkgrel=2
+pkgrel=3
 arch=(x86_64)
 url='https://www.qt.io'
 license=(GPL3 LGPL3 FDL custom)
@@ -29,13 +29,15 @@ source=(
   qtbase-cxxflag.patch
   qtbase-gcc11.patch
   qtbase-libglvnd.patch
+  "qtbug-102177.patch::https://code.qt.io/cgit/qt/qtbase.git/patch/?id=94751cbf"
 )
 sha256sums=('b865aae43357f792b3b0a162899d9bf6a1393a55c4e5e4ede5316b157b1a0f99'
   '5411edbe215c24b30448fac69bd0ba7c882f545e8cf05027b2b6e2227abc5e78'
   '4abc22150fa3e06b2fdcec32146abc9be4e316692aa4d5bd5aa53b4b726783fa'
   'ad4dc439bc23826b7f165b1e897d8544adff593254cb03061be397358a7163b0'
   '71292be753abc23d814566f2cc865e621f33a17ce94111eb0e0ae48f221fb864'
-  'c0196f44cc1de0195225144c03fbab1372acb590c60ac89e4c452205ec28c6a7')
+  'c0196f44cc1de0195225144c03fbab1372acb590c60ac89e4c452205ec28c6a7'
+  'cc71e75acbda998a1f8f25ad3abe380886eef34899063344ead4df6a46efbcc9')
 
 _patch() {
 
@@ -57,6 +59,8 @@ prepare() {
   _patch qtbase-cxxflag.patch
   _patch qtbase-gcc11.patch
   _patch qtbase-libglvnd.patch
+
+  _patch qtbug-102177.patch # Fix crashes in QtCreator
 
 }
 
