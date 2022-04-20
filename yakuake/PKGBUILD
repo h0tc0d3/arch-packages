@@ -1,0 +1,69 @@
+pkgname=yakuake+clang
+pkgver=21.12.3
+pkgrel=1
+arch=(x86_64)
+url='https://apps.kde.org/yakuake/'
+pkgdesc='drop-down terminal emulator'
+license=(GPL LGPL FDL)
+provides=('yakuake' "yakuake=${pkgver}")
+conflicts=('yakuake')
+groups=(kde-applications kde-utilities)
+depends=(knotifyconfig kpty kparts kinit knewstuff konsole)
+makedepends=(extra-cmake-modules kdoctools)
+optdepends=('keditbookmarks: to manage bookmarks')
+source=(
+  "https://download.kde.org/stable/release-service/${pkgver}/src/yakuake-${pkgver}.tar.xz"
+)
+sha256sums=('09667eb9aaaf7d072a0cd78b55b441691726686441b83a04d0c2c9b935cab382')
+
+validpgpkeys=(
+  'CA262C6C83DE4D2FB28A332A3A6A4DB839EAA6D7' # Albert Astals Cid <aacid@kde.org>
+  'F23275E4BF10AFC1DF6914A6DBD2CE893E2D1C87' # Christoph Feck <cfeck@kde.org>
+  'D81C0CB38EB725EF6691C385BB463350D6EF31EF' # Heiko Becker <heiko.becker@kde.org>
+)
+
+_llvm=0
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/yakuake-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/yakuake-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -B build -S yakuake-${pkgver} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_TESTING=OFF
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+}
