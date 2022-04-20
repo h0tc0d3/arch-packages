@@ -10,8 +10,8 @@ pkgname=(
   qemu-guest-agent+clang
 )
 pkgdesc="A generic and open source machine emulator and virtualizer"
-pkgver=6.2.0
-pkgrel=4
+pkgver=7.0.0
+pkgrel=1
 arch=(x86_64)
 license=(GPL2 LGPL2.1)
 url="https://wiki.qemu.org/"
@@ -79,13 +79,11 @@ makedepends=(
 
 source=(
   "https://download.qemu.org/qemu-${pkgver}.tar.xz"{,.sig}
-  virtiofsd-glibc235.patch::https://github.com/qemu/qemu/commit/7b223e38603de3a75602e14914d26f9d4baf52eb.patch
   qemu-guest-agent.service
   65-kvm.rules
 )
-sha256sums=('68e15d8e45ac56326e0b9a4afa8b49a3dfe8aba3488221d098c84698bca65b45'
+sha256sums=('f6b375c7951f728402798b0baabb2d86478ca53d44cedbefabbe1c46bf46f839'
   'SKIP'
-  'f9e714e8b310b3e5e492a0fb034476272b3e436fe7fb26a8a9bf7c86eed65bd1'
   'c39bcde4a09165e64419fd2033b3532378bba84d509d39e2d51694d44c1f8d88'
   'a66f0e791b16b03b91049aac61a25950d93e962e1b2ba64a38c6ad7f609b532c')
 validpgpkeys=('CEACC9E15534EBABB82D3FA03353C9CEF108B584') # Michael Roth <flukshun@gmail.com>
@@ -100,8 +98,6 @@ prepare() {
 
   mkdir build-{full,headless}
   mkdir -p extra-arch-{full,headless}/usr/{bin,share/qemu}
-
-  patch -d "qemu-${pkgver}" -p1 <"${srcdir:?}/virtiofsd-glibc235.patch" # FS#73856
 
 }
 
@@ -147,8 +143,13 @@ _build() (
     --smbd=/usr/bin/smbd \
     --enable-modules \
     --enable-sdl \
+    --enable-lto \
+    --enable-avx2 \
+    --enable-bpf \
+    --enable-kvm \
+    --enable-zstd \
+    --enable-selinux \
     --enable-slirp=system \
-    --enable-xfsctl \
     "${@:2}"
 
   ninja
@@ -205,6 +206,7 @@ package_qemu+clang() {
     vte3 libvte-2.91.so
     zlib
     zstd libzstd.so
+    libselinux
   )
   optdepends=(
     'brltty: for braille device support'
@@ -257,6 +259,7 @@ package_qemu-headless+clang() {
     vde2
     zlib
     zstd libzstd.so
+    libselinux
   )
 
   provides=(qemu-headless "qemu-headless=${pkgver}")
@@ -394,6 +397,7 @@ package_qemu-arch-extra+clang() {
     zlib
     zstd
     libzstd.so
+    libselinux
   )
   optdepends=(
     'edk2-armvirt: for aarch64 UEFI support'
@@ -434,6 +438,7 @@ package_qemu-headless-arch-extra+clang() {
     vde2
     zlib
     zstd libzstd.so
+    libselinux
   )
   optdepends=(
     'edk2-armvirt: for aarch64 UEFI support'
