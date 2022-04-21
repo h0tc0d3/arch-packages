@@ -1,0 +1,43 @@
+From 04499bc157d640a7b1f205c615795b1e25d5443d Mon Sep 17 00:00:00 2001
+From: Marco Vanotti <mvanotti@dc.uba.ar>
+Date: Wed, 2 Jun 2021 13:49:06 -0700
+Subject: [PATCH] preproc: don't unmacro if macro cannot be found.
+
+This commit adds a check to see if the macro that we want to unmacro exists.
+A previous commit, introduced a check to see if the unmacro was undefining a macro being expanded, but that same check included a null pointer dereference if the macro to undefine did not exist.
+
+The following code reproduced the issue:
+
+```asm
+%macro baz 0
+  %unmacro F 0
+%endmacro
+baz
+```
+
+Compile with:
+```shell
+$ nasm -f elf64 -g -FDWARF -o tmp.o -werror file.asm
+```
+
+Fixes bug 3392761
+---
+ asm/preproc.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/asm/preproc.c b/asm/preproc.c
+index d1b9b31b..ae83ec7e 100644
+--- a/asm/preproc.c
++++ b/asm/preproc.c
+@@ -4330,6 +4330,11 @@ static int do_directive(Token *tline, Token **output)
+             goto done;
+         }
+         mmac_p = (MMacro **) hash_findi(&mmacros, spec.name, NULL);
++        if (mmac_p == NULL) {
++          // If the macro cannot be found, there's nothing to do.
++          free_tlist(spec.dlist);
++          break;
++        }
+ 
+         /* Check the macro to be undefined is not being expanded */
+         list_for_each(l, istk->expansion) {

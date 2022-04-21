@@ -1,0 +1,22 @@
+From 529b4be7b861fa08737a411e7c017e03b9f2ba35 Mon Sep 17 00:00:00 2001
+From: Elyes HAOUAS <ehaouas@noos.fr>
+Date: Sun, 9 Jan 2022 17:45:53 +0100
+Subject: [PATCH] Remove duplicated "idefine Yes"
+
+Signed-off-by: Elyes HAOUAS <ehaouas@noos.fr>
+---
+ misc/scitech.mac | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/misc/scitech.mac b/misc/scitech.mac
+index 26f85f49..73569a9d 100644
+--- a/misc/scitech.mac
++++ b/misc/scitech.mac
+@@ -167,7 +167,6 @@ ifdef __NASM_MAJOR__
+ %idefine True		1
+ %idefine No			0
+ %idefine Yes		1
+-%idefine Yes		1
+ 
+ ; Macro to be invoked at the start of all modules to set up segments for
+ ; later use. Does nothing for NASM.

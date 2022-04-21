@@ -1,5 +1,5 @@
 pkgname=xorg-xauth+clang
-pkgver=1.1.1
+pkgver=1.1.2
 pkgrel=1
 pkgdesc="X.Org authorization settings program"
 arch=(x86_64)
@@ -10,13 +10,13 @@ url="https://xorg.freedesktop.org/"
 depends=('libxmu')
 makedepends=('xorg-util-macros')
 groups=('xorg-apps' 'xorg')
-source=("${url}/releases/individual/app/xauth-${pkgver}.tar.bz2"{,.sig})
-sha256sums=('164ea0a29137b284a47b886ef2affcb0a74733bf3aad04f9b106b1a6c82ebd92'
+source=("https://xorg.freedesktop.org/releases/individual/app/xauth-${pkgver}.tar.xz"{,.sig})
+sha256sums=('78ba6afd19536ced1dddb3276cba6e9555a211b468a06f95f6a97c62ff8ee200'
   'SKIP')
 validpgpkeys=(
-  #'3BB639E56F861FA2E86505690FDD682D974CA72A'
+  '3BB639E56F861FA2E86505690FDD682D974CA72A'
   #'995ED5C8A6138EB0961F18474C09DD83CAAA50B2' # "Adam Jackson <ajax@nwnk.net>"
-  '4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E' # "Alan Coopersmith <alan.coopersmith@oracle.com>"
+  #'4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E' # "Alan Coopersmith <alan.coopersmith@oracle.com>"
 )
 
 _llvm=0

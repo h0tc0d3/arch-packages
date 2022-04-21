@@ -111,6 +111,7 @@ icu
 xfsprogs
 freetype2
 fontconfig
+nasm
 pango
 librsvg
 qt5-svg

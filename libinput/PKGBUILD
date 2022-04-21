@@ -1,6 +1,6 @@
 pkgname=libinput+clang
-pkgver=1.20.0
-pkgrel=2
+pkgver=1.20.1
+pkgrel=1
 pkgdesc="Input device management and event handling library"
 url="https://www.freedesktop.org/wiki/Software/libinput/"
 arch=(x86_64)
@@ -19,7 +19,7 @@ source=(
   #"https://freedesktop.org/software/libinput/libinput-${pkgver}.tar.xz"{,.sig}
   "https://gitlab.freedesktop.org/libinput/libinput/-/archive/${pkgver}/libinput-${pkgver}.tar.bz2"
 )
-sha256sums=('6c1f97892a7d599f97349e5e7c1239901fe00edcd4f6289f410034d5dc06cc85')
+sha256sums=('08c003f724f361ed21f4dfbfe755a6c115b85385f1418907bb98f185457273f0')
 validpgpkeys=('3C2C43D9447D5938EF4551EBE23B7E70B467F0BF') # Peter Hutterer (Who-T) <office@who-t.net>
 
 _extra_lto_flag=""

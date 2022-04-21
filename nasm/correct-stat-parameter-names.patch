@@ -1,0 +1,22 @@
+From 4dd7ba63bbf8b63dff0be19b2a5fc6ffb3926194 Mon Sep 17 00:00:00 2001
+From: Christian <47704452+thebigcx@users.noreply.github.com>
+Date: Sat, 11 Sep 2021 19:22:38 +1000
+Subject: [PATCH] Use correct stat() stub parameter names
+
+---
+ nasmlib/file.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/nasmlib/file.h b/nasmlib/file.h
+index fc8f893d..63aeab02 100644
+--- a/nasmlib/file.h
++++ b/nasmlib/file.h
+@@ -217,7 +217,7 @@ static inline int os_stat(os_filename osfname, os_struct_stat *st)
+ #ifndef os_fstat
+ static inline int os_fstat(int fd, os_struct_stat *st)
+ {
+-    (void)osfname;
++    (void)fd;
+     (void)st;
+     return -1;
+ }

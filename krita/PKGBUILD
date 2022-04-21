@@ -1,13 +1,13 @@
 pkgname=krita+clang
 pkgver=5.0.5
-pkgrel=1
+pkgrel=2
 pkgdesc='Edit and paint images'
 arch=(x86_64)
 url='https://krita.org'
 license=(GPL3)
 provides=('krita' "krita=${pkgver}")
 conflicts=('krita')
-depends=(kitemviews kitemmodels ki18n kcompletion kguiaddons kcrash qt5-svg qt5-multimedia quazip
+depends=(kitemviews kitemmodels ki18n kcompletion kguiaddons qt5-svg qt5-multimedia quazip
   gsl libraw exiv2 openexr fftw openjpeg2 opencolorio libwebp hicolor-icon-theme)
 makedepends=(extra-cmake-modules kdoctools boost eigen vc poppler-qt5 python-pyqt5 libheif
   qt5-tools sip kseexpr libmypaint git)
@@ -68,6 +68,8 @@ build() {
   cmake -B build -S krita \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_TESTING=OFF \
+    -DFOUNDATION_BUILD=ON \
+    -DKF5Crash=OFF \
     -DBUILD_KRITA_QT_DESIGNER_PLUGINS=ON
 
   cmake --build build

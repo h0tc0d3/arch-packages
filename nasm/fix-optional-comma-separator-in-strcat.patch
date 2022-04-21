@@ -1,0 +1,34 @@
+From 349f19d402b89820a852e3fbf96b1e332edbab0c Mon Sep 17 00:00:00 2001
+From: Igor Glucksmann <33635651+igg0@users.noreply.github.com>
+Date: Wed, 2 Feb 2022 17:09:06 +0100
+Subject: [PATCH] Fixed optional comma separator in %strcat
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Signed-off-by: "Glücksmann, Igor" <igor.glucksmann@avast.com>
+---
+ asm/preproc.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/asm/preproc.c b/asm/preproc.c
+index cb1669da..0ff2b518 100644
+--- a/asm/preproc.c
++++ b/asm/preproc.c
+@@ -4709,15 +4709,12 @@ static int do_directive(Token *tline, Token **output)
+         list_for_each(t, tline) {
+             switch (t->type) {
+             case TOKEN_WHITESPACE:
++            case TOKEN_COMMA:
+                 break;
+             case TOKEN_STR:
+ 		unquote_token(t);
+                 len += t->len;
+                 break;
+-            case TOKEN_OTHER:
+-                if (tok_is(t, ',')) /* permit comma separators */
+-                    break;
+-                /* else fall through */
+             default:
+                 nasm_nonfatal("non-string passed to `%s': %s", dname,
+ 			      tok_text(t));
