@@ -1,6 +1,6 @@
 pkgbase=audit+clang
 pkgname=('audit+clang' 'python-audit+clang')
-pkgver=3.0.7
+pkgver=3.0.8
 pkgrel=1
 pkgdesc='Userspace components of the audit framework'
 url='https://people.redhat.com/sgrubb/audit'
@@ -10,10 +10,12 @@ license=('GPL')
 options=('emptydirs')
 source=(
   "https://people.redhat.com/sgrubb/audit/audit-${pkgver}.tar.gz"
+  audit-3.0.8-config_paths.patch
   audit-3.0.8-flex-array-workaround.patch
   audit-3.0.8-undo-flex-array.patch
 )
-sha256sums=('8b4c78632a9301a1c7f859b0e38fc0b9c260b8214d6b7c771bf28b3d73a62597'
+sha256sums=('b5f4d9b9ad69381ee18f33d3d918326aa52861509c901143f8a8c4ed5caa8913'
+  'c3647e09d1a973595d8e43e373b8644dfb7131328c7fb3e229593af02c72ca42'
   'b5e2a01b87fcb3634b67b5899a66283fe2a5fb83a3ad324639c5cfc02fa26170'
   '6793c3358821b0d9c00f28289e47761caf5ba40a5016058bf35e876188d09084')
 
@@ -35,7 +37,8 @@ prepare() {
   patch -Np1 -i "${srcdir:?}/audit-3.0.8-flex-array-workaround.patch"
 
   autoreconf -fiv
-  sed 's|/var/run/auditd.pid|/run/auditd.pid|' -i init.d/auditd.service
+  # replace the use of /sbin with /usr/bin in configs
+  patch -Np1 -i "${srcdir:?}/audit-3.0.8-config_paths.patch"
 
 }
 
@@ -86,12 +89,7 @@ package_audit+clang() {
     etc/audit/plugins.d/syslog.conf
   )
 
-  cd "${srcdir:?}/audit-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/audit-${pkgver} directory! Package audit Failed! \E[0m"
-    exit 1
-  )
-
-  make DESTDIR="${pkgdir:?}" INSTALL='install -p' install
+  make DESTDIR="${pkgdir:?}" install -C "audit-${pkgver}"
 
   cd "${pkgdir:?}" || (
     echo -e "\E[1;31mCan't cd to ${pkgdir:?} directory! Package audit Failed! \E[0m"
@@ -100,18 +98,14 @@ package_audit+clang() {
 
   patch -Np1 -i "${srcdir:?}/audit-3.0.8-undo-flex-array.patch"
 
-  install -d -m 0700 var/log/audit
-  rm -rf etc/rc.d \
-    etc/sysconfig \
-    usr/lib/audit \
-    usr/lib/python*
+  # add log dir
+  install -vdm 700 "${pkgdir:?}/var/log/audit"
 
-  sed -ri 's|/sbin|/usr/bin|' \
-    etc/audit/*.conf \
-    etc/audit/plugins.d/*.conf \
-    usr/lib/systemd/system/auditd.service
+  # remove legacy files
+  rm -frv "${pkgdir:?}/usr/lib/audit"
 
-  chmod 644 usr/lib/systemd/system/auditd.service
+  # remove files provided by python-audit
+  rm -frv "${pkgdir:?}/usr/lib/python"*
 
 }
 
@@ -122,11 +116,6 @@ package_python-audit+clang() {
   provides=('python-audit' "python-audit=${pkgver}")
   conflicts=('python-audit')
 
-  cd "${srcdir:?}/audit-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/audit-${pkgver} directory! Package python-audit Failed! \E[0m"
-    exit 1
-  )
-
-  make -C bindings DESTDIR="${pkgdir:?}" INSTALL='install -p' install
+  make DESTDIR="${pkgdir:?}" install -C "audit-${pkgver}/bindings"
 
 }
