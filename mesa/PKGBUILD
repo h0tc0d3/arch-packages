@@ -1,6 +1,6 @@
 pkgname=mesa+clang
 pkgdesc="Mesa open-source implementation of the OpenGL specification"
-pkgver=22.0.1
+pkgver=22.0.2
 _pkgver=${pkgver//_/-}
 pkgrel=1
 arch=('x86_64')
@@ -19,7 +19,7 @@ source=(
   'LICENSE'
 )
 
-sha256sums=('c05f9682c54560b36e0afa70896233fc73f1ed715e10d1a028b0eb84fd04426f'
+sha256sums=('df4fa560dcce6680133067cd15b0505fc424ca703244ce9ab247c74d2fab6885'
   'SKIP'
   '7fdc119cf53c8ca65396ea73f6d10af641ba41ea1dd2bd44a824726e01c8b3f2')
 

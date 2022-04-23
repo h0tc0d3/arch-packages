@@ -1,5 +1,5 @@
 pkgname=konsole+clang
-pkgver=21.12.3
+pkgver=22.04.0
 pkgrel=1
 arch=(x86_64)
 url='https://apps.kde.org/konsole/'
@@ -12,9 +12,10 @@ depends=(knotifyconfig kpty kparts kinit knewstuff)
 makedepends=(extra-cmake-modules kdoctools)
 optdepends=('keditbookmarks: to manage bookmarks')
 source=(
-  "https://download.kde.org/stable/release-service/${pkgver}/src/konsole-${pkgver}.tar.xz"
+  "https://download.kde.org/stable/release-service/${pkgver}/src/konsole-${pkgver}.tar.xz"{,.sig}
 )
-sha256sums=('1a9727a1ab878bce3419a3fa9cedf41cf0ed778dc7d9ce5a66314755bba8581b')
+sha256sums=('bf9b69a0d86ae3c94f01132b9fa8361cee95ff72ddad0002f3b95ce42777dbf3'
+  'SKIP')
 
 validpgpkeys=(
   'CA262C6C83DE4D2FB28A332A3A6A4DB839EAA6D7' # Albert Astals Cid <aacid@kde.org>
