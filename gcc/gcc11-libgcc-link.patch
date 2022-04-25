@@ -19,7 +19,6 @@ that also repeats later in the @multilib_flags@, which should be harmless.
 2021-08-04  Jakub Jelinek  <jakub@redhat.com>
 
 	* config/t-slibgcc (SHLIB_LINK): Add $(LDFLAGS).
-	* config/t-slibgcc-darwin (SHLIB_LINK): Likewise.
 	* config/t-slibgcc-vms (SHLIB_LINK): Likewise.
 
 --- libgcc/config/t-slibgcc
@@ -33,17 +32,6 @@ that also repeats later in the @multilib_flags@, which should be harmless.
  	-o $(SHLIB_DIR)/$(SHLIB_SONAME).tmp @multilib_flags@ \
  	$(SHLIB_OBJS) $(SHLIB_LC) && \
  	rm -f $(SHLIB_DIR)/$(SHLIB_SOLINK) && \
---- libgcc/config/t-slibgcc-darwin
-+++ libgcc/config/t-slibgcc-darwin
-@@ -15,7 +15,7 @@ SHLIB_LC = -lc
- # Note that this version is used for the loader, not the linker; the linker
- # uses the stub versions named by the versioned members of $(INSTALL_FILES).
- 
--SHLIB_LINK = $(CC) $(LIBGCC2_CFLAGS) -dynamiclib -nodefaultlibs \
-+SHLIB_LINK = $(CC) $(LIBGCC2_CFLAGS) $(LDFLAGS) -dynamiclib -nodefaultlibs \
- 	-install_name @shlib_slibdir@/$(SHLIB_INSTALL_NAME) \
- 	-single_module -o $(SHLIB_DIR)/$(SHLIB_SONAME) \
- 	-Wl,-exported_symbols_list,$(SHLIB_MAP) \
 --- libgcc/config/t-slibgcc-vms
 +++ libgcc/config/t-slibgcc-vms
 @@ -22,7 +22,7 @@ SHLIB_LINK = \

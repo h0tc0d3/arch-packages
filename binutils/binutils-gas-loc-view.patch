@@ -1,5 +1,3 @@
-Only in binutils-2.38/gas: #dwarf2dbg.c#
-Only in binutils-2.38/gas: .#dwarf2dbg.c
 diff -rup binutils.orig/gas/symbols.c binutils-2.38/gas/symbols.c
 --- binutils.orig/gas/symbols.c	2022-03-09 11:43:34.706610216 +0000
 +++ binutils-2.38/gas/symbols.c	2022-03-09 11:45:57.540686508 +0000
@@ -57,3 +55,37 @@ diff -rup binutils.orig/gas/testsuite/gas/elf/dwarf2-18.d binutils-2.38/gas/test
  
  Hex dump of section '\.rodata':
    0x00000000 0100 *.*
+--- binutils.orig/gas/dwarf2dbg.c	2022-03-10 09:13:18.516639363 +0000
++++ binutils-2.38/gas/dwarf2dbg.c	2022-03-10 12:45:25.191933733 +0000
+@@ -402,18 +402,27 @@ set_or_check_view (struct line_entry *e,
+   if (viewx.X_op != O_constant || viewx.X_add_number)
+     {
+       expressionS incv;
++      expressionS *p_view;
+ 
+       if (!p->loc.u.view)
+-	{
+-	  p->loc.u.view = symbol_temp_make ();
+-	  gas_assert (!S_IS_DEFINED (p->loc.u.view));
+-	}
++	p->loc.u.view = symbol_temp_make ();
+ 
+       memset (&incv, 0, sizeof (incv));
+       incv.X_unsigned = 1;
+       incv.X_op = O_symbol;
+       incv.X_add_symbol = p->loc.u.view;
+       incv.X_add_number = 1;
++      p_view = symbol_get_value_expression (p->loc.u.view);
++      if (p_view->X_op == O_constant || p_view->X_op == O_symbol)
++	{
++	  /* If we can, constant fold increments so that a chain of
++	     expressions v + 1 + 1 ... + 1 is not created.
++	     resolve_expression isn't ideal for this purpose.  The
++	     base v might not be resolvable until later.  */
++	  incv.X_op = p_view->X_op;
++	  incv.X_add_symbol = p_view->X_add_symbol;
++	  incv.X_add_number = p_view->X_add_number + 1;
++	}
+ 
+       if (viewx.X_op == O_constant)
+ 	{

@@ -2,7 +2,7 @@
 # NOTE: libtool requires rebuilt with each new gcc version
 
 pkgname=(gcc gcc-libs gcc-fortran gcc-objc gcc-ada gcc-go lib32-gcc-libs gcc-d)
-pkgver=11.2.1
+pkgver=11.3.1
 _majorver=${pkgver%%.*}
 _islver=0.24
 pkgrel=5
@@ -17,7 +17,7 @@ if [[ -z ${CHOST} ]]; then
   CHOST=x86_64-pc-linux-gnu
 fi
 _libdir="usr/lib/gcc/${CHOST:?}/${pkgver%%+*}"
-_commit=79fddacc4e8cce9590b52f58a25db2129376adc3
+_commit=977cbabeb1c1a9a28cc45655bdc693e1594642f0
 source=(
   "git://gcc.gnu.org/git/gcc.git#commit=${_commit}"
   "https://libisl.sourceforge.io/isl-${_islver}.tar.xz"
@@ -52,7 +52,7 @@ sha256sums=('SKIP'
   'f758e7bc1e013a96b00afc70354d0da81d15de75c98c1cb20df5158dda5d936d'
   'ee0306adc51c33fb4ca83f9cfaf0fa72e1e18a895b6ad338e8d3a789c6f1f585'
   '2d478d21b009f8662971681b37a8ccdee3cc8886f3a28b9b8382a3d8fcb5969f'
-  '95a7ef8f98a5135a0071978d5a2927f7b4fe397355c9c8050fbf05b5683aeed6'
+  '5a254febeabb8835298518a1013ab3369f1359f8135b75506810086a1290b343'
   'cbacb7c8e128e1722a379c295ef761a3a92563ebd614af3ceefc8f193fa04392'
   'be93cc7b4fb7a9a16cbffdd30b30727cf2c72e0bb59c69231bd7ef68d9631aeb')
 
