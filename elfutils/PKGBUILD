@@ -1,7 +1,7 @@
 pkgbase=elfutils+clang
 pkgname=('debuginfod+clang' 'elfutils+clang' 'libelf+clang')
-pkgver=0.186
-pkgrel=5
+pkgver=0.187
+pkgrel=1
 pkgdesc='Handle ELF object files and DWARF debugging information'
 arch=('x86_64')
 url="https://sourceware.org/elfutils/"
@@ -13,7 +13,7 @@ source=(
   "https://sourceware.org/elfutils/ftp/${pkgver}/elfutils-${pkgver}.tar.bz2"{,.sig}
   libelf-fix-buffer-overflow.patch
 )
-sha256sums=('7f6fb9149b1673d38d9178a0d3e0fb8a1ec4f53a9f4c2ff89469609879641177'
+sha256sums=('e70b0dfbe610f90c4d1fe0d71af142a4e25c3c4ef9ebab8d2d72b65159d454c8'
   'SKIP'
   '6a54a6ad989468e68d997a49d274ac548057729c4df0f2b8b9407e6d741c65d6')
 validpgpkeys=(
@@ -166,6 +166,6 @@ package_debuginfod+clang() {
     "${pkgdir:?}/usr/share/locale"
 
   # set the default DEBUGINFOD_URLS environment variable to the distribution's debuginfod URL
-  printf "https://debuginfod.archlinux.org\nhttps://debug.archlinux.club\n" >"${pkgdir:?}/etc/debuginfod/archlinux.urls"
+  printf "https://debuginfod.archlinux.org" >"${pkgdir:?}/etc/debuginfod/archlinux.urls"
 
 }
