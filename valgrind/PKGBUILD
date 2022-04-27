@@ -1,6 +1,6 @@
 pkgname=valgrind+clang
-pkgver=3.18.1
-pkgrel=4
+pkgver=3.19.0
+pkgrel=1
 pkgdesc='Tool to help find memory-management problems in programs'
 arch=('x86_64')
 license=('GPL')
@@ -17,17 +17,15 @@ options=('!emptydirs')
 source=(
   "https://sourceware.org/pub/valgrind/valgrind-${pkgver}.tar.bz2"{,.asc}
   valgrind-3.7.0-respect-flags.patch
-  valgrind-3.18.1-glibc-2.35.patch
   valgrind-cxx17.patch
 )
 validpgpkeys=(
   0E9FFD0C16A1856CF9C7C690BA0166E698FA6035 # Julian Seward <jseward@acm.org>
   EC3CFE88F6CA0788774F5C1D1AA44BE649DE760A # Mark Wielaard <mjw@gnu.org>
 )
-sha256sums=('00859aa13a772eddf7822225f4b46ee0d39afbe071d32778da4d99984081f7f5'
+sha256sums=('dd5e34486f1a483ff7be7300cc16b4d6b24690987877c3278d797534d6738f02'
   'SKIP'
   '4e6be3a1799c17a6e843ab1966a3a68ac0ffa83d4b2230ce1b607518c42a31a2'
-  '8be6cad05e4bdf3e10e1faf10f02d761c86a2104b3c587c279beb1c3f96b675d'
   '9416b0f07cd6c23fdcfb786e8d9b1cf3d997eea17b0295af31a016857ecf43a4')
 
 _llvm=0
@@ -45,9 +43,6 @@ prepare() {
 
   patch -p1 -i "${srcdir:?}/valgrind-3.7.0-respect-flags.patch"
   sed -i 's|sgml/docbook/xsl-stylesheets|xml/docbook/xsl-stylesheets-1.79.2-nons|' docs/Makefile.am
-
-  # https://sourceware.org/git/?p=valgrind.git;a=commitdiff;h=1024237358
-  patch -p1 -i "${srcdir:?}/valgrind-3.18.1-glibc-2.35.patch"
 
   patch -p1 -i "${srcdir:?}/valgrind-cxx17.patch"
 

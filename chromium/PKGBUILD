@@ -1,6 +1,6 @@
 pkgname=chromium+clang
-pkgver=100.0.4896.127
-pkgrel=2
+pkgver=101.0.4951.41
+pkgrel=1
 _launcher_ver=8
 _gcc_patchset=4
 pkgdesc="A web browser built for speed, simplicity, and security"
@@ -32,13 +32,12 @@ source=(
   chromium-EnumTable-crash.patch
   chromium-gcc11.patch
   chromium-InkDropHost-crash.patch
-  webcodecs-stop-using-AudioOpusEncoder.patch
   chromium-gtk4-build.patch
-  webrtc-check-existence-of-cursor-metadata.patch
+  chromium-libxml-unbundle.patch
 )
-sha256sums=('4710e3453c972c91e68a21f6b0b76ba73d4d617f299a5208615ed6e41b1af84d'
+sha256sums=('099863882e88b9a035fcb6b63dd5288554f6b27558e0ebce93e0d804465efa37'
   '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
-  'a6120e7d4eb5e131b87b6ab3b922e0c6cd78e15501e54cfb2019875173688d80'
+  '8ed519d21ccd8b382ddd384e9c15306a60d2e3495f48a62dea07c9be9bbffebd'
   '70a2805a63df15817a3435e983c0350c5d04ff62deffd8214cbb040b904f54a5'
   '15c93da644dbc533a6b74bd7f86a07dc59023c7b369298acd649715b9a9209a5'
   'c162eafc1f128e616281e719d860ec8726eec89660f449ed0e9af7dfe07c8cc9'
@@ -47,9 +46,8 @@ sha256sums=('4710e3453c972c91e68a21f6b0b76ba73d4d617f299a5208615ed6e41b1af84d'
   'bb4560e067eb6ff6d4c4a5c4f149d1cc1c9c705a14be4721ead2ebb8ec84ded1'
   '5690089b8bd6946dfa975b8022531213b882b3396a3c968eeef9836b131725b7'
   '04bba6fb19ea5a4ab3949b65f06c88728a00ab296f42022ece62ca2fa25ec2e7'
-  '064daaa2b9d95b96ec04d8ddebf4af441f92263d123365b58fe73966866080af'
   '63bebd6b68ddcd807f859ab395d0a605b165195d6514425fa9888ff781b9eb65'
-  '7480eebd2f96769606b2fb39fbaa57e81263252d66edecac134fcefebed8e7b0')
+  'fd3bf124aacc45f2d0a4f1dd86303fa7f2a3d4f4eeaf33854631d6cb39e12485')
 #noextract=("${source[@]##*/}")
 # Possible replacements are listed in build/linux/unbundle/replace_gn_files.py
 # Keys are the names in the above script; values are the dependencies in Arch
@@ -135,9 +133,10 @@ prepare() {
   _patch chromium-EnumTable-crash.patch
   _patch chromium-gcc11.patch
   _patch chromium-InkDropHost-crash.patch
-  _patch webcodecs-stop-using-AudioOpusEncoder.patch
   _patch chromium-gtk4-build.patch
-  _patch webrtc-check-existence-of-cursor-metadata.patch
+
+  # https://chromium-review.googlesource.com/c/chromium/src/+/3488058
+  _patch chromium-libxml-unbundle.patch
 
   # Link to system tools required by the build
   mkdir -p third_party/node/linux/node-linux-x64/bin
@@ -180,6 +179,7 @@ build() {
     'clang_use_chrome_plugins=false'
     'use_lld=true'
     'is_official_build=true' # implies is_cfi=true on x86_64
+    'chrome_pgo_phase=0'
     'is_debug=false'
     'is_asan=false'
     'is_cfi=false'
