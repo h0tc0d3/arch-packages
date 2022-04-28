@@ -1,6 +1,6 @@
 pkgname=ffmpeg+clang
 pkgver=5.0.1
-pkgrel=1
+pkgrel=3
 epoch=2
 pkgdesc='Complete solution to record, convert and stream audio and video'
 arch=(x86_64)
@@ -90,7 +90,7 @@ provides=(
   libswscale.so
 )
 conflicts=('ffmpeg')
-_commit=9687cae2b468e09e35df4cea92cc2e6a0e6c93b3
+_commit=a5ebb3d25e50c6f59f931115fb18121032dfa12d
 source=(
   "git+https://git.ffmpeg.org/ffmpeg.git#commit=${_commit}"
   ffmpeg-vmaf2.x.patch

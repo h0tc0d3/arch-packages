@@ -1,6 +1,6 @@
 pkgname=ncurses+clang
 pkgver=6.3
-pkgrel=2
+pkgrel=3
 pkgdesc='System V Release 4.0 curses emulation library'
 arch=(x86_64)
 url='https://invisible-island.net/ncurses/ncurses.html'
@@ -71,7 +71,8 @@ build() {
     --with-pkg-config-libdir=/usr/lib/pkgconfig \
     --with-shared \
     --with-versioned-syms \
-    --without-ada
+    --without-ada \
+    --with-xterm-kbs=del
 
   make
 
