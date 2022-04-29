@@ -1,7 +1,7 @@
 pkgbase=qbittorrent+clang
 pkgname=(qbittorrent+clang qbittorrent-nox+clang)
 pkgver=4.4.2
-pkgrel=1
+pkgrel=2
 arch=(x86_64)
 url='https://www.qbittorrent.org'
 license=(custom GPL)

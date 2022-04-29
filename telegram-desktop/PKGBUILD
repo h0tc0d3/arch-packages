@@ -1,5 +1,5 @@
 pkgname=telegram-desktop+clang
-pkgver=3.6.1
+pkgver=3.7.3
 pkgrel=1
 pkgdesc='Official Telegram Desktop client'
 arch=('x86_64')
@@ -8,20 +8,20 @@ license=('GPL3')
 provides=('telegram-desktop' "telegram-desktop=${pkgver}")
 conflicts=('telegram-desktop')
 depends=('hunspell' 'ffmpeg' 'hicolor-icon-theme' 'lz4' 'minizip' 'openal' 'ttf-opensans'
-  'qt6-imageformats' 'qt6-svg' 'qt6-wayland' 'qt6-5compat' 'libdbusmenu-qt6' 'xxhash'
-  'kwayland' 'glibmm' 'rnnoise' 'pipewire' 'libxtst' 'libxrandr' 'jemalloc' 'abseil-cpp')
-makedepends=('cmake' 'git' 'ninja' 'python' 'range-v3' 'tl-expected' 'microsoft-gsl'
-  'extra-cmake-modules' 'webkit2gtk' 'libtg_owt')
+  'qt6-base' 'qt6-imageformats' 'qt6-svg' 'qt6-wayland' 'qt6-5compat' 'xxhash' 'glibmm'
+  'rnnoise' 'pipewire' 'libxtst' 'libxrandr' 'jemalloc' 'abseil-cpp' 'libdispatch')
+makedepends=('cmake' 'git' 'ninja' 'python' 'range-v3' 'tl-expected' 'microsoft-gsl' 'meson'
+  'extra-cmake-modules' 'wayland-protocols' 'plasma-wayland-protocols' 'libtg_owt')
 optdepends=(
   'webkit2gtk: embedded browser features'
   'xdg-desktop-portal: desktop integration'
 )
 source=(
   "https://github.com/telegramdesktop/tdesktop/releases/download/v${pkgver}/tdesktop-${pkgver}-full.tar.gz"
-  tgcalls-ffmpeg5.patch
+  fix-build-with-clang.patch
 )
-sha256sums=('1e87df0970b135d566f5af4bc6c2695fc98ba387dc1137100a478f02d48c12e8'
-  '183e1b29c6202a911613c7e2f9f618ba9a2eaa3f7ccbdfeefc70366a6e1be427')
+sha256sums=('9735f30610ff62b01cbdb0b945d32c494cec245961023c9860d9dd5268b9fe1e'
+  '7b67f1a70461a00b45190ab1539bece35af8c2a8de58c7cf4330b5ef0dbc19ab')
 
 _llvm=0
 
@@ -31,7 +31,7 @@ prepare() {
     _llvm=1
   fi
 
-  patch -d "${srcdir:?}/tdesktop-${pkgver}-full/Telegram/ThirdParty/tgcalls" -Np1 -i "${srcdir:?}/tgcalls-ffmpeg5.patch"
+  patch -d "${srcdir:?}/tdesktop-${pkgver}-full" -Np1 -i "${srcdir:?}/fix-build-with-clang.patch"
 
 }
 
@@ -48,19 +48,21 @@ build() {
   CXXFLAGS="${CXXFLAGS} -Wp,-U_GLIBCXX_ASSERTIONS"
 
   cmake -B build -S tdesktop-${pkgver}-full \
-    -G Ninja \
-    -DCMAKE_INSTALL_PREFIX="/usr" \
+    -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_BUILD_TYPE=Release \
-    -DDESKTOP_APP_QT6=off \
     -DTDESKTOP_API_ID=611335 \
     -DTDESKTOP_API_HASH=d524b414d21f4d37f08684c1df41ac9c
 
-  ninja -C build
+  sed -i 's#/ffmpeg4\.4##Ig' build/Telegram/cmake_install.cmake
+  sed -i 's#/ffmpeg4\.4##Ig' build/Telegram/CMakeFiles/Telegram.dir/build.make
+  sed -i 's#/ffmpeg4\.4##Ig' build/Telegram/CMakeFiles/Telegram.dir/link.txt
+
+  cmake --build build
 
 }
 
 package() {
 
-  DESTDIR="${pkgdir:?}" ninja -C build install
+  DESTDIR="${pkgdir:?}" cmake --install build
 
 }

@@ -1,7 +1,7 @@
 pkgbase=curl+clang
 pkgname=(curl+clang libcurl-compat+clang libcurl-gnutls+clang)
-pkgver=7.82.0
-pkgrel=3
+pkgver=7.83.0
+pkgrel=1
 pkgdesc='An URL retrieval utility and library'
 arch=('x86_64')
 url='https://curl.haxx.se'
@@ -11,17 +11,9 @@ depends=('ca-certificates' 'brotli' 'libbrotlidec.so' 'krb5' 'libgssapi_krb5.so'
   'openssl' 'zlib' 'zstd' 'libzstd.so')
 source=(
   "https://curl.haxx.se/download/curl-${pkgver}.tar.gz"{,.asc}
-  0001-http2-handle-DONE-called-for-the-paused-stream.patch
-  0002-http-close-the-stream-not-connection-on-time-conditi.patch
-  0003-http2-RST-the-stream-if-we-stop-it-on-our-own-will.patch
-  0004-openssl-fix-CN-check-error-code.patch
 )
-sha256sums=('910cc5fe279dc36e2cca534172c94364cf3fcf7d6494ba56e6c61a390881ddce'
-  'SKIP'
-  'ee63885393f548166e08a85ce20b21b680cd654ecb26594aad4e5d7f3299c496'
-  '9d93b236d302fc4c8115317139c6d8454d3c76b5ee4767266f8dbcfbf82a61f9'
-  'd3262ade60f214e2bd7b7cb1b705256e69fc7e79e162cc4b6c59dbf5a1b7b987'
-  'ad96be99435a85b447681a2aa22b732d9d08814755077f35f9558e73bb6592e3')
+sha256sums=('c0e64302a33d2fb79e0fc4e674260a22941e92ee2f11b894bf94d32b8f5531af'
+  'SKIP')
 validpgpkeys=('27EDEAF22F3ABCEB50DB9A125CC908FDB71E12C2') # Daniel Stenberg
 
 _configure_options=(
@@ -53,13 +45,6 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=1
   fi
-
-  # https://github.com/curl/curl/issues/8626
-  _patch 0001-http2-handle-DONE-called-for-the-paused-stream.patch
-  _patch 0002-http-close-the-stream-not-connection-on-time-conditi.patch
-  _patch 0003-http2-RST-the-stream-if-we-stop-it-on-our-own-will.patch
-  # https://github.com/curl/curl/issues/8559
-  _patch 0004-openssl-fix-CN-check-error-code.patch
 
 }
 
@@ -137,11 +122,11 @@ package_libcurl-compat+clang() {
 
   make -C "build-curl-compat/lib" DESTDIR="${pkgdir:?}" install
 
-  mv "${pkgdir:?}/usr/lib/libcurl"{,-compat}.so.4.7.0
+  mv "${pkgdir:?}/usr/lib/libcurl"{,-compat}.so.4.8.0
   rm "${pkgdir:?}/usr/lib/libcurl."{a,so}*
 
-  for version in 3 4.0.0 4.1.0 4.2.0 4.3.0 4.4.0 4.5.0 4.6.0; do
-    ln -s libcurl-compat.so.4.7.0 "${pkgdir:?}/usr/lib/libcurl.so.${version}"
+  for version in 3 4.0.0 4.1.0 4.2.0 4.3.0 4.4.0 4.5.0 4.6.0 4.7.0; do
+    ln -s libcurl-compat.so.4.8.0 "${pkgdir:?}/usr/lib/libcurl.so.${version}"
   done
 
   install -dm 0755 "${pkgdir:?}/usr/share/licenses"
@@ -158,11 +143,11 @@ package_libcurl-gnutls+clang() {
 
   make -C "build-curl-gnutls/lib" DESTDIR="${pkgdir:?}" install
 
-  mv "${pkgdir:?}/usr/lib/libcurl"{,-gnutls}.so.4.7.0
+  mv "${pkgdir:?}/usr/lib/libcurl"{,-gnutls}.so.4.8.0
   rm "${pkgdir:?}/usr/lib/libcurl."{a,so}*
 
-  for version in 3 4 4.0.0 4.1.0 4.2.0 4.3.0 4.4.0 4.5.0 4.6.0; do
-    ln -s libcurl-gnutls.so.4.7.0 "${pkgdir:?}/usr/lib/libcurl-gnutls.so.${version}"
+  for version in 3 4 4.0.0 4.1.0 4.2.0 4.3.0 4.4.0 4.5.0 4.6.0 4.7.0; do
+    ln -s libcurl-gnutls.so.4.8.0 "${pkgdir:?}/usr/lib/libcurl-gnutls.so.${version}"
   done
 
   install -dm 0755 "${pkgdir:?}/usr/share/licenses"

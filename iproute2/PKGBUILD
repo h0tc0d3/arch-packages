@@ -1,6 +1,6 @@
 pkgname=iproute2+clang
 pkgver=5.17.0
-pkgrel=2
+pkgrel=3
 pkgdesc='IP Routing Utilities'
 arch=('x86_64')
 license=('GPL2')
@@ -14,7 +14,10 @@ optdepends=(
 provides=("iproute" 'iproute2' "iproute2=${pkgver}")
 conflicts=('iproute2')
 backup=(
+  'etc/iproute2/bpf_pinning'
   'etc/iproute2/ematch_map'
+  'etc/iproute2/group'
+  'etc/iproute2/nl_protos'
   'etc/iproute2/rt_dsfield'
   'etc/iproute2/rt_protos'
   'etc/iproute2/rt_realms'
