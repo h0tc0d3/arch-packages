@@ -1,6 +1,6 @@
 pkgname=gnutls+clang
 pkgver=3.7.4
-pkgrel=1
+pkgrel=2
 pkgdesc="A library which provides a secure layer over a reliable transport layer"
 arch=('x86_64')
 license=('GPL3' 'LGPL2.1')
@@ -9,7 +9,7 @@ options=('!zipman')
 provides=('gnutls' "gnutls=${pkgver}")
 conflicts=('gnutls')
 depends=('gcc-libs' 'libtasn1' 'readline' 'zlib' 'nettle' 'p11-kit' 'libidn2'
-  'libidn2.so' 'libunistring')
+  'libidn2.so' 'libunistring' 'brotli')
 checkdepends=('net-tools')
 optdepends=('guile: for use with Guile bindings')
 source=("https://www.gnupg.org/ftp/gcrypt/gnutls/v3.7/gnutls-${pkgver}.tar.xz"{,.sig})

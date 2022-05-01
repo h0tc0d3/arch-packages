@@ -1,7 +1,7 @@
 pkgbase=freetype2+clang
 pkgname=(freetype2+clang freetype2-docs+clang freetype2-demos+clang)
-pkgver=2.12.0
-pkgrel=2
+pkgver=2.12.1
+pkgrel=1
 pkgdesc="Font rasterization library"
 url="https://www.freetype.org/"
 arch=(x86_64)
@@ -11,27 +11,25 @@ license=(GPL)
 depends=(zlib bzip2 sh libpng harfbuzz brotli librsvg)
 makedepends=(libx11 meson)
 source=(
-  "https://download.savannah.gnu.org/releases/freetype/freetype-${pkgver}.tar.xz"{,.sig}
-  "https://download.savannah.gnu.org/releases/freetype/freetype-doc-${pkgver}.tar.xz"{,.sig}
-  "https://download-mirror.savannah.gnu.org/releases/freetype/ft2demos-${pkgver}.tar.xz"{,.sig}
+  "https://downloads.sourceforge.net/sourceforge/freetype/freetype-${pkgver}.tar.xz"{,.sig}
+  "https://downloads.sourceforge.net/sourceforge/freetype/freetype-doc-${pkgver}.tar.xz"{,.sig}
+  "https://downloads.sourceforge.net/sourceforge/freetype/ft2demos-${pkgver}.tar.xz"{,.sig}
   '0001-Enable-table-validation-modules.patch'
   '0002-Enable-subpixel-rendering.patch'
   '0003-Enable-infinality-subpixel-hinting.patch'
   '0004-Enable-long-PCF-family-names.patch'
-  '0005-src-cff-cffgload.c-cff_slot_load-FT_CONFIG_OPTION_SV.patch'
   'freetype2.sh'
 )
-sha256sums=('ef5c336aacc1a079ff9262d6308d6c2a066dd4d2a905301c4adda9b354399033'
+sha256sums=('4766f20157cc4cf0cd292f80bf917f92d1c439b243ac3018debf6b9140c41a7f'
   'SKIP'
-  '22cf273cba41da07b7414a82a3ae701df1239e29928f0b8c42d08c5ef98dc01d'
+  '6664a32e4eedaa89f45422c1150e32da46fd301c972cbfd19d2dcc6dd96f07d1'
   'SKIP'
-  'dbc7ecaebc8c1658e4cc9e04e5978bba35375f664e87b857ca67451ab6b372d3'
+  'ce729d97f166a919a6a3037c949af01d5d6e1783614024d72683153f0bc5ef05'
   'SKIP'
   'f41df4f336d5e82e58733c7a4594476c9216cfc85c096327745a7e1b559e17e1'
   'dc77c1cfee4bf8e7e0690628c95d211df09e0d0750e4c8f075b78b5f105514f7'
   '21a62bc12b848320c686d602d8d4e3bcd51294a9def4dc9c301736e077b59f3f'
   '266384222f87a02fb02b2179828f6c26fe6d7b1fd09d1f7e3734e7fcb09cda2e'
-  '36efbbdf3dd01a4d1d70587d65b6067d73afae9780b87933db23f18251fbb00c'
   'f7f8e09c44f7552c883846e9a6a1efc50377c4932234e74adc4a8ff750606467')
 validpgpkeys=(E30674707856409FF1948010BE6C3AAC63AD8E3F) # Werner Lemberg <wl@gnu.org>
 
@@ -52,9 +50,6 @@ prepare() {
   patch -Np1 -i ../0002-Enable-subpixel-rendering.patch
   patch -Np1 -i ../0003-Enable-infinality-subpixel-hinting.patch
   patch -Np1 -i ../0004-Enable-long-PCF-family-names.patch
-
-  # https://bugs.archlinux.org/task/74499
-  patch -Np1 -i ../0005-src-cff-cffgload.c-cff_slot_load-FT_CONFIG_OPTION_SV.patch
 
   ln -sr "${srcdir:?}/freetype-${pkgver}" "${srcdir:?}/ft2demos-${pkgver}/subprojects/freetype2"
 
