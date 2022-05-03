@@ -1,5 +1,5 @@
 pkgname=chromium+clang
-pkgver=101.0.4951.41
+pkgver=101.0.4951.54
 pkgrel=1
 _launcher_ver=8
 _gcc_patchset=4
@@ -35,7 +35,7 @@ source=(
   chromium-gtk4-build.patch
   chromium-libxml-unbundle.patch
 )
-sha256sums=('099863882e88b9a035fcb6b63dd5288554f6b27558e0ebce93e0d804465efa37'
+sha256sums=('c26cc6fd453d9a42a6b5e46fa4f3ee62ed368bb78101512b6816bc5d8f4200b5'
   '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
   '8ed519d21ccd8b382ddd384e9c15306a60d2e3495f48a62dea07c9be9bbffebd'
   '70a2805a63df15817a3435e983c0350c5d04ff62deffd8214cbb040b904f54a5'
@@ -48,7 +48,6 @@ sha256sums=('099863882e88b9a035fcb6b63dd5288554f6b27558e0ebce93e0d804465efa37'
   '04bba6fb19ea5a4ab3949b65f06c88728a00ab296f42022ece62ca2fa25ec2e7'
   '63bebd6b68ddcd807f859ab395d0a605b165195d6514425fa9888ff781b9eb65'
   'fd3bf124aacc45f2d0a4f1dd86303fa7f2a3d4f4eeaf33854631d6cb39e12485')
-#noextract=("${source[@]##*/}")
 # Possible replacements are listed in build/linux/unbundle/replace_gn_files.py
 # Keys are the names in the above script; values are the dependencies in Arch
 declare -gA _system_libs=(

@@ -1,16 +1,17 @@
 pkgname=kitty+clang
 pkgver=0.25.0
-pkgrel=1
+pkgrel=2
 pkgdesc="A modern, hackable, featureful, OpenGL-based terminal emulator"
 arch=('x86_64')
 url="https://github.com/kovidgoyal/kitty"
 license=('GPL3')
 provides=(kitty "kitty=${pkgver}")
 conflicts=(kitty kitty-shell-integration kitty-terminfo)
-depends=('python' 'freetype2' 'fontconfig' 'wayland' 'libx11' 'libxkbcommon-x11' 'libxi'
-  'hicolor-icon-theme' 'libgl' 'dbus' 'lcms2' 'ncurses')
-makedepends=('libxinerama' 'libxcursor' 'libxrandr' 'wayland-protocols' 'librsync')
+depends=('python3' 'freetype2' 'fontconfig' 'wayland' 'libx11' 'libxkbcommon-x11' 'libxi'
+  'hicolor-icon-theme' 'libgl' 'dbus' 'lcms2' 'librsync')
+makedepends=('libxinerama' 'libxcursor' 'libxrandr' 'wayland-protocols')
 optdepends=(
+  'python-pygments: syntax highlighting in kitty +kitten diff'
   'imagemagick: viewing images with icat'
   'libcanberra: playing "bell" sound on terminal bell'
 )
