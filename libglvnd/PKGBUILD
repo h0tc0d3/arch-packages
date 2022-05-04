@@ -1,6 +1,6 @@
 pkgname=libglvnd+clang
 pkgver=1.4.0
-pkgrel=1
+pkgrel=2
 pkgdesc="The GL Vendor-Neutral Dispatch library"
 arch=('x86_64')
 url="https://github.com/NVIDIA/libglvnd"

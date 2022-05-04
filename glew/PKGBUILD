@@ -1,0 +1,55 @@
+pkgname=glew+clang
+pkgver=2.2.0
+pkgrel=3
+pkgdesc="The OpenGL Extension Wrangler Library"
+arch=('x86_64')
+url="https://github.com/nigels-com/glew"
+license=('BSD' 'MIT' 'GPL')
+depends=('libxmu' 'libxi' 'glu')
+provides=('libGLEW.so' 'glew' "glew=${pkgver}")
+conflicts=('glew')
+# https://sourceforge.net/projects/glew/files/glew/
+source=(
+  "https://downloads.sourceforge.net/glew/glew-${pkgver}.tgz"
+  glew-install.patch
+)
+sha256sums=('d4fc82893cfb00109578d0a1a2337fb8ca335b3ceccf97b97e5cc7f08e4353e1'
+  'ef864c1e673f6a8fab4d3f5bc3c3eb9596cd225c24765de9dff2064e72f350d5')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  patch -d "glew-${pkgver}" -Np1 -i "${srcdir:?}/glew-install.patch"
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  make \
+    STRIP= \
+    LIBDIR=/usr/lib \
+    -C "glew-${pkgver}"
+
+}
+
+package() {
+
+  make install.all DESTDIR="${pkgdir:?}" \
+    LIBDIR=/usr/lib -C "glew-${pkgver}"
+
+  install -D -m644 "glew-${pkgver}/LICENSE.txt" "${pkgdir:?}/usr/share/licenses/glew"
+
+}

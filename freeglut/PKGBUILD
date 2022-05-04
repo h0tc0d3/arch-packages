@@ -1,6 +1,6 @@
 pkgname=freeglut+clang
 pkgver=3.2.2
-pkgrel=1
+pkgrel=2
 pkgdesc="Provides functionality for small OpenGL programs"
 url="http://freeglut.sourceforge.net/"
 arch=(x86_64)

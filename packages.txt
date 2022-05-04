@@ -222,6 +222,7 @@ libwacom
 libinput
 xf86-input-libinput
 libxi
+glew
 gtk4
 xcb-proto
 libxcb
