@@ -1,16 +1,16 @@
 pkgname=libxcb+clang
-pkgver=1.14
+pkgver=1.15
 pkgrel=1
 pkgdesc="X11 client-side library"
 arch=('x86_64')
 url="https://xcb.freedesktop.org/"
 provides=("libxcb" "libxcb=${pkgver}")
 conflicts=("libxcb")
-depends=('xcb-proto' 'libxdmcp' 'libxau')
+depends=('xcb-proto' 'libxdmcp' 'libxau' 'libselinux')
 makedepends=('libxslt' 'python' 'xorg-util-macros' 'xorgproto')
 license=('custom')
 source=("https://xorg.freedesktop.org/archive/individual/lib/libxcb-${pkgver}.tar.xz")
-sha512sums=('b90a23204b0d2c29d8b115577edb01df0465e02d6a8876550fecd62375d24a5d5f872ddd5946772ddba077cadce75b12c7a6d218469dc30b5b92bc82188e8bc6')
+sha256sums=('cc38744f817cf6814c847e2df37fcb8997357d72fa4bcbc228ae0fe47219a059')
 validpgpkeys=(
   'A66D805F7C9329B4C5D82767CCC4F07FAC641EFF' # "Daniel Stone <daniels@collabora.com>"
   '3BB639E56F861FA2E86505690FDD682D974CA72A' # "Matt Turner <mattst88@gmail.com>"
@@ -42,8 +42,11 @@ build() {
   fi
 
   ./configure --prefix=/usr \
-    --enable-xinput \
     --enable-xkb \
+    --enable-xinput \
+    --enable-selinux \
+    --disable-xprint \
+    --disable-silent-rules \
     --disable-static
 
   make
