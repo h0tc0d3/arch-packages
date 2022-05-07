@@ -1,6 +1,6 @@
 pkgname=binutils+clang
 pkgver=2.38
-pkgrel=5
+pkgrel=6
 pkgdesc='A set of programs to assemble and manipulate binary and object files'
 arch=(x86_64)
 url='https://www.gnu.org/software/binutils/'
