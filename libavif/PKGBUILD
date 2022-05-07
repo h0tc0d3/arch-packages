@@ -1,5 +1,5 @@
 pkgname=libavif+clang
-pkgver=0.9.3
+pkgver=0.10.1
 pkgrel=1
 pkgdesc="Library for encoding and decoding .avif files"
 arch=(x86_64)
@@ -11,10 +11,8 @@ depends=(glibc aom dav1d rav1e svt-av1 zlib libpng libjpeg libyuv)
 makedepends=(cmake nasm pkgconf gdk-pixbuf2)
 source=(
   "https://github.com/AOMediaCodec/libavif/archive/v${pkgver}/libavif-${pkgver}.tar.gz"
-  fix-compilation-with-clang-13.patch
 )
-sha256sums=('bcd9a1f57f982a9615eb7e2faf87236dc88eb1d0c886f3471c7440ead605060d'
-  '13f4355f1cfb997d1cb03990476d36171448d258cecea7b9f4bfbb28e21f036a')
+sha256sums=('66e82854ceb84a3e542bc140a343bc90e56c68f3ecb4fff63e636c136ed9a05e')
 
 _llvm=0
 
@@ -23,8 +21,6 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=1
   fi
-
-  patch -d "libavif-${pkgver}" -p1 <fix-compilation-with-clang-13.patch
 
 }
 

@@ -1,3 +1,6 @@
+#ifndef __CRC32_H__
+#define __CRC32_H__
+
 #include <types.h>
 
 static uint4 crc32tab[] = {
@@ -48,3 +51,5 @@ static uint4 crc32tab[] = {
 static inline uint4 crc_update(uint4 reg, uint4 val) {
   return crc32tab[(reg ^ val) & 0xff] ^ (reg >> 8);
 }
+
+#endif
