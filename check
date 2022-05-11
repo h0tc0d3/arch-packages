@@ -22,7 +22,7 @@ for package in "${PACKAGES[@]}"; do
     continue
   fi
 
-  pkginfo=$(LC_ALL=C pacman -Si "${package}" |
+  pkginfo=$(LC_ALL=C pacman -Si "${package/qemu/qemu-base}" |
     sed -nE '/Repository.*(core|extra|community)/I{:a;N;/Version/Ta;N;p}' |
     grep "Version" |
     grep -oE "[0-9]*:*[0-9a-zA-Z\._\+]+-[0-9]+" | head -n 1)

@@ -1,9 +1,9 @@
 pkgbase=sqlite+clang
 pkgname=('sqlite+clang' 'sqlite-tcl+clang' 'sqlite-analyzer+clang' 'lemon+clang' 'sqlite-doc+clang')
-_srcver=3380400
+_srcver=3380500
 _docver=${_srcver}
-#_docver=3380400
-pkgver=3.38.4
+#_docver=3380500
+pkgver=3.38.5
 pkgrel=1
 pkgdesc="A C library that implements an SQL database engine"
 arch=('x86_64')
@@ -17,8 +17,8 @@ source=(
   license.txt
 )
 options=('!emptydirs' '!makeflags') # json extensions breaks parallel build
-sha256sums=('ca85ecd10a3970a5f91c032082243081a0aaddc52e6a7f3214f481c69e3039d0'
-  'f4fcb49c63171d0d4076ca97a70baaab59de12031d7c69133dc343354cfd223e'
+sha256sums=('6503bb59e39ec8663083696940ec818cd5555196e6ca543d4029440cca7b00d9'
+  '0a3e5ededed0fea73b7b7150ded8cf3ec5ab06b32363284d6036b2a0c3a170c2'
   '55746d93b0df4b349c4aa4f09535746dac3530f9fd6de241c9f38e2c92e8ee97'
   '4e57d9ac979f1c9872e69799c2597eeef4c6ce7224f3ede0bf9dc8d217b1e65d')
 

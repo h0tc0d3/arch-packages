@@ -1,6 +1,6 @@
 pkgname=pipewire-media-session+clang
 pkgver=0.4.1
-pkgrel=1
+pkgrel=2
 epoch=1
 pkgdesc="Low-latency audio/video router and processor - Session manager"
 url="https://pipewire.org"
@@ -36,7 +36,7 @@ pkgver() {
     exit 1
   )
 
-  git describe --tags | sed 's/-/+/g'
+  git describe --tags | sed 's/[^-]*-g/r&/;s/-/+/g'
 
 }
 

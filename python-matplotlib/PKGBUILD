@@ -1,6 +1,6 @@
 pkgname=python-matplotlib+clang
-pkgver=3.5.1
-pkgrel=2
+pkgver=3.5.2
+pkgrel=1
 pkgdesc="A python plotting library, making publication quality plots"
 arch=(x86_64)
 url="https://matplotlib.org"
@@ -34,16 +34,16 @@ checkdepends=(python-pytest python-pytest-xdist python-pytest-runner
   python-tornado python-wxpython tk jupyter-nbconvert jupyter-nbformat
   python-ipykernel python-pandas python-pikepdf python-pytz)
 
-_commit=312c1fb08c5d46aaccaf8b62c8673e4202523e8a # git rev-parse v${pkgver}
-_ftver=2.11.0
+_commit=af8c92817e9c1b5cb51bd060ceb99ed956e714c1 # git rev-parse v${pkgver}
+_ftver=2.12.0
 source=(
   "git+https://github.com/matplotlib/matplotlib.git#commit=${_commit}"
   "https://github.com/QuLogic/mpl-images/archive/v${pkgver}-with-freetype-${_ftver}/mpl-images-${pkgver}-ft${_ftver}.tar.gz"
   freetype.patch
 )
 sha256sums=('SKIP'
-  '164ee14bd590d215b10b5afb952fe51360674356c8880b53c860408879fcfb7f'
-  '8d9ae9b02607a2424438ac235d6e5c8481cce612d7b0261b5596a001fca4431c')
+  '67f7637991c97c0409c3dafbd3489aba34032cecf3e171f4a6e29e4e7d84c7fe'
+  'ce68001b2c8814212b3f6cf28e80aedf7ee1b832398948d8bfec64a6db043a6a')
 validpgpkeys=(23CAB59E3332F94D26BEF0378D86E7FAE5EB0C10) # Elliott Sales de Andrade <quantum.analyst@gmail.com>
 
 _lld=0
@@ -100,8 +100,9 @@ check() {
 
   python -m venv --system-site-packages test-env
   test-env/bin/python setup.py install --skip-build
-  # test_ipynb: https://github.com/matplotlib/matplotlib/issues/21654 fixed but jupyter does not see matplotlib?
-  test-env/bin/python -m pytest -ra -n auto -v --color=yes --pyargs matplotlib mpl_toolkits.tests -k 'not test_ipynb'
+  # test_ipynb: https://github.com/matplotlib/matplotlib/issues/21654 fixed but `ModuleNotFoundError: No module named 'matplotlib'`
+  # test_cross_Qt_imports https://github.com/matplotlib/matplotlib/issues/23004
+  test-env/bin/python -m pytest -ra -n auto -v --color=yes --pyargs matplotlib mpl_toolkits.tests -k 'not test_ipynb and not test_cross_Qt_imports'
 
 }
 

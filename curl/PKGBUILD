@@ -1,6 +1,6 @@
 pkgbase=curl+clang
 pkgname=(curl+clang libcurl-compat+clang libcurl-gnutls+clang)
-pkgver=7.83.0
+pkgver=7.83.1
 pkgrel=1
 pkgdesc='An URL retrieval utility and library'
 arch=('x86_64')
@@ -12,7 +12,7 @@ depends=('ca-certificates' 'brotli' 'libbrotlidec.so' 'krb5' 'libgssapi_krb5.so'
 source=(
   "https://curl.haxx.se/download/curl-${pkgver}.tar.gz"{,.asc}
 )
-sha256sums=('c0e64302a33d2fb79e0fc4e674260a22941e92ee2f11b894bf94d32b8f5531af'
+sha256sums=('93fb2cd4b880656b4e8589c912a9fd092750166d555166370247f09d18f5d0c0'
   'SKIP')
 validpgpkeys=('27EDEAF22F3ABCEB50DB9A125CC908FDB71E12C2') # Daniel Stenberg
 
