@@ -1,6 +1,6 @@
 pkgname=kio-extras+clang
-pkgver=22.04.0
-pkgrel=2
+pkgver=22.04.1
+pkgrel=1
 pkgdesc='Additional components to increase the functionality of KIO'
 arch=(x86_64)
 url='https://www.kde.org/'
@@ -17,7 +17,7 @@ groups=(kde-applications kde-network)
 source=(
   "https://download.kde.org/stable/release-service/${pkgver}/src/kio-extras-${pkgver}.tar.xz"{,.sig}
 )
-sha256sums=('e6789828e2fb1a38b7633ad1de8ce9ae9296ebee5cfe12f09e8989c06b8472c6'
+sha256sums=('a4475107e06d740e0d3fb9e80fa3c58d389508d48d6434e4ab21d6cac25ff814'
   'SKIP')
 validpgpkeys=(
   CA262C6C83DE4D2FB28A332A3A6A4DB839EAA6D7 # Albert Astals Cid <aacid@kde.org>
