@@ -1,11 +1,11 @@
 pkgname=kicad+clang
 pkgver=6.0.5
-pkgrel=1
+pkgrel=2
 pkgdesc="Electronic schematic and printed circuit board (PCB) design tools"
 arch=('x86_64')
 url="http://kicad-pcb.org/"
 license=('GPL')
-depends=('wxgtk3' 'python' 'boost-libs' 'glew' 'curl' 'glm' 'ngspice' 'opencascade' 'python-wxpython')
+depends=('wxgtk3+clang' 'python' 'boost-libs' 'glew' 'curl' 'glm' 'ngspice' 'opencascade')
 makedepends=('git' 'cmake' 'mesa' 'boost' 'swig')
 optdepends=(
   'kicad-library: for footprints, symbols and templates'
@@ -19,10 +19,12 @@ source=(
   "kicad::git+https://gitlab.com/kicad/code/kicad.git#commit=${_commit}"
   fix-archive-permissions.patch
   fix-version-string.patch
+  static_vector.patch
 )
 sha256sums=('SKIP'
   '282dfe161a2ac23885cd1265364d1276725196c211cdeeb2c3b96163a09888d4'
-  'a22dc2900a51d354f2917cd1ad15e077cd0932db3029107641974d88c52a8bf9')
+  'a22dc2900a51d354f2917cd1ad15e077cd0932db3029107641974d88c52a8bf9'
+  '922d062ee8a8e9d6a938ec1fbbd20e51d09785e9f8f118631747c7c221aea38a')
 
 _llvm=0
 
@@ -38,6 +40,7 @@ prepare() {
 
   patch -d kicad -p1 <fix-archive-permissions.patch
   patch -d kicad -p1 <fix-version-string.patch
+  patch -d kicad -p1 <static_vector.patch
 
 }
 
@@ -57,8 +60,9 @@ build() {
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_INSTALL_LIBDIR=lib \
     -DKICAD_USE_OCC=ON \
-    -DKICAD_SCRIPTING_WXPYTHON=ON \
-    -DwxWidgets_CONFIG_EXECUTABLE=/usr/bin/wx-config-gtk3 \
+    -DKICAD_SCRIPTING_WXPYTHON=OFF \
+    -DKICAD_USE_EGL=ON \
+    -DwxWidgets_CONFIG_EXECUTABLE=/usr/bin/wx-config \
     -DKICAD_BUILD_I18N=ON \
     -DKICAD_I18N_UNIX_STRICT_PATH=ON \
     -DKICAD_BUILD_QA_TESTS=OFF \

@@ -1,6 +1,6 @@
 pkgname=libxml2+clang
-pkgver=2.9.13
-pkgrel=2
+pkgver=2.9.14
+pkgrel=1
 pkgdesc='XML parsing library, version 2'
 url='http://www.xmlsoft.org/'
 arch=(x86_64)
@@ -9,7 +9,7 @@ provides=("libxml2" "libxml2=${pkgver}" libxml2.so)
 conflicts=("libxml2")
 depends=(zlib readline ncurses xz icu)
 makedepends=(python git)
-_commit=a075d256fd9ff15590b86d981b75a50ead124fca # tags/v2.9.13^0
+_commit=7846b0a677f8d3ce72486125fa281e92ac9970e8 # tags/v2.9.14^0
 
 source=(
   "libxml2::git+https://gitlab.gnome.org/GNOME/libxml2.git#commit=${_commit}"
@@ -20,7 +20,7 @@ source=(
 
 sha256sums=('SKIP'
   '9b61db9f5dbffa545f4b8d78422167083a8568c59bd1129f94138f936cf6fc1f'
-  '37eb81a8ec6929eed1514e891bff2dd05b450bcf0c712153880c485b7366c17c'
+  'd331748e504e69603dac9c57f7b110a98a4bd4cb87e63d0c1bbcd71ec3635383'
   '163655aba312c237a234a82d64b71a65bd9d1d901e176d443e3e3ac64f3b1b32')
 
 _llvm=0
@@ -62,7 +62,7 @@ prepare() {
   _patch libxml2-2.9.8-python3-unicode-errors.patch
   _patch libxml2-disable-fuzz-tests.patch
 
-  autoreconf -fiv
+  NOCONFIGURE=1 ./autogen.sh
 
 }
 

@@ -358,6 +358,8 @@ valgrind
 arrayfire
 -python-arrayfire
 krita
+wxgtk3
+gnuplot
 kicad
 julia
 telegram-desktop
