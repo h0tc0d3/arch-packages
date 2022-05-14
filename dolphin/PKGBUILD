@@ -1,13 +1,13 @@
 pkgname=dolphin+clang
 pkgver=22.04.1
-pkgrel=1
+pkgrel=2
 pkgdesc='KDE File Manager'
 arch=(x86_64)
 url='https://apps.kde.org/dolphin/'
 license=(LGPL)
 provides=('dolphin' "dolphin=${pkgver}")
 conflicts=('dolphin')
-depends=(baloo-widgets knewstuff kio-extras kcmutils kparts kactivities kuserfeedback)
+depends=(baloo-widgets knewstuff kio-extras kcmutils kparts kactivities)
 makedepends=(extra-cmake-modules kdoctools)
 optdepends=('kde-cli-tools: for editing file type options' 'ffmpegthumbs: video thumbnails' 'kdegraphics-thumbnailers: PDF and PS thumbnails'
   'konsole: terminal panel' 'purpose: share context menu')
@@ -47,6 +47,7 @@ build() {
 
   cmake -B build -S dolphin-${pkgver} \
     -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_DISABLE_FIND_PACKAGE_LibKUserFeedback=ON \
     -DBUILD_TESTING=OFF
 
   cmake --build build

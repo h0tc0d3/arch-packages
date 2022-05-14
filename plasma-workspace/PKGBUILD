@@ -1,15 +1,15 @@
 pkgbase=plasma-workspace+clang
 pkgname=(plasma-workspace+clang plasma-wayland-session+clang)
 pkgver=5.24.5
-pkgrel=1
+pkgrel=2
 pkgdesc='KDE Plasma Workspace'
 arch=(x86_64)
 url='https://kde.org/plasma-desktop/'
 license=(LGPL)
 depends=(knotifyconfig ksystemstats ktexteditor libqalculate kde-cli-tools appstream-qt
   xorg-xrdb xorg-xsetroot kactivitymanagerd kholidays xorg-xmessage milou prison kwin
-  plasma-integration kpeople kactivities-stats libkscreen kquickcharts kuserfeedback
-  accountsservice kio-extras kio-fuse qt5-tools)
+  plasma-integration kpeople kactivities-stats libkscreen kquickcharts accountsservice
+  kio-extras kio-fuse qt5-tools)
 makedepends=(extra-cmake-modules kdoctools gpsd baloo networkmanager-qt plasma-wayland-protocols kunitconversion kinit)
 groups=(plasma)
 source=(
@@ -49,6 +49,7 @@ build() {
   cmake -B build -S plasma-workspace-${pkgver} \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_LIBEXECDIR=lib \
+    -DCMAKE_DISABLE_FIND_PACKAGE_LibKUserFeedback=ON \
     -DBUILD_TESTING=OFF
 
   cmake --build build
