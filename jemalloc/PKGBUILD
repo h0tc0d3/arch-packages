@@ -1,7 +1,7 @@
 pkgname=jemalloc+clang
 epoch=1
-pkgver=5.2.1
-pkgrel=6
+pkgver=5.3.0
+pkgrel=1
 pkgdesc='General-purpose scalable concurrent malloc implementation'
 arch=('x86_64')
 license=('BSD')
@@ -11,7 +11,7 @@ provides=('jemalloc' "jemalloc=${pkgver}" 'libjemalloc.so')
 conflicts=('jemalloc')
 optdepends=('perl: for jeprof')
 source=("https://github.com/jemalloc/jemalloc/releases/download/${pkgver}/jemalloc-${pkgver}.tar.bz2")
-sha256sums=('34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6')
+sha256sums=('2db82d1e7119df3e71b7640219b6dfe84789bc0537983c3b7ac4f7189aecfeaa')
 
 _llvm=0
 
@@ -40,6 +40,7 @@ build() {
 
   ./configure \
     --prefix=/usr \
+    --with-malloc-conf=/etc/malloc.conf \
     --enable-autogen
 
   make
