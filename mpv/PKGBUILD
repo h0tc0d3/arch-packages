@@ -48,7 +48,7 @@ prepare() {
   git cherry-pick -n 79bfcc672343ddbc348e040ad899d61a0bafc050
   git cherry-pick -n fc94c8c365ebeb038af6052bf4ea0506c1220559
 
-  patch -Np1 ../pipewire.patch
+  patch -Np1 -i ../pipewire.patch
 }
 
 build() {
