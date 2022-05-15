@@ -1,5 +1,5 @@
 pkgname=qt5-x11extras+clang
-pkgver=5.15.3+kde+r0
+pkgver=5.15.4+kde+r0
 pkgrel=1
 arch=('x86_64')
 url='https://www.qt.io'
@@ -10,7 +10,7 @@ pkgdesc='Provides platform-specific APIs for X11'
 depends=('qt5-base')
 makedepends=('git')
 groups=('qt' 'qt5')
-_commit=f628d7a60e45d90a439cb0a393a6229ac6892be5
+_commit=51b0a5a2e3e35f4cb17da1e7cb4babef6294bfb4
 source=("git+https://invent.kde.org/qt/qt/qtx11extras#commit=${_commit}")
 sha256sums=('SKIP')
 
@@ -23,7 +23,7 @@ pkgver() {
     exit 1
   )
 
-  echo "5.15.3+kde+r$(git rev-list --count v5.15.3-lts-lgpl..${_commit})"
+  echo "5.15.4+kde+r$(git rev-list --count v5.15.4-lts-lgpl..${_commit})"
 
 }
 
