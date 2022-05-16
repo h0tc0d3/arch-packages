@@ -1,6 +1,6 @@
 pkgname=kvantum+clang
 pkgver=1.0.1
-pkgrel=1
+pkgrel=2
 pkgdesc="SVG-based theme engine for Qt5/6 (including config tool and extra themes)"
 arch=(x86_64)
 url="https://github.com/tsujan/Kvantum"
@@ -8,8 +8,9 @@ license=(GPL)
 provides=(kvantum-qt5 kvantum)
 conflicts=(kvantum-qt5 kvantum)
 replaces=(kvantum-qt5 kvantum)
-depends=(qt5-base qt6-base qt5-svg qt6-svg qt5-x11extras libx11 libxext hicolor-icon-theme kwindowsystem)
-makedepends=(cmake qt5-tools qt6-tools)
+depends=(qt5-svg kwindowsystem hicolor-icon-theme)
+makedepends=(cmake qt5-tools qt6-tools qt6-svg)
+optdepends=('qt6-svg: Qt6 style')
 source=("https://github.com/tsujan/Kvantum/releases/download/V${pkgver}/Kvantum-${pkgver}.tar.xz"{,.asc})
 sha256sums=('f7e4530f86544531313fab10267d934b7fa2d5a946b7dd26b2181001f0f8cae0'
   'SKIP')
@@ -24,7 +25,7 @@ prepare() {
   fi
 
   # Fix Qt6 build with Qt5 installed
-  sed 's|Qt6 Qt5|Qt6|' -i "Kvantum-${pkgver}/Kvantum/style/CMakeLists.txt"
+  sed 's|Qt6 Qt5|Qt6|' -i "Kvantum-${pkgver}/Kvantum/"*/CMakeLists.txt
 
 }
 
@@ -42,20 +43,20 @@ build() {
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr
 
-  make -C build5
+  cmake --build build5
 
   cmake -B build6 -S "Kvantum-${pkgver}/Kvantum" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DENABLE_QT5=OFF
 
-  make -C build6
+  cmake --build build6
 
 }
 
 package() {
 
-  make -C build5 DESTDIR="${pkgdir:?}" install
-  make -C build6 DESTDIR="${pkgdir:?}" install
+  DESTDIR="${pkgdir:?}" cmake --install build5
+  DESTDIR="${pkgdir:?}" cmake --install build6
 
 }
