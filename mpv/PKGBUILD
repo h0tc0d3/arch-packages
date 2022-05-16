@@ -1,7 +1,7 @@
 pkgname=mpv+clang
 epoch=1
 pkgver=0.34.1
-pkgrel=4
+pkgrel=5
 pkgdesc='a free, open source, and cross-platform media player'
 arch=('x86_64')
 license=('GPL3')
@@ -18,15 +18,18 @@ depends=('alsa-lib' 'libasound.so' 'desktop-file-utils' 'ffmpeg' 'libavcodec.so'
   'libshaderc_shared.so' 'uchardet' 'vulkan-icd-loader' 'wayland' 'xdg-utils'
   'zlib')
 makedepends=('git' 'python-docutils' 'ladspa' 'wayland-protocols'
-  'ffnvcodec-headers' 'vulkan-headers' 'waf')
-optdepends=('yt-dlp: for video-sharing websites playback'
-  'youtube-dl: for video-sharing websites playback')
+  'ffnvcodec-headers' 'vulkan-headers' 'waf' 'pipewire')
+optdepends=(
+  'yt-dlp: for video-sharing websites playback'
+  'youtube-dl: for video-sharing websites playback'
+  'pipewire: Pipewire audio backend'
+)
 provides=('mpv' "mpv=${pkgver}" 'libmpv.so')
 conflicts=('mpv')
 options=('!emptydirs')
-_tag='df6d84c1cf4bbc2b998f4d320542c78df674512d' # git rev-parse v${pkgver}
+_commit=df6d84c1cf4bbc2b998f4d320542c78df674512d # git rev-parse v${pkgver}
 source=(
-  "git+https://github.com/mpv-player/mpv.git#tag=${_tag}"
+  "git+https://github.com/mpv-player/mpv.git#commit=${_commit}"
 )
 sha256sums=('SKIP')
 
@@ -45,6 +48,9 @@ prepare() {
 
   git cherry-pick -n 79bfcc672343ddbc348e040ad899d61a0bafc050
   git cherry-pick -n fc94c8c365ebeb038af6052bf4ea0506c1220559
+  # Native support for the Pipewire audio backend
+  git cherry-pick -n ff322864f2878a35b277111e509da03fe6f888bd
+  git cherry-pick -n 87aba146eddd2bc3fe8819180e2814e7947ff1f2
 
 }
 
