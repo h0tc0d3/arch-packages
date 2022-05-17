@@ -1,0 +1,95 @@
+Submitted By:                Xi Ruoyao <xry111@linuxfromscratch.org>
+Date:                        2021-03-06
+Initial Package Version:     0.120
+Upstream Status:             Applied
+Origin:                      Upstream Git Repository
+Description:                 Build the package with js91 instead of js78.
+
+From 32a89ed69cc9771cffbbfcf5aa85316fb4c35625 Mon Sep 17 00:00:00 2001
+From: Xi Ruoyao <xry111@mengyan1223.wang>
+Date: Sun, 6 Mar 2022 15:45:28 +0800
+Subject: [PATCH 1/2] jsauthority: ensure to call JS_Init() and JS_ShutDown()
+ exactly once
+
+Before this commit, we were calling JS_Init() in
+polkit_backend_js_authority_class_init and never called JS_ShutDown.
+This is actually a misusage of SpiderMonkey API.  Quote from a comment
+in js/Initialization.h (both mozjs-78 and mozjs-91):
+
+    It is currently not possible to initialize SpiderMonkey multiple
+    times (that is, calling JS_Init/JSAPI methods/JS_ShutDown in that
+    order, then doing so again).
+
+This misusage does not cause severe issues with mozjs-78.  However, when
+we eventually port jsauthority to use mozjs-91, bad thing will happen:
+see the test failure mentioned in #150.
+
+This commit is tested with both mozjs-78 and mozjs-91, all tests pass
+with it.
+---
+ src/polkitbackend/polkitbackendjsauthority.cpp | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/src/polkitbackend/polkitbackendjsauthority.cpp b/src/polkitbackend/polkitbackendjsauthority.cpp
+index ca17108..5027815 100644
+--- a/src/polkitbackend/polkitbackendjsauthority.cpp
++++ b/src/polkitbackend/polkitbackendjsauthority.cpp
+@@ -75,6 +75,13 @@
+ 
+ /* ---------------------------------------------------------------------------------------------------- */
+ 
++static class JsInitHelperType
++{
++public:
++	JsInitHelperType() { JS_Init(); }
++	~JsInitHelperType() { JS_ShutDown(); }
++} JsInitHelper;
++
+ struct _PolkitBackendJsAuthorityPrivate
+ {
+   gchar **rules_dirs;
+@@ -589,7 +596,6 @@ polkit_backend_js_authority_finalize (GObject *object)
+   delete authority->priv->js_polkit;
+ 
+   JS_DestroyContext (authority->priv->cx);
+-  /* JS_ShutDown (); */
+ 
+   G_OBJECT_CLASS (polkit_backend_js_authority_parent_class)->finalize (object);
+ }
+@@ -665,8 +671,6 @@ polkit_backend_js_authority_class_init (PolkitBackendJsAuthorityClass *klass)
+ 
+ 
+   g_type_class_add_private (klass, sizeof (PolkitBackendJsAuthorityPrivate));
+-
+-  JS_Init ();
+ }
+ 
+ /* ---------------------------------------------------------------------------------------------------- */
+-- 
+2.35.1
+
+From 94ed479764c29b0419e8acca91f275b2f17f0425 Mon Sep 17 00:00:00 2001
+From: Xi Ruoyao <xry111@mengyan1223.wang>
+Date: Sun, 6 Mar 2022 15:46:27 +0800
+Subject: [PATCH 2/2] jsauthority: port to mozjs-91 (meson only)
+
+---
+ meson.build | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index 858078d..09cce0f 100644
+--- a/meson.build
++++ b/meson.build
+@@ -133,7 +133,7 @@ expat_dep = dependency('expat')
+ assert(cc.has_header('expat.h', dependencies: expat_dep), 'Can\'t find expat.h. Please install expat.')
+ assert(cc.has_function('XML_ParserCreate', dependencies: expat_dep), 'Can\'t find expat library. Please install expat.')
+ 
+-mozjs_dep = dependency('mozjs-78')
++mozjs_dep = dependency('mozjs-91')
+ 
+ dbus_dep = dependency('dbus-1', required: false)
+ dbus_policydir = pk_prefix / pk_datadir / 'dbus-1/system.d'
+-- 
+2.35.1
+
