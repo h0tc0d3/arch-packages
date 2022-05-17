@@ -1,12 +1,12 @@
 pkgname=fontconfig+clang
 pkgver=2.14.0
-pkgrel=1
+pkgrel=2
 epoch=2
 pkgdesc="Library for configuring and customizing font access"
 url=https://www.freedesktop.org/wiki/Software/fontconfig/
 arch=(x86_64)
 license=(custom)
-depends=(libxml2 libfreetype.so)
+depends=(expat libfreetype.so xxhash)
 makedepends=(git meson gperf freetype2
   docbook-utils docbook-sgml perl-sgmls)
 provides=(fontconfig "fontconfig=${pkgver}" libfontconfig.so fontconfig-docs)
@@ -32,7 +32,7 @@ sha256sums=('f09989f2aba19ceae20ac89fc9868d5b67e6e05e195175afac822055e07dab6d'
   'fd7b6ce8ce178107f2e0b52462ebf186b6051c6eec945770107fda57048c9f34'
   'b2bee567aab161615cf565a5a426ab2e93ab706f0913d4a3ff94b8f40766b574'
   'bbbaf032d175b339fd39647e342d67455cd4a0df5f9435a918f3e758291fb0e6'
-  '8de242c30ec9373ed8a9b41de557ce5344341adaad8ca8cde0aacf52503790aa')
+  '7cb5005c260305ce018ac1f601059864b7793def03842b83c52e464d51f29972')
 
 _extra_lto_flag=""
 
@@ -55,7 +55,7 @@ prepare() {
   )
 
   _patch fontconfig-sleep-less.patch
-  _patch fontconfig-meson-add-libxml2-parser.patch
+  #_patch fontconfig-meson-add-libxml2-parser.patch
   _patch fontconfig-improvements.patch
 
 }
@@ -76,7 +76,8 @@ build() {
     -D doc-txt=disabled \
     -D doc-pdf=disabled \
     -D doc-html=enabled \
-    -D cache-build=disabled
+    -D cache-build=disabled \
+    -D xxhash=enabled
 
   meson compile -C build
 

@@ -1,50 +1,126 @@
-From ac6dc15f821450d947668648d8f488db6322fa39 Mon Sep 17 00:00:00 2001
+From 6e1a995ddd7a408d964ec6fa9fc9397cfe60a293 Mon Sep 17 00:00:00 2001
 From: Grigory Vasilyev <h0tc0d3@gmail.com>
 Date: Mon, 10 Jan 2022 07:30:38 +0300
 Subject: [PATCH] Fontconfig big improvement
 
 ---
- meson.build            |  29 +--
- meson_options.txt      |   2 +
- po-conf/meson.build    |   2 +-
- po/meson.build         |   2 +-
- src/Makefile.am        |   2 +-
- src/cutout.py          |   2 +-
- src/fcarch.h           |  29 ++-
- src/fcatomic.c         |  55 +++--
- src/fcatomic.h         |   6 +-
- src/fccache.c          | 444 +++++++++++++++++++----------------------
- src/fccfg.c            |  95 ++++-----
- src/fccharset.c        | 112 ++++++-----
- src/fccompat.c         | 162 ++++++++-------
- src/fcdefault.c        |  10 +-
- src/fcdeprecate.h      |   6 +-
- src/fcdir.c            |  18 +-
- src/fcfoundry.h        |   4 +
- src/fcfreetype.c       |  18 +-
- src/fcfs.c             |  25 +--
- src/fchash.c           |  15 +-
- src/fcint.h            |  37 +++-
- src/fclang.c           |   6 +-
- src/fclist.c           |  11 +-
- src/fcmatch.c          |  57 +++---
- src/fcmd5.h            | 255 -----------------------
- src/fcmurmurhash3.h    | 337 +++++++++++++++++++++++++++++++
- src/fcmutex.h          | 109 +++++++++-
- src/fcname.c           |   5 +-
- src/fcobjs.h           | 111 ++++++-----
- src/fcobjshash.gperf.h |   3 +-
- src/fcpat.c            |  77 +++----
- src/fcserialize.c      |  13 +-
- src/fcstat.c           |  15 +-
- src/fcstr.c            |  28 ++-
- src/fcxml.c            |  61 +++---
- 35 files changed, 1190 insertions(+), 973 deletions(-)
+ meson-cc-tests/std-c11-atomic-test.c       |   14 +
+ meson-cc-tests/std-c11-threads-test.c      |   26 +
+ meson-cc-tests/stdatomic-primitives-test.c |    8 -
+ meson.build                                |   56 +-
+ meson_options.txt                          |    4 +
+ po-conf/meson.build                        |    2 +-
+ po/meson.build                             |    2 +-
+ src/cutout.py                              |    2 +-
+ src/fcarch.h                               |   29 +-
+ src/fcatomic.c                             |   55 +-
+ src/fcatomic.h                             |  105 +-
+ src/fccache.c                              |  471 +++++----
+ src/fccfg.c                                |  101 +-
+ src/fccharset.c                            |  112 +-
+ src/fccompat.c                             |  162 +--
+ src/fcdefault.c                            |   10 +-
+ src/fcdeprecate.h                          |    6 +-
+ src/fcdir.c                                |   18 +-
+ src/fcfoundry.h                            |    4 +
+ src/fcfreetype.c                           |   18 +-
+ src/fcfs.c                                 |   25 +-
+ src/fchash.c                               |   15 +-
+ src/fcinit.c                               |    6 -
+ src/fcint.h                                |   39 +-
+ src/fclang.c                               |    6 +-
+ src/fclist.c                               |   11 +-
+ src/fcmatch.c                              |   57 +-
+ src/fcmd5.h                                |  255 -----
+ src/fcmurmurhash3.h                        |  337 +++++++
+ src/fcmutex.h                              |  127 ---
+ src/fcname.c                               |    5 +-
+ src/fcobjs.h                               |  111 +-
+ src/fcobjshash.gperf.h                     |    3 +-
+ src/fcpat.c                                |   77 +-
+ src/fcserialize.c                          |   13 +-
+ src/fcstat.c                               |   15 +-
+ src/fcstr.c                                |   28 +-
+ src/fcxml.c                                |   61 +-
+ src/fcyield.h                              |   61 ++
+ 41 files changed, 2307 insertions(+), 1218 deletions(-)
+ create mode 100644 meson-cc-tests/std-c11-atomic-test.c
+ create mode 100644 meson-cc-tests/std-c11-threads-test.c
+ delete mode 100644 meson-cc-tests/stdatomic-primitives-test.c
  delete mode 100644 src/fcmd5.h
  create mode 100644 src/fcmurmurhash3.h
+ delete mode 100644 src/fcmutex.h
+ create mode 100644 src/fcyield.h
 
+diff --git a/meson-cc-tests/std-c11-atomic-test.c b/meson-cc-tests/std-c11-atomic-test.c
+new file mode 100644
+index 000000000000..6c83335decb1
+--- /dev/null
++++ b/meson-cc-tests/std-c11-atomic-test.c
+@@ -0,0 +1,14 @@
++#include <stdatomic.h>
++
++void memory_barrier(void) { atomic_thread_fence(memory_order_acq_rel); }
++int atomic_add(atomic_int *i) {
++  return atomic_fetch_add_explicit(i, 1, memory_order_relaxed);
++}
++int mutex_trylock(atomic_flag *m) {
++  return atomic_flag_test_and_set_explicit(m, memory_order_acquire);
++}
++void mutex_unlock(atomic_flag *m) {
++  atomic_flag_clear_explicit(m, memory_order_release);
++}
++
++int main(void) { return 0; }
+diff --git a/meson-cc-tests/std-c11-threads-test.c b/meson-cc-tests/std-c11-threads-test.c
+new file mode 100644
+index 000000000000..0c8215f5b17d
+--- /dev/null
++++ b/meson-cc-tests/std-c11-threads-test.c
+@@ -0,0 +1,26 @@
++#if defined(__STDC_NO_THREADS__) || defined(__STDC_NO_ATOMICS__)
++#error C compiler defined STDC_NO_THREADS or STDC_NO_ATOMICS
++#endif
++
++#include <stdio.h>
++#include <threads.h>
++
++int main(void) {
++
++  mtx_t mutex;
++  size_t count = 0;
++
++  mtx_lock(&mutex);
++
++  for (size_t i = 0; i < 1000; i++) {
++    count += i;
++  }
++
++  mtx_unlock(&mutex);
++  mtx_destroy(&mutex);
++
++  printf("%ld\n", count);
++
++  return 0;
++
++}
+\ No newline at end of file
+diff --git a/meson-cc-tests/stdatomic-primitives-test.c b/meson-cc-tests/stdatomic-primitives-test.c
+deleted file mode 100644
+index 6d11d34e664a..000000000000
+--- a/meson-cc-tests/stdatomic-primitives-test.c
++++ /dev/null
+@@ -1,8 +0,0 @@
+-#include <stdatomic.h>
+-
+-void memory_barrier (void) { atomic_thread_fence (memory_order_acq_rel); }
+-int atomic_add (atomic_int *i) { return atomic_fetch_add_explicit (i, 1, memory_order_relaxed); }
+-int mutex_trylock (atomic_flag *m) { return atomic_flag_test_and_set_explicit (m, memory_order_acquire); }
+-void mutex_unlock (atomic_flag *m) { atomic_flag_clear_explicit (m, memory_order_release); }
+-
+-int main(void) { return 0;}
 diff --git a/meson.build b/meson.build
-index 64cae44..7423cc7 100644
+index 64cae44a4a90..c77c0aa26b75 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -1,7 +1,7 @@
@@ -56,7 +132,31 @@ index 64cae44..7423cc7 100644
  )
  
  fc_version = meson.project_version()
-@@ -253,6 +253,10 @@ if fc_configdir.startswith(fc_baseconfigdir + '/')
+@@ -190,19 +190,14 @@ else
+   conf.set('FLEXIBLE_ARRAY_MEMBER', 1)
+ endif
+ 
+-if cc.links(files('meson-cc-tests/stdatomic-primitives-test.c'), name: 'stdatomic.h atomics')
+-  conf.set('HAVE_STDATOMIC_PRIMITIVES', 1)
++if not cc.compiles(files('meson-cc-tests/std-c11-atomic-test.c'), name: 'C11 Atomic Operations')
++  error('Compiler not support C11 Atomic operations!')
+ endif
+ 
+-if cc.links(files('meson-cc-tests/intel-atomic-primitives-test.c'), name: 'Intel atomics')
+-  conf.set('HAVE_INTEL_ATOMIC_PRIMITIVES', 1)
++if not cc.compiles(files('meson-cc-tests/std-c11-threads-test.c'), name: 'C11 Threads')
++  error('Compiler not support C11 Threads!')
+ endif
+ 
+-if cc.links(files('meson-cc-tests/solaris-atomic-operations.c'), name: 'Solaris atomic ops')
+-  conf.set('HAVE_SOLARIS_ATOMIC_OPS', 1)
+-endif
+-
+-
+ prefix = get_option('prefix')
+ 
+ fonts_conf = configuration_data()
+@@ -253,6 +248,25 @@ if fc_configdir.startswith(fc_baseconfigdir + '/')
    fonts_conf.set('CONFIGDIR', fc_configdir.split(fc_baseconfigdir + '/')[1])
  endif
  
@@ -64,10 +164,25 @@ index 64cae44..7423cc7 100644
 +  conf.set('FC_CACHE_SEED', get_option('cache-seed'))
 +endif
 +
++if not get_option('xxhash').disabled()
++# Find xxhash library
++sys_xxhash = dependency('libxxhash', required: false)
++if not sys_xxhash.found()
++  sys_xxhash = dependency('xxhash', required: false)
++endif
++if not sys_xxhash.found()
++  sys_xxhash = cc.find_library('xxhash', required: false)
++endif
++if sys_xxhash.found()
++  conf.set('FC_XXHASH', 1)
++  deps += [sys_xxhash]
++endif
++endif
++
  # It will automatically fallback to subproject if not found on system
  gperf = find_program('gperf')
  
-@@ -272,7 +276,7 @@ else
+@@ -272,7 +286,7 @@ else
    @1@
    '''
    gperf_snippet_format = 'echo foo,bar | @0@ -L ANSI-C'
@@ -75,20 +190,29 @@ index 64cae44..7423cc7 100644
 +  gperf_snippet = run_command(sh, '-c', gperf_snippet_format.format(gperf.full_path()), check: true)
    gperf_test = gperf_test_format.format('size_t', gperf_snippet.stdout())
  
-   if cc.compiles(gperf_test) 
+   if cc.compiles(gperf_test)
+@@ -423,4 +423,5 @@ summary({
+        'NLS': not get_option('nls').disabled(),
+        'Tests': not get_option('tests').disabled(),
+        'Tools': not get_option('tools').disabled(),
++       'xxHash': sys_xxhash.found(),
+        }, section: 'General', bool_yn: true, list_sep: ', ')
+
 diff --git a/meson_options.txt b/meson_options.txt
-index b70edf1..d77ec8e 100644
+index b70edf1607cf..28b3f989ca76 100644
 --- a/meson_options.txt
 +++ b/meson_options.txt
-@@ -13,3 +13,5 @@ option('tools', type : 'feature', value : 'auto', yield : true,
+@@ -13,3 +13,7 @@ option('tools', type : 'feature', value : 'auto', yield : true,
    description: 'Build command-line tools (fc-list, fc-query, etc.)')
  option('cache-build', type : 'feature', value : 'enabled',
    description: 'Run fc-cache on install')
 +option('cache-seed', type: 'integer', min : 0, max : 4294967295,
 +  value: 0, description: 'Seed for cache files')
++option('xxhash', type : 'feature', value : 'auto', yield : true,
++  description: 'Enable xxhash support')
 \ No newline at end of file
 diff --git a/po-conf/meson.build b/po-conf/meson.build
-index 4567cae..5c2a39e 100644
+index 4567caee9384..5c2a39eb0bd4 100644
 --- a/po-conf/meson.build
 +++ b/po-conf/meson.build
 @@ -1,3 +1,3 @@
@@ -97,7 +221,7 @@ index 4567cae..5c2a39e 100644
 +    args: '--directory=' + meson.project_source_root()
  )
 diff --git a/po/meson.build b/po/meson.build
-index 20152e3..5cea343 100644
+index 20152e3be187..5cea343009d9 100644
 --- a/po/meson.build
 +++ b/po/meson.build
 @@ -1,3 +1,3 @@
@@ -105,21 +229,9 @@ index 20152e3..5cea343 100644
 -    args: '--directory=' + meson.source_root()
 +    args: '--directory=' + meson.project_source_root()
  )
-diff --git a/src/Makefile.am b/src/Makefile.am
-index 390ca82..07e8b96 100644
---- a/src/Makefile.am
-+++ b/src/Makefile.am
-@@ -110,7 +110,7 @@ fcobjshash.gperf: Makefile stamp-fcobjshash.gperf
- 	@touch -r stamp-fcobjshash.gperf $@
- stamp-fcobjshash.gperf: fcobjshash.gperf.h fcobjs.h
- 	$(AM_V_GEN) $(CPP) -I$(top_srcdir) $(CPPFLAGS) $< | \
--	$(SED) 's/^ *//;s/ *, */,/' | \
-+	$(SED) 's/^ *//;s/ *, */,/;s/__FC_NEWLINE__/\n/g/' | \
- 	awk ' \
- 		/CUT_OUT_BEGIN/ { no_write=1; next; }; \
- 		/CUT_OUT_END/ { no_write=0; next; }; \
+
 diff --git a/src/cutout.py b/src/cutout.py
-index 323eec8..a208769 100644
+index 323eec803bcd..a20876929610 100644
 --- a/src/cutout.py
 +++ b/src/cutout.py
 @@ -27,6 +27,7 @@ if __name__== '__main__':
@@ -139,7 +251,7 @@ index 323eec8..a208769 100644
                  stripped = re.sub('^\s+', '', l)
                  stripped = re.sub('\s*,\s*', ',', stripped)
 diff --git a/src/fcarch.h b/src/fcarch.h
-index 049a5b0..8c54047 100644
+index 049a5b02b933..8c54047d6a96 100644
 --- a/src/fcarch.h
 +++ b/src/fcarch.h
 @@ -20,8 +20,8 @@
@@ -183,7 +295,7 @@ index 049a5b0..8c54047 100644
 +
 +#endif /* FC_HEADER_FCARCH_H */
 diff --git a/src/fcatomic.c b/src/fcatomic.c
-index 5b5e030..01e9b87 100644
+index 5b5e0300250c..01e9b87bc8b2 100644
 --- a/src/fcatomic.c
 +++ b/src/fcatomic.c
 @@ -73,33 +73,32 @@
@@ -256,7 +368,7 @@ index 5b5e030..01e9b87 100644
  #ifdef HAVE_LINK
  		if (no_link)
 diff --git a/src/fcatomic.h b/src/fcatomic.h
-index 3f4a9d3..07377d9 100644
+index 3f4a9d3a5a0a..5ce8b037cbe7 100644
 --- a/src/fcatomic.h
 +++ b/src/fcatomic.h
 @@ -29,8 +29,8 @@
@@ -270,26 +382,147 @@ index 3f4a9d3..07377d9 100644
  
  #ifdef HAVE_CONFIG_H
  #include <config.h>
-@@ -168,4 +168,4 @@ static inline int    FcRefAdd      (FcRef *r, int v) { return fc_atomic_int_add
+@@ -39,20 +39,6 @@
+ 
+ /* atomic_int */
+ 
+-/* We need external help for these */
+-
+-#if 0
+-
+-typedef <type> fc_atomic_int_t;
+-#define FC_ATOMIC_INT_FORMAT		"<printf format for fc_atomic_int_t>"
+-#define fc_atomic_int_add(AI, V)	o = (AI), (AI) += (V), o // atomic acquire/release
+-
+-#define fc_atomic_ptr_get(P)		*(P) // atomic acquire
+-#define fc_atomic_ptr_cmpexch(P,O,N)	*(P) == (O) ? (*(P) = (N), FcTrue) : FcFalse // atomic release
+-
+-
+-#elif !defined(FC_NO_MT) && defined(HAVE_STDATOMIC_PRIMITIVES)
+-
+ #include <stdatomic.h>
+ 
+ typedef atomic_int fc_atomic_int_t;
+@@ -70,91 +56,6 @@ static inline FcBool _fc_atomic_ptr_cmpexch(_Atomic(void *)*P, void * O, _Atomic
+  * See https://bugs.llvm.org/show_bug.cgi?id=40249. */
+ #define FC_REF_CONSTANT_VALUE (-1)
+ 
+-#elif !defined(FC_NO_MT) && defined(_MSC_VER) || defined(__MINGW32__)
+-
+-#include "fcwindows.h"
+-
+-typedef LONG fc_atomic_int_t;
+-#define FC_ATOMIC_INT_FORMAT		"ld"
+-#define fc_atomic_int_add(AI, V)	InterlockedExchangeAdd (&(AI), (V))
+-
+-#define fc_atomic_ptr_get(P)		(InterlockedCompareExchangePointerAcquire ((void **) (P), NULL, NULL))
+-#define fc_atomic_ptr_cmpexch(P,O,N)	(InterlockedCompareExchangePointer ((void **) (P), (void *) (N), (void *) (O)) == (void *) (O))
+-
+-
+-#elif !defined(FC_NO_MT) && defined(__APPLE__)
+-
+-#include <libkern/OSAtomic.h>
+-#include <AvailabilityMacros.h>
+-
+-typedef int fc_atomic_int_t;
+-#define FC_ATOMIC_INT_FORMAT		"d"
+-#define fc_atomic_int_add(AI, V)	(OSAtomicAdd32Barrier ((V), &(AI)) - (V))
+-
+-#if SIZEOF_VOID_P == 8
+-#define fc_atomic_ptr_get(P)		OSAtomicAdd64Barrier (0, (int64_t*)(P))
+-#elif SIZEOF_VOID_P == 4
+-#define fc_atomic_ptr_get(P)		OSAtomicAdd32Barrier (0, (int32_t*)(P))
+-#else
+-#error "SIZEOF_VOID_P not 4 or 8 (assumes CHAR_BIT is 8)"
+-#endif
+-
+-#if (MAC_OS_X_VERSION_MIN_REQUIRED >= 1050 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 20100)
+-#define fc_atomic_ptr_cmpexch(P,O,N)	OSAtomicCompareAndSwapPtrBarrier ((void *) (O), (void *) (N), (void **) (P))
+-#else
+-#if __LP64__
+-#define fc_atomic_ptr_cmpexch(P,O,N)	OSAtomicCompareAndSwap64Barrier ((int64_t) (O), (int64_t) (N), (int64_t *) (P))
+-#else
+-#define fc_atomic_ptr_cmpexch(P,O,N)	OSAtomicCompareAndSwap32Barrier ((int32_t) (O), (int32_t) (N), (int32_t *) (P))
+-#endif
+-#endif
+-
+-
+-#elif !defined(FC_NO_MT) && defined(HAVE_INTEL_ATOMIC_PRIMITIVES)
+-
+-typedef int fc_atomic_int_t;
+-#define FC_ATOMIC_INT_FORMAT		"d"
+-#define fc_atomic_int_add(AI, V)	__sync_fetch_and_add (&(AI), (V))
+-
+-#define fc_atomic_ptr_get(P)		(void *) (__sync_fetch_and_add ((P), 0))
+-#define fc_atomic_ptr_cmpexch(P,O,N)	__sync_bool_compare_and_swap ((P), (O), (N))
+-
+-
+-#elif !defined(FC_NO_MT) && defined(HAVE_SOLARIS_ATOMIC_OPS)
+-
+-#include <atomic.h>
+-#include <mbarrier.h>
+-
+-typedef unsigned int fc_atomic_int_t;
+-#define FC_ATOMIC_INT_FORMAT		"u"
+-#define fc_atomic_int_add(AI, V)	( ({__machine_rw_barrier ();}), atomic_add_int_nv (&(AI), (V)) - (V))
+-
+-#define fc_atomic_ptr_get(P)		( ({__machine_rw_barrier ();}), (void *) *(P))
+-#define fc_atomic_ptr_cmpexch(P,O,N)	( ({__machine_rw_barrier ();}), atomic_cas_ptr ((P), (O), (N)) == (void *) (O) ? FcTrue : FcFalse)
+-
+-
+-#elif !defined(FC_NO_MT)
+-
+-#define FC_ATOMIC_INT_NIL 1 /* Warn that fallback implementation is in use. */
+-typedef volatile int fc_atomic_int_t;
+-#define FC_ATOMIC_INT_FORMAT		"d"
+-#define fc_atomic_int_add(AI, V)	(((AI) += (V)) - (V))
+-
+-#define fc_atomic_ptr_get(P)		((void *) *(P))
+-#define fc_atomic_ptr_cmpexch(P,O,N)	(* (void * volatile *) (P) == (void *) (O) ? (* (void * volatile *) (P) = (void *) (N), FcTrue) : FcFalse)
+-
+-
+-#else /* FC_NO_MT */
+-
+-typedef int fc_atomic_int_t;
+-#define FC_ATOMIC_INT_FORMAT		"d"
+-#define fc_atomic_int_add(AI, V)	(((AI) += (V)) - (V))
+-
+-#define fc_atomic_ptr_get(P)		((void *) *(P))
+-#define fc_atomic_ptr_cmpexch(P,O,N)	(* (void **) (P) == (void *) (O) ? (* (void **) (P) = (void *) (N), FcTrue) : FcFalse)
+-
+-#endif
+-
+ /* reference count */
+ #ifndef FC_REF_CONSTANT_VALUE
+ #define FC_REF_CONSTANT_VALUE ((fc_atomic_int_t) -1)
+@@ -168,4 +69,4 @@ static inline int    FcRefAdd      (FcRef *r, int v) { return fc_atomic_int_add
  static inline void   FcRefSetConst (FcRef *r) { r->count = FC_REF_CONSTANT_VALUE; }
  static inline FcBool FcRefIsConst  (const FcRef *r) { return r->count == FC_REF_CONSTANT_VALUE; }
  
 -#endif /* _FCATOMIC_H_ */
 +#endif /* FC_HEADER_FCATOMIC_H */
 diff --git a/src/fccache.c b/src/fccache.c
-index 4a6a752..948c334 100644
+index 4a6a7522cd0e..d15f91b341ee 100644
 --- a/src/fccache.c
 +++ b/src/fccache.c
-@@ -22,7 +22,7 @@
+@@ -22,10 +22,15 @@
   */
  #include "fcint.h"
  #include "fcarch.h"
 -#include "fcmd5.h"
++#if defined(FC_XXHASH)
++#include <xxhash.h>
++#else
 +#include "fcmurmurhash3.h"
++#endif
  #include <stdio.h>
  #include <stdlib.h>
  #include <fcntl.h>
-@@ -67,15 +67,14 @@ FcDirCacheDeleteUUID (const FcChar8  *dir,
++#include <threads.h>
+ #ifdef HAVE_DIRENT_H
+ #include <dirent.h>
+ #endif
+@@ -67,15 +72,14 @@ FcDirCacheDeleteUUID (const FcChar8  *dir,
  {
      FcBool ret = FcTrue;
  #ifndef _WIN32
@@ -307,7 +540,7 @@ index 4a6a752..948c334 100644
      if (sysroot)
  	d = FcStrBuildFilename (sysroot, dir, NULL);
      else
-@@ -85,7 +84,7 @@ FcDirCacheDeleteUUID (const FcChar8  *dir,
+@@ -85,7 +89,7 @@ FcDirCacheDeleteUUID (const FcChar8  *dir,
  	ret = FcFalse;
  	goto bail;
      }
@@ -316,7 +549,7 @@ index 4a6a752..948c334 100644
      ret = unlink ((char *) target) == 0;
      if (ret)
      {
-@@ -122,8 +121,9 @@ FcCacheIsMmapSafe (int fd)
+@@ -122,8 +126,9 @@ FcCacheIsMmapSafe (int fd)
        MMAP_USE,
        MMAP_DONT_USE,
        MMAP_CHECK_FS,
@@ -328,7 +561,7 @@ index 4a6a752..948c334 100644
  
      status = (intptr_t) fc_atomic_ptr_get (&static_status);
  
-@@ -135,90 +135,79 @@ FcCacheIsMmapSafe (int fd)
+@@ -135,90 +140,94 @@ FcCacheIsMmapSafe (int fd)
  	    status =  use ? MMAP_USE : MMAP_DONT_USE;
  	else
  	    status = MMAP_CHECK_FS;
@@ -367,9 +600,13 @@ index 4a6a752..948c334 100644
 -     * In case:
 -     * <remap-dir as-path="/usr/share/fonts">/run/host/fonts</remap-dir>
 -     *
-+FcDirCacheBasenameMurmurHash3 (FcConfig *config, const FcChar8 *dir, FcChar8 cache_base[CACHEBASE_LEN]) {
++FcDirCacheBasenameHash (FcConfig *config, const FcChar8 *dir, FcChar8 cache_base[CACHEBASE_LEN]) {
 +    
++#if defined(FC_XXHASH)
++    XXH128_hash_t hash;
++#else
 +    uint64_t hash[2] = {0};
++#endif
 +    const FcChar8 *orig_dir = NULL;
 +
 +    /* 
@@ -403,7 +640,11 @@ index 4a6a752..948c334 100644
 -	dir = key;
 +
 +    if (!salt) {
++#if defined(FC_XXHASH)
++        hash = XXH3_128bits((const char *)dir, strlen ((const char *) dir));
++#else
 +        MurmurHash3_128((const char *)dir, strlen ((const char *) dir), &hash);
++#endif
 +    } else {
 +        size_t dl = strlen((const char *)dir);
 +        size_t sl = strlen((const char *)salt);
@@ -415,7 +656,11 @@ index 4a6a752..948c334 100644
 +        if (!orig_dir)
 +            orig_dir = dir;
 +        dir = key;
++#if defined(FC_XXHASH)
++        hash = XXH3_128bits((const char *)dir, strlen ((const char *) dir));
++#else
 +        MurmurHash3_128((const char *)dir, strlen ((const char *) dir), &hash);
++#endif
 +        if (key)
 +	        FcStrFree (key);
      }
@@ -427,6 +672,11 @@ index 4a6a752..948c334 100644
  
 -    if (key)
 -	FcStrFree (key);
++#if defined(FC_XXHASH)
++    snprintf((char *)cache_base, CACHEBASE_LEN, "/%lx%lx-%s%s", hash.high64, hash.low64, FC_ARCHITECTURE, FC_CACHE_SUFFIX);
++#else
++    snprintf((char *)cache_base, CACHEBASE_LEN, "/%lx%lx-%s%s", hash[0], hash[1], FC_ARCHITECTURE, FC_CACHE_SUFFIX);
++#endif
  
 -    cache_base[0] = '/';
 -    hex_hash = cache_base + 1;
@@ -437,8 +687,6 @@ index 4a6a752..948c334 100644
 -    }
 -    hex_hash[2*cnt] = 0;
 -    strcat ((char *) cache_base, "-" FC_ARCHITECTURE FC_CACHE_SUFFIX);
-+    snprintf((char *)cache_base, CACHEBASE_LEN, "/%lx%lx-%s%s", hash[0], hash[1], FC_ARCHITECTURE, FC_CACHE_SUFFIX);
-+    
      if (FcDebug() & FC_DBG_CACHE)
      {
 -	printf ("cache: %s (dir: %s%s%s%s%s%s)\n", cache_base, orig_dir ? orig_dir : dir, mapped_dir ? " (mapped to " : "", mapped_dir ? (char *)mapped_dir : "", mapped_dir ? ")" : "", salt ? ", salt: " : "", salt ? (char *)salt : "");
@@ -466,7 +714,7 @@ index 4a6a752..948c334 100644
      const FcChar8 *sysroot = FcConfigGetSysRoot (config);
      int fd;
  
-@@ -226,30 +215,28 @@ FcDirCacheBasenameUUID (FcConfig *config, const FcChar8 *dir, FcChar8 cache_base
+@@ -226,30 +235,28 @@ FcDirCacheBasenameUUID (FcConfig *config, const FcChar8 *dir, FcChar8 cache_base
       * to determine the cache name no matter where it was mapped to.
       */
      cache_base[0] = 0;
@@ -514,7 +762,7 @@ index 4a6a752..948c334 100644
  bail:
      FcStrFree (fuuid);
      FcStrFree (target);
-@@ -268,15 +255,14 @@ FcDirCacheUnlink (const FcChar8 *dir, FcConfig *config)
+@@ -268,15 +275,14 @@ FcDirCacheUnlink (const FcChar8 *dir, FcConfig *config)
  #endif
      FcStrList	*list;
      FcChar8	*cache_dir;
@@ -528,11 +776,11 @@ index 4a6a752..948c334 100644
 +    const FcChar8 *sysroot = FcConfigGetSysRoot (config);
  
 -    FcDirCacheBasenameMD5 (config, dir, cache_base);
-+    FcDirCacheBasenameMurmurHash3 (config, dir, cache_base);
++    FcDirCacheBasenameHash (config, dir, cache_base);
  #ifndef _WIN32
      FcDirCacheBasenameUUID (config, dir, uuid_cache_base);
  #endif
-@@ -359,8 +345,9 @@ FcDirCacheProcess (FcConfig *config, const FcChar8 *dir,
+@@ -359,8 +365,9 @@ FcDirCacheProcess (FcConfig *config, const FcChar8 *dir,
      int		fd = -1;
      FcChar8	cache_base[CACHEBASE_LEN];
      FcStrList	*list;
@@ -544,12 +792,12 @@ index 4a6a752..948c334 100644
      FcBool	ret = FcFalse;
      const FcChar8 *sysroot = FcConfigGetSysRoot (config);
      struct timeval latest_mtime = (struct timeval){ 0 };
-@@ -376,12 +363,13 @@ FcDirCacheProcess (FcConfig *config, const FcChar8 *dir,
+@@ -376,12 +383,13 @@ FcDirCacheProcess (FcConfig *config, const FcChar8 *dir,
      }
      FcStrFree (d);
  
 -    FcDirCacheBasenameMD5 (config, dir, cache_base);
-+    FcDirCacheBasenameMurmurHash3 (config, dir, cache_base);
++    FcDirCacheBasenameHash (config, dir, cache_base);
  
      list = FcStrListCreate (config->cacheDirs);
      if (!list)
@@ -559,7 +807,7 @@ index 4a6a752..948c334 100644
      while ((cache_dir = FcStrListNext (list)))
      {
          FcChar8	*cache_hashed;
-@@ -456,9 +444,9 @@ FcDirCacheProcess (FcConfig *config, const FcChar8 *dir,
+@@ -456,9 +464,9 @@ FcDirCacheProcess (FcConfig *config, const FcChar8 *dir,
   * of the necessary pointers
   */
  
@@ -571,14 +819,15 @@ index 4a6a752..948c334 100644
      FcCache	    *cache;
      FcRef	    ref;
      intptr_t	    size;
-@@ -481,73 +469,46 @@ struct _FcCacheSkip {
+@@ -481,73 +489,53 @@ struct _FcCacheSkip {
  static FcCacheSkip	*fcCacheChains[FC_CACHE_MAX_LEVEL];
  static int		fcCacheMaxLevel;
  
--
 +/* Cache Lock Mutex */
- static FcMutex *cache_lock;
++static mtx_t cache_lock;
  
+-static FcMutex *cache_lock;
+-
 -static void
 +static inline void
  lock_cache (void)
@@ -594,14 +843,20 @@ index 4a6a752..948c334 100644
 -      free (lock);
 -      goto retry;
 -    }
--
++    int lock=thrd_error;
++	retry:
++		lock=mtx_lock(&cache_lock);
+ 
 -    FcMutexLock (lock);
 -    /* Initialize random state */
 -    FcRandom ();
 -    return;
 -  }
 -  FcMutexLock (lock);
-+    FcMutexLockResource(&cache_lock);
++	if (lock != thrd_success) {
++        FcYield();
++        goto retry;
++    }
  }
  
 -static void
@@ -611,7 +866,7 @@ index 4a6a752..948c334 100644
 -  FcMutex *lock;
 -  lock = fc_atomic_ptr_get (&cache_lock);
 -  FcMutexUnlock (lock);
-+    FcMutexUnlockResource(&cache_lock);
++    mtx_unlock(&cache_lock);
  }
  
 -static void
@@ -624,7 +879,7 @@ index 4a6a752..948c334 100644
 -    FcMutexFinish (lock);
 -    free (lock);
 -  }
-+    FcMutexFreeResource(&cache_lock);
++    mtx_destroy(&cache_lock);
  }
  
 -
@@ -665,7 +920,7 @@ index 4a6a752..948c334 100644
  }
  
  /*
-@@ -557,27 +518,27 @@ static FcBool
+@@ -557,27 +545,27 @@ static FcBool
  FcCacheInsert (FcCache *cache, struct stat *cache_stat)
  {
      FcCacheSkip    **update[FC_CACHE_MAX_LEVEL];
@@ -703,7 +958,7 @@ index 4a6a752..948c334 100644
      if (level > fcCacheMaxLevel)
      {
  	level = fcCacheMaxLevel + 1;
-@@ -585,9 +546,11 @@ FcCacheInsert (FcCache *cache, struct stat *cache_stat)
+@@ -585,9 +573,11 @@ FcCacheInsert (FcCache *cache, struct stat *cache_stat)
  	fcCacheMaxLevel = level;
      }
  
@@ -718,7 +973,7 @@ index 4a6a752..948c334 100644
  
      s->cache = cache;
      s->size = cache->size;
-@@ -600,25 +563,16 @@ FcCacheInsert (FcCache *cache, struct stat *cache_stat)
+@@ -600,25 +590,16 @@ FcCacheInsert (FcCache *cache, struct stat *cache_stat)
  	s->cache_mtime = cache_stat->st_mtime;
  #ifdef HAVE_STRUCT_STAT_ST_MTIM
  	s->cache_mtime_nano = cache_stat->st_mtim.tv_nsec;
@@ -747,7 +1002,7 @@ index 4a6a752..948c334 100644
      }
  
      unlock_cache ();
-@@ -628,7 +582,6 @@ FcCacheInsert (FcCache *cache, struct stat *cache_stat)
+@@ -628,7 +609,6 @@ FcCacheInsert (FcCache *cache, struct stat *cache_stat)
  static FcCacheSkip *
  FcCacheFindByAddrUnlocked (void *object)
  {
@@ -755,7 +1010,7 @@ index 4a6a752..948c334 100644
      FcCacheSkip    **next = fcCacheChains;
      FcCacheSkip    *s;
  
-@@ -638,7 +591,7 @@ FcCacheFindByAddrUnlocked (void *object)
+@@ -638,7 +618,7 @@ FcCacheFindByAddrUnlocked (void *object)
      /*
       * Walk chain pointers one level at a time
       */
@@ -764,7 +1019,7 @@ index 4a6a752..948c334 100644
  	while (next[i] && (char *) object >= ((char *) next[i]->cache + next[i]->size))
  	    next = next[i]->next;
      /*
-@@ -664,29 +617,33 @@ static void
+@@ -664,29 +644,33 @@ static void
  FcCacheRemoveUnlocked (FcCache *cache)
  {
      FcCacheSkip	    **update[FC_CACHE_MAX_LEVEL];
@@ -813,7 +1068,7 @@ index 4a6a752..948c334 100644
  	allocated = s->allocated;
  	while (allocated)
  	{
-@@ -942,16 +899,15 @@ FcDirCacheMapFd (FcConfig *config, int fd, struct stat *fd_stat, struct stat *di
+@@ -942,16 +926,15 @@ FcDirCacheMapFd (FcConfig *config, int fd, struct stat *fd_stat, struct stat *di
      FcCache	*cache;
      FcBool	allocated = FcFalse;
  
@@ -838,7 +1093,7 @@ index 4a6a752..948c334 100644
      }
  
      /*
-@@ -960,65 +916,71 @@ FcDirCacheMapFd (FcConfig *config, int fd, struct stat *fd_stat, struct stat *di
+@@ -960,65 +943,71 @@ FcDirCacheMapFd (FcConfig *config, int fd, struct stat *fd_stat, struct stat *di
       */
      if (FcCacheIsMmapSafe (fd) && fd_stat->st_size >= FC_CACHE_MIN_MMAP)
      {
@@ -947,7 +1202,7 @@ index 4a6a752..948c334 100644
  	
      return cache;
  }
-@@ -1272,11 +1234,9 @@ FcDirCacheBuild (FcFontSet *set, const FcChar8 *dir, struct stat *dir_stat, FcSt
+@@ -1272,11 +1261,9 @@ FcDirCacheBuild (FcFontSet *set, const FcChar8 *dir, struct stat *dir_stat, FcSt
  	goto bail1;
  
      /* Serialize layout complete. Now allocate space and fill it */
@@ -960,25 +1215,25 @@ index 4a6a752..948c334 100644
  
      serialize->linear = cache;
  
-@@ -1417,7 +1377,7 @@ FcDirCacheWrite (FcCache *cache, FcConfig *config)
+@@ -1417,7 +1404,7 @@ FcDirCacheWrite (FcCache *cache, FcConfig *config)
      if (!cache_dir)
  	return FcFalse;
  
 -    FcDirCacheBasenameMD5 (config, dir, cache_base);
-+    FcDirCacheBasenameMurmurHash3 (config, dir, cache_base);
++    FcDirCacheBasenameHash (config, dir, cache_base);
      cache_hashed = FcStrBuildFilename (cache_dir, cache_base, NULL);
      FcStrFree (cache_dir);
      if (!cache_hashed)
-@@ -1621,7 +1581,7 @@ FcDirCacheLock (const FcChar8 *dir,
+@@ -1621,7 +1608,7 @@ FcDirCacheLock (const FcChar8 *dir,
      const FcChar8 *sysroot = FcConfigGetSysRoot (config);
      int fd = -1;
  
 -    FcDirCacheBasenameMD5 (config, dir, cache_base);
-+    FcDirCacheBasenameMurmurHash3 (config, dir, cache_base);
++    FcDirCacheBasenameHash (config, dir, cache_base);
      list = FcStrListCreate (config->cacheDirs);
      if (!list)
  	return -1;
-@@ -1640,8 +1600,11 @@ FcDirCacheLock (const FcChar8 *dir,
+@@ -1640,8 +1627,11 @@ FcDirCacheLock (const FcChar8 *dir,
  	if (fd != -1)
  	{
  #if defined(_WIN32)
@@ -992,7 +1247,7 @@ index 4a6a752..948c334 100644
  #else
  	    struct flock fl;
  
-@@ -1650,19 +1613,18 @@ FcDirCacheLock (const FcChar8 *dir,
+@@ -1650,19 +1640,18 @@ FcDirCacheLock (const FcChar8 *dir,
  	    fl.l_start = 0;
  	    fl.l_len = 0;
  	    fl.l_pid = getpid ();
@@ -1019,10 +1274,18 @@ index 4a6a752..948c334 100644
  
  void
 diff --git a/src/fccfg.c b/src/fccfg.c
-index eb174a4..68f0e6d 100644
+index eb174a4b1625..7e9ce7a4de95 100644
 --- a/src/fccfg.c
 +++ b/src/fccfg.c
-@@ -39,69 +39,56 @@
+@@ -29,6 +29,7 @@
+ #include <dirent.h>
+ #endif
+ #include <sys/types.h>
++#include <threads.h>
+ 
+ #if defined (_WIN32) && !defined (R_OK)
+ #define R_OK 4
+@@ -39,69 +40,63 @@
  #endif
  
  static FcConfig    *_fcConfig; /* MT-safe */
@@ -1030,7 +1293,7 @@ index eb174a4..68f0e6d 100644
  
 -static void
 +/* Config Lock Mutex */
-+static FcMutex	   *config_lock;
++static mtx_t config_lock;
 +
 +static inline void
  lock_config (void)
@@ -1052,9 +1315,15 @@ index eb174a4..68f0e6d 100644
 -	/* Initialize random state */
 -	FcRandom ();
 -	return;
--    }
++    int lock=thrd_error;
++	retry:
++		lock = mtx_lock(&config_lock);
++
++	if (lock != thrd_success) {
++        FcYield();
++        goto retry;
+     }
 -    FcMutexLock (lock);
-+	FcMutexLockResource(&config_lock);
  }
  
 -static void
@@ -1064,7 +1333,7 @@ index eb174a4..68f0e6d 100644
 -    FcMutex *lock;
 -    lock = fc_atomic_ptr_get (&_lock);
 -    FcMutexUnlock (lock);
-+    FcMutexUnlockResource(&config_lock);
++    mtx_unlock(&config_lock);
  }
  
 -static void
@@ -1078,7 +1347,7 @@ index eb174a4..68f0e6d 100644
 -	FcMutexFinish (lock);
 -	free (lock);
 -    }
-+	FcMutexFreeResource(&config_lock);
++	mtx_destroy(&config_lock);
  }
  
  static FcConfig *
@@ -1124,7 +1393,7 @@ index eb174a4..68f0e6d 100644
  }
  
  static void
-@@ -632,7 +619,7 @@ FcConfigAddFontDir (FcConfig	    *config,
+@@ -632,7 +627,7 @@ FcConfigAddFontDir (FcConfig	    *config,
  	}
  	else if (salt)
  	{
@@ -1133,7 +1402,7 @@ index eb174a4..68f0e6d 100644
  	}
      }
      return FcStrSetAddFilenamePairWithSalt (config->fontDirs, d, m, salt);
-@@ -1603,7 +1590,7 @@ FamilyTableAdd (FamilyTable    *table,
+@@ -1603,7 +1598,7 @@ FamilyTableAdd (FamilyTable    *table,
  
              if (!FcHashTableFind (table->family_hash, (const void *)s, (void **)&fe))
              {
@@ -1142,7 +1411,7 @@ index eb174a4..68f0e6d 100644
                  fe->count = 0;
                  FcHashTableAdd (table->family_hash, (void *)s, fe);
              }
-@@ -1611,7 +1598,7 @@ FamilyTableAdd (FamilyTable    *table,
+@@ -1611,7 +1606,7 @@ FamilyTableAdd (FamilyTable    *table,
  
              if (!FcHashTableFind (table->family_blank_hash, (const void *)s, (void **)&fe))
              {
@@ -1151,7 +1420,7 @@ index eb174a4..68f0e6d 100644
                  fe->count = 0;
                  FcHashTableAdd (table->family_blank_hash, (void *)s, fe);
              }
-@@ -2048,19 +2035,19 @@ FcConfigSubstituteWithPat (FcConfig    *config,
+@@ -2048,19 +2043,19 @@ FcConfigSubstituteWithPat (FcConfig    *config,
      }
  
      nobjs = FC_MAX_BASE_OBJECT + config->maxObjects + 2;
@@ -1174,7 +1443,7 @@ index eb174a4..68f0e6d 100644
      if (!tst)
      {
  	retval = FcFalse;
-@@ -2705,11 +2692,7 @@ FcConfigGetFilename (FcConfig      *config,
+@@ -2705,11 +2700,7 @@ FcConfigGetFilename (FcConfig      *config,
  	    if (sysroot)
  		FcStrFree (s);
  	}
@@ -1188,7 +1457,7 @@ index eb174a4..68f0e6d 100644
  	if (!path)
  	{
 diff --git a/src/fccharset.c b/src/fccharset.c
-index 832649c..3ae0f96 100644
+index 832649cded2d..3ae0f964235b 100644
 --- a/src/fccharset.c
 +++ b/src/fccharset.c
 @@ -32,13 +32,10 @@ FcCharSetCreate (void)
@@ -1336,7 +1605,7 @@ index 832649c..3ae0f96 100644
  	    return 0;
  	freezer->leaf_remain = FC_CHAR_LEAF_BLOCK;
 diff --git a/src/fccompat.c b/src/fccompat.c
-index 65ac84c..9e054b8 100644
+index 65ac84ca274d..9e054b8e5707 100644
 --- a/src/fccompat.c
 +++ b/src/fccompat.c
 @@ -86,6 +86,100 @@
@@ -1516,7 +1785,7 @@ index 65ac84c..9e054b8 100644
  #include <direct.h>
  #define mkdir(path,mode) _mkdir(path)
 diff --git a/src/fcdefault.c b/src/fcdefault.c
-index a9a3b72..aff1417 100644
+index a9a3b7296163..aff14171c4ec 100644
 --- a/src/fcdefault.c
 +++ b/src/fcdefault.c
 @@ -91,7 +91,7 @@ FcGetDefaultLang (void)
@@ -1560,7 +1829,7 @@ index a9a3b72..aff1417 100644
  	free (prgname);
      }
 diff --git a/src/fcdeprecate.h b/src/fcdeprecate.h
-index 214b684..3508b8d 100644
+index 214b684cfca0..3508b8d221fb 100644
 --- a/src/fcdeprecate.h
 +++ b/src/fcdeprecate.h
 @@ -24,8 +24,8 @@
@@ -1581,7 +1850,7 @@ index 214b684..3508b8d 100644
 -#endif /* _FCDEPRECATE_H_ */
 +#endif /* FC_HEADER_FCDEPRECATE_H */
 diff --git a/src/fcdir.c b/src/fcdir.c
-index e332897..b5ca7ed 100644
+index e3328976883b..b5ca7ed8f250 100644
 --- a/src/fcdir.c
 +++ b/src/fcdir.c
 @@ -101,13 +101,15 @@ FcFileScanFontConfig (FcFontSet		*set,
@@ -1617,7 +1886,7 @@ index e332897..b5ca7ed 100644
  	    strcpy ((char *) base, (char *) e->d_name);
  	    if (!FcStrSetAdd (files, file_prefix)) {
 diff --git a/src/fcfoundry.h b/src/fcfoundry.h
-index bc103bb..6cf2f32 100644
+index bc103bb77e01..6cf2f32981bd 100644
 --- a/src/fcfoundry.h
 +++ b/src/fcfoundry.h
 @@ -22,6 +22,8 @@
@@ -1637,7 +1906,7 @@ index bc103bb..6cf2f32 100644
 +#endif /* FC_HEADER_FCFOUNDRY_H */
 \ No newline at end of file
 diff --git a/src/fcfreetype.c b/src/fcfreetype.c
-index cf923f2..973d091 100644
+index cf923f20f0c0..973d0914a11c 100644
 --- a/src/fcfreetype.c
 +++ b/src/fcfreetype.c
 @@ -759,7 +759,7 @@ FcSfntNameTranscode (FT_SfntName *sname)
@@ -1715,7 +1984,7 @@ index cf923f2..973d091 100644
  	goto bail;
  
 diff --git a/src/fcfs.c b/src/fcfs.c
-index 21c6c7c..68b5ed1 100644
+index 21c6c7cbb0ed..68b5ed19fcd0 100644
 --- a/src/fcfs.c
 +++ b/src/fcfs.c
 @@ -28,27 +28,20 @@
@@ -1764,7 +2033,7 @@ index 21c6c7c..68b5ed1 100644
  	    return FcFalse;
  	s->sfont = sfont;
 diff --git a/src/fchash.c b/src/fchash.c
-index e91c72f..2efd966 100644
+index e91c72f794d4..2efd9665ad4d 100644
 --- a/src/fchash.c
 +++ b/src/fchash.c
 @@ -57,11 +57,10 @@ FcHashTableCreate (FcHashFunc    hash_func,
@@ -1816,8 +2085,25 @@ index e91c72f..2efd966 100644
      if (table->key_copy_func)
  	ret |= !table->key_copy_func (key, &bucket->key);
      else
+diff --git a/src/fcinit.c b/src/fcinit.c
+index c05cdc54b761..f85ab141550e 100644
+--- a/src/fcinit.c
++++ b/src/fcinit.c
+@@ -28,12 +28,6 @@
+ #if defined(FC_ATOMIC_INT_NIL)
+ #pragma message("Could not find any system to define atomic_int macros, library may NOT be thread-safe.")
+ #endif
+-#if defined(FC_MUTEX_IMPL_NIL)
+-#pragma message("Could not find any system to define mutex macros, library may NOT be thread-safe.")
+-#endif
+-#if defined(FC_ATOMIC_INT_NIL) || defined(FC_MUTEX_IMPL_NIL)
+-#pragma message("To suppress these warnings, define FC_NO_MT.")
+-#endif
+ 
+ static FcConfig *
+ FcInitFallbackConfig (const FcChar8 *sysroot)
 diff --git a/src/fcint.h b/src/fcint.h
-index c615b66..02a46e0 100644
+index c615b66d1607..6a69d653e79f 100644
 --- a/src/fcint.h
 +++ b/src/fcint.h
 @@ -30,6 +30,7 @@
@@ -1828,6 +2114,15 @@ index c615b66..02a46e0 100644
  
  #include <stdlib.h>
  #include <stdio.h>
+@@ -50,7 +51,7 @@
+ #include <fontconfig/fontconfig.h>
+ #include <fontconfig/fcprivate.h>
+ #include "fcdeprecate.h"
+-#include "fcmutex.h"
++#include "fcyield.h"
+ #include "fcatomic.h"
+ 
+ #ifndef FC_CONFIG_PATH
 @@ -846,7 +847,7 @@ FcOpen(const char *pathname, int flags, ...);
  FcPrivate int
  FcMakeTempfile (char *template);
@@ -1884,7 +2179,7 @@ index c615b66..02a46e0 100644
 +
  #endif /* _FC_INT_H_ */
 diff --git a/src/fclang.c b/src/fclang.c
-index 9f3e046..cce492c 100644
+index 9f3e046d7df2..cce492ca0911 100644
 --- a/src/fclang.c
 +++ b/src/fclang.c
 @@ -472,13 +472,10 @@ FcLangSet *
@@ -1911,7 +2206,7 @@ index 9f3e046..cce492c 100644
      if (ls->extra)
      {
 diff --git a/src/fclist.c b/src/fclist.c
-index 51634ce..8375bcd 100644
+index 51634cecc74d..8375bcd8ca55 100644
 --- a/src/fclist.c
 +++ b/src/fclist.c
 @@ -28,14 +28,7 @@
@@ -1940,7 +2235,7 @@ index 51634ce..8375bcd 100644
  	    return FcFalse;
  	os->objects = objects;
 diff --git a/src/fcmatch.c b/src/fcmatch.c
-index cf0876c..9386b18 100644
+index cf0876cafc7e..9386b18ac921 100644
 --- a/src/fcmatch.c
 +++ b/src/fcmatch.c
 @@ -23,6 +23,7 @@
@@ -2039,7 +2334,7 @@ index cf0876c..9386b18 100644
  	if (os)
 diff --git a/src/fcmd5.h b/src/fcmd5.h
 deleted file mode 100644
-index 7e8a6e1..0000000
+index 7e8a6e1e3f10..000000000000
 --- a/src/fcmd5.h
 +++ /dev/null
 @@ -1,255 +0,0 @@
@@ -2300,7 +2595,7 @@ index 7e8a6e1..0000000
 -}
 diff --git a/src/fcmurmurhash3.h b/src/fcmurmurhash3.h
 new file mode 100644
-index 0000000..ae0f75c
+index 000000000000..ae0f75cdbb01
 --- /dev/null
 +++ b/src/fcmurmurhash3.h
 @@ -0,0 +1,337 @@
@@ -2643,137 +2938,140 @@ index 0000000..ae0f75c
 +#endif // _FCMURMURHASH_H_
 \ No newline at end of file
 diff --git a/src/fcmutex.h b/src/fcmutex.h
-index 556a05e..6141f95 100644
+deleted file mode 100644
+index 556a05efcf37..000000000000
 --- a/src/fcmutex.h
-+++ b/src/fcmutex.h
-@@ -29,13 +29,68 @@
-  * Google Author(s): Behdad Esfahbod
-  */
- 
++++ /dev/null
+@@ -1,127 +0,0 @@
+-/*
+- * Atomic int and pointer operations.  Originally copied from HarfBuzz.
+- *
+- * Copyright © 2007  Chris Wilson
+- * Copyright © 2009,2010  Red Hat, Inc.
+- * Copyright © 2011,2012,2013  Google, Inc.
+- *
+- * Permission is hereby granted, without written agreement and without
+- * license or royalty fees, to use, copy, modify, and distribute this
+- * software and its documentation for any purpose, provided that the
+- * above copyright notice and the following two paragraphs appear in
+- * all copies of this software.
+- *
+- * IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE TO ANY PARTY FOR
+- * DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES
+- * ARISING OUT OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN
+- * IF THE COPYRIGHT HOLDER HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH
+- * DAMAGE.
+- *
+- * THE COPYRIGHT HOLDER SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING,
+- * BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+- * FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
+- * ON AN "AS IS" BASIS, AND THE COPYRIGHT HOLDER HAS NO OBLIGATION TO
+- * PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
+- *
+- * Contributor(s):
+- *	Chris Wilson <chris@chris-wilson.co.uk>
+- * Red Hat Author(s): Behdad Esfahbod
+- * Google Author(s): Behdad Esfahbod
+- */
+-
 -#ifndef _FCMUTEX_H_
 -#define _FCMUTEX_H_
-+#ifndef FC_HEADER_MUTEX_H
-+#define FC_HEADER_MUTEX_H
- 
- #ifdef HAVE_CONFIG_H
- #include <config.h>
- #endif
- 
-+#include "fcatomic.h"
-+#include "fcarch.h"
-+#include "fcstdint.h"
-+
-+#if defined(_WIN32) || defined(_WIN64)
-+#include <windows.h>
-+#include <winnt.h>
-+#else
-+#include <sched.h>  // sched_yield()
-+#include <time.h>   // for nanosleep
-+#include <unistd.h> // _POSIX_PRIORITY_SCHEDULING
-+#endif
-+
-+#if defined(_POSIX_PRIORITY_SCHEDULING)
-+#define FcYield() sched_yield();
-+
-+#elif defined(_MSC_VER)
-+
-+#if defined(YieldProcessor)
-+#define FcYield() YieldProcessor();
-+
-+#elif defined(FC_ARCH_X86_64) || defined(FC_ARCH_X86)
-+#define FcYield() __asm pause;
-+
-+#elif defined(FC_ARCH_ARM)
-+#define FcYield() __asm yield;
-+
-+#else
-+#define FcYield() Sleep(1);
-+
-+#endif
-+
-+#elif defined(FC_ARCH_X86_64) || defined(FC_ARCH_X86)
-+#define FcYield() asm volatile("pause" ::: "memory");
-+
-+#elif defined(FC_ARCH_ARM)
-+#define FcYield() asm volatile("yield" ::: "memory");
-+
-+#elif defined(FC_ARCH_MIPS) && (((__mips_isa_rev > 1) && defined(__mips32)) || \
-+                                ((__mips_isa_rev > 2) && defined(__mips64)))
-+#define FcYield() asm volatile("pause" ::: "memory");
-+
-+#elif defined(FC_ARCH_PPC)
-+#define FcYield() asm volatile("or 27,27,27" ::: "memory");
-+
-+#else
-+#define FcYield()                                                              \
-+  {                                                                            \
-+    struct timespec ts;                                                        \
-+    ts.tv_sec = 0;                                                             \
-+    ts.tv_nsec = 1000000;                                                      \
-+    nanosleep(&ts, NULL);                                                      \
-+  }
-+#endif
-+
- #define FC_STMT_START do
- #define FC_STMT_END while (0)
- 
-@@ -123,5 +178,53 @@ static inline void FcMutexLock   (FcMutex *m) { fc_mutex_impl_lock (m);   }
- static inline void FcMutexUnlock (FcMutex *m) { fc_mutex_impl_unlock (m); }
- static inline void FcMutexFinish (FcMutex *m) { fc_mutex_impl_finish (m); }
- 
-+static inline void FcMutexLockResource(FcMutex **res) {
-+
-+    FcMutex *lock = NULL;
-+    uint32_t attempts = 0;
-+
-+    retry:
-+    if (attempts >= 1000) { // Protection against endless attempts to lock a resource
-+        fprintf(stderr, "Error: The number of attempts to lock a resource has "
-+                        "exceeded 1000.");
-+        exit(1);
-+    }
-+
-+    attempts++;
-+
-+    lock = fc_atomic_ptr_get(res);
-+
-+    if (!lock) {
-+        lock = (FcMutex *) calloc(1, sizeof(FcMutex));
-+        if (lock) {
-+            FcMutexInit(lock);
-+            if (!fc_atomic_ptr_cmpexch(res, NULL, lock)) {
-+                FcMutexFinish(lock);
-+                free(lock);
-+            }
-+        }
-+    }
-+
-+    if (!lock) {
-+        FcYield();
-+        goto retry;
-+    }
-+
-+    FcMutexLock(lock);
-+
-+}
-+
-+static inline void FcMutexUnlockResource(FcMutex **res) {
-+    FcMutex *lock = fc_atomic_ptr_get(res);
-+    FcMutexUnlock(lock);
-+}
-+
-+static inline void FcMutexFreeResource(FcMutex **res) {
-+    FcMutex *lock = fc_atomic_ptr_get(res);
-+    if (lock && fc_atomic_ptr_cmpexch(res, lock, NULL)) {
-+        FcMutexFinish(lock);
-+        free(lock);
-+    }
-+}
- 
+-
+-#ifdef HAVE_CONFIG_H
+-#include <config.h>
+-#endif
+-
+-#define FC_STMT_START do
+-#define FC_STMT_END while (0)
+-
+-/* mutex */
+-
+-/* We need external help for these */
+-
+-#if 0
+-
+-
+-#elif !defined(FC_NO_MT) && defined(_MSC_VER) || defined(__MINGW32__)
+-
+-#include "fcwindows.h"
+-typedef CRITICAL_SECTION fc_mutex_impl_t;
+-#define FC_MUTEX_IMPL_INIT	{ NULL, 0, 0, NULL, NULL, 0 }
+-#define fc_mutex_impl_init(M)	InitializeCriticalSection (M)
+-#define fc_mutex_impl_lock(M)	EnterCriticalSection (M)
+-#define fc_mutex_impl_unlock(M)	LeaveCriticalSection (M)
+-#define fc_mutex_impl_finish(M)	DeleteCriticalSection (M)
+-
+-
+-#elif !defined(FC_NO_MT) && (defined(HAVE_PTHREAD) || defined(__APPLE__))
+-
+-#include <pthread.h>
+-typedef pthread_mutex_t fc_mutex_impl_t;
+-#define FC_MUTEX_IMPL_INIT	PTHREAD_MUTEX_INITIALIZER
+-#define fc_mutex_impl_init(M)	pthread_mutex_init (M, NULL)
+-#define fc_mutex_impl_lock(M)	pthread_mutex_lock (M)
+-#define fc_mutex_impl_unlock(M)	pthread_mutex_unlock (M)
+-#define fc_mutex_impl_finish(M)	pthread_mutex_destroy (M)
+-
+-
+-#elif !defined(FC_NO_MT) && defined(HAVE_INTEL_ATOMIC_PRIMITIVES)
+-
+-#if defined(HAVE_SCHED_H) && defined(HAVE_SCHED_YIELD)
+-# include <sched.h>
+-# define FC_SCHED_YIELD() sched_yield ()
+-#else
+-# define FC_SCHED_YIELD() FC_STMT_START {} FC_STMT_END
+-#endif
+-
+-/* This actually is not a totally awful implementation. */
+-typedef volatile int fc_mutex_impl_t;
+-#define FC_MUTEX_IMPL_INIT	0
+-#define fc_mutex_impl_init(M)	*(M) = 0
+-#define fc_mutex_impl_lock(M)	FC_STMT_START { while (__sync_lock_test_and_set((M), 1)) FC_SCHED_YIELD (); } FC_STMT_END
+-#define fc_mutex_impl_unlock(M)	__sync_lock_release (M)
+-#define fc_mutex_impl_finish(M)	FC_STMT_START {} FC_STMT_END
+-
+-
+-#elif !defined(FC_NO_MT)
+-
+-#if defined(HAVE_SCHED_H) && defined(HAVE_SCHED_YIELD)
+-# include <sched.h>
+-# define FC_SCHED_YIELD() sched_yield ()
+-#else
+-# define FC_SCHED_YIELD() FC_STMT_START {} FC_STMT_END
+-#endif
+-
+-#define FC_MUTEX_INT_NIL 1 /* Warn that fallback implementation is in use. */
+-typedef volatile int fc_mutex_impl_t;
+-#define FC_MUTEX_IMPL_INIT	0
+-#define fc_mutex_impl_init(M)	*(M) = 0
+-#define fc_mutex_impl_lock(M)	FC_STMT_START { while (*(M)) FC_SCHED_YIELD (); (*(M))++; } FC_STMT_END
+-#define fc_mutex_impl_unlock(M)	(*(M))--;
+-#define fc_mutex_impl_finish(M)	FC_STMT_START {} FC_STMT_END
+-
+-
+-#else /* FC_NO_MT */
+-
+-typedef int fc_mutex_impl_t;
+-#define FC_MUTEX_IMPL_INIT	0
+-#define fc_mutex_impl_init(M)	FC_STMT_START {} FC_STMT_END
+-#define fc_mutex_impl_lock(M)	FC_STMT_START {} FC_STMT_END
+-#define fc_mutex_impl_unlock(M)	FC_STMT_START {} FC_STMT_END
+-#define fc_mutex_impl_finish(M)	FC_STMT_START {} FC_STMT_END
+-
+-#endif
+-
+-
+-#define FC_MUTEX_INIT		{FC_MUTEX_IMPL_INIT}
+-typedef fc_mutex_impl_t FcMutex;
+-static inline void FcMutexInit   (FcMutex *m) { fc_mutex_impl_init (m);   }
+-static inline void FcMutexLock   (FcMutex *m) { fc_mutex_impl_lock (m);   }
+-static inline void FcMutexUnlock (FcMutex *m) { fc_mutex_impl_unlock (m); }
+-static inline void FcMutexFinish (FcMutex *m) { fc_mutex_impl_finish (m); }
+-
+-
 -#endif /* _FCMUTEX_H_ */
-+#endif /* FC_HEADER_MUTEX_H */
 diff --git a/src/fcname.c b/src/fcname.c
-index 3567656..5e5b8d9 100644
+index 35676560e8e4..5e5b8d9ddbec 100644
 --- a/src/fcname.c
 +++ b/src/fcname.c
 @@ -23,6 +23,7 @@
@@ -2803,7 +3101,7 @@ index 3567656..5e5b8d9 100644
  	goto bail0;
      pat = FcPatternCreate ();
 diff --git a/src/fcobjs.h b/src/fcobjs.h
-index acc0471..ea0ca51 100644
+index acc04719ea94..ea0ca51690f8 100644
 --- a/src/fcobjs.h
 +++ b/src/fcobjs.h
 @@ -22,56 +22,63 @@
@@ -2924,7 +3222,7 @@ index acc0471..ea0ca51 100644
 +#endif /* FC_HEADER_FCOBJS_H */
 \ No newline at end of file
 diff --git a/src/fcobjshash.gperf.h b/src/fcobjshash.gperf.h
-index 1765c94..570af23 100644
+index 1765c949d9ac..570af23cbef7 100644
 --- a/src/fcobjshash.gperf.h
 +++ b/src/fcobjshash.gperf.h
 @@ -44,6 +44,7 @@ struct FcObjectTypeInfo {
@@ -2937,7 +3235,7 @@ index 1765c94..570af23 100644
 +FC_OBJECT_LIST
  #undef FC_OBJECT
 diff --git a/src/fcpat.c b/src/fcpat.c
-index 5927be4..1cf6c0f 100644
+index 5927be42a861..1cf6c0fa9345 100644
 --- a/src/fcpat.c
 +++ b/src/fcpat.c
 @@ -30,12 +30,10 @@ FcPatternCreate (void)
@@ -3050,7 +3348,7 @@ index 5927be4..1cf6c0f 100644
  	}
  	
 diff --git a/src/fcserialize.c b/src/fcserialize.c
-index 2388dcd..4b27f4a 100644
+index 2388dcd8a66a..4b27f4ab7ed4 100644
 --- a/src/fcserialize.c
 +++ b/src/fcserialize.c
 @@ -41,16 +41,7 @@ FcSerializeCreate (void)
@@ -3081,7 +3379,7 @@ index 2388dcd..4b27f4a 100644
  	return FcFalse;
      FcSerializeBucket *new_buckets_end = new_buckets + new_count;
 diff --git a/src/fcstat.c b/src/fcstat.c
-index 4f69eae..b619d59 100644
+index 4f69eaefdf78..b619d598a80a 100644
 --- a/src/fcstat.c
 +++ b/src/fcstat.c
 @@ -204,7 +204,7 @@ FcScandir (const char		*dirp,
@@ -3123,7 +3421,7 @@ index 4f69eae..b619d59 100644
      {
  #  if defined(HAVE_STRUCT_STATFS_F_FLAGS) && defined(MNT_LOCAL)
 diff --git a/src/fcstr.c b/src/fcstr.c
-index 3fe518f..682f56a 100644
+index 3fe518f7300f..682f56a11530 100644
 --- a/src/fcstr.c
 +++ b/src/fcstr.c
 @@ -990,7 +990,7 @@ FcStrBuildFilename (const FcChar8 *path,
@@ -3182,7 +3480,7 @@ index 3fe518f..682f56a 100644
  }
  
 diff --git a/src/fcxml.c b/src/fcxml.c
-index 1ee03cf..b6012f9 100644
+index 1ee03cfc2b09..b6012f9fb63c 100644
 --- a/src/fcxml.c
 +++ b/src/fcxml.c
 @@ -2126,11 +2126,7 @@ FcParseRemapDir (FcConfigParse *parse)
@@ -3341,6 +3639,73 @@ index 1ee03cf..b6012f9 100644
  }
  
  #ifdef _WIN32
+diff --git a/src/fcyield.h b/src/fcyield.h
+new file mode 100644
+index 000000000000..95f2aeb46d33
+--- /dev/null
++++ b/src/fcyield.h
+@@ -0,0 +1,61 @@
++#ifndef FC_HEADER_FCYIELD_H
++#define FC_HEADER_FCYIELD_H
++
++#ifdef HAVE_CONFIG_H
++#include <config.h>
++#endif
++
++#include "fcarch.h"
++
++#if defined(_WIN32) || defined(_WIN64)
++#include <windows.h>
++#include <winnt.h>
++#else
++#include <sched.h>  // sched_yield()
++#include <time.h>   // for nanosleep
++#include <unistd.h> // _POSIX_PRIORITY_SCHEDULING
++#endif
++
++#if defined(_POSIX_PRIORITY_SCHEDULING)
++#define FcYield() sched_yield();
++
++#elif defined(_MSC_VER)
++
++#if defined(YieldProcessor)
++#define FcYield() YieldProcessor();
++
++#elif defined(FC_ARCH_X86_64) || defined(FC_ARCH_X86)
++#define FcYield() __asm pause;
++
++#elif defined(FC_ARCH_ARM)
++#define FcYield() __asm yield;
++
++#else
++#define FcYield() Sleep(1);
++
++#endif
++
++#elif defined(FC_ARCH_X86_64) || defined(FC_ARCH_X86)
++#define FcYield() asm volatile("pause" ::: "memory");
++
++#elif defined(FC_ARCH_ARM)
++#define FcYield() asm volatile("yield" ::: "memory");
++
++#elif defined(FC_ARCH_MIPS) && (((__mips_isa_rev > 1) && defined(__mips32)) || \
++                                ((__mips_isa_rev > 2) && defined(__mips64)))
++#define FcYield() asm volatile("pause" ::: "memory");
++
++#elif defined(FC_ARCH_PPC)
++#define FcYield() asm volatile("or 27,27,27" ::: "memory");
++
++#else
++#define FcYield()                                                              \
++  {                                                                            \
++    struct timespec ts;                                                        \
++    ts.tv_sec = 0;                                                             \
++    ts.tv_nsec = 1000000;                                                      \
++    nanosleep(&ts, NULL);                                                      \
++  }
++#endif
++
++#endif /* FC_HEADER_FCYIELD_H */
 -- 
-2.35.1
+2.36.1
 
