@@ -1,6 +1,6 @@
 pkgname=wlroots+clang
 pkgver=0.15.1
-pkgrel=4
+pkgrel=5
 license=('MIT')
 pkgdesc='Modular Wayland compositor library'
 url='https://github.com/swaywm/wlroots'
@@ -9,14 +9,15 @@ conflicts=('wlroots')
 depends=(
   'libglvnd'
   'libinput'
-  'seatd' 'libseat.so'
+  'libpixman-1.so'
+  'libseat.so'
+  'libudev.so'
+  'libvulkan.so'
+  'libwayland-client.so'
+  'libwayland-server.so'
   'libxcb'
-  'libxkbcommon' 'libxkbcommon.so'
+  'libxkbcommon.so'
   'opengl-driver'
-  'pixman' 'libpixman-1.so'
-  'systemd-libs' 'libudev.so'
-  'vulkan-icd-loader' 'libvulkan.so'
-  'wayland'
   'xcb-util-errors'
   'xcb-util-renderutil'
   'xcb-util-wm'

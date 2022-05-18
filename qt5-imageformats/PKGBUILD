@@ -1,5 +1,5 @@
 pkgname=qt5-imageformats+clang
-pkgver=5.15.4+kde+r0
+pkgver=5.15.4+kde+r1
 pkgrel=1
 arch=('x86_64')
 url='https://www.qt.io'
@@ -10,7 +10,7 @@ pkgdesc='Plugins for additional image formats: TIFF, MNG, TGA, WBMP'
 depends=('qt5-base' 'jasper' 'libmng' 'libwebp')
 makedepends=('git')
 groups=('qt' 'qt5')
-_commit=8c5bcabbf6a2e27539c2ad689fd69f2406d5cf5c
+_commit=b43e31b9f31ec482ddea2066fda7ca9315512815
 source=("git+https://invent.kde.org/qt/qt/qtimageformats#commit=${_commit}")
 sha256sums=('SKIP')
 

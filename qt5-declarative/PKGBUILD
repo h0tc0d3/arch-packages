@@ -1,5 +1,5 @@
 pkgname=qt5-declarative+clang
-pkgver=5.15.4+kde+r17
+pkgver=5.15.4+kde+r19
 pkgrel=1
 arch=('x86_64')
 url='https://www.qt.io'
@@ -10,7 +10,7 @@ depends=('qt5-base')
 makedepends=('python' 'vulkan-headers' 'git')
 groups=('qt' 'qt5')
 conflicts=('qtchooser' 'qt5-declarative')
-_commit=51efb2ed2f071beda188270a23ac450fe4b318f7
+_commit=2454c808bfe99b50084aea59adb917e805c27afa
 source=(
   "git+https://invent.kde.org/qt/qt/qtdeclarative#commit=${_commit}"
 )
