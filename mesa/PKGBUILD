@@ -1,14 +1,14 @@
 pkgname=mesa+clang
 pkgdesc="Mesa open-source implementation of the OpenGL specification"
-pkgver=22.0.3
+pkgver=22.1.0
 _pkgver=${pkgver//_/-}
 pkgrel=1
 arch=('x86_64')
-makedepends=('git' 'python-mako' 'xorgproto' 'llvm'
+makedepends=('python-mako' 'xorgproto'
   'libxml2' 'libx11' 'libvdpau' 'libva' 'elfutils' 'libxrandr'
-  'ocl-icd' 'wayland-protocols' 'meson' 'ninja' 'glslang' 'valgrind')
+  'wayland-protocols' 'meson' 'ninja' 'glslang' 'libclc')
 depends=('libdrm' 'libxxf86vm' 'libxdamage' 'libxshmfence' 'libelf'
-  'libomxil-bellagio' 'libglvnd' 'wayland' 'lm_sensors' 'libclc' 'vulkan-icd-loader' 'zstd' 'expat')
+  'libomxil-bellagio' 'libunwind' 'libglvnd' 'wayland' 'lm_sensors' 'libclc' 'vulkan-icd-loader' 'zstd' 'expat')
 optdepends=('opengl-man-pages: for the OpenGL API man pages')
 provides=('mesa' "mesa=${pkgver}" 'opencl-mesa' 'vulkan-intel' 'vulkan-radeon' 'vulkan-mesa-layer' 'libva-mesa-driver' 'mesa-vdpau' 'vulkan-swrast' 'vulkan-driver' 'opengl-driver' 'opencl-driver' 'mesa-libgl')
 conflicts=('mesa' 'opencl-mesa' 'vulkan-intel' 'vulkan-radeon' 'vulkan-mesa-layer' 'libva-mesa-driver' 'mesa-vdpau' 'vulkan-swrast')
@@ -19,7 +19,7 @@ source=(
   'LICENSE'
 )
 
-sha256sums=('9f2b30f5276a9abaf71aafc6979685e2636189de1a87aea2c9e69744a6d0ebb9'
+sha256sums=('df6270c1371eaa2aa6eb65b95cbbb2a98b14fa4b7ba0ed45e4ca2fd32df60477'
   'SKIP'
   '7fdc119cf53c8ca65396ea73f6d10af641ba41ea1dd2bd44a824726e01c8b3f2')
 
@@ -64,31 +64,30 @@ build() {
     -D b_pie=true \
     -D sysconfdir=/etc \
     -D platforms=x11,wayland \
-    -D osmesa=true \
     -D gallium-drivers="${GALLIUM_DRIVERS}" \
     -D vulkan-drivers="${VULKAN_DRIVERS}" \
     -D vulkan-layers="${VULKAN_LAYERS}" \
+    -D dri3=enabled \
+    -D egl=enabled \
     -D gallium-extra-hud=true \
-    -D gallium-omx=bellagio \
     -D gallium-nine=true \
+    -D gallium-omx=bellagio \
     -D gallium-opencl=icd \
     -D gallium-va=enabled \
     -D gallium-vdpau=enabled \
     -D gallium-xa=enabled \
     -D gallium-xvmc=disabled \
-    -D llvm=enabled \
-    -D dri3=enabled \
-    -D egl=enabled \
     -D gbm=enabled \
     -D gles1=disabled \
     -D gles2=enabled \
     -D glvnd=true \
     -D glx=dri \
-    -D lmsensors=enabled \
-    -D shared-glapi=enabled \
-    -D zstd=enabled \
-    -D microsoft-clc=disabled \
     -D libunwind=disabled \
+    -D llvm=enabled \
+    -D lmsensors=enabled \
+    -D osmesa=true \
+    -D shared-glapi=enabled \
+    -D microsoft-clc=disabled \
     -D valgrind=disabled
 
   meson compile -C build
