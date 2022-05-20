@@ -1,14 +1,14 @@
 pkgbase=rust+clang
 pkgname=(rust+clang lib32-rust-libs+clang rust-musl+clang rust-wasm+clang rust-src+clang)
 epoch=1
-pkgver=1.60.0
-pkgrel=2
+pkgver=1.61.0
+pkgrel=1
 pkgdesc="Systems programming language focused on safety, speed and concurrency"
 url=https://www.rust-lang.org/
 arch=(x86_64)
 license=(MIT Apache)
 options=(!emptydirs !strip !lto)
-_llvm_ver=14.0.1
+_llvm_ver=14.0.3
 _rustup=0
 if [[ ${_rustup} -eq 1 ]]; then
   _rust="rustup"
@@ -25,22 +25,32 @@ source=(
   0001-bootstrap-Change-libexec-dir.patch
   0002-compiler-Change-LLVM-targets.patch
   0003-compiler-Use-wasm-ld-for-wasm-targets.patch
-  0004-cargo-libgit2-segfault-fix.patch
 )
-sha256sums=('20ca826d1cf674daf8e22c4f8c4b9743af07973211c839b85839742314c838b7'
+sha256sums=('ad0b4351675aa9abdf4c7e066613bd274c4391c5506db152983426376101daed'
   'SKIP'
-  'e9b2d6b199cb97c356a498a53b8cdca43c9766a1e3086fd8d40ebcb3c3028beb'
+  '26568ab40e440d54a0fe05f6055dcbe510eb723977afa39d3b56fc2a81f8d05f'
   'SKIP'
-  '0f8cfbe0387dd62909fe9cb9523223ae1c2319494e2caf5fa4d0592198631b3e'
-  'd97e87bfc21094efd5c8a9767f562ed8cdb355df9cd344826786eba5a2739dcb'
-  '93eeb6de7c455f8eb1e33d5c24784b37b5c1faafde47134106a8837e42004338'
-  'f8ea25693ba42c7e185aa8677218783fe0cd60a3370926cb6996ec898b43d691'
-  '578b4daedfd355af7be44ca197a0b619ec03a33aeeb8f3ba47127bf0e7f50834')
+  'c901a9bb036c29ca092f7dbc8b447efdd9aa1044a902a88f9d024cb22681dc19'
+  '60c6dfc100d292284af2187cfefc1d0d928139ca557d27bc6bef88edefccff70'
+  '8dcb566da29a92ecf3eb6afe094d9c7766d08230d90fd666bfd022c018ae676a'
+  '26bf232d144b81a303ed91f6a331ddf004c5d9fefd41a11e36b61812a34459aa')
 validpgpkeys=(
   108F66205EAEB0AAA8DD5E1C85AB96E6FA1BE5FE # Rust Language (Tag and Release Signing Key) <rust-key@rust-lang.org>
   474E22316ABF4785A88C6E8EA2C794A986419D8A # Tom Stellard <tstellar@redhat.com>
   B6C8F98282B944E3B0D5C2530FC3042E345AD05D # Hans Wennborg <hans@chromium.org>
 )
+
+_patch() {
+
+  if [[ -z ${2} ]]; then
+    echo -e "\E[1;33m Apply patch:\E[0m ${1}"
+    patch -p1 -i "${srcdir:?}/${1}"
+  else
+    echo -e "\E[1;33m Apply patch:\E[0m ${2} \E[1;33min directory:\E[0m ${1}"
+    patch -d "${1}" -p1 -i "${srcdir:?}/${2}"
+  fi
+
+}
 
 prepare() {
 
@@ -52,18 +62,14 @@ prepare() {
 
   # Patch bootstrap and cargo so credential helpers
   # are in /usr/lib instead of /usr/libexec
-  patch -d src/tools/cargo -Np1 <../0001-cargo-Change-libexec-dir.patch
-  patch -Np1 -i ../0001-bootstrap-Change-libexec-dir.patch
+  _patch src/tools/cargo 0001-cargo-Change-libexec-dir.patch
+  _patch 0001-bootstrap-Change-libexec-dir.patch
 
   # Use our *-pc-linux-gnu targets, making LTO with clang simpler
-  patch -Np1 -i ../0002-compiler-Change-LLVM-targets.patch
+  _patch 0002-compiler-Change-LLVM-targets.patch
 
   # Use our wasm-ld
-  patch -Np1 -i ../0003-compiler-Use-wasm-ld-for-wasm-targets.patch
-
-  # Fix cargo segfault in libgit2
-  patch -d src/tools/cargo -Np1 <../0004-cargo-libgit2-segfault-fix.patch
-  cargo vendor
+  _patch 0003-compiler-Use-wasm-ld-for-wasm-targets.patch
 
   if [[ ${_rustup} -eq 1 ]]; then
 
@@ -108,6 +114,9 @@ jemalloc = true
 # http://blog.llvm.org/2019/09/closing-gap-cross-language-lto-between.html
 # https://github.com/rust-lang/rust/issues/54872
 codegen-units-std = 1
+
+# musl target produces warnings
+deny-warnings = false
 
 [dist]
 compression-formats = ["gz"]
@@ -175,6 +184,9 @@ jemalloc = true
 # http://blog.llvm.org/2019/09/closing-gap-cross-language-lto-between.html
 # https://github.com/rust-lang/rust/issues/54872
 codegen-units-std = 1
+
+# musl target produces warnings
+deny-warnings = false
 
 [dist]
 compression-formats = ["gz"]
