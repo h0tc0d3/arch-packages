@@ -315,6 +315,7 @@ sdl2
 ndctl
 vte3
 js78
+js91
 polkit
 rtkit
 pipewire
