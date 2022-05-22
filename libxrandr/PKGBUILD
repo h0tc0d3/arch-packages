@@ -1,6 +1,6 @@
 pkgname=libxrandr+clang
 pkgver=1.5.2
-pkgrel=3
+pkgrel=4
 pkgdesc="X11 RandR extension library"
 arch=('x86_64')
 license=('custom')

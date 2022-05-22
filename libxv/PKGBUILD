@@ -1,6 +1,6 @@
 pkgname=libxv+clang
 pkgver=1.0.11
-pkgrel=4
+pkgrel=5
 pkgdesc="X11 Video extension library"
 arch=('x86_64')
 license=('custom')

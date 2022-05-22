@@ -1,6 +1,6 @@
 pkgname=xtrans+clang
 pkgver=1.4.0
-pkgrel=2
+pkgrel=3
 pkgdesc="X transport library"
 arch=('any')
 provides=(xtrans "xtrans=${pkgver}")

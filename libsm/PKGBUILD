@@ -1,6 +1,6 @@
 pkgname=libsm+clang
 pkgver=1.2.3
-pkgrel=2
+pkgrel=3
 pkgdesc="X11 Session Management library"
 arch=('x86_64')
 license=('custom')
