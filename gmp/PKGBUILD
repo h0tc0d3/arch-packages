@@ -1,6 +1,6 @@
 pkgname=gmp+clang
 pkgver=6.2.1
-pkgrel=1
+pkgrel=2
 pkgdesc='A free library for arbitrary precision arithmetic'
 arch=(x86_64)
 url='https://gmplib.org/'

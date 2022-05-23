@@ -1,6 +1,6 @@
 pkgname=fmt+clang
 pkgver=8.1.1
-pkgrel=2
+pkgrel=3
 pkgdesc='Open-source formatting library for C++'
 arch=(x86_64)
 url=https://fmt.dev
@@ -9,7 +9,7 @@ provides=(libfmt.so fmt "fmt=${pkgver}")
 conflicts=(fmt)
 depends=(gcc-libs)
 makedepends=(cmake doxygen git npm python-pip python-virtualenv)
-_commit=b6f4ceaed0a0a24ccf575fab6c56dd50ccf6f1a9
+_commit=ce246aaf74cb7616777497da988804fa4c02bf2d
 source=("git+https://github.com/fmtlib/fmt.git#commit=${_commit}")
 sha256sums=(SKIP)
 

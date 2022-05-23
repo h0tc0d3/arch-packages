@@ -1,0 +1,39 @@
+diff --git a/src/client.cpp b/src/client.cpp
+index be2ec91785ea..6895e33f2f8c 100644
+--- a/src/client.cpp
++++ b/src/client.cpp
+@@ -126,7 +126,7 @@ void waybar::Client::handleMonitorAdded(Glib::RefPtr<Gdk::Monitor> monitor) {
+ }
+ 
+ void waybar::Client::handleMonitorRemoved(Glib::RefPtr<Gdk::Monitor> monitor) {
+-  spdlog::debug("Output removed: {} {}", monitor->get_manufacturer(), monitor->get_model());
++  //spdlog::debug("Output removed: {} {}", monitor->get_manufacturer(), monitor->get_model());
+   /* This event can be triggered from wl_display_roundtrip called by GTK or our code.
+    * Defer destruction of bars for the output to the next iteration of the event loop to avoid
+    * deleting objects referenced by currently executed code.
+diff --git a/src/config.cpp b/src/config.cpp
+index 5894cb6b169e..e6e342686472 100644
+--- a/src/config.cpp
++++ b/src/config.cpp
+@@ -91,7 +91,7 @@ void Config::mergeConfig(Json::Value &a_config_, Json::Value &b_config_) {
+         // do not allow overriding value set by top or previously included config
+         a_config_[key] = b_config_[key];
+       } else {
+-        spdlog::trace("Option {} is already set; ignoring value {}", key, b_config_[key]);
++        spdlog::trace("Option {} is already set", key);
+       }
+     }
+   } else {
+diff --git a/src/modules/sway/bar.cpp b/src/modules/sway/bar.cpp
+index 26234e3b530d..e7447611dca8 100644
+--- a/src/modules/sway/bar.cpp
++++ b/src/modules/sway/bar.cpp
+@@ -156,7 +156,7 @@ void BarIpcClient::onCmd(const struct Ipc::ipc_response& res) {
+       auto payload = parser_.parse(res.payload);
+       for (auto& ws : payload) {
+         if (ws["urgent"].asBool()) {
+-          spdlog::debug("Found workspace {} with urgency set. Stopping search.", ws["name"]);
++          //spdlog::debug("Found workspace {} with urgency set. Stopping search.", ws["name"]);
+           // Found one workspace with urgency set, signal bar visibility
+           signal_urgency_(true);
+           return;
