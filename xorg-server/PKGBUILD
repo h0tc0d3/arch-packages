@@ -8,7 +8,7 @@ pkgname=(
   'xorg-server-devel+clang'
 )
 pkgver=21.1.3
-pkgrel=6
+pkgrel=7
 arch=('x86_64')
 license=('custom')
 groups=('xorg')
