@@ -1,6 +1,6 @@
 pkgname=gnutls+clang
 pkgver=3.7.5
-pkgrel=1
+pkgrel=2
 pkgdesc="A library which provides a secure layer over a reliable transport layer"
 arch=('x86_64')
 license=('GPL3' 'LGPL2.1')
@@ -14,9 +14,13 @@ makedepends=('tpm2-tss')
 checkdepends=('net-tools' 'tpm2-tools')
 optdepends=('guile: for use with Guile bindings'
   'tpm2-tss: support for TPM2 wrapped keys')
-source=("https://www.gnupg.org/ftp/gcrypt/gnutls/v3.7/gnutls-${pkgver}.tar.xz"{,.sig})
+source=(
+  "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.7/gnutls-${pkgver}.tar.xz"{,.sig}
+  "0001_Fix_out-of-bounds_memcpy_in_gnutls_realloc_zero.patch::https://gitlab.com/gnutls/gnutls/-/merge_requests/1592.patch"
+)
 sha256sums=('1f85028475b4f255cc5b480af0c37e61eab43024c1507c8b75d6be506c0553ad'
-  'SKIP')
+  'SKIP'
+  '0bdd0c3de8de9d77183b2ad4eb021ddcaf43450f07d9db4b93c7d6d1528051db')
 validpgpkeys=('462225C3B46F34879FC8496CD605848ED7E69871') # "Daiki Ueno <ueno@unixuser.org>"
 
 _llvm=0
@@ -26,6 +30,9 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=0
   fi
+
+  # Fix FS#74770 https://gitlab.com/gnutls/gnutls/-/issues/1367
+  patch -d "gnutls-${pkgver}" -Np1 -i "${srcdir:?}/0001_Fix_out-of-bounds_memcpy_in_gnutls_realloc_zero.patch"
 
 }
 
