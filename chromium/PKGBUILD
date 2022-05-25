@@ -1,19 +1,19 @@
 pkgname=chromium+clang
-pkgver=101.0.4951.64
+pkgver=102.0.5005.61
 pkgrel=1
 _launcher_ver=8
-_gcc_patchset=4
+_gcc_patchset=5
 pkgdesc="A web browser built for speed, simplicity, and security"
 arch=('x86_64')
 url="https://www.chromium.org/Home"
 license=('BSD')
 provides=('chromium' "chromium=${pkgver}")
 conflicts=('chromium')
-depends=('gtk4' 'nss' 'alsa-lib' 'xdg-utils' 'libxss' 'libcups' 'libgcrypt'
+depends=('gtk3' 'nss' 'alsa-lib' 'xdg-utils' 'libxss' 'libcups' 'libgcrypt'
   'ttf-liberation' 'systemd' 'dbus' 'libpulse' 'pciutils' 'libva'
   'desktop-file-utils' 'hicolor-icon-theme')
 makedepends=('python' 'gn' 'ninja' 'clang' 'lld' 'gperf' 'nodejs' 'pipewire'
-  'java-runtime-headless')
+  'java-runtime-headless' 'git')
 optdepends=(
   'pipewire: WebRTC desktop sharing under Wayland'
   'kdialog: support for native dialogs in Plasma'
@@ -32,14 +32,14 @@ source=(
   chromium-EnumTable-crash.patch
   chromium-gcc11.patch
   chromium-InkDropHost-crash.patch
-  chromium-gtk4-build.patch
   chromium-libxml-unbundle.patch
-  fix-no-member-named-tie-in-namespace-std.patch
   iwyu-add-utility-for-std-exchange.patch
+  roll-src-third_party-ffmpeg.patch
+  remove-no-opaque-pointers-flag.patch
 )
-sha256sums=('9c5896e4135563453ac10d15698c18ef61eb5535dc611325b230ece4c5a8d8f7'
+sha256sums=('1a3797d36901fa3ba63744b9a870b65a8890c9a850442c160196bc64df886b1f'
   '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
-  '8ed519d21ccd8b382ddd384e9c15306a60d2e3495f48a62dea07c9be9bbffebd'
+  '53de0f936fd571e578ba2fbf348c8741116cdcceac3ea6fae5008d8f054a7698'
   '70a2805a63df15817a3435e983c0350c5d04ff62deffd8214cbb040b904f54a5'
   '15c93da644dbc533a6b74bd7f86a07dc59023c7b369298acd649715b9a9209a5'
   'c162eafc1f128e616281e719d860ec8726eec89660f449ed0e9af7dfe07c8cc9'
@@ -48,10 +48,10 @@ sha256sums=('9c5896e4135563453ac10d15698c18ef61eb5535dc611325b230ece4c5a8d8f7'
   'bb4560e067eb6ff6d4c4a5c4f149d1cc1c9c705a14be4721ead2ebb8ec84ded1'
   '5690089b8bd6946dfa975b8022531213b882b3396a3c968eeef9836b131725b7'
   '04bba6fb19ea5a4ab3949b65f06c88728a00ab296f42022ece62ca2fa25ec2e7'
-  '63bebd6b68ddcd807f859ab395d0a605b165195d6514425fa9888ff781b9eb65'
   'fd3bf124aacc45f2d0a4f1dd86303fa7f2a3d4f4eeaf33854631d6cb39e12485'
-  '7ad0106161bbf25e2e603ae1a723ae4217155ebb26eb4778363ad396e8c14156'
-  '6f666ef0acb08704ca58cc0d5e97e7ce64d8fea51042e593adae1ce15a61231c')
+  '6f666ef0acb08704ca58cc0d5e97e7ce64d8fea51042e593adae1ce15a61231c'
+  '30df59a9e2d95dcb720357ec4a83d9be51e59cc5551365da4c0073e68ccdec44'
+  '00c16ce83ea4ca924a50fa0cfc2b2a4d744c722f363b065323e6ba0fcbac45a5')
 # Possible replacements are listed in build/linux/unbundle/replace_gn_files.py
 # Keys are the names in the above script; values are the dependencies in Arch
 declare -gA _system_libs=(
@@ -136,12 +136,15 @@ prepare() {
   _patch chromium-EnumTable-crash.patch
   _patch chromium-gcc11.patch
   _patch chromium-InkDropHost-crash.patch
-  _patch chromium-gtk4-build.patch
-  _patch fix-no-member-named-tie-in-namespace-std.patch
   _patch iwyu-add-utility-for-std-exchange.patch
+  _rpatch roll-src-third_party-ffmpeg.patch
+  _patch remove-no-opaque-pointers-flag.patch
 
   # https://chromium-review.googlesource.com/c/chromium/src/+/3488058
   _patch chromium-libxml-unbundle.patch
+
+  _patch patches/chromium-102-fenced_frame_utils-include.patch
+  _patch patches/chromium-102-regex_pattern-array.patch
 
   # Link to system tools required by the build
   mkdir -p third_party/node/linux/node-linux-x64/bin
@@ -322,7 +325,6 @@ package() {
 
   cp "${toplevel_files[@]/#/out/Release/}" "${pkgdir:?}/usr/lib/chromium/"
   install -Dm644 -t "${pkgdir:?}/usr/lib/chromium/locales" out/Release/locales/*.pak
-  install -Dm755 -t "${pkgdir:?}/usr/lib/chromium/swiftshader" out/Release/swiftshader/*.so
 
   for size in 24 48 64 128 256; do
     install -Dm644 "chrome/app/theme/chromium/product_logo_$size.png" \

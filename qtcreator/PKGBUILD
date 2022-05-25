@@ -1,7 +1,7 @@
 pkgbase=qtcreator+clang
 pkgname=(qtcreator+clang qtcreator-devel+clang)
-pkgver=7.0.1
-_clangver=14.0.1
+pkgver=7.0.2
+_clangver=14.0.4
 pkgrel=2
 pkgdesc='Lightweight, cross-platform integrated development environment'
 arch=(x86_64)
@@ -12,7 +12,7 @@ depends=(qt6-tools qt6-svg qt6-quick3d qt6-webengine qt6-serialport qt6-shaderto
 makedepends=(cmake llvm python)
 options=(docs)
 source=("https://ftp.fau.de/qtproject/official_releases/qtcreator/${pkgver%.*}/${pkgver}/qt-creator-opensource-src-${pkgver}.tar.xz")
-sha256sums=('da78f293829851e32f6bf25540791697606809e47a32ca8439561fcbab96b22e')
+sha256sums=('14dee285aa3aa56fb25ccbd7587382fb6cb05ae99a1a30237f0a0bbef3ceff7a')
 
 _llvm=0
 
