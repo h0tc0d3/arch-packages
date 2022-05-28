@@ -1,5 +1,5 @@
 pkgname=qalculate-qt+clang
-pkgver=4.1.1
+pkgver=4.2.0
 pkgrel=1
 pkgdesc='Qt frontend for libqalculate'
 arch=(x86_64)
@@ -10,7 +10,7 @@ conflicts=(qalculate-qt)
 depends=(libqalculate qt5-svg hicolor-icon-theme)
 makedepends=(qt5-tools)
 source=("https://github.com/Qalculate/qalculate-qt/releases/download/v${pkgver}/qalculate-qt-${pkgver}.tar.gz")
-sha256sums=('463e506331e8a49ec5ee355fe74da25d7a5cae945f5228081603be1f6d31f49f')
+sha256sums=('1c62e419bb1f4c16aa428f68281bee3c44a12dde865e0a0b22e53b09f79a0a36')
 
 _llvm=0
 
@@ -32,7 +32,7 @@ build() {
   if [[ ${_llvm} -eq 1 ]]; then
 
     CFLAGS="${CFLAGS} -flto=thin"
-    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin -std=c++17"
     LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
@@ -40,7 +40,6 @@ build() {
   sed -Ei "s/<\!--(.*)-->/\1/g" flags.qrc
 
   qmake PREFIX=/usr
-
   make
 
 }

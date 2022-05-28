@@ -1,16 +1,16 @@
 pkgbase=pulseaudio+clang
 pkgname=(pulseaudio+clang libpulse+clang pulseaudio-{zeroconf,lirc,jack,bluetooth,equalizer,rtp}+clang)
 pkgdesc="A featureful, general-purpose sound server"
-pkgver=15.0
-pkgrel=4
+pkgver=16.0
+pkgrel=1
 arch=(x86_64)
 url="https://www.freedesktop.org/wiki/Software/PulseAudio/"
 license=(GPL)
 makedepends=(libasyncns libcap attr libxtst libsm libsndfile rtkit libsoxr
-  speexdsp tdb systemd dbus avahi bluez bluez-libs jack2 sbc
+  speexdsp tdb systemd dbus avahi bluez bluez-libs jack2 sbc alsa-lib
   lirc openssl fftw orc gtk3 webrtc-audio-processing check git meson
   xmltoman valgrind doxygen gst-plugins-base-libs)
-_commit=6329a2498eb038f8a9537888280a62b00a93f68e # tags/v15.0^0
+_commit=237c5a5c36d49a51b1b7831b091ea250367c9102 # tags/v16.0^0
 source=(
   "git+https://gitlab.freedesktop.org/pulseaudio/pulseaudio.git#commit=${_commit}"
 )
@@ -45,9 +45,6 @@ prepare() {
 
   # Freeze version before patching
   ./git-version-gen doesnt-exist >.tarball-version
-
-  # https://bugs.archlinux.org/task/73888
-  git cherry-pick -n 9f0a18b290de3e93812fbb7666f6377acf1e96e7
 
 }
 
@@ -97,7 +94,7 @@ _pick() {
 package_pulseaudio+clang() {
 
   depends=("libpulse+clang=${pkgver}-${pkgrel}" rtkit libltdl speexdsp tdb orc libsoxr
-    webrtc-audio-processing libxtst)
+    webrtc-audio-processing libxtst fftw alsa-lib)
   optdepends=('pulseaudio-alsa: ALSA configuration (recommended)'
     'pulseaudio-zeroconf: Zeroconf support'
     'pulseaudio-lirc: IR (lirc) support'
@@ -115,11 +112,6 @@ package_pulseaudio+clang() {
     cd pulseaudio
     ./git-version-gen .tarball-version
   )
-
-  while [[ $pulsever = *.*.* ]]; do
-    pulsever=${pulsever%.*}
-  done
-  pulsever=${pulsever%%-*}
 
   meson install -C build --destdir "${pkgdir:?}"
 
@@ -154,7 +146,7 @@ package_pulseaudio+clang() {
   _pick libpulse usr/share/vala
   _pick libpulse usr/share/zsh
 
-  local moddir=usr/lib/pulse-${pulsever}/modules
+  local moddir=usr/lib/pulseaudio/modules
 
   _pick zeroconf "${moddir}/libavahi-wrap.so"
   _pick zeroconf "${moddir}/module-zeroconf-"{publish,discover}.so
@@ -240,7 +232,7 @@ package_pulseaudio-bluetooth+clang() {
 package_pulseaudio-equalizer+clang() {
 
   pkgdesc="Graphical equalizer for PulseAudio"
-  depends=("pulseaudio+clang=${pkgver}-${pkgrel}" python-{pyqt5,dbus} fftw)
+  depends=("pulseaudio+clang=${pkgver}-${pkgrel}" python-{pyqt5,dbus})
   provides=('pulseaudio-equalizer' "pulseaudio-equalizer=${pkgver}")
   conflicts=('pulseaudio-equalizer')
 
@@ -251,7 +243,8 @@ package_pulseaudio-equalizer+clang() {
 package_pulseaudio-rtp+clang() {
 
   pkgdesc="RTP and RAOP support for PulseAudio"
-  depends=("pulseaudio+clang=${pkgver}-${pkgrel}")
+  depends=("pulseaudio+clang=${pkgver}-${pkgrel}"
+    gst-plugins-base-libs gst-plugins-base gst-plugins-good)
   provides=('pulseaudio-rtp' "pulseaudio-rtp=${pkgver}")
   conflicts=('pulseaudio-rtp')
 
