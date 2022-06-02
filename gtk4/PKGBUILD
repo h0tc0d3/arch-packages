@@ -1,6 +1,6 @@
 pkgbase=gtk4+clang
 pkgname=(gtk4+clang gtk-update-icon-cache+clang gtk4-docs+clang gtk4-demos+clang)
-pkgver=4.6.4
+pkgver=4.6.5
 pkgrel=1
 epoch=1
 pkgdesc="GObject-based multi-platform GUI toolkit"
@@ -15,8 +15,7 @@ depends=(glib2 cairo pango fribidi gdk-pixbuf2 libpng libtiff libjpeg libepoxy
   adwaita-icon-theme cantarell-fonts)
 makedepends=(git meson gi-docgen shaderc sassc gobject-introspection docbook-xsl
   wayland-protocols python-gobject python-docutils)
-checkdepends=(weston)
-_commit=1e6bad6c4f412dc0eb7b2f508cb4465929a04303 # tags/4.6.4^0
+_commit=3e766a4fe2e3a5ade7cef1e76f37b46a1daab258 # tags/4.6.5^0
 source=(
   "git+https://gitlab.gnome.org/GNOME/gtk.git#commit=${_commit}"
   gtk-update-icon-cache.{hook,script} gtk4-querymodules.hook

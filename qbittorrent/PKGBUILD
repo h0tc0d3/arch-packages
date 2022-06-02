@@ -1,7 +1,7 @@
 pkgbase=qbittorrent+clang
 pkgname=(qbittorrent+clang qbittorrent-nox+clang)
-pkgver=4.4.3
-pkgrel=1
+pkgver=4.4.3.1
+pkgrel=2
 arch=(x86_64)
 url='https://www.qbittorrent.org'
 license=(custom GPL)
@@ -9,7 +9,7 @@ depends=(libtorrent-rasterbar qt5-base)
 makedepends=(cmake boost qt5-tools qt5-svg)
 optdepends=('python: needed for torrent search tab')
 source=("https://downloads.sourceforge.net/sourceforge/qbittorrent/qbittorrent-${pkgver}.tar.xz"{,.asc})
-sha256sums=('e2744b3df486bea69bfb8f81f56da9d660dd0785cf521fd58952d80a1edc7368'
+sha256sums=('b64559ca50b54bc6c5be17302e69f34fba8433059842aa4093865dc2c00d24c8'
   'SKIP')
 validpgpkeys=('D8F3DA77AAC6741053599C136E4A2D025B7CC9A2') # sledgehammer999 <sledgehammer999@qbittorrent.org>
 
