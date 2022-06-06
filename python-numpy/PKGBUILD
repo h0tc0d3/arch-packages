@@ -1,5 +1,5 @@
 pkgname=python-numpy+clang
-pkgver=1.22.3
+pkgver=1.22.4
 pkgrel=1
 pkgdesc="Scientific tools for Python"
 arch=('x86_64')
@@ -15,7 +15,7 @@ source=(
   "https://github.com/numpy/numpy/archive/v${pkgver}/python-numpy-${pkgver}.tar.gz"
   site.cfg
 )
-sha256sums=('c8f3ec591e3f17b939220f2b9eabb4c5e2db330f8af62c0a3aeee8a4d1a6c0db'
+sha256sums=('5ff695f4f389830c93bc7f899d97255a09200fc6c69ccee72bfb4435ce317134'
   'd517483294f2513295cc3d203a308676ade39b1878b8a742009d90cba3d793d5')
 
 _lld=0
@@ -44,7 +44,7 @@ build() {
   fi
 
   git clone https://github.com/numpy/SVML.git numpy/core/src/umath/svml
-  NPY_BLAS_ORDER='openblas,MKL' python setup.py build -j "$(nproc)"
+  NPY_BLAS_ORDER='openblas' python setup.py build -j "$(nproc)"
 
 }
 

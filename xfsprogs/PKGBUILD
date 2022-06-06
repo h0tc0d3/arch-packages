@@ -1,5 +1,5 @@
 pkgname=xfsprogs+clang
-pkgver=5.16.0
+pkgver=5.18.0
 pkgrel=1
 pkgdesc="XFS filesystem utilities"
 arch=('x86_64')
