@@ -1,6 +1,6 @@
 pkgname=arrayfire-opencl
-pkgver=3.8.1
-pkgrel=5
+pkgver=3.8.2
+pkgrel=1
 pkgdesc="High performance software library for parallel computing with an easy-to-use API"
 arch=('x86_64')
 url='https://arrayfire.com'
@@ -12,7 +12,7 @@ makedepends=('cmake' 'graphviz' 'doxygen' 'opencl-headers' 'python' 'ocl-icd' 'b
 optdepends=(
   'opencl-driver: Required for using OpenCL backend'
   'ocl-icd: Required for OpenCL ICD Bindings')
-_commit=823e8e399fe8c120c6ec7ec75f09e6106b3074ca
+_commit=5752f2dcc9e3de03010cc99b2a41534d3024df64
 source=(
   "arrayfire::git+https://github.com/arrayfire/arrayfire.git?commit=${_commit}"
   'arrayfire-boost-1.76.0.patch'
@@ -36,8 +36,8 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    CFLAGS="${CFLAGS} -flto=thin"
-    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    CFLAGS="${CFLAGS} -flto=thin -DSPDLOG_FMT_EXTERNAL"
+    CXXFLAGS="${CXXFLAGS} -flto=thin -DSPDLOG_FMT_EXTERNAL"
     LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi

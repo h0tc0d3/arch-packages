@@ -2,8 +2,8 @@ shopt -s extglob
 
 pkgbase=python+clang
 pkgname=(python+clang python-tests+clang)
-pkgver=3.10.4
-pkgrel=2
+pkgver=3.10.5
+pkgrel=1
 _pybasever=${pkgver%.*}
 pkgdesc="Next generation of the python high-level scripting language"
 arch=('x86_64')
@@ -13,11 +13,9 @@ depends=('bzip2' 'expat' 'gdbm' 'libffi' 'libnsl' 'libxcrypt' 'openssl' 'zlib')
 makedepends=('tk' 'sqlite' 'bluez-libs' 'mpdecimal' 'llvm' 'gdb' 'ttf-font')
 source=(
   "https://www.python.org/ftp/python/${pkgver%rc*}/Python-${pkgver}.tar.xz"{,.asc}
-  https://github.com/python/cpython/commit/178a238f25ab8aff7689d7a09d66dc1583ecd6cb.patch
 )
-sha256sums=('80bf925f571da436b35210886cf79f6eb5fa5d6c571316b73568343451f77a19'
-  'SKIP'
-  '7941c5985507e04cf55675be12d5f6784ac336cfdcd283945f8df525d13c6c82')
+sha256sums=('8437efd5b106ef0a75aabfbf23d880625120a73a86a22ade4d2e2e68d7b74486'
+  'SKIP')
 validpgpkeys=(
   '0D96DF4D4110E5C43FBFB17F2D347EA6AA65421D' # Ned Deily (Python release signing key) <nad@python.org>
   'E3FF2839C048B25C084DEBE9B26995E310250568' # Łukasz Langa (GPG langa.pl) <lukasz@langa.pl>
@@ -32,9 +30,6 @@ prepare() {
     echo -e "\E[1;31mCan't cd to ${srcdir}/Python-${pkgver} directory! Prepare Failed! \E[0m"
     exit 1
   )
-
-  # FS#73002
-  patch -p1 -i "${srcdir:?}/178a238f25ab8aff7689d7a09d66dc1583ecd6cb.patch"
 
   # FS#23997
   sed -i -e "s|^#.* /usr/local/bin/python|#!/usr/bin/python|" Lib/cgi.py

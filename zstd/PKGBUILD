@@ -1,12 +1,13 @@
 pkgname=zstd+clang
 pkgver=1.5.2
-pkgrel=3
+pkgrel=5
 pkgdesc='Zstandard - Fast real-time compression algorithm'
 url='https://facebook.github.io/zstd/'
 arch=(x86_64)
 license=(BSD GPL2)
 depends=(glibc gcc-libs zlib xz lz4)
-makedepends=(gtest)
+makedepends=(cmake gtest)
+options=(staticlibs)
 provides=('zstd' "zstd=${pkgver}" 'libzstd.so')
 conflicts=('zstd')
 source=("https://github.com/facebook/zstd/releases/download/v${pkgver}/zstd-${pkgver}.tar.zst"{,.sig})
@@ -28,11 +29,6 @@ prepare() {
 
 build() {
 
-  cd "${srcdir:?}/zstd-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/zstd-${pkgver} directory! Build Failed! \E[0m"
-    exit 1
-  )
-
   if [[ ${_llvm} -eq 1 ]]; then
 
     CFLAGS="${CFLAGS} -flto=thin"
@@ -41,34 +37,27 @@ build() {
 
   fi
 
-  # Set PREFIX, as libzstd.pc is otherwise generated with -L/usr/local
-  make PREFIX=/usr
-  make -C contrib/pzstd
+  cmake -S "zstd-${pkgver}/build/cmake" -B build \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DZSTD_BUILD_CONTRIB=ON \
+    -DZSTD_BUILD_TESTS=ON
+
+  cmake --build build
 
 }
 
 check() {
 
-  cd "${srcdir:?}/zstd-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/zstd-${pkgver} directory! Check Failed! \E[0m"
-    exit 1
-  )
-
-  make check
-  make -C contrib/pzstd test
+  cmake --build build --target test
 
 }
 
 package() {
 
-  cd "${srcdir:?}/zstd-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/zstd-${pkgver} directory! Check Failed! \E[0m"
-    exit 1
-  )
+  DESTDIR="${pkgdir:?}" cmake --install build
 
-  make DESTDIR="${pkgdir:?}" PREFIX=/usr install
-  ln -sf /usr/bin/zstd "${pkgdir:?}/usr/bin/zstdmt"
-  install -Dm 755 contrib/pzstd/pzstd -t "${pkgdir:?}/usr/bin"
-  install -Dm 644 LICENSE -t "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -Dm 644 "zstd-${pkgver}/LICENSE" -t "${pkgdir:?}/usr/share/licenses/zstd"
 
 }
