@@ -1,14 +1,14 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
 pkgver=2.35
-pkgrel=14
+pkgrel=15
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
 makedepends=(git gd lib32-gcc-libs gcc-libs python)
 optdepends=('perl: for mtrace')
 options=(!strip staticlibs)
-_commit=28ea43f8d64f0dd1f2de75525157730e1532e600
+_commit=99978cd42c55ee427fb512de69638045f6d525c7
 source=("git+https://sourceware.org/git/glibc.git#commit=${_commit}"
   locale-gen
   sdt.h sdt-config.h
@@ -51,7 +51,6 @@ prepare() {
 
   git cherry-pick -n 3feecd80013c822a12d4b01c5c25e155dfbc6e2f
   git cherry-pick -n 732dd3a63d39c7ca77e817b462285c14551c8b49
-  git cherry-pick -n 10fe3cd309b32c003a6b98e08928e7d6007caecf
 
   if ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _lld=0 # tempory disable

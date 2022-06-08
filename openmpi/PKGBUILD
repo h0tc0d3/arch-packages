@@ -1,5 +1,5 @@
 pkgname=openmpi+clang
-pkgver=4.1.2
+pkgver=4.1.4
 pkgrel=1
 pkgdesc='High performance message passing library (MPI)'
 url='https://www.open-mpi.org'
@@ -14,7 +14,7 @@ options=('staticlibs')
 source=(
   "https://www.open-mpi.org/software/ompi/v${pkgver%.*}/downloads/openmpi-${pkgver}.tar.bz2"
 )
-sha256sums=('9b78c7cf7fc32131c5cf43dd2ab9740149d9d87cadb2e2189f02685749a6b527')
+sha256sums=('92912e175fd1234368c8730c03f4996fe5942e7479bb1d10059405e7f2b3930d')
 
 _llvm=0
 

@@ -1,6 +1,6 @@
 pkgname=valgrind+clang
 pkgver=3.19.0
-pkgrel=3
+pkgrel=4
 pkgdesc='Tool to help find memory-management problems in programs'
 arch=('x86_64')
 license=('GPL')
