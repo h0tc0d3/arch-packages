@@ -1,5 +1,5 @@
 pkgname=qt5-tools+clang
-pkgver=5.15.4+kde+r0
+pkgver=5.15.4+kde+r1
 pkgrel=1
 arch=('x86_64')
 url='https://www.qt.io'
@@ -11,7 +11,7 @@ makedepends=('qt5-declarative' 'vulkan-headers' 'clang' 'qt5-webkit' 'git')
 optdepends=('clang: for qdoc' 'qt5-webkit: for Qt Assistant')
 groups=('qt' 'qt5')
 conflicts=('qt5-tools' 'qtchooser')
-_commit=53ee43a51b5a3de2877dafffc78e71ff55926708
+_commit=03d9aef7be0ae3bf19bb7aeb47402bac73438bd2
 source=(
   "git+https://invent.kde.org/qt/qt/qttools#commit=${_commit}"
   {assistant,designer,linguist,qdbusviewer}.desktop

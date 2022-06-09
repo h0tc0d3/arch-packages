@@ -1,6 +1,6 @@
 pkgname=libgpg-error+clang
 pkgver=1.45
-pkgrel=1
+pkgrel=2
 pkgdesc="Support library for libgcrypt"
 arch=(x86_64)
 url="https://www.gnupg.org"
@@ -12,8 +12,6 @@ source=("https://www.gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-${pkgver}.ta
 sha256sums=('570f8ee4fb4bff7b7495cff920c275002aea2147e9a1d220c068213267f80a26'
   'SKIP')
 validpgpkeys=(
-  'D8692123C4065DEA5E0F3AB5249B39D24F25E3B6' # Werner Koch
-  '031EC2536E580D8EA286A9F22071B08A33BD3F06' # NIIBE Yutaka (GnuPG Release Key) <gniibe@fsij.org>
   '6DAA6E64A76D2840571B4902528897B826403ADA' # "Werner Koch (dist signing 2020)"
   'AC8E115BF73E2D8D47FA9908E98E9B2D19C6C8BD' # NIIBE Yutaka (GnuPG Release Key) <gniibe@fsij.org>
 )

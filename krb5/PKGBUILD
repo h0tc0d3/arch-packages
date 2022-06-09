@@ -1,7 +1,7 @@
 pkgname=krb5+clang
 _pkgvermajor=1.19
 pkgver=1.19.3
-pkgrel=1
+pkgrel=3
 pkgdesc='The Kerberos network authentication system'
 url='https://web.mit.edu/kerberos/'
 arch=('x86_64')
