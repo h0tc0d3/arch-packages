@@ -2,12 +2,12 @@ pkgname=mesa+clang
 pkgdesc="Mesa open-source implementation of the OpenGL specification"
 pkgver=22.1.1
 _pkgver=${pkgver//_/-}
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 makedepends=('python-mako' 'xorgproto'
   'libxml2' 'libx11' 'libvdpau' 'libva' 'elfutils' 'libxrandr'
   'wayland-protocols' 'meson' 'ninja' 'glslang' 'libclc')
-depends=('libdrm' 'libxxf86vm' 'libxdamage' 'libxshmfence' 'libelf'
+depends=('libdrm' 'libxxf86vm' 'libxdamage' 'libxshmfence' 'libelf' 'systemd' 'systemd-libs'
   'libomxil-bellagio' 'libunwind' 'libglvnd' 'wayland' 'lm_sensors' 'libclc' 'vulkan-icd-loader' 'zstd' 'expat')
 optdepends=('opengl-man-pages: for the OpenGL API man pages')
 provides=('mesa' "mesa=${pkgver}" 'opencl-mesa' 'vulkan-intel' 'vulkan-radeon' 'vulkan-mesa-layer' 'libva-mesa-driver' 'mesa-vdpau' 'vulkan-swrast' 'vulkan-driver' 'opengl-driver' 'opencl-driver' 'mesa-libgl')

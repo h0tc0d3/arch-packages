@@ -1,6 +1,6 @@
 pkgname=alsa-lib+clang
-pkgver=1.2.6.1
-pkgrel=1
+pkgver=1.2.7
+pkgrel=2
 pkgdesc="An alternative implementation of Linux sound support"
 arch=('x86_64')
 url="https://www.alsa-project.org"
@@ -9,9 +9,13 @@ depends=('glibc' 'alsa-topology-conf' 'alsa-ucm-conf')
 provides=('alsa-lib' "alsa-lib=${pkgver}" 'libasound.so' 'libatopology.so')
 conflicts=('alsa-lib')
 install="alsa-lib.install"
-source=("https://www.alsa-project.org/files/pub/lib/alsa-lib-${pkgver}.tar.bz2"{,.sig})
-sha256sums=('ad582993d52cdb5fb159a0beab60a6ac57eab0cc1bdf85dc4db6d6197f02333f'
-  'SKIP')
+source=(
+  "https://www.alsa-project.org/files/pub/lib/alsa-lib-${pkgver}.tar.bz2"{,.sig}
+  "alsa-lib-1.2.7-fix_decoding_for_older_hardware.patch::https://github.com/alsa-project/alsa-lib/commit/89ee61914756a6f8bcafbad7fb1eca674b0a012f.patch"
+)
+sha256sums=('8814e61f7ec6812c76e23a85cab00e0b0d3bba40816af36b726beb1bc04c74a7'
+  'SKIP'
+  'a6a9aa8b02f462c73a9db550a427ae62882a41fe73a0c4fb7f0f9bac53b18aa8')
 validpgpkeys=('F04DF50737AC1A884C4B3D718380596DA6E59C91') # ALSA Release Team (Package Signing Key v1) <release@alsa-project.org>
 
 _llvm=0
@@ -26,6 +30,9 @@ prepare() {
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/alsa-lib-${pkgver} directory! Prepare Failed! \E[0m"
     exit 1
   )
+
+  # Fix issues with older hardware: https://github.com/alsa-project/alsa-lib/issues/233
+  patch -Np1 -i "${srcdir:?}/alsa-lib-1.2.7-fix_decoding_for_older_hardware.patch"
 
   autoreconf -vfi
 

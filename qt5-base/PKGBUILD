@@ -1,6 +1,6 @@
 pkgbase=qt5-base+clang
 pkgname=(qt5-base+clang qt5-xcb-private-headers+clang)
-pkgver=5.15.4+kde+r164
+pkgver=5.15.4+kde+r168
 pkgrel=1
 arch=('x86_64')
 url='https://www.qt.io'
@@ -23,7 +23,7 @@ optdepends=('qt5-svg: to use SVG icon themes'
   'perl: for fixqt4headers and syncqt')
 conflicts=('qtchooser')
 groups=('qt' 'qt5')
-_commit=24222a9631df62ff044e15acefa32aa69f426fa0
+_commit=b569683a2362ec2823dc834c8e1b42813849ea51
 source=(
   "git+https://invent.kde.org/qt/qt/qtbase#commit=${_commit:?}"
   qt5-base-cflags.patch
