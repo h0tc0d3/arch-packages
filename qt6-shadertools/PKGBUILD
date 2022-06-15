@@ -1,18 +1,18 @@
-pkgname=qt6-svg+clang
+pkgname=qt6-shadertools+clang
 _qtver=6.3.1
 pkgver=${_qtver/-/}
 pkgrel=1
 arch=(x86_64)
 url='https://www.qt.io'
-license=(GPL3 LGPL3 FDL custom)
-provides=("qt6-svg" "qt6-svg=${pkgver}")
-conflicts=("qt6-svg")
-pkgdesc='Classes for displaying the contents of SVG files'
+license=(GPL3)
+provides=("qt6-shadertools" "qt6-shadertools=${pkgver}")
+conflicts=("qt6-shadertools")
+pkgdesc='Provides functionality for the shader pipeline that allows Qt Quick to operate on Vulkan, Metal, and Direct3D, in addition to OpenGL'
 depends=(qt6-base)
 makedepends=(cmake)
 groups=(qt6)
-source=("https://ftp.fau.de/qtproject/archive/qt/${pkgver%.*}/${_qtver}/submodules/qtsvg-everywhere-src-${_qtver}.tar.xz")
-sha256sums=('7b19f418e6f7b8e23344082dd04440aacf5da23c5a73980ba22ae4eba4f87df7')
+source=("https://ftp.fau.de/qtproject/archive/qt/${pkgver%.*}/${_qtver}/submodules/qtshadertools-everywhere-src-${_qtver}.tar.xz")
+sha256sums=('59b77176961528cc7b0c9325134655e273aa87b4cb386c0f4683d8f2852e435a')
 
 _llvm=0
 
@@ -34,7 +34,7 @@ build() {
 
   fi
 
-  cmake -B build -S "qtsvg-everywhere-src-${_qtver}" \
+  cmake -B build -S "qtshadertools-everywhere-src-${_qtver}" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr
 
@@ -47,6 +47,6 @@ package() {
   DESTDIR="${pkgdir:?}" cmake --install build
 
   install -d "${pkgdir:?}/usr/share/licenses"
-  ln -s /usr/share/licenses/qt6-base "${pkgdir:?}/usr/share/licenses/qt6-svg"
+  ln -s /usr/share/licenses/qt6-base "${pkgdir:?}/usr/share/licenses/qt6-shadertools"
 
 }

@@ -1,5 +1,5 @@
 pkgname=qt6-wayland+clang
-_qtver=6.3.0
+_qtver=6.3.1
 pkgver=${_qtver/-/}
 pkgrel=1
 arch=(x86_64)
@@ -8,11 +8,11 @@ license=(GPL3 LGPL3 FDL custom)
 pkgdesc='Provides APIs for Wayland'
 provides=("qt6-wayland" "qt6-wayland=${pkgver}")
 conflicts=("qt6-wayland")
-depends=(qt6-declarative libxcomposite)
+depends=(qt6-declarative libxcomposite libxkbcommon wayland)
 makedepends=(cmake)
 groups=(qt6)
 source=("https://ftp.fau.de/qtproject/archive/qt/${pkgver%.*}/${_qtver}/submodules/qtwayland-everywhere-src-${_qtver}.tar.xz")
-sha256sums=('e7b567f6e43ffc5918d4aa825ce1eced66a00cb0a87133b2912ba5c1b2a02190')
+sha256sums=('6f14fea2d172a5b4170be3efcb0e58535f6605b61bcd823f6d5c9d165bb8c0f0')
 
 _llvm=0
 

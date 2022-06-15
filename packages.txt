@@ -186,6 +186,8 @@ wayland
 xorg-xwayland
 libxkbcommon
 qt5-wayland
+qt6-shadertools
+qt6-quick3d
 qt6-wayland
 kded
 plasma-wayland-protocols

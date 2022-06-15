@@ -1,5 +1,5 @@
 pkgname=qt6-tools+clang
-_qtver=6.3.0
+_qtver=6.3.1
 pkgver=${_qtver/-/}
 pkgrel=1
 arch=(x86_64)
@@ -13,7 +13,7 @@ makedepends=(cmake qt6-declarative clang llvm)
 optdepends=('clang: for qdoc and lupdate')
 groups=(qt6)
 source=("https://ftp.fau.de/qtproject/archive/qt/${pkgver%.*}/${_qtver}/submodules/qttools-everywhere-src-${_qtver}.tar.xz")
-sha256sums=('fce94688ea925782a2879347584991f854630daadba6c52aed6d93e33cd0b19c')
+sha256sums=('c412750f2aa3beb93fce5f30517c607f55daaeb7d0407af206a8adf917e126c1')
 
 _llvm=0
 

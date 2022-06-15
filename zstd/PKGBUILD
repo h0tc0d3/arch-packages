@@ -1,6 +1,6 @@
 pkgname=zstd+clang
 pkgver=1.5.2
-pkgrel=5
+pkgrel=6
 pkgdesc='Zstandard - Fast real-time compression algorithm'
 url='https://facebook.github.io/zstd/'
 arch=(x86_64)
@@ -31,8 +31,8 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    CFLAGS="${CFLAGS} -flto=thin"
-    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    #CFLAGS="${CFLAGS} -flto=thin"
+    #CXXFLAGS="${CXXFLAGS} -flto=thin"
     LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi

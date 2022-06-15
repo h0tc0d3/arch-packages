@@ -1,6 +1,6 @@
 pkgname=plasma-framework+clang
 pkgver=5.95.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Plasma library and runtime components based upon KF5 and Qt5'
 arch=(x86_64)
 url='https://community.kde.org/Frameworks'
@@ -9,13 +9,14 @@ provides=(plasma-framework "plasma-framework=${pkgver}")
 conflicts=(plasma-framework)
 depends=(kactivities kdeclarative kwayland kirigami2)
 makedepends=(extra-cmake-modules qt5-tools qt5-doc kdoctools doxygen)
-
 groups=(kf5)
 source=(
   "https://download.kde.org/stable/frameworks/${pkgver%.*}/plasma-framework-${pkgver}.tar.xz"{,.sig}
+  https://invent.kde.org/frameworks/plasma-framework/-/commit/dff1b034.patch
 )
 sha256sums=('5f5b6c95985e60b2e1d0b155fcb90bfc20186cb56f87d13c4b946f57fd22a55f'
-  'SKIP')
+  'SKIP'
+  '6addc3ccfa982b152db61be0fa14ce3d9a7e9aa4bb5779ccb7f80a8612b64c2e')
 validpgpkeys=(53E6B47B45CEA3E0D5B7457758D0EE648A48B3BB) # David Faure <faure@kde.org>
 
 _llvm=0
@@ -25,6 +26,8 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=1
   fi
+
+  patch -d plasma-framework-${pkgver} -Np1 -i "${srcdir:?}/dff1b034.patch" # Fix window thumbnails in Plasma X11
 
 }
 
