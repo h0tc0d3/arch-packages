@@ -172,7 +172,6 @@ freeglut
 glfw-x11
 xorg-server
 kwayland
-kwayland-server
 kwayland-integration
 kcoreaddons
 kservice
