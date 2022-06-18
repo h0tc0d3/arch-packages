@@ -1,13 +1,12 @@
 pkgname=zstd+clang
 pkgver=1.5.2
-pkgrel=6
+pkgrel=7
 pkgdesc='Zstandard - Fast real-time compression algorithm'
 url='https://facebook.github.io/zstd/'
 arch=(x86_64)
 license=(BSD GPL2)
 depends=(glibc gcc-libs zlib xz lz4)
 makedepends=(cmake gtest)
-options=(staticlibs)
 provides=('zstd' "zstd=${pkgver}" 'libzstd.so')
 conflicts=('zstd')
 source=("https://github.com/facebook/zstd/releases/download/v${pkgver}/zstd-${pkgver}.tar.zst"{,.sig})
@@ -25,14 +24,18 @@ prepare() {
     _llvm=1
   fi
 
+  # avoid error on tests without static libs, we use LD_LIBRARY_PATH
+  sed '/build static library to build tests/d' -i "zstd-${pkgver}/build/cmake/CMakeLists.txt"
+  sed 's/libzstd_static/libzstd_shared/g' -i "zstd-${pkgver}/build/cmake/tests/CMakeLists.txt"
+
 }
 
 build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    #CFLAGS="${CFLAGS} -flto=thin"
-    #CXXFLAGS="${CXXFLAGS} -flto=thin"
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
     LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
@@ -42,7 +45,9 @@ build() {
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_INSTALL_LIBDIR=lib \
     -DZSTD_BUILD_CONTRIB=ON \
-    -DZSTD_BUILD_TESTS=ON
+    -DZSTD_BUILD_STATIC=OFF \
+    -DZSTD_BUILD_TESTS=ON \
+    -DZSTD_PROGRAMS_LINK_SHARED=ON
 
   cmake --build build
 
@@ -50,13 +55,15 @@ build() {
 
 check() {
 
-  cmake --build build --target test
+  LD_LIBRARY_PATH="$(pwd)/zstd-${pkgver}/build/lib" \
+    cmake --build build --target test
 
 }
 
 package() {
 
   DESTDIR="${pkgdir:?}" cmake --install build
+  ln -sf /usr/bin/zstd "${pkgdir:?}/usr/bin/zstdmt"
 
   install -Dm 644 "zstd-${pkgver}/LICENSE" -t "${pkgdir:?}/usr/share/licenses/zstd"
 
