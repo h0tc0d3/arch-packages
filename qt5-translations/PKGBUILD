@@ -1,5 +1,5 @@
 pkgname=qt5-translations+clang
-pkgver=5.15.4+kde+r2
+pkgver=5.15.5+kde+r2
 pkgrel=1
 arch=('any')
 url='https://www.qt.io'
@@ -9,7 +9,7 @@ provides=("qt5-translations" "qt5-translations=${pkgver}")
 conflicts=("qt5-translations")
 makedepends=('git' 'qt5-tools')
 groups=('qt' 'qt5')
-_commit=527dcd684e8d5c645870c854b86df77edeedbc22
+_commit=0e92fc4f19928387c341533ef3d259efaa752c0f
 source=("git+https://invent.kde.org/qt/qt/qttranslations#commit=${_commit}")
 sha256sums=('SKIP')
 
@@ -22,7 +22,7 @@ pkgver() {
     exit 1
   )
 
-  echo "5.15.4+kde+r$(git rev-list --count v5.15.4-lts-lgpl..${_commit})"
+  echo "5.15.5+kde+r$(git rev-list --count v5.15.5-lts-lgpl..${_commit})"
 
 }
 

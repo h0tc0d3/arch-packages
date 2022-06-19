@@ -1,5 +1,5 @@
 pkgname=xcb-proto+clang
-pkgver=1.15.1
+pkgver=1.15.2
 pkgrel=1
 pkgdesc="XML-XCB protocol descriptions"
 arch=(any)
@@ -9,7 +9,7 @@ provides=(xcb-proto "xcb-proto=${pkgver}")
 conflicts=(xcb-proto)
 makedepends=('python' 'libxml2')
 source=("https://xorg.freedesktop.org/archive/individual/proto/xcb-proto-${pkgver}.tar.xz"{,.sig})
-sha256sums=('270eed15a98207fff89dc40a4a7ea31425fc7059d641227856bdd9191c2718ae'
+sha256sums=('7072beb1f680a2fe3f9e535b797c146d22528990c72f63ddb49d2f350a3653ed'
   'SKIP')
 validpgpkeys=(
   'A66D805F7C9329B4C5D82767CCC4F07FAC641EFF' # "Daniel Stone <daniels@collabora.com>"
