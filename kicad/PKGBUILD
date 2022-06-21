@@ -14,17 +14,15 @@ optdepends=(
 conflicts=('kicad' 'kicad-bzr')
 provides=('kicad')
 install=kicad.install
-_commit=3d87537dd289a6d04bbee7d5df68c179e7016f91
+_commit=59091ec2636b35ed079395adb0d38738a0d665b9
 source=(
   "kicad::git+https://gitlab.com/kicad/code/kicad.git#commit=${_commit}"
   fix-archive-permissions.patch
   fix-version-string.patch
-  static_vector.patch
 )
 sha256sums=('SKIP'
   '282dfe161a2ac23885cd1265364d1276725196c211cdeeb2c3b96163a09888d4'
-  'a22dc2900a51d354f2917cd1ad15e077cd0932db3029107641974d88c52a8bf9'
-  '922d062ee8a8e9d6a938ec1fbbd20e51d09785e9f8f118631747c7c221aea38a')
+  'a22dc2900a51d354f2917cd1ad15e077cd0932db3029107641974d88c52a8bf9')
 
 _llvm=0
 
@@ -40,7 +38,6 @@ prepare() {
 
   patch -d kicad -p1 <fix-archive-permissions.patch
   patch -d kicad -p1 <fix-version-string.patch
-  patch -d kicad -p1 <static_vector.patch
 
 }
 
