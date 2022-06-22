@@ -1,0 +1,344 @@
+diff -rup binutils.orig/binutils/dwarf.c binutils-2.38/binutils/dwarf.c
+--- binutils.orig/binutils/dwarf.c	2022-05-20 16:57:16.563961379 +0100
++++ binutils-2.38/binutils/dwarf.c	2022-05-20 16:57:32.880853694 +0100
+@@ -11693,7 +11693,11 @@ free_debug_memory (void)
+   free_dwo_info ();
+ }
+ 
+-void
++/* Enable display of specific DWARF sections as determined by the comma
++   separated strings in NAMES.  Returns non-zero if any displaying was
++   enabled.  */
++
++int
+ dwarf_select_sections_by_names (const char *names)
+ {
+   typedef struct
+@@ -11746,6 +11750,7 @@ dwarf_select_sections_by_names (const ch
+     };
+ 
+   const char *p;
++  int result = 0;
+ 
+   p = names;
+   while (*p)
+@@ -11760,6 +11765,7 @@ dwarf_select_sections_by_names (const ch
+ 	      && (p[len] == ',' || p[len] == '\0'))
+ 	    {
+ 	      * entry->variable = entry->val;
++	      result |= entry->val;
+ 
+ 	      /* The --debug-dump=frames-interp option also
+ 		 enables the --debug-dump=frames option.  */
+@@ -11782,48 +11788,82 @@ dwarf_select_sections_by_names (const ch
+       if (*p == ',')
+ 	p++;
+     }
++
++  return result;
+ }
+ 
+-void
++/* Enable display of specific DWARF sections as determined by the characters
++   in LETTERS.  Returns non-zero if any displaying was enabled.  */
++
++int
+ dwarf_select_sections_by_letters (const char *letters)
+ {
+-  unsigned int lindex = 0;
++  typedef struct
++  {
++    const char   letter;
++    int *        variable;
++    int          val;
++    bool         cont;
++  }
++  debug_dump_letter_opts;
+ 
+-  while (letters[lindex])
+-    switch (letters[lindex++])
+-      {
+-      case 'A':	do_debug_addr = 1; break;
+-      case 'a':	do_debug_abbrevs = 1; break;
+-      case 'c':	do_debug_cu_index = 1; break;
++  static const debug_dump_letter_opts letter_table [] =
++    {
++      { 'A', & do_debug_addr, 1, false},
++      { 'a', & do_debug_abbrevs, 1, false },
++      { 'c', & do_debug_cu_index, 1, false },
+ #ifdef HAVE_LIBDEBUGINFOD
+-      case 'D': use_debuginfod = 1; break;
+-      case 'E': use_debuginfod = 0; break;
++      { 'D', & use_debuginfod, 1, false },
++      { 'E', & use_debuginfod, 0, false },
+ #endif
+-      case 'F':	do_debug_frames_interp = 1; /* Fall through.  */
+-      case 'f':	do_debug_frames = 1; break;
+-      case 'g':	do_gdb_index = 1; break;
+-      case 'i':	do_debug_info = 1; break;
+-      case 'K': do_follow_links = 1; break;
+-      case 'N': do_follow_links = 0; break;
+-      case 'k':	do_debug_links = 1; break;
+-      case 'l':	do_debug_lines |= FLAG_DEBUG_LINES_RAW;	break;
+-      case 'L':	do_debug_lines |= FLAG_DEBUG_LINES_DECODED; break;
+-      case 'm': do_debug_macinfo = 1; break;
+-      case 'O':	do_debug_str_offsets = 1; break;
+-      case 'o':	do_debug_loc = 1; break;
+-      case 'p':	do_debug_pubnames = 1; break;
+-      case 'R':	do_debug_ranges = 1; break;
+-      case 'r':	do_debug_aranges = 1; break;
+-      case 's':	do_debug_str = 1; break;
+-      case 'T': do_trace_aranges = 1; break;
+-      case 't': do_debug_pubtypes = 1; break;
+-      case 'U': do_trace_info = 1; break;
+-      case 'u': do_trace_abbrevs = 1; break;
+-
+-      default:
+-	warn (_("Unrecognized debug option '%s'\n"), letters);
+-	break;
+-      }
++      { 'F', & do_debug_frames_interp, 1, true }, /* Note the fall through.  */
++      { 'f', & do_debug_frames, 1, false },
++      { 'g', & do_gdb_index, 1, false },
++      { 'i', & do_debug_info, 1, false },
++      { 'K', & do_follow_links, 1, false },
++      { 'k', & do_debug_links, 1, false },
++      { 'L', & do_debug_lines, FLAG_DEBUG_LINES_DECODED, false },
++      { 'l', & do_debug_lines, FLAG_DEBUG_LINES_RAW, false },
++      { 'm', & do_debug_macinfo, 1, false },
++      { 'N', & do_follow_links, 0, false },
++      { 'O', & do_debug_str_offsets, 1, false },
++      { 'o', & do_debug_loc, 1, false },
++      { 'p', & do_debug_pubnames, 1, false },
++      { 'R', & do_debug_ranges, 1, false },
++      { 'r', & do_debug_aranges, 1, false },
++      { 's', & do_debug_str, 1, false },
++      { 'T', & do_trace_aranges, 1, false },
++      { 't', & do_debug_pubtypes, 1, false },
++      { 'U', & do_trace_info, 1, false },
++      { 'u', & do_trace_abbrevs, 1, false },
++      { 0, NULL, 0, false }
++    };
++
++  int result = 0;
++
++  while (* letters)
++    {
++      const debug_dump_letter_opts * entry;
++
++      for (entry = letter_table; entry->letter; entry++)
++	{
++	  if (entry->letter == * letters)
++	    {
++	      * entry->variable |= entry->val;
++	      result |= entry->val;
++
++	      if (! entry->cont)
++		break;
++	    }
++	}
++
++      if (entry->letter == 0)
++	warn (_("Unrecognized debug letter option '%c'\n"), * letters);
++
++      letters ++;
++    }
++
++  return result;
+ }
+ 
+ void
+Only in binutils-2.38/binutils: dwarf.c.orig
+diff -rup binutils.orig/binutils/dwarf.h binutils-2.38/binutils/dwarf.h
+--- binutils.orig/binutils/dwarf.h	2022-05-20 16:57:16.565961366 +0100
++++ binutils-2.38/binutils/dwarf.h	2022-05-20 16:57:32.880853694 +0100
+@@ -246,8 +246,8 @@ extern void *open_debug_file (const char
+ 
+ extern void free_debug_memory (void);
+ 
+-extern void dwarf_select_sections_by_names (const char *);
+-extern void dwarf_select_sections_by_letters (const char *);
++extern int dwarf_select_sections_by_names (const char *);
++extern int dwarf_select_sections_by_letters (const char *);
+ extern void dwarf_select_sections_all (void);
+ 
+ extern unsigned int * find_cu_tu_set (void *, unsigned int);
+Only in binutils-2.38/binutils: dwarf.h.orig
+diff -rup binutils.orig/binutils/objdump.c binutils-2.38/binutils/objdump.c
+--- binutils.orig/binutils/objdump.c	2022-05-20 16:57:16.566961359 +0100
++++ binutils-2.38/binutils/objdump.c	2022-05-20 16:57:32.881853688 +0100
+@@ -5008,6 +5008,26 @@ sign_extend_address (bfd *abfd ATTRIBUTE
+   return (((vma & ((mask << 1) - 1)) ^ mask) - mask);
+ }
+ 
++static bool
++might_need_separate_debug_info (bool is_mainfile)
++{
++  /* We do not follow links from debug info files.  */
++  if (! is_mainfile)
++    return false;
++
++  /* Since do_follow_links might be enabled by default, only treat it as an
++     indication that separate files should be loaded if setting it was a
++     deliberate user action.  */
++  if (DEFAULT_FOR_FOLLOW_LINKS == 0 && do_follow_links)
++    return true;
++  
++  if (process_links || dump_symtab || dump_debugging
++      || dump_dwarf_section_info)
++    return true;
++
++  return false;  
++}
++
+ /* Dump selected contents of ABFD.  */
+ 
+ static void
+@@ -5022,16 +5042,8 @@ dump_bfd (bfd *abfd, bool is_mainfile)
+   else
+     byte_get = NULL;
+ 
+-  /* Load any separate debug information files.
+-     We do this now and without checking do_follow_links because separate
+-     debug info files may contain symbol tables that we will need when
+-     displaying information about the main file.  Any memory allocated by
+-     load_separate_debug_files will be released when we call
+-     free_debug_memory below.
+-
+-     The test on is_mainfile is there because the chain of separate debug
+-     info files is a global variable shared by all invocations of dump_bfd.  */
+-  if (byte_get != NULL && is_mainfile)
++  /* Load any separate debug information files.  */
++  if (byte_get != NULL && might_need_separate_debug_info (is_mainfile))
+     {
+       load_separate_debug_files (abfd, bfd_get_filename (abfd));
+ 
+@@ -5593,20 +5605,30 @@ main (int argc, char **argv)
+ 	  do_follow_links = true;
+ 	  break;
+ 	case 'W':
+-	  dump_dwarf_section_info = true;
+ 	  seenflag = true;
+ 	  if (optarg)
+-	    dwarf_select_sections_by_letters (optarg);
++	    {
++	      if (dwarf_select_sections_by_letters (optarg))
++		dump_dwarf_section_info = true;
++	    }
+ 	  else
+-	    dwarf_select_sections_all ();
++	    {
++	      dump_dwarf_section_info = true;
++	      dwarf_select_sections_all ();
++	    }
+ 	  break;
+ 	case OPTION_DWARF:
+-	  dump_dwarf_section_info = true;
+ 	  seenflag = true;
+ 	  if (optarg)
+-	    dwarf_select_sections_by_names (optarg);
++	    {
++	      if (dwarf_select_sections_by_names (optarg))
++		dump_dwarf_section_info = true;
++	    }
+ 	  else
+-	    dwarf_select_sections_all ();
++	    {
++	      dwarf_select_sections_all ();
++	      dump_dwarf_section_info = true;
++	    }
+ 	  break;
+ 	case OPTION_DWARF_DEPTH:
+ 	  {
+Only in binutils-2.38/binutils: objdump.c.orig
+diff -rup binutils.orig/binutils/readelf.c binutils-2.38/binutils/readelf.c
+--- binutils.orig/binutils/readelf.c	2022-05-20 16:57:16.565961366 +0100
++++ binutils-2.38/binutils/readelf.c	2022-05-20 16:57:32.883853675 +0100
+@@ -21900,6 +21900,26 @@ initialise_dump_sects (Filedata * fileda
+     }
+ }
+ 
++static bool
++might_need_separate_debug_info (Filedata * filedata)
++{
++  /* Debuginfo files do not need further separate file loading.  */
++  if (filedata->file_header.e_shstrndx == SHN_UNDEF)
++    return false;
++
++  /* Since do_follow_links might be enabled by default, only treat it as an
++     indication that separate files should be loaded if setting it was a
++     deliberate user action.  */
++  if (DEFAULT_FOR_FOLLOW_LINKS == 0 && do_follow_links)
++    return true;
++  
++  if (process_links || do_syms || do_unwind 
++      || do_dump || do_debugging)
++    return true;
++
++  return false;
++}
++
+ /* Process one ELF object file according to the command line options.
+    This file may actually be stored in an archive.  The file is
+    positioned at the start of the ELF object.  Returns TRUE if no
+@@ -21983,7 +22003,7 @@ process_object (Filedata * filedata)
+   if (! process_version_sections (filedata))
+     res = false;
+ 
+-  if (filedata->file_header.e_shstrndx != SHN_UNDEF)
++  if (might_need_separate_debug_info (filedata))
+     have_separate_files = load_separate_debug_files (filedata, filedata->file_name);
+   else
+     have_separate_files = false;
+Only in binutils-2.38/binutils: readelf.c.orig
+Only in binutils-2.38/binutils: readelf.c.rej
+diff -rup binutils.orig/binutils/testsuite/binutils-all/debuginfod.exp binutils-2.38/binutils/testsuite/binutils-all/debuginfod.exp
+--- binutils.orig/binutils/testsuite/binutils-all/debuginfod.exp	2022-05-20 16:57:16.579961273 +0100
++++ binutils-2.38/binutils/testsuite/binutils-all/debuginfod.exp	2022-05-20 16:57:32.883853675 +0100
+@@ -189,7 +189,7 @@ if { [regexp ".*DEBUGINFOD.*" $conf_objd
+     test_fetch_debugaltlink $OBJDUMP "-Wk"
+ 
+     set test "disabling debuginfod access"
+-    setup_xfail *-*-*
++    # setup_xfail *-*-*
+     test_fetch_debuglink $OBJDUMP "-W -WE"
+     set test "debuginfod"
+ 
+@@ -202,7 +202,7 @@ if { [regexp ".*DEBUGINFOD.*" $conf_read
+     test_fetch_debugaltlink $READELF "-wk"
+ 
+     set test "disabling debuginfod access"
+-    setup_xfail *-*-*
++    # setup_xfail *-*-*
+     test_fetch_debuglink $READELF "-w -wE"
+     set test "debuginfod"
+ 
+diff -rup binutils.orig/binutils/testsuite/binutils-all/objdump.Wk binutils-2.38/binutils/testsuite/binutils-all/objdump.Wk
+--- binutils.orig/binutils/testsuite/binutils-all/objdump.Wk	2022-05-20 16:57:16.574961306 +0100
++++ binutils-2.38/binutils/testsuite/binutils-all/objdump.Wk	2022-05-20 16:57:32.883853675 +0100
+@@ -1,8 +1,9 @@
++#...
+ tmpdir/debuglink\.o:     file format .*
+-Contents of the \.gnu_debuglink section:
++Contents of the \.gnu_debuglink section.*
+   Separate debug info file: this_is_a_debuglink\.debug
+   CRC value: 0x12345678
+-Contents of the \.gnu_debugaltlink section:
++Contents of the \.gnu_debugaltlink section.*
+   Separate debug info file: linkdebug\.debug
+   Build-ID \(0x18 bytes\):
+  00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff 01 23 45 67 89 ab cd ef
+diff -rup binutils.orig/binutils/testsuite/binutils-all/readelf.k binutils-2.38/binutils/testsuite/binutils-all/readelf.k
+--- binutils.orig/binutils/testsuite/binutils-all/readelf.k	2022-05-20 16:57:16.575961300 +0100
++++ binutils-2.38/binutils/testsuite/binutils-all/readelf.k	2022-05-20 16:57:32.883853675 +0100
+@@ -1,7 +1,8 @@
+-Contents of the \.gnu_debuglink section:
++#...
++Contents of the \.gnu_debuglink section.*
+   Separate debug info file: this_is_a_debuglink\.debug
+   CRC value: 0x12345678
+-Contents of the \.gnu_debugaltlink section:
++Contents of the \.gnu_debugaltlink section.*
+   Separate debug info file: linkdebug\.debug
+   Build-ID \(0x18 bytes\):
+  00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff 01 23 45 67 89 ab cd ef

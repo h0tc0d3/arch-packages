@@ -1,8 +1,8 @@
 pkgname=chromium+clang
-pkgver=102.0.5005.115
+pkgver=103.0.5060.53
 pkgrel=1
 _launcher_ver=8
-_gcc_patchset=5
+_gcc_patchset=4
 pkgdesc="A web browser built for speed, simplicity, and security"
 arch=('x86_64')
 url="https://www.chromium.org/Home"
@@ -32,14 +32,12 @@ source=(
   chromium-EnumTable-crash.patch
   chromium-gcc11.patch
   chromium-InkDropHost-crash.patch
-  chromium-libxml-unbundle.patch
-  iwyu-add-utility-for-std-exchange.patch
   roll-src-third_party-ffmpeg.patch
   remove-no-opaque-pointers-flag.patch
 )
-sha256sums=('301d40e5373b6dad9bc6aeb6898116d1f7dd2d0589ed18e108c56e2290df47e6'
+sha256sums=('0ecbae14670506da90c8bf744f83f52a64a5fff0765c2e2e066b0e68b805b101'
   '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
-  '53de0f936fd571e578ba2fbf348c8741116cdcceac3ea6fae5008d8f054a7698'
+  'fed11a8987d9f9baa04457fb114f8f7fdb800300a3780927020865bcc43e4f52'
   '70a2805a63df15817a3435e983c0350c5d04ff62deffd8214cbb040b904f54a5'
   '15c93da644dbc533a6b74bd7f86a07dc59023c7b369298acd649715b9a9209a5'
   'c162eafc1f128e616281e719d860ec8726eec89660f449ed0e9af7dfe07c8cc9'
@@ -48,8 +46,6 @@ sha256sums=('301d40e5373b6dad9bc6aeb6898116d1f7dd2d0589ed18e108c56e2290df47e6'
   'bb4560e067eb6ff6d4c4a5c4f149d1cc1c9c705a14be4721ead2ebb8ec84ded1'
   '5690089b8bd6946dfa975b8022531213b882b3396a3c968eeef9836b131725b7'
   '04bba6fb19ea5a4ab3949b65f06c88728a00ab296f42022ece62ca2fa25ec2e7'
-  'fd3bf124aacc45f2d0a4f1dd86303fa7f2a3d4f4eeaf33854631d6cb39e12485'
-  '6f666ef0acb08704ca58cc0d5e97e7ce64d8fea51042e593adae1ce15a61231c'
   '30df59a9e2d95dcb720357ec4a83d9be51e59cc5551365da4c0073e68ccdec44'
   '00c16ce83ea4ca924a50fa0cfc2b2a4d744c722f363b065323e6ba0fcbac45a5')
 # Possible replacements are listed in build/linux/unbundle/replace_gn_files.py
@@ -136,15 +132,8 @@ prepare() {
   _patch chromium-EnumTable-crash.patch
   _patch chromium-gcc11.patch
   _patch chromium-InkDropHost-crash.patch
-  _patch iwyu-add-utility-for-std-exchange.patch
   _rpatch roll-src-third_party-ffmpeg.patch
   _patch remove-no-opaque-pointers-flag.patch
-
-  # https://chromium-review.googlesource.com/c/chromium/src/+/3488058
-  _patch chromium-libxml-unbundle.patch
-
-  _patch patches/chromium-102-fenced_frame_utils-include.patch
-  _patch patches/chromium-102-regex_pattern-array.patch
 
   # Link to system tools required by the build
   mkdir -p third_party/node/linux/node-linux-x64/bin

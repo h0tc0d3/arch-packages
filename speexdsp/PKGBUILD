@@ -1,15 +1,17 @@
 pkgname=speexdsp+clang
-pkgver=1.2.0
-pkgrel=2
+pkgver=1.2.1
+pkgrel=1
 pkgdesc="DSP library derived from Speex"
 arch=(x86_64)
 url="https://www.speex.org/"
 license=(BSD)
-provides=("speexdsp" "speexdsp=${pkgver}")
+provides=(libspeexdsp.so "speexdsp" "speexdsp=${pkgver}")
 conflicts=("speexdsp")
 depends=(glibc)
-source=("https://downloads.us.xiph.org/releases/speex/speexdsp-${pkgver}.tar.gz")
-sha512sums=('e357cd5377415ea66c862302c7cf8bf6a10063cacd903f0846478975b87974cf5bdf00e2c6759d8f4f453c4c869cf284e9dc948a84a83d7b2ab96bd5405c05ec')
+makedepends=(git)
+_commit=1b28a0f61bc31162979e1f26f3981fc3637095c8 # tags/SpeexDSP-1.2.1^0
+source=("git+https://gitlab.xiph.org/xiph/speexdsp.git#commit=${_commit:?}")
+sha256sums=('SKIP')
 
 _llvm=0
 
@@ -19,12 +21,19 @@ prepare() {
     _llvm=1
   fi
 
+  cd "${srcdir:?}/speexdsp" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/speexdsp directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  ./autogen.sh
+
 }
 
 build() {
 
-  cd "${srcdir:?}/speexdsp-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/speexdsp-${pkgver} directory! Build Failed! \E[0m"
+  cd "${srcdir:?}/speexdsp" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/speexdsp directory! Build Failed! \E[0m"
     exit 1
   )
 
@@ -48,24 +57,14 @@ build() {
 
 check() {
 
-  cd "${srcdir:?}/speexdsp-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/speexdsp-${pkgver} directory! Check Failed! \E[0m"
-    exit 1
-  )
-
-  make -k check
+  make -k check -C "speexdsp"
 
 }
 
 package() {
 
-  cd "${srcdir:?}/speexdsp-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/speexdsp-${pkgver} directory! Package Failed! \E[0m"
-    exit 1
-  )
+  make DESTDIR="${pkgdir:?}" install -C "speexdsp"
 
-  make DESTDIR="${pkgdir:?}" install
-
-  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname}" -m644 COPYING
+  install -Dt "${pkgdir:?}/usr/share/licenses/speexdsp" -m644 "speexdsp/COPYING"
 
 }

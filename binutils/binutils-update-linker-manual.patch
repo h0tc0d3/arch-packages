@@ -1,0 +1,36 @@
+diff -rup binutils.orig/ld/ld.1 binutils-2.38/ld/ld.1
+--- binutils.orig/ld/ld.1	2022-05-27 10:56:44.937044892 +0100
++++ binutils-2.38/ld/ld.1	2022-05-27 11:10:50.311802310 +0100
+@@ -2595,7 +2595,7 @@ systems may not understand them. If you
+ \&\fB\-\-enable\-new\-dtags\fR, the new dynamic tags will be created as needed
+ and older dynamic tags will be omitted.
+ If you specify \fB\-\-disable\-new\-dtags\fR, no new dynamic tags will be
+-created. By default, the new dynamic tags are not created. Note that
++created. By default, the new dynamic tags are created. Note that
+ those options are only available for \s-1ELF\s0 systems.
+ .IP "\fB\-\-hash\-size=\fR\fInumber\fR" 4
+ .IX Item "--hash-size=number"
+diff -rup binutils.orig/ld/ld.info binutils-2.38/ld/ld.info
+--- binutils.orig/ld/ld.info	2022-05-27 11:01:12.286346357 +0100
++++ binutils-2.38/ld/ld.info	2022-05-27 11:11:24.585709176 +0100
+@@ -2236,7 +2236,7 @@ GNU linker:
+      '--enable-new-dtags', the new dynamic tags will be created as
+      needed and older dynamic tags will be omitted.  If you specify
+      '--disable-new-dtags', no new dynamic tags will be created.  By
+-     default, the new dynamic tags are not created.  Note that those
++     default, the new dynamic tags are created.  Note that those
+      options are only available for ELF systems.
+ 
+ '--hash-size=NUMBER'
+diff -rup binutils.orig/ld/ld.texi binutils-2.38/ld/ld.texi
+--- binutils.orig/ld/ld.texi	2022-05-27 11:01:24.081314960 +0100
++++ binutils-2.38/ld/ld.texi	2022-05-27 11:10:05.608923798 +0100
+@@ -2796,7 +2796,7 @@ systems may not understand them. If you
+ @option{--enable-new-dtags}, the new dynamic tags will be created as needed
+ and older dynamic tags will be omitted.
+ If you specify @option{--disable-new-dtags}, no new dynamic tags will be
+-created. By default, the new dynamic tags are not created. Note that
++created. By default, the new dynamic tags are created. Note that
+ those options are only available for ELF systems.
+ 
+ @kindex --hash-size=@var{number}

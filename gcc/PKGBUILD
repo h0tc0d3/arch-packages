@@ -5,7 +5,7 @@ pkgname=(gcc gcc-libs gcc-fortran gcc-objc gcc-ada gcc-go lib32-gcc-libs libgccj
 pkgver=12.1.1
 _majorver=${pkgver%%.*}
 _islver=0.24
-pkgrel=1
+pkgrel=2
 pkgdesc='The GNU Compiler Collection'
 arch=(x86_64)
 license=(GPL LGPL FDL custom)
@@ -17,7 +17,7 @@ if [[ -z ${CHOST} ]]; then
   CHOST=x86_64-pc-linux-gnu
 fi
 _libdir="usr/lib/gcc/${CHOST:?}/${pkgver%%+*}"
-_commit=03257e7ee31385a364b711898c8f1510fd638efe
+_commit=1ad2ee21827faafa4cade25cbfabb05ab55573ee
 source=(
   "git://gcc.gnu.org/git/gcc.git#commit=${_commit}"
   "https://libisl.sourceforge.io/isl-${_islver}.tar.xz"

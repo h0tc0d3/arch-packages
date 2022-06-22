@@ -1,23 +1,12 @@
-pkgname=e2fsprogs+clang
+pkgbase=e2fsprogs+clang
+pkgname=('e2fsprogs+clang' 'fuse2fs+clang')
 pkgver=1.46.5
-pkgrel=3
+pkgrel=4
 pkgdesc="Ext2/3/4 filesystem utilities"
 arch=('x86_64')
 license=('GPL' 'LGPL' 'MIT')
 url="http://e2fsprogs.sourceforge.net"
-depends=('sh' 'util-linux-libs')
-makedepends=('systemd' 'util-linux')
-provides=(
-  'e2fsprogs' "e2fsprogs=${pkgver}"
-  'libcom_err.so'
-  'libe2p.so'
-  'libext2fs.so'
-  'libss.so'
-)
-conflicts=('e2fsprogs')
-backup=('etc/mke2fs.conf' 'etc/e2scrub.conf')
-options=('staticlibs')
-validpgpkeys=('3AB057B7E78D945C8C5591FBD36F769BC11804F0') # Theodore Ts'o <tytso@mit.edu>
+makedepends=('systemd' 'util-linux' 'fuse')
 source=(
   "https://www.kernel.org/pub/linux/kernel/people/tytso/e2fsprogs/v${pkgver}/e2fsprogs-${pkgver}.tar."{xz,sign}
   'MIT-LICENSE'
@@ -25,6 +14,8 @@ source=(
 sha256sums=('2f16c9176704cf645dc69d5b15ff704ae722d665df38b2ed3cfc249757d8d81e'
   'SKIP'
   'cc45386c1d71f438ad648fd7971e49e3074ad9dbacf9dd3a5b4cb61fd294ecbb')
+
+validpgpkeys=('3AB057B7E78D945C8C5591FBD36F769BC11804F0') # Theodore Ts'o <tytso@mit.edu>
 
 _llvm=0
 
@@ -78,28 +69,60 @@ build() {
 
 }
 
-package() {
+package_e2fsprogs+clang() {
 
-  unset MAKEFLAGS
-
-  cd "${srcdir:?}/e2fsprogs-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/e2fsprogs-${pkgver} directory! Package Failed! \E[0m"
-    exit 1
+  depends=('sh' 'util-linux-libs')
+  optdepends=(
+    'lvm2: for e2scrub'
+    'util-linux: for e2scrub'
+    'smtp-forwarder: for e2scrub_fail script'
+  )
+  provides=(
+    'e2fsprogs' "e2fsprogs=${pkgver}"
+    'libcom_err.so'
+    'libe2p.so'
+    'libext2fs.so'
+    'libss.so'
+  )
+  conflicts=('e2fsprogs')
+  backup=(
+    'etc/mke2fs.conf'
+    'etc/e2scrub.conf'
   )
 
-  make DESTDIR="${pkgdir:?}" install install-libs
+  make DESTDIR="${pkgdir:?}" install install-libs -C "e2fsprogs-${pkgver}"
 
   sed -i -e 's/^AWK=.*/AWK=awk/' "${pkgdir:?}/usr/bin/compile_et"
 
   # remove references to build directory
-  sed -i -e 's#^SS_DIR=.*#SS_DIR="/usr/share/ss"#' "${pkgdir:?}/usr/bin/mk_cmds"
-  sed -i -e 's#^ET_DIR=.*#ET_DIR="/usr/share/et"#' "${pkgdir:?}/usr/bin/compile_et"
+  sed -i -e 's#^DIR=.*#DIR="/usr/share/ss"#' "${pkgdir:?}/usr/bin/mk_cmds"
+  sed -i -e 's#^DIR=.*#DIR="/usr/share/et"#' "${pkgdir:?}/usr/bin/compile_et"
 
   # remove static libraries with a shared counterpart
-  rm "${pkgdir:?}"/usr/lib/lib{com_err,e2p,ext2fs,ss}.a
+  rm "${pkgdir:?}/usr/lib/lib"{com_err,e2p,ext2fs,ss}.a
+
+  # remove fuse2fs which will be packaged separately
+  rm "${pkgdir:?}/usr/"{bin/fuse2fs,share/man/man1/fuse2fs.1}
 
   # install MIT license
   install -Dm644 "${srcdir}/MIT-LICENSE" \
-    "${pkgdir:?}/usr/share/licenses/${pkgname}/MIT-LICENSE"
+    "${pkgdir:?}/usr/share/licenses/e2fsprogs"
+
+}
+
+package_fuse2fs+clang() {
+
+  pkgdesc='Ext2/3/4 filesystem driver for FUSE'
+  depends=('fuse' 'e2fsprogs')
+  provides=('fuse2fs' "fuse2fs=${pkgver}")
+  conflicts=('fuse2fs')
+
+  install -D -m0755 "e2fsprogs-${pkgver}/misc/fuse2fs" \
+    "${pkgdir:?}/usr/bin/fuse2fs"
+  install -D -m0644 "e2fsprogs-${pkgver}/misc/fuse2fs.1" \
+    "${pkgdir:?}/usr/share/man/man1/fuse2fs.1"
+
+  mkdir -p "${pkgdir:?}/usr/share/licenses"
+  ln -s /usr/share/licenses/e2fsprogs "${pkgdir:?}/usr/share/licenses/fuse2fs"
 
 }
