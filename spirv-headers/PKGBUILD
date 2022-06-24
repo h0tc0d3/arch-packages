@@ -1,6 +1,6 @@
 pkgname=spirv-headers+clang
 epoch=1
-pkgver=1.3.211.0
+pkgver=1.3.216.0
 pkgrel=1
 pkgdesc="SPIR-V Headers"
 arch=(any)
@@ -9,7 +9,7 @@ license=(MIT)
 provides=('spirv-headers' "spirv-headers=${pkgver}")
 conflicts=('spirv-headers')
 makedepends=(cmake git)
-_commit=4995a2f2723c401eb0ea3e10c81298906bf1422b
+_commit=b2a156e1c0434bc8c99aaebba1c7be98be7ac580
 source=("git+https://github.com/KhronosGroup/SPIRV-Headers.git#commit=${_commit}")
 sha256sums=('SKIP')
 

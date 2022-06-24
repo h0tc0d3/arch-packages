@@ -1,6 +1,6 @@
 pkgname=kicad+clang
-pkgver=6.0.5
-pkgrel=3
+pkgver=6.0.6
+pkgrel=1
 pkgdesc="Electronic schematic and printed circuit board (PCB) design tools"
 arch=('x86_64')
 url="http://kicad-pcb.org/"
