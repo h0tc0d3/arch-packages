@@ -1,6 +1,6 @@
 pkgname=neovim+clang
-pkgver=0.7.0
-pkgrel=3
+pkgver=0.7.2
+pkgrel=1
 pkgdesc='Fork of Vim aiming to improve user experience, plugins, and GUIs'
 arch=('x86_64')
 url='https://neovim.io'
@@ -18,7 +18,7 @@ source=(
   "https://github.com/neovim/neovim/archive/v${pkgver}/neovim-${pkgver}.tar.gz"
   fix-build.patch
 )
-sha256sums=('792a9c55d5d5f4a5148d475847267df309d65fb20f05523f21c1319ea8a6c7df'
+sha256sums=('ccab8ca02a0c292de9ea14b39f84f90b635a69282de38a6b4ccc8565bc65d096'
   'bceb977645b38d4cf0c6c3fcb87ebaaf12b81553da5981e472d80fd3f1c8b8a0')
 
 _llvm=0

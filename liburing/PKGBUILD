@@ -1,5 +1,5 @@
 pkgname=liburing+clang
-pkgver=2.1
+pkgver=2.2
 pkgrel=1
 pkgdesc="Linux-native io_uring I/O access library"
 arch=('x86_64')
