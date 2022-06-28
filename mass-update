@@ -1,0 +1,44 @@
+#!/usr/bin/bash
+# Author: Grigory Vasilyev <echo "h0tc0d3(-*A*-)g-m*a-i-l(-d#t-)c#m" | sed -e 's/-//ig;s/*//ig;s/(A)/@/i;s/#/o/ig;s/(dot)/./i'>
+# License: Apache License 2.0
+
+SOURCE_DIR=${0%/*}
+if [[ "${SOURCE_DIR}" == "." ]]; then
+    SOURCE_DIR=${PWD}
+fi
+
+set -euo pipefail
+
+update_version() {
+
+    local old_version="${1//\./\\.}"
+    local new_version="${2//\./\\.}"
+    local base_path=""
+
+    local PACKAGES=()
+
+    while IFS=$'\n' read -r package; do
+        PACKAGES+=("${package}")
+    done < <(grep -lR "pkgver=${old_version}" "${SOURCE_DIR}/"*/PKGBUILD | sort)
+
+    for package in "${PACKAGES[@]}"; do
+
+        sed -i "s#pkgver=${old_version}#pkgver=${new_version}#" "${package:?}"
+
+        base_path="${package%/*}"
+
+        cd "${base_path:?}" &&
+            updpkgsums &&
+            shfmt -i 2 -ci -bn -w "${package:?}"
+
+        echo -e "\E[1;32m[+]\E[0m ${base_path##*/}"
+
+    done
+
+}
+
+if [ "$#" -eq 2 ]; then
+    update_version "${1:?}" "${2:?}"
+else
+    echo -e "\E[1;33m\nUSAGE: ./$(basename "$0") old_version new_version\n\n\E[0m"
+fi

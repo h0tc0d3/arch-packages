@@ -1,5 +1,5 @@
 pkgname=kwayland-integration+clang
-pkgver=5.25.1
+pkgver=5.25.2
 pkgrel=1
 pkgdesc='Provides integration plugins for various KDE frameworks for the wayland windowing system'
 arch=(x86_64)
@@ -13,7 +13,7 @@ groups=(plasma)
 source=(
   "https://download.kde.org/stable/plasma/${pkgver}/kwayland-integration-${pkgver}.tar.xz"{,.sig}
 )
-sha256sums=('412c470210593e0d3624370edf8d17f5a58145bafd3b7a2e8f5377e48ecc00e5'
+sha256sums=('d26d7b207245302c64f306b28d8404b7d8c6d3aed9ea6c6e5867f1a5ffed2adf'
   'SKIP')
 validpgpkeys=(
   'E0A3EB202F8E57528E13E72FD7574483BB57B18D' # Jonathan Riddell <jr@jriddell.org>
