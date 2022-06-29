@@ -1,6 +1,6 @@
 pkgname=rz-ghidra+clang
 pkgver=0.3.0
-pkgrel=4
+pkgrel=5
 pkgdesc='Deep ghidra decompiler integration for rizin and rz-cutter'
 url='https://github.com/rizinorg/rz-ghidra'
 arch=('x86_64')
@@ -9,12 +9,13 @@ provides=(rz-ghidra "rz-ghidra=${pkgver}") \
 conflicts=(rz-ghidra)
 depends=('rizin' 'glibc')
 makedepends=('git' 'cmake' 'qt5-base')
-_commit=81090e68ec17ab4e9c9963c5e15638665c87696c
-_cuttercommit=f5a7a79ee8efc04514189565b1d319c7a39bf0de
+_commit=e70aa0f68310f18620153eed57b27fdfb9ba3018
+_cuttercommit=7eb4311c2be2c0e5e6bcd098abf06beda2e96519
+_ghidracommit=6e66f058af2eec5be2ebc952c942fcf253e10126
 source=(
-  "git+https://github.com/rizinorg/rz-ghidra.git#commit=${_commit:?}"
+  "git+https://github.com/rizinorg/rz-ghidra#commit=${_commit:?}"
   "git+https://github.com/rizinorg/cutter#commit=${_cuttercommit:?}"
-  "rizin-ghidra::git+https://github.com/rizinorg/ghidra.git"
+  "rizin-ghidra::git+https://github.com/rizinorg/ghidra#commit=${_ghidracommit:?}"
   "git+https://github.com/zeux/pugixml.git"
   fix-build.patch
   crc32.h
@@ -39,10 +40,14 @@ prepare() {
     exit 1
   )
 
-  git submodule init
-  git config submodule."third-party/pugixml".url "${srcdir:?}/pugixml"
-  git config submodule."ghidra/ghidra".url "${srcdir:?}/rizin-ghidra"
-  git submodule update --recursive
+  rm -fr "third-party/pugixml" "ghidra/ghidra"
+  ln -sf "${srcdir:?}/pugixml" "third-party/pugixml"
+  ln -sf "${srcdir:?}/rizin-ghidra" "ghidra/ghidra"
+
+  #git submodule init
+  #git config submodule."third-party/pugixml".url "${srcdir:?}/pugixml"
+  #git config submodule."ghidra/ghidra".url "${srcdir:?}/rizin-ghidra"
+  #git submodule update --recursive
 
   patch -p1 -i "${srcdir:?}/fix-build.patch"
 
@@ -75,10 +80,17 @@ build() {
 package() {
 
   DESTDIR="${pkgdir:?}" cmake --install build
+
   # move shared library into RZ_LIBR_PLUGINS
   rzversion=$(rizin -version | grep rizin | sed -E 's/rizin ([0-9\.]+) .*/\1/')
-  install -d "${pkgdir:?}/usr/lib/rizin/${rzversion}"
-  mv "${pkgdir:?}/usr/share/rizin/plugins/"*.so "${pkgdir:?}/usr/lib/rizin/${rzversion}"
+  #install -d "${pkgdir:?}/usr/lib/rizin/${rzversion}"
+  #mv "${pkgdir:?}/usr/lib/rizin/plugins/"*.so "${pkgdir:?}/usr/lib/rizin/${rzversion}"
+
+  install -d "${pkgdir:?}/usr/share/rizin/cutter/plugins/native"
+  mv "${pkgdir:?}/build/.local/share/rizin/cutter/plugins/native/librz_ghidra_cutter.so" \
+    "${pkgdir:?}/usr/share/rizin/cutter/plugins/native"
+  rm -fr "${pkgdir:?}/build"
+
   ln -s "/usr/lib/rizin/${rzversion}" "${pkgdir:?}/usr/lib/rizin/last"
 
 }

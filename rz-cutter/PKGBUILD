@@ -1,6 +1,6 @@
 pkgname=rz-cutter+clang
-pkgver=2.0.5
-pkgrel=3
+pkgver=2.1.0
+pkgrel=1
 pkgdesc='Qt and C++ GUI for rizin reverse engineering framework'
 url='https://github.com/rizinorg/cutter'
 arch=('x86_64')
@@ -11,7 +11,7 @@ depends=('rizin' 'capstone' 'qt5-base' 'qt5-svg' 'qt5-webengine' 'icu' 'python'
   'pyside2' 'python-shiboken2' 'graphviz' 'syntax-highlighting')
 makedepends=('git' 'cmake' 'ninja' 'shiboken2' 'qt5-tools')
 optdepends=('rz-ghidra: ghidra decompiler plugin')
-_commit=f5a7a79ee8efc04514189565b1d319c7a39bf0de
+_commit=7eb4311c2be2c0e5e6bcd098abf06beda2e96519
 source=(
   "git+https://github.com/rizinorg/cutter#commit=${_commit}"
   "git+https://github.com/rizinorg/cutter-translations"
@@ -34,8 +34,6 @@ prepare() {
 
   git config 'submodule.src/translations.url' "${srcdir:?}/cutter-translations"
   git submodule update --init src/translations
-
-  git cherry-pick -n 1ef6d1269cf0ffde2d91eb067134ee9215791296 # Fix build with syntax-highlighting 5.92
 
 }
 

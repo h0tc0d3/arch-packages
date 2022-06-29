@@ -1,5 +1,5 @@
 pkgname=python-pandas+clang
-pkgver=1.4.2
+pkgver=1.4.3
 pkgrel=1
 pkgdesc='High-performance, easy-to-use data structures and data analysis tools for Python'
 arch=('x86_64')
@@ -35,7 +35,7 @@ optdepends=('python-pandas-datareader: pandas.io.data replacement (recommended)'
   'xsel: needed for read_clipboard function (only one needed)'
   'zlib: needed for compression for msgpack')
 source=("https://github.com/pandas-dev/pandas/releases/download/v${pkgver}/pandas-${pkgver}.tar.gz")
-sha256sums=('92bc1fc585f1463ca827b45535957815b7deb218c549b7c18402c322c7549a12')
+sha256sums=('2ff7788468e75917574f080cd4681b27e1a7bf36461fe968b49a87b5a54d007c')
 
 _lld=0
 

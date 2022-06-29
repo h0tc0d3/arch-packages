@@ -1,5 +1,5 @@
 pkgname=rizin+clang
-pkgver=0.3.4
+pkgver=0.4.0
 pkgrel=1
 pkgdesc='Open-source tools to disasm, debug, analyze and manipulate binary files'
 url='https://rizin.re'
@@ -14,13 +14,11 @@ depends=(
 makedepends=('meson' 'ninja' 'python' 'git')
 optdepends=('rz-ghidra: ghidra decompiler plugin')
 options=('!emptydirs')
-_commit=2373c53880e017be86afed5454bca5b5017b920e
+_commit=7158b6192549322e51779ca74c9ec96b977124ec
 source=(
-  "rizin::git+https://github.com/rizinorg/rizin.git#commit=${_commit}"
-  fix-build.patch
+  "rizin::git+https://github.com/rizinorg/rizin#commit=${_commit}"
 )
-sha256sums=('SKIP'
-  '9662a4083a5b96266c958ceddf3a61dd820b3ee4462a739830268d7df5eb4616')
+sha256sums=('SKIP')
 
 _extra_lto_flag=""
 
@@ -29,13 +27,6 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _extra_lto_flag='-D b_lto_mode=thin'
   fi
-
-  cd "${srcdir:?}/rizin" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/rizin directory! Build Failed! \E[0m"
-    exit 1
-  )
-
-  patch -p1 -i "${srcdir:?}/fix-build.patch"
 
 }
 
@@ -63,7 +54,6 @@ build() {
     -D use_sys_openssl=enabled \
     -D use_sys_tree_sitter=enabled \
     -D use_libuv=true \
-    -D use_webui=true \
     -D local=disabled
 
   ninja -C build
