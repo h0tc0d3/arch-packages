@@ -1,6 +1,6 @@
 pkgname=kmod+clang
-pkgver=29
-pkgrel=4
+pkgver=30
+pkgrel=1
 pkgdesc="Linux kernel module management tools and library"
 arch=('x86_64')
 url='https://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git'
@@ -12,7 +12,7 @@ provides=('module-init-tools=3.16' 'libkmod.so' 'kmod' "kmod=${pkgver}")
 conflicts=('module-init-tools' 'kmod')
 replaces=('module-init-tools')
 validpgpkeys=('EAB33C9690013C733916AC839BA2A5A630CBEA53') # Lucas DeMarchi
-_commit=ea3c8adfd39a5f6137482daca21058132ec5ee8d
+_commit=c1fb98a30dae051ab69d23624d1e062d0527527e
 source=("git+https://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git#commit=${_commit}"
   'depmod-search.conf'
   'depmod.hook' 'depmod.script')
