@@ -2,7 +2,7 @@ pkgname=mesa+clang
 pkgdesc="Mesa open-source implementation of the OpenGL specification"
 pkgver=22.1.3
 _pkgver=${pkgver//_/-}
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 makedepends=('python-mako' 'xorgproto'
   'libxml2' 'libx11' 'libvdpau' 'libva' 'elfutils' 'libxrandr'
