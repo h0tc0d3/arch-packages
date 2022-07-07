@@ -1,6 +1,6 @@
 pkgname=mako+clang
-pkgver=1.6
-pkgrel=3
+pkgver=1.7.1
+pkgrel=1
 license=('MIT')
 provides=('mako' "mako=${pkgver}")
 conflicts=('mako')
@@ -16,13 +16,12 @@ optdepends=("jq: support for 'makoctl menu'")
 arch=("x86_64")
 url='https://mako-project.org'
 source=(
-  "mako-${pkgver}.tar.gz::https://github.com/emersion/mako/releases/download/v${pkgver}/mako-${pkgver}.tar.gz"
-  "mako-${pkgver}.tar.gz.sig::https://github.com/emersion/mako/releases/download/v${pkgver}/mako-${pkgver}.tar.gz.sig"
+  "mako-${pkgver}.tar.gz::https://github.com/emersion/mako/releases/download/v${pkgver}/mako-${pkgver}.tar.gz"{,.sig}
   "systemd-dbus-activation.patch"
 )
 validpgpkeys=("34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48") # emersion
-sha256sums=('9f43cba9e1b43c69be8c9e4a79c358b3cd22153ca3ffb8bf0ee7aa30c59b2fc2'
-  'SKIP'
+sha256sums=('4312ff6bc61708115b43b967a42813374de7a2022f10c84e20127606416c3c12'
+  '4312ff6bc61708115b43b967a42813374de7a2022f10c84e20127606416c3c12'
   '4579a2673dcf2114779e10ed52d771f3930c2192e8e35d3e145163d9e0b45c20')
 
 _extra_lto_flag=""
@@ -50,6 +49,9 @@ build() {
     -D b_ndebug=true \
     -D b_lto=true ${_extra_lto_flag} \
     -D b_pie=true \
+    -D bash-completions=true \
+    -D fish-completions=true \
+    -D zsh-completions=true \
     -D sd-bus-provider=libsystemd
 
   meson compile -C build

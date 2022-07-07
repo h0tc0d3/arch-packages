@@ -3,7 +3,7 @@ pkgname=(pipewire+clang alsa-card-profiles+clang pipewire-docs+clang
   pipewire-alsa+clang pipewire-jack+clang pipewire-pulse+clang gst-plugin-pipewire+clang
   pipewire-zeroconf+clang pipewire-v4l2+clang pipewire-x11-bell+clang)
 pkgver=0.3.53
-pkgrel=2
+pkgrel=3
 epoch=1
 pkgdesc="Low-latency audio/video router and processor"
 url="https://pipewire.org"
@@ -32,7 +32,11 @@ prepare() {
   )
 
   # https://gitlab.freedesktop.org/pipewire/pipewire/-/releases/0.3.53#distros
-  git cherry-pick -n 9af94508886b19bb398f4e2a777447ca42907c2f
+  git cherry-pick -n 9af94508886b19bb398f4e2a777447ca42907c2f \
+    a2521bb3e0cfd516519719e625ecc846b6025c47 \
+    67f648cc6646544776abca8c6551ec0be16ce961 \
+    e0b3e06beab2c874a2fe322570a02e83f916df55 \
+    12bee0edf823f456bd4d749dcb0cbae538834c9c
 
   # remove export of LD_LIBRARY_PATH for pw-jack as it would add /usr/lib
   sed -i '/LD_LIBRARY_PATH/d' pipewire-jack/src/pw-jack.in
