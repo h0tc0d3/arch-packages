@@ -1,5 +1,5 @@
 pkgname=libdrm+clang
-pkgver=2.4.111
+pkgver=2.4.112
 pkgrel=1
 pkgdesc="Userspace interface to kernel DRM services"
 url="https://dri.freedesktop.org/"
@@ -16,7 +16,7 @@ source=(
   COPYING
   libdrm-2.4.0-no-bc.patch
 )
-sha256sums=('1ad7164f77424de6f4ecba7c262bde196a214c6e19a6fbf497f0815f4d7ab2a9'
+sha256sums=('00b07710bd09b35cd8d80eaf4f4497fe27f4becf467a9830f1f5e8324f8420ff'
   '9631d4f694952e3e6ae5a05534c2e93e994e47d3413677a3a00e45c8cef6db93'
   '86aef9a371fab4dcb758b05baf9f797b622f443b1f63e3cf2205353de4a09341')
 validpgpkeys=(

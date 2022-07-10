@@ -1,6 +1,6 @@
 pkgname=libx11+clang
 pkgver=1.8.1
-pkgrel=2
+pkgrel=3
 pkgdesc="X11 client-side library"
 arch=(x86_64)
 url="https://xorg.freedesktop.org/"

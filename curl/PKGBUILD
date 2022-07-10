@@ -1,7 +1,7 @@
 pkgbase=curl+clang
 pkgname=(curl+clang libcurl-compat+clang libcurl-gnutls+clang)
 pkgver=7.84.0
-pkgrel=1
+pkgrel=2
 pkgdesc='An URL retrieval utility and library'
 arch=('x86_64')
 url='https://curl.haxx.se'
@@ -11,9 +11,11 @@ depends=('ca-certificates' 'brotli' 'libbrotlidec.so' 'krb5' 'libgssapi_krb5.so'
   'openssl' 'zlib' 'zstd' 'libzstd.so')
 source=(
   "https://curl.haxx.se/download/curl-${pkgver}.tar.gz"{,.asc}
+  0001-select-do-not-return-fatal-error-on-EINTR-from-poll.patch
 )
 sha256sums=('3c6893d38d054d4e378267166858698899e9d87258e8ff1419d020c395384535'
-  'SKIP')
+  'SKIP'
+  'cd176e20077f5a91008f5acbbe39631caf0c0feb9d595fcf966b1f5ae7f777a8')
 validpgpkeys=('27EDEAF22F3ABCEB50DB9A125CC908FDB71E12C2') # Daniel Stenberg
 
 _configure_options=(
@@ -45,6 +47,8 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=1
   fi
+
+  _patch 0001-select-do-not-return-fatal-error-on-EINTR-from-poll.patch
 
 }
 

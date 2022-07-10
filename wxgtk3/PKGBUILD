@@ -1,5 +1,5 @@
 pkgname=wxgtk3+clang
-pkgver=3.1.7
+pkgver=3.2.0
 pkgrel=1
 arch=(x86_64)
 url='https://wxwidgets.org'
@@ -13,7 +13,7 @@ options=(!emptydirs)
 source=(
   "https://github.com/wxWidgets/wxWidgets/releases/download/v${pkgver}/wxWidgets-${pkgver}.tar.bz2"
 )
-sha256sums=('3d666e47d86192f085c84089b850c90db7a73a5d26b684b617298d89dce84f19')
+sha256sums=('356e9b55f1ae3d58ae1fed61478e9b754d46b820913e3bfbc971c50377c1903a')
 
 _llvm=0
 
