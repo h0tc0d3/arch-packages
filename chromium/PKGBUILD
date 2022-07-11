@@ -1,8 +1,9 @@
 pkgname=chromium+clang
-pkgver=103.0.5060.53
+pkgver=103.0.5060.114
 pkgrel=1
 _launcher_ver=8
 _gcc_patchset=4
+_git=0
 pkgdesc="A web browser built for speed, simplicity, and security"
 arch=('x86_64')
 url="https://www.chromium.org/Home"
@@ -35,7 +36,11 @@ source=(
   roll-src-third_party-ffmpeg.patch
   remove-no-opaque-pointers-flag.patch
 )
-sha256sums=('0ecbae14670506da90c8bf744f83f52a64a5fff0765c2e2e066b0e68b805b101'
+if [[ ${_git} -eq 1 ]]; then
+  source[0]=fetch-chromium-release
+  makedepends+=('python-httplib2' 'python-pyparsing' 'python-six')
+fi
+sha256sums=('77683510f03b947332461b03954488474d95e49992efc11908f4bd8045635965'
   '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
   'fed11a8987d9f9baa04457fb114f8f7fdb800300a3780927020865bcc43e4f52'
   '70a2805a63df15817a3435e983c0350c5d04ff62deffd8214cbb040b904f54a5'
@@ -99,6 +104,10 @@ _rpatch() {
 }
 
 prepare() {
+
+  if [[ ${_git} -eq 1 ]]; then
+    ./fetch-chromium-release "${pkgver}"
+  fi
 
   cd "${srcdir:?}/chromium-${pkgver}"
 
