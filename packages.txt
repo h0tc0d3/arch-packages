@@ -362,6 +362,7 @@ rz-ghidra
 valgrind
 arrayfire
 -python-arrayfire
+xonotic
 krita
 wxgtk3
 gnuplot
