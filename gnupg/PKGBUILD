@@ -1,5 +1,5 @@
 pkgname=gnupg+clang
-pkgver=2.3.6
+pkgver=2.3.7
 pkgrel=1
 pkgdesc='Complete and free implementation of the OpenPGP standard'
 url='https://www.gnupg.org/'
@@ -20,12 +20,13 @@ validpgpkeys=(
   '5B80C5754298F0CB55D8ED6ABCEF7E294B092E28' # Andre Heinecke (Release Signing Key)
   '6DAA6E64A76D2840571B4902528897B826403ADA' # Werner Koch (dist signing 2020)
   'AC8E115BF73E2D8D47FA9908E98E9B2D19C6C8BD' # Niibe Yutaka (GnuPG Release Key)
+  '02F38DFF731FF97CB039A1DA549E695E905BA208' # GnuPG.com (Release Signing Key 2021)
 )
 source=(
   "https://gnupg.org/ftp/gcrypt/gnupg/gnupg-${pkgver}.tar.bz2"{,.sig}
   remove-beta-warning.patch
 )
-sha256sums=('21f7fe2fc5c2f214184ab050977ec7a8e304e58bfae2ab098fec69f8fabda9c1'
+sha256sums=('ee163a5fb9ec99ffc1b18e65faef8d086800c5713d15a672ab57d3799da83669'
   'SKIP'
   '0016111253122514e59570c0a1fa05513fd7510298f6b5952a2009d26e6cd16c')
 

@@ -2,7 +2,7 @@ pkgbase=pipewire+clang
 pkgname=(pipewire+clang alsa-card-profiles+clang pipewire-docs+clang
   pipewire-alsa+clang pipewire-jack+clang pipewire-pulse+clang gst-plugin-pipewire+clang
   pipewire-zeroconf+clang pipewire-v4l2+clang pipewire-x11-bell+clang)
-pkgver=0.3.54
+pkgver=0.3.55
 pkgrel=1
 epoch=1
 pkgdesc="Low-latency audio/video router and processor"
@@ -14,7 +14,7 @@ makedepends=(alsa-lib bluez-libs avahi git dbus doxygen graphviz
   libusb libx11 libxfixes lilv meson ncurses python-docutils rtkit sbc sdl2
   valgrind webrtc-audio-processing)
 checkdepends=(desktop-file-utils)
-_commit=752afa06a279a1975c00f3f9c0175a8c6c615c75 # tags/0.3.54
+_commit=957e3a7b3832dbf61e5530f448bf7e4275fa8476 # tags/0.3.55
 source=("git+https://gitlab.freedesktop.org/pipewire/pipewire.git#commit=${_commit:?}")
 sha256sums=('SKIP')
 
@@ -234,6 +234,7 @@ package_pipewire-pulse+clang() {
     libavahi-{client,common}.so)
   provides=("pipewire-pulse" "pipewire-pulse=${epoch}:${pkgver}" pulseaudio pulseaudio-bluetooth)
   conflicts=("pipewire-pulse" pulseaudio pulseaudio-bluetooth)
+  replaces=(pulseaudio pulseaudio-bluetooth)
   install=pipewire-pulse.install
 
   mv pulse/* "${pkgdir:?}"
