@@ -1,9 +1,9 @@
 pkgbase=systemd+clang
 pkgname=('systemd+clang' 'systemd-libs+clang' 'systemd-resolvconf+clang' 'systemd-sysvcompat+clang')
-_tag='615e67a0eeb479009f185d2526acf7cc1ed36e62' # git rev-parse v${_tag_name}
-_tag_name=251.2
+_tag='069e2b0ddd3a1b5bcff48530be165c56117d7134' # git rev-parse v${_tag_name}
+_tag_name=251.3
 pkgver="${_tag_name/-/}"
-pkgrel=2
+pkgrel=1
 arch=('x86_64')
 url='https://www.github.com/systemd/systemd'
 makedepends=(
@@ -127,6 +127,7 @@ build() {
     -D debug=false \
     -D optimization=2 \
     -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
     -D b_pie=true \
     -D version-tag="${_tag_name/-/\~}-${pkgrel}-arch" \
     -D mode=release \
@@ -142,7 +143,7 @@ build() {
     -D default-dnssec=no \
     -D default-hierarchy=unified \
     -D default-kill-user-processes=false \
-    -D default-locale=C \
+    -D default-locale='C.UTF-8' \
     -D localegen-path=/usr/bin/locale-gen \
     -D dns-over-tls=openssl \
     -D fallback-hostname='archlinux' \
