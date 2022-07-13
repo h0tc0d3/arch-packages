@@ -1,6 +1,6 @@
 pkgname=xorg-fonts-encodings+clang
-pkgver=1.0.5
-pkgrel=2
+pkgver=1.0.6
+pkgrel=1
 pkgdesc="X.org font encoding files"
 arch=(any)
 url="https://xorg.freedesktop.org/"
@@ -10,8 +10,8 @@ conflicts=('xorg-fonts-encodings')
 makedepends=('xorg-mkfontscale' 'xorg-util-macros' 'xorg-font-util')
 groups=('xorg-fonts' 'xorg')
 options=(!makeflags)
-source=("${url}/releases/individual/font/encodings-${pkgver}.tar.bz2")
-sha512sums=('920e49f0b3545f181a1574ca3280ac9adef1e68fe27566c195dd7013f728d355c0d759132789357fcf8fa7391fcbe1e17edf2bd85aa5611df5a4d99740011008')
+source=("${url}/releases/individual/font/encodings-${pkgver}.tar.xz")
+sha256sums=('77e301de661f35a622b18f60b555a7e7d8c4d5f43ed41410e830d5ac9084fc26')
 validpgpkeys=('3BB639E56F861FA2E86505690FDD682D974CA72A') # "Matt Turner <mattst88@gmail.com>"
 
 _llvm=0
@@ -48,25 +48,22 @@ build() {
 
 package() {
 
-  cd "${srcdir:?}/encodings-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/encodings-${pkgver} directory! Package Failed! \E[0m"
-    exit 1
-  )
-
-  make DESTDIR="${pkgdir:?}" install
-  install -Dm644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/COPYING"
+  make DESTDIR="${pkgdir:?}" install -C "encodings-${pkgver}"
+  install -Dm644 "encodings-${pkgver}/COPYING" "${pkgdir:?}/usr/share/licenses/${pkgname}/COPYING"
 
   # regenerate encodngs file not to include non-compressed versions
   cd "${pkgdir:?}/usr/share/fonts/encodings/large" || (
     echo -e "\E[1;31mCan't cd to ${pkgdir:?}/usr/share/fonts/encodings/large directory! Package Failed! \E[0m"
     exit 1
   )
+
   mkfontscale -b -s -l -n -r -p /usr/share/fonts/encodings/large -e . .
 
   cd "${pkgdir:?}/usr/share/fonts/encodings/" || (
     echo -e "\E[1;31mCan't cd to ${pkgdir:?}/usr/share/fonts/encodings/ directory! Package Failed! \E[0m"
     exit 1
   )
+
   mkfontscale -b -s -l -n -r -p /usr/share/fonts/encodings -e . -e large .
 
 }

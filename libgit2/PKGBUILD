@@ -1,5 +1,5 @@
 pkgname=libgit2+clang
-pkgver=1.4.3
+pkgver=1.4.4
 pkgrel=1
 epoch=1
 pkgdesc="A linkable library for Git"
@@ -15,7 +15,7 @@ source=(
   libgit2-1.2.0-remove_http-parse_incompatible_tests.patch
 )
 
-sha256sums=('f48b961e463a9e4e7e7e58b21a0fb5a9b2a1d24d9ba4d15870a0c9b8ad965163'
+sha256sums=('e9923e9916a32f54c661d55d79c28fa304cb23617639e68bff9f94d3e18f2d4b'
   'e95000dd7e2a3c56015114d0b67cf1a6d2ff382d2e2a2567dbb4731300a1deb1')
 
 _llvm=0

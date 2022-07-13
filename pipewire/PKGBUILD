@@ -3,7 +3,7 @@ pkgname=(pipewire+clang alsa-card-profiles+clang pipewire-docs+clang
   pipewire-alsa+clang pipewire-jack+clang pipewire-pulse+clang gst-plugin-pipewire+clang
   pipewire-zeroconf+clang pipewire-v4l2+clang pipewire-x11-bell+clang)
 pkgver=0.3.55
-pkgrel=1
+pkgrel=2
 epoch=1
 pkgdesc="Low-latency audio/video router and processor"
 url="https://pipewire.org"
@@ -30,6 +30,9 @@ prepare() {
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/pipewire directory! Prepare Failed! \E[0m"
     exit 1
   )
+
+  # jack: avoid crash in ardour
+  git cherry-pick -n 40552a0e914c3aef48ce59ce1bfb9d80516aa893
 
   # remove export of LD_LIBRARY_PATH for pw-jack as it would add /usr/lib
   sed -i '/LD_LIBRARY_PATH/d' pipewire-jack/src/pw-jack.in
