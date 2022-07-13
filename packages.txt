@@ -319,6 +319,7 @@ ndctl
 vte3
 js78
 js91
+duktape
 polkit
 rtkit
 pipewire
