@@ -1,12 +1,12 @@
 pkgbase=gnuplot+clang
 pkgname=(gnuplot+clang gnuplot-demos+clang)
 pkgver=5.4.3
-pkgrel=7
+pkgrel=8
 pkgdesc='Plotting package which outputs to X11, PostScript, PNG, GIF, and others'
 arch=(x86_64)
 url='http://www.gnuplot.info'
 license=(custom)
-depends=(gd wxgtk3+clang lua qt5-svg libcerf libcaca)
+depends=(gd wxwidgets-gtk3 lua qt5-svg libcerf libcaca)
 makedepends=(texlive-core emacs texlive-latexextra qt5-tools)
 source=(
   "https://downloads.sourceforge.net/sourceforge/gnuplot/gnuplot-${pkgver}.tar.gz"
@@ -55,7 +55,6 @@ build() {
   fi
 
   MAKEINFO=/usr/bin/makeinfo \
-    WX_CONFIG=/usr/bin/wx-config \
     ./configure \
     --prefix=/usr \
     --sysconfdir=/etc \

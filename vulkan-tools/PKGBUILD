@@ -1,5 +1,5 @@
 pkgname=vulkan-tools+clang
-pkgver=1.3.217
+pkgver=1.3.221
 pkgrel=1
 arch=(x86_64)
 url="https://www.khronos.org/vulkan/"
@@ -11,7 +11,7 @@ depends=('libx11' 'wayland' 'libvulkan.so')
 makedepends=('cmake' 'python' 'vulkan-headers' 'vulkan-icd-loader' 'glslang' 'spirv-tools')
 groups=('vulkan-devel')
 source=("vulkan-tools-${pkgver}.tar.gz::https://github.com/KhronosGroup/Vulkan-Tools/archive/v${pkgver}.tar.gz")
-sha256sums=('09e1ae38c4546ca709dae788562f25f2bdd9ed7f401bd9e03abc29233a552a0f')
+sha256sums=('6b79218a20f4894e34c7dc068c4a3b2030d9f87d75db2a1030654be2c220a7ab')
 
 _llvm=0
 

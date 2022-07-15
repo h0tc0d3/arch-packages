@@ -1,11 +1,11 @@
 pkgname=kicad+clang
 pkgver=6.0.6
-pkgrel=2
+pkgrel=3
 pkgdesc="Electronic schematic and printed circuit board (PCB) design tools"
 arch=('x86_64')
 url="http://kicad-pcb.org/"
 license=('GPL')
-depends=('wxgtk3+clang' 'python' 'boost-libs' 'glew' 'curl' 'glm' 'ngspice' 'opencascade')
+depends=('wxwidgets-gtk3' 'python-wxpython' 'python' 'boost-libs' 'glew' 'curl' 'glm' 'ngspice' 'opencascade')
 makedepends=('git' 'cmake' 'mesa' 'boost' 'swig')
 optdepends=(
   'kicad-library: for footprints, symbols and templates'
@@ -55,11 +55,9 @@ build() {
     -B build \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr \
-    -DCMAKE_INSTALL_LIBDIR=lib \
     -DKICAD_USE_OCC=ON \
-    -DKICAD_SCRIPTING_WXPYTHON=OFF \
+    -DKICAD_SCRIPTING_WXPYTHON=ON \
     -DKICAD_USE_EGL=ON \
-    -DwxWidgets_CONFIG_EXECUTABLE=/usr/bin/wx-config \
     -DKICAD_BUILD_I18N=ON \
     -DKICAD_I18N_UNIX_STRICT_PATH=ON \
     -DKICAD_BUILD_QA_TESTS=OFF \

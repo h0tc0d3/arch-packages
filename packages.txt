@@ -365,7 +365,7 @@ arrayfire
 -python-arrayfire
 xonotic
 krita
-wxgtk3
+wxwidgets-gtk3
 gnuplot
 kicad
 julia
