@@ -1,5 +1,5 @@
 pkgname=libnotify+clang
-pkgver=0.8.0
+pkgver=0.8.1
 pkgrel=1
 pkgdesc="Library for sending desktop notifications"
 arch=(x86_64)
@@ -9,7 +9,7 @@ provides=(libnotify.so 'libnotify' "libnotify=${pkgver}")
 conflicts=('libnotify')
 depends=(gdk-pixbuf2 libg{lib,object,io}-2.0.so libgdk_pixbuf-2.0.so)
 makedepends=(gtk3 gobject-introspection git meson docbook-xsl xmlto gtk-doc)
-_commit=359443f70f3e99019668c02942fb39cd9efb9425 # tags/0.8.0^0
+_commit=650f2f123e75469b85d81fbca66e17b744a7714b # tags/0.8.1^0
 source=("git+https://gitlab.gnome.org/GNOME/libnotify.git#commit=${_commit:?}")
 sha256sums=('SKIP')
 
