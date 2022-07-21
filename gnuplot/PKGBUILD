@@ -1,7 +1,7 @@
 pkgbase=gnuplot+clang
 pkgname=(gnuplot+clang gnuplot-demos+clang)
-pkgver=5.4.3
-pkgrel=8
+pkgver=5.4.4
+pkgrel=1
 pkgdesc='Plotting package which outputs to X11, PostScript, PNG, GIF, and others'
 arch=(x86_64)
 url='http://www.gnuplot.info'
@@ -12,7 +12,7 @@ source=(
   "https://downloads.sourceforge.net/sourceforge/gnuplot/gnuplot-${pkgver}.tar.gz"
   lua53_compat.patch
 )
-sha256sums=('51f89bbab90f96d3543f95235368d188eb1e26eda296912256abcd3535bd4d84'
+sha256sums=('372300b7867f5b3538b25fc5d0ac7734af6e3fe0d202b6db926e4369913f0902'
   'bfd8a61abbf4491c74225cb9fd252619d4fc29751838bcb4c0639ffe05a00695')
 
 _llvm=0

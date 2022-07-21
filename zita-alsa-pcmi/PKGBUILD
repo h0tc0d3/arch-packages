@@ -1,5 +1,5 @@
 pkgname=zita-alsa-pcmi+clang
-pkgver=0.4.0
+pkgver=0.5.1
 pkgrel=1
 pkgdesc="The successor of clalsadrv, provides easy access to ALSA PCM devices."
 arch=('x86_64')
@@ -9,8 +9,14 @@ depends=('gcc-libs' 'glibc' 'libasound.so')
 makedepends=('alsa-lib')
 provides=('zita-alsa-pcmi' "zita-alsa-pcmi=${pkgver}" 'libzita-alsa-pcmi.so')
 conflicts=('zita-alsa-pcmi')
-source=("https://kokkinizita.linuxaudio.org/linuxaudio/downloads/zita-alsa-pcmi-${pkgver}.tar.bz2")
-sha256sums=('bd8c9f360dfb541fb60e48a713baf1e22d41b2c74c19a0fe9f2d34e72f50f1c5')
+source=(
+  "https://kokkinizita.linuxaudio.org/linuxaudio/downloads/zita-alsa-pcmi-${pkgver}.tar.bz2"
+  zita-alsa-pcmi-0.5.1-apps_makefile.patch
+  zita-alsa-pcmi-0.5.1-source_makefile.patch
+)
+sha256sums=('cf200a68edb64a17b57bffb33e38b048778272d18b5589d3d2f5a01ce0f34b07'
+  '0e104b408a2d00d76c0a05a80a05985dd8e95739ea12d4e639ff324832a3e129'
+  '3bc945afb24c9ad8050e1d17c48886204df9f469785717c8c9902c9662ee7e02')
 
 _llvm=0
 
@@ -20,28 +26,12 @@ prepare() {
     _llvm=1
   fi
 
-  cd "${srcdir:?}/zita-alsa-pcmi-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/zita-alsa-pcmi-${pkgver} directory! Prepare Failed! \E[0m"
-    exit 1
-  )
-
-  # remove optimization
-  # call ldconfig in local context
-  sed -e '/native/d' \
-    -e 's/ldconfig/& -N $(DESTDIR)\/$(LIBDIR)/' \
-    -i source/Makefile
-  # fix use of BINDIR without preceeding DESTDIR
-  sed -e 's/\ $(BINDIR)/\ $(DESTDIR)$(BINDIR)/' \
-    -i apps/Makefile
+  patch -Np1 -d "zita-alsa-pcmi-${pkgver}" -i "${srcdir:?}/zita-alsa-pcmi-0.5.1-apps_makefile.patch"
+  patch -Np1 -d "zita-alsa-pcmi-${pkgver}" -i "${srcdir:?}/zita-alsa-pcmi-0.5.1-source_makefile.patch"
 
 }
 
 build() {
-
-  cd "${srcdir:?}/zita-alsa-pcmi-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/zita-alsa-pcmi-${pkgver} directory! Prepare Failed! \E[0m"
-    exit 1
-  )
 
   if [[ ${_llvm} -eq 1 ]]; then
 
@@ -51,31 +41,15 @@ build() {
 
   fi
 
-  # libs
-  make PREFIX="/usr" -C source
-  # create lib link for building apps
-  ln -sv "libzita-alsa-pcmi.so.${pkgver}" "source/libzita-alsa-pcmi.so"
-  CXXFLAGS+=" -I../source" \
-    LDFLAGS+=" -L../source" \
-    PREFIX="/usr" \
-    make -C apps
-
-  # cleanup link
-  rm -v source/libzita-alsa-pcmi.so
+  make -C "zita-alsa-pcmi-${pkgver}/source"
+  make -C "zita-alsa-pcmi-${pkgver}/apps"
 
 }
 
 package() {
 
-  cd "${srcdir:?}/zita-alsa-pcmi-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/zita-alsa-pcmi-${pkgver} directory! Package Failed! \E[0m"
-    exit 1
-  )
-
-  # libs
-  make -C source DESTDIR="${pkgdir:?}/" PREFIX=/usr SUFFIX="" install
-  install -vDm 644 {AUTHORS,README} -t "${pkgdir:?}/usr/share/doc/${pkgname}"
-  # apps
-  make -C apps DESTDIR="${pkgdir:?}/" PREFIX=/usr install
+  make -C "zita-alsa-pcmi-${pkgver}/source" DESTDIR="${pkgdir:?}/" PREFIX=/usr SUFFIX="" install
+  make -C "zita-alsa-pcmi-${pkgver}/apps" DESTDIR="${pkgdir:?}/" PREFIX=/usr install
+  install -vDm 644 "zita-alsa-pcmi-${pkgver}/"{AUTHORS,README} -t "${pkgdir:?}/usr/share/doc/${pkgname}/"
 
 }

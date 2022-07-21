@@ -1,6 +1,6 @@
 pkgname=telegram-desktop+clang
-pkgver=3.7.3
-pkgrel=1
+pkgver=4.0.2
+pkgrel=4
 pkgdesc='Official Telegram Desktop client'
 arch=('x86_64')
 url="https://desktop.telegram.org/"
@@ -20,7 +20,7 @@ source=(
   "https://github.com/telegramdesktop/tdesktop/releases/download/v${pkgver}/tdesktop-${pkgver}-full.tar.gz"
   fix-build-with-clang.patch
 )
-sha256sums=('9735f30610ff62b01cbdb0b945d32c494cec245961023c9860d9dd5268b9fe1e'
+sha256sums=('44659a7b2db3eff2e5c42e372dac14d1b03ffae19e005007ce580719615b59b1'
   '7b67f1a70461a00b45190ab1539bece35af8c2a8de58c7cf4330b5ef0dbc19ab')
 
 _llvm=0
@@ -31,7 +31,7 @@ prepare() {
     _llvm=1
   fi
 
-  patch -d "${srcdir:?}/tdesktop-${pkgver}-full" -Np1 -i "${srcdir:?}/fix-build-with-clang.patch"
+  rm -rf "${srcdir:?}/tdesktop-${pkgver}-full/Telegram/ThirdParty/libtgvoip/webrtc_dsp/absl"
 
 }
 
@@ -39,15 +39,15 @@ build() {
 
   if [[ ${_llvm} -eq 1 ]]; then
 
-    CFLAGS="${CFLAGS} -flto=thin"
-    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    #CFLAGS="${CFLAGS} -flto=thin"
+    #CXXFLAGS="${CXXFLAGS} -flto=thin"
     LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
 
   CXXFLAGS="${CXXFLAGS} -Wp,-U_GLIBCXX_ASSERTIONS"
 
-  cmake -B build -S tdesktop-${pkgver}-full \
+  CXX=g++ cmake -B build -S tdesktop-${pkgver}-full \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_BUILD_TYPE=Release \
     -DTDESKTOP_API_ID=611335 \
