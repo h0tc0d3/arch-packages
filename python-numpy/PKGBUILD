@@ -1,5 +1,5 @@
 pkgname=python-numpy+clang
-pkgver=1.23.0
+pkgver=1.23.1
 pkgrel=1
 pkgdesc="Scientific tools for Python"
 arch=('x86_64')
@@ -15,7 +15,7 @@ source=(
   "https://github.com/numpy/numpy/archive/v${pkgver}/python-numpy-${pkgver}.tar.gz"
   site.cfg
 )
-sha256sums=('58868ea9d07ed9394106b343ef0156c74e5aecbb9ea5bd01dbffbfcf471dc768'
+sha256sums=('9758c4b29ac20e84056a66109ae18401e0cc59a880590a9055aac6fd6c98aa91'
   'd517483294f2513295cc3d203a308676ade39b1878b8a742009d90cba3d793d5')
 
 _lld=0

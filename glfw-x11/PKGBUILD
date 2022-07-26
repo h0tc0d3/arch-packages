@@ -1,6 +1,6 @@
 pkgbase=glfw+clang
 pkgname=('glfw-x11+clang' 'glfw-wayland+clang' 'glfw-doc+clang')
-pkgver=3.3.7
+pkgver=3.3.8
 pkgrel=1
 arch=('x86_64')
 url="https://www.glfw.org/"
@@ -9,7 +9,7 @@ makedepends=('mesa' 'cmake' 'doxygen' 'vulkan-headers' 'vulkan-icd-loader'
   'extra-cmake-modules' 'wayland-protocols' 'libxi' 'libxrandr'
   'libxcursor' 'libxkbcommon' 'libxinerama')
 source=("glfw-${pkgver}.tar.gz::https://github.com/glfw/glfw/archive/${pkgver}.tar.gz")
-sha256sums=('fd21a5f65bcc0fc3c76e0f8865776e852de09ef6fbc3620e09ce96d2b2807e04')
+sha256sums=('f30f42e05f11e5fc62483e513b0488d5bceeab7d9c5da0ffe2252ad81816c713')
 
 _llvm=0
 
