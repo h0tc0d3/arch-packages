@@ -1,6 +1,6 @@
 pkgname=xonotic+clang
 pkgver=0.8.5
-pkgrel=1
+pkgrel=2
 pkgdesc="A free, fast-paced crossplatform first-person shooter"
 arch=('x86_64')
 url="https://xonotic.org"
@@ -25,6 +25,8 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=1
   fi
+
+  sed -i 's#-O3 -fno-strict-aliasing ##' Xonotic/source/darkplaces/makefile.inc
 
 }
 

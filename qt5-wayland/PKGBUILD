@@ -1,6 +1,6 @@
 pkgname=qt5-wayland+clang
 pkgver=5.15.5+kde+r38
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 url='https://www.qt.io'
 license=('GPL3' 'LGPL3' 'FDL' 'custom')
@@ -36,6 +36,9 @@ prepare() {
   if [[ ! -d build ]]; then
     mkdir -p build
   fi
+
+  cd qtwayland &&
+    git cherry-pick -n de46b3c6d1bef4b8f64c7db7069c8fd33ef23ed9 # Keep toplevel windows in the top left corner of the screen
 
 }
 

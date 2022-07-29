@@ -1,5 +1,5 @@
 pkgname=libuv+clang
-pkgver=1.43.0
+pkgver=1.44.2
 pkgrel=1
 pkgdesc="Multi-platform support library with a focus on asynchronous I/O"
 arch=('x86_64')
@@ -10,12 +10,13 @@ conflicts=('libuv')
 depends=('glibc' 'libnsl')
 makedepends=('python-sphinx')
 source=("https://dist.libuv.org/dist/v${pkgver}/libuv-v${pkgver}.tar.gz"{,.sign})
-sha256sums=('90d72bb7ae18de2519d0cac70eb89c319351146b90cd3f91303a492707e693a4'
+sha256sums=('ccfcdc968c55673c6526d8270a9c8655a806ea92468afcbcabc2b16040f03cb4'
   'SKIP')
 # PGP key IDs are available from https://github.com/libuv/libuv/blob/v1.x/MAINTAINERS.md
 validpgpkeys=(
   '57353E0DBDAAA7E839B66A1AFF47D5E4AD8B4FDC' # Colin Ihrig (@cjihrig)
   'AEAD0A4B686767751A0E4AEF34A25FB128246514' # Jameson Nash (@vtjnash)
+  'CFBB9CA9A5BEAFD70E2B3C5A79A67C55A3679C8B' # Jameson Nash (@vtjnash)
 )
 
 _llvm=0
@@ -25,6 +26,9 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=1
   fi
+
+  # Disable tests that fail on build.a.o (but pass locally)
+  sed -e '/udp_multicast_join/d' -i "libuv-v${pkgver}/test/test-list.h"
 
 }
 

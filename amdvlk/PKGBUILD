@@ -1,5 +1,5 @@
 pkgname=amdvlk+clang
-pkgver=2022.Q2.3
+pkgver=2022.Q3.1
 pkgrel=1
 pkgdesc="AMD's standalone Vulkan driver"
 arch=(x86_64)
@@ -12,12 +12,12 @@ makedepends=('python' 'wayland' 'libxrandr' 'xorg-server-devel'
   'spirv-headers')
 # Please use a script generate-source.py for reduce git requests
 source=(
-  "amdvlk/xgl::git+https://github.com/GPUOpen-Drivers/xgl#commit=a9a73115ee5c2d8c717ea39fc31a9d2ae1de8044"
-  "amdvlk/pal::git+https://github.com/GPUOpen-Drivers/pal#commit=a40241a1e6f5970a9313efe686a79c0a429ea5eb"
-  "amdvlk/llpc::git+https://github.com/GPUOpen-Drivers/llpc#commit=61aabddf65ae7395ec934bce96fa4b7dd0e8880c"
-  "amdvlk/spvgen::git+https://github.com/GPUOpen-Drivers/spvgen#commit=eaa8c1dafbdb8db174b30919fcba424579a8c991"
-  "amdvlk/AMDVLK::git+https://github.com/GPUOpen-Drivers/AMDVLK#commit=cab8f8631d99240a6503872083bd544fe85f628f"
-  "amdvlk/llvm-project::git+https://github.com/GPUOpen-Drivers/llvm-project#commit=ff4dc0eccd74424c9352f8d8ee80f3b4913df35f"
+  "amdvlk/xgl::git+https://github.com/GPUOpen-Drivers/xgl#commit=394cbffcf388482354c7874a841a30d386d9abc8"
+  "amdvlk/pal::git+https://github.com/GPUOpen-Drivers/pal#commit=8a99ffaa533ee561af7075d413f6052ea37a1a04"
+  "amdvlk/llpc::git+https://github.com/GPUOpen-Drivers/llpc#commit=d4763a9dcab538955bc5ad4b5c6e0139d8fe8949"
+  "amdvlk/spvgen::git+https://github.com/GPUOpen-Drivers/spvgen#commit=3b61d0ce836d3832e19931be198f6f619206de4c"
+  "amdvlk/AMDVLK::git+https://github.com/GPUOpen-Drivers/AMDVLK#commit=f5f3eced60fd0ba2125fb2b3de8be0f892fbf2dc"
+  "amdvlk/llvm-project::git+https://github.com/GPUOpen-Drivers/llvm-project#commit=48f1931b2b7afd7e0800fa084b7c0c2176dabfd4"
   "amdvlk/MetroHash::git+https://github.com/GPUOpen-Drivers/MetroHash#commit=18893fb28601bb9af1154cd1a671a121fff6d8d3"
   "amdvlk/CWPack::git+https://github.com/GPUOpen-Drivers/CWPack#commit=4f8cf0584442a91d829d269158567d7ed926f026"
 )
