@@ -11,7 +11,7 @@ pkgname=(
   'usbip+clang'
   'x86_energy_perf_policy+clang'
 )
-pkgver=5.18.8
+pkgver=5.19.0
 pkgrel=1
 license=('GPL2')
 arch=('x86_64')
@@ -52,7 +52,7 @@ validpgpkeys=(
   'ABAF11C65A2970B130ABE3C479BE3E4300411886' # Linus Torvalds
   '647F28654894E3BD457199BE38DBBDC86092693E' # Greg Kroah-Hartman
 )
-sha256sums=('0823eb05dba001cf9e2560a76dfa4d81c854e1dcfbfb25cc73ba64cd7e900a36'
+sha256sums=('ff240c579b9ee1affc318917de07394fc1c3bb49dac25ec1287370c2e15005a8'
   'SKIP'
   '4fa509949d6863d001075fa3e8671eff2599c046d20c98bb4a70778595cd1c3f'
   'b692f4859ed3fd9831a058a450a84d8c409bf7e3e45aac1c2896a14bb83f3d7a'

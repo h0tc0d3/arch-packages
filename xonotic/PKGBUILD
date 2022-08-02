@@ -26,7 +26,7 @@ prepare() {
     _llvm=1
   fi
 
-  sed -i 's#-O3 -fno-strict-aliasing ##' Xonotic/source/darkplaces/makefile.inc
+  sed -i 's#-O3 -fno-strict-aliasing#-O2 -fno-strict-aliasing#' Xonotic/source/darkplaces/makefile.inc
 
 }
 

@@ -1,5 +1,5 @@
 pkgname=linux-api-headers
-pkgver=5.18.8
+pkgver=5.19.0
 pkgrel=1
 pkgdesc='Kernel headers sanitized for use in userspace'
 arch=(any)
@@ -12,7 +12,7 @@ else
   _pkgver=${pkgver}
 fi
 source=("https://www.kernel.org/pub/linux/kernel/v${pkgver:0:1}.x/linux-${_pkgver}.tar."{xz,sign})
-sha256sums=('0823eb05dba001cf9e2560a76dfa4d81c854e1dcfbfb25cc73ba64cd7e900a36'
+sha256sums=('ff240c579b9ee1affc318917de07394fc1c3bb49dac25ec1287370c2e15005a8'
   'SKIP')
 validpgpkeys=(
   'ABAF11C65A2970B130ABE3C479BE3E4300411886' # Linus Torvalds
