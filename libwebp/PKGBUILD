@@ -1,32 +1,21 @@
 pkgname=libwebp+clang
-pkgver=1.2.3
+pkgver=1.2.4
 pkgrel=1
 pkgdesc="WebP library and conversion tools"
 arch=(x86_64)
 url="https://developers.google.com/speed/webp/"
 license=(BSD)
-provides=("libwebp" "libwebp=${pkgver}")
+provides=("libwebp" "libwebp=${pkgver}" libwebp{,decoder,demux,mux}.so)
 conflicts=("libwebp")
 depends=(libpng libjpeg libtiff giflib)
 makedepends=(freeglut mesa glu git)
 optdepends=('freeglut: vwebp viewer')
-_commit=3c4a0fbfbcc606193f7e943b7e50af4077ce1a6c # tags/v1.2.3^0
-source=("git+https://chromium.googlesource.com/webm/libwebp#commit=${_commit}")
-sha256sums=('SKIP')
+source=("https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-${pkgver}.tar.gz"{,.asc})
+sha256sums=('7bf5a8a28cc69bcfa8cb214f2c3095703c6b73ac5fba4d5480c205331d9494df'
+  'SKIP')
 validpgpkeys=('6B0E6B70976DE303EDF2F601F9C3D6BDB8232B5D') # WebP release signing key
 
 _llvm=0
-
-pkgver() {
-
-  cd "${srcdir:?}/libwebp" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libwebp directory! PkgVer Failed! \E[0m"
-    exit 1
-  )
-
-  git describe --tags | sed 's/^v//;s/-/+/g'
-
-}
 
 prepare() {
 
@@ -34,7 +23,7 @@ prepare() {
     _llvm=1
   fi
 
-  cd "${srcdir:?}/libwebp" || (
+  cd "${srcdir:?}/libwebp-${pkgver}" || (
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/libwebp directory! Prepare Failed! \E[0m"
     exit 1
   )
@@ -53,7 +42,7 @@ build() {
 
   fi
 
-  cd "${srcdir:?}/libwebp" || (
+  cd "${srcdir:?}/libwebp-${pkgver}" || (
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/libwebp directory! Build Failed! \E[0m"
     exit 1
   )
@@ -70,24 +59,14 @@ build() {
 
 check() {
 
-  cd "${srcdir:?}/libwebp" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libwebp directory! Check Failed! \E[0m"
-    exit 1
-  )
-
-  make check
+  make check -C "libwebp-${pkgver}"
 
 }
 
 package() {
 
-  cd "${srcdir:?}/libwebp" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libwebp directory! Package Failed! \E[0m"
-    exit 1
-  )
+  make DESTDIR="${pkgdir:?}" install -C "libwebp-${pkgver}"
 
-  make DESTDIR="${pkgdir:?}" install
-
-  install -Dm644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/COPYING"
+  install -Dm644 "libwebp-${pkgver}/COPYING" "${pkgdir:?}/usr/share/licenses/${pkgname}/COPYING"
 
 }
