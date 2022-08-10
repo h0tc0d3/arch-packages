@@ -299,6 +299,7 @@ zita-resampler
 zita-alsa-pcmi
 zita-ajbridge
 jack2
+gnu-efi
 systemd
 dracut
 hidapi

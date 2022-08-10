@@ -1,5 +1,5 @@
 pkgname=openblas+clang
-pkgver=0.3.20
+pkgver=0.3.21
 pkgrel=1
 pkgdesc="An optimized BLAS library based on GotoBLAS2 1.13 BSD"
 arch=('x86_64')
@@ -12,7 +12,7 @@ conflicts=('blas' 'openblas')
 source=(
   "openblas-${pkgver}.tar.gz::https://github.com/xianyi/OpenBLAS/archive/v${pkgver}.tar.gz"
 )
-sha256sums=('8495c9affc536253648e942908e88e097f2ec7753ede55aca52e5dead3029e3c')
+sha256sums=('f36ba3d7a60e7c8bcc54cd9aaa9b1223dd42eaf02c811791c37e8ca707c241ca')
 
 _target=''
 

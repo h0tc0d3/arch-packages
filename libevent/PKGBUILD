@@ -1,6 +1,6 @@
 pkgname=libevent+clang
 pkgver=2.1.12
-pkgrel=1
+pkgrel=2
 pkgdesc="An event notification library"
 arch=('x86_64')
 url="https://libevent.org/"
