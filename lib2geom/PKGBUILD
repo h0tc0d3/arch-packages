@@ -1,14 +1,14 @@
 pkgname=lib2geom+clang
 pkgver=1.2
-pkgrel=1
+pkgrel=2
 pkgdesc='Easy to use 2D geometry library in C++'
 arch=('x86_64')
 provides=("lib2geom" "lib2geom=${pkgver}")
 conflicts=("lib2geom")
 url='https://gitlab.com/inkscape/lib2geom'
 license=('GPL')
-depends=('glib2' 'gsl' 'double-conversion' 'cairo' 'ragel' 'gtest')
-makedepends=('cmake' 'boost')
+depends=('glib2' 'gsl' 'double-conversion' 'cairo' 'ragel')
+makedepends=('cmake' 'boost' 'gtest')
 source=("https://gitlab.com/inkscape/lib2geom/-/archive/${pkgver}/lib2geom-${pkgver}.tar.bz2")
 sha256sums=('c32e384831b62af33c42eca65fa205b223c5da14e07602dc005ccf7e1c3cb1b1')
 
@@ -24,13 +24,13 @@ prepare() {
 
 build() {
 
-  if [[ ${_llvm} -eq 1 ]]; then
+  #if [[ ${_llvm} -eq 1 ]]; then
 
-    CFLAGS="${CFLAGS} -flto=thin"
-    CXXFLAGS="${CXXFLAGS} -flto=thin"
-    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+    #CFLAGS="${CFLAGS} -flto=thin"
+    #CXXFLAGS="${CXXFLAGS} -flto=thin"
+    #LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
-  fi
+  #fi
 
   cmake -B build -S lib2geom-${pkgver} \
     -DCMAKE_INSTALL_PREFIX=/usr \
@@ -39,6 +39,12 @@ build() {
     -DCMAKE_BUILD_TYPE=Release
 
   cmake --build build
+
+}
+
+check() {
+
+  make test -C build
 
 }
 

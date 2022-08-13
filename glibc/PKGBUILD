@@ -1,14 +1,14 @@
 pkgbase=glibc
 pkgname=(glibc lib32-glibc)
 pkgver=2.36
-pkgrel=1
+pkgrel=2
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
 makedepends=(git gd lib32-gcc-libs gcc-libs python)
 optdepends=('perl: for mtrace')
 options=(!strip staticlibs)
-_commit=33f1b4c1452b33991e670f636ebe98b90a405e10
+_commit=302bc33bc53c787da6e74162a7092e9c0fb964a8
 source=("git+https://sourceware.org/git/glibc.git#commit=${_commit}"
   locale-gen
   sdt.h sdt-config.h
@@ -144,6 +144,9 @@ build() {
   echo "CFLAGS += -Wp,-D_FORTIFY_SOURCE=2" >>configparms
   make
 
+  # (https://sourceware.org/glibc/wiki/Proposals/C.UTF-8, FS#74864)-
+  elf/ld.so --library-path "${PWD}" locale/localedef -c -f ../glibc/localedata/charmaps/UTF-8 -i ../glibc/localedata/locales/C ../C.UTF-8/
+
 }
 
 disable_test() {
@@ -230,31 +233,19 @@ package_glibc() {
 #  Uncomment the ones you need.
 #
 EOF
+
   sed -e '1,3d' -e 's|/| |g' -e 's|\\| |g' -e 's|^|#|g' \
     "${srcdir:?}/glibc/localedata/SUPPORTED" >>"${pkgdir:?}/etc/locale.gen"
 
-  if check_option 'debug' n; then
-
-    find "${pkgdir:?}"/usr/bin -type f -executable -exec strip ${STRIP_BINARIES} {} + 2>/dev/null || true
-    find "${pkgdir:?}"/usr/lib -name '*.a' -type f -exec strip ${STRIP_STATIC} {} + 2>/dev/null || true
-
-    # Do not strip these for gdb and valgrind functionality, but strip the rest
-    find "${pkgdir:?}"/usr/lib \
-      -not -name 'ld-*.so' \
-      -not -name 'libc-*.so' \
-      -not -name 'libpthread-*.so' \
-      -not -name 'libthread_db-*.so' \
-      -name '*-*.so' -type f -exec strip ${STRIP_SHARED} {} + 2>/dev/null || true
-
-  fi
+  # install C.UTF-8 so that it is always available
+  install -dm755 "${pkgdir:?}/usr/lib/locale"
+  cp -r "${srcdir:?}/C.UTF-8" -t "${pkgdir:?}/usr/lib/locale"
+  sed -i '/#C\.UTF-8 /d' "${pkgdir:?}/etc/locale.gen"
 
   # Provide tracing probes to libstdc++ for exceptions, possibly for other
   # libraries too. Useful for gdb's catch command.
   install -Dm644 "${srcdir:?}/sdt.h" "${pkgdir:?}/usr/include/sys/sdt.h"
   install -Dm644 "${srcdir:?}/sdt-config.h" "${pkgdir:?}/usr/include/sys/sdt-config.h"
-
-  # Provided by libxcrypt; keep the old shared library for backwards compatibility
-  rm -f "${pkgdir:?}/usr/include/crypt.h" "${pkgdir:?}/usr/lib/libcrypt."{a,so}
 
 }
 
@@ -282,18 +273,5 @@ package_lib32-glibc() {
 
   # Symlink /usr/lib32/locale to /usr/lib/locale
   ln -s ../lib/locale "${pkgdir:?}/usr/lib32/locale"
-
-  if check_option 'debug' n; then
-    find "${pkgdir:?}"/usr/lib32 -name '*.a' -type f -exec strip ${STRIP_STATIC} {} + 2>/dev/null || true
-    find "${pkgdir:?}"/usr/lib32 \
-      -not -name 'ld-*.so' \
-      -not -name 'libc-*.so' \
-      -not -name 'libpthread-*.so' \
-      -not -name 'libthread_db-*.so' \
-      -name '*-*.so' -type f -exec strip ${STRIP_SHARED} {} + 2>/dev/null || true
-  fi
-
-  # Provided by lib32-libxcrypt; keep the old shared library for backwards compatibility
-  rm -f "${pkgdir:?}/usr/lib32/libcrypt."{a,so}
 
 }

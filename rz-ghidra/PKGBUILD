@@ -1,6 +1,6 @@
 pkgname=rz-ghidra+clang
-pkgver=0.3.0
-pkgrel=5
+pkgver=0.4.0
+pkgrel=3
 pkgdesc='Deep ghidra decompiler integration for rizin and rz-cutter'
 url='https://github.com/rizinorg/rz-ghidra'
 arch=('x86_64')

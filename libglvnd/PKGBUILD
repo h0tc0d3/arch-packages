@@ -1,13 +1,14 @@
 pkgname=libglvnd+clang
 pkgver=1.4.0
-pkgrel=2
+pkgrel=3
 pkgdesc="The GL Vendor-Neutral Dispatch library"
 arch=('x86_64')
 url="https://github.com/NVIDIA/libglvnd"
 license=('custom:BSD-like')
 depends=('libxext' 'mesa' 'opengl-driver')
 makedepends=('libxext' 'libx11' 'xorgproto' 'python' 'meson')
-provides=('libglvnd' "libglvnd=${pkgver}" 'libgl' 'libegl' 'libgles')
+provides=('libglvnd' "libglvnd=${pkgver}" 'libgl' 'libegl' 'libgles'
+  libEGL.so libGL.so libGLESv2.so libGLX.so libGLdispatch.so libOpenGL.so)
 conflicts=('libglvnd')
 source=("https://gitlab.freedesktop.org/glvnd/libglvnd/-/archive/v${pkgver}/libglvnd-v${pkgver}.tar.gz"
   LICENSE)

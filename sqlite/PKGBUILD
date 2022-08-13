@@ -4,7 +4,7 @@ _srcver=3390200
 _docver=${_srcver}
 #_docver=3390200
 pkgver=3.39.2
-pkgrel=1
+pkgrel=2
 pkgdesc="A C library that implements an SQL database engine"
 arch=('x86_64')
 license=('custom:Public Domain')
@@ -89,7 +89,7 @@ package_sqlite+clang() {
 
   pkgdesc="A C library that implements an SQL database engine"
   depends=('readline' 'zlib')
-  provides=("sqlite3=${pkgver}" "sqlite=${pkgver}")
+  provides=("sqlite3=${pkgver}" "sqlite=${pkgver}" 'libsqlite3.so')
   replaces=("sqlite3")
   conflicts=("sqlite")
 
