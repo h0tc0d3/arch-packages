@@ -1,6 +1,6 @@
 pkgname=libva+clang
 pkgver=2.15.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Video Acceleration (VA) API for Linux'
 arch=(x86_64)
 url=https://01.org/linuxmedia/vaapi
@@ -56,13 +56,13 @@ build() {
     -D b_lto=true ${_extra_lto_flag} \
     -D b_pie=true
 
-  ninja -C build
+  meson compile -C build
 
 }
 
 package() {
 
-  DESTDIR="${pkgdir:?}" meson install -C build
+  meson install -C build --destdir "${pkgdir:?}"
 
   install -Dm 644 libva/COPYING -t "${pkgdir:?}/usr/share/licenses/libva"
 

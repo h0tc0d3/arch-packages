@@ -1,20 +1,23 @@
 pkgname=glew+clang
 pkgver=2.2.0
-pkgrel=3
+pkgrel=4
 pkgdesc="The OpenGL Extension Wrangler Library"
 arch=('x86_64')
 url="https://github.com/nigels-com/glew"
 license=('BSD' 'MIT' 'GPL')
-depends=('libxmu' 'libxi' 'glu')
+depends=('glibc' 'libegl' 'libgl')
+optdepends=('libx11: for glxewinfo and visualinfo')
 provides=('libGLEW.so' 'glew' "glew=${pkgver}")
 conflicts=('glew')
 # https://sourceforge.net/projects/glew/files/glew/
 source=(
   "https://downloads.sourceforge.net/glew/glew-${pkgver}.tgz"
   glew-install.patch
+  egl+glx.patch
 )
 sha256sums=('d4fc82893cfb00109578d0a1a2337fb8ca335b3ceccf97b97e5cc7f08e4353e1'
-  'ef864c1e673f6a8fab4d3f5bc3c3eb9596cd225c24765de9dff2064e72f350d5')
+  'ef864c1e673f6a8fab4d3f5bc3c3eb9596cd225c24765de9dff2064e72f350d5'
+  '206dc53e185aa2bd64b21107dcaafccb3207a8185ccd1c02a87ed9783c25cc61')
 
 _llvm=0
 
@@ -25,6 +28,10 @@ prepare() {
   fi
 
   patch -d "glew-${pkgver}" -Np1 -i "${srcdir:?}/glew-install.patch"
+  patch -d "glew-${pkgver}" -Np1 -i "${srcdir:?}/egl+glx.patch"
+
+  sed -i 's|lib64|lib|' "glew-${pkgver}/config/Makefile.linux"
+  sed -i '/^.PHONY: .*\.pc$/d' "glew-${pkgver}/Makefile"
 
 }
 
@@ -38,18 +45,31 @@ build() {
 
   fi
 
-  make \
-    STRIP= \
-    LIBDIR=/usr/lib \
-    -C "glew-${pkgver}"
+  cd "${srcdir:?}/glew-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/glew-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  make STRIP= glew.bin
+  mv bin/glewinfo bin/glxewinfo
+  rm glew.pc
+
+  make STRIP= SYSTEM=linux-egl glew.lib.shared bin/glewinfo
+  mv bin/glewinfo bin/eglewinfo
 
 }
 
 package() {
 
-  make install.all DESTDIR="${pkgdir:?}" \
-    LIBDIR=/usr/lib -C "glew-${pkgver}"
+  cd "${srcdir:?}/glew-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/glew-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
 
-  install -D -m644 "glew-${pkgver}/LICENSE.txt" "${pkgdir:?}/usr/share/licenses/glew"
+  make GLEW_DEST="${pkgdir:?}/usr" STRIP= SYSTEM=linux-egl install
+  install -D -m755 -t "${pkgdir:?}/usr/bin" bin/eglewinfo bin/glxewinfo bin/visualinfo
+  ln -s eglewinfo "${pkgdir:?}/usr/bin/glewinfo"
+
+  install -D -m644 LICENSE.txt "${pkgdir:?}/usr/share/licenses/glew"
 
 }
