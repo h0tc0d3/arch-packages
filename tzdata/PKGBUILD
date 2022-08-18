@@ -1,7 +1,7 @@
 pkgname=tzdata+clang
-pkgver=2022b
-_tzcode=2022b
-_tzdata=2022b
+pkgver=2022c
+_tzcode=2022c
+_tzdata=2022c
 pkgrel=1
 pkgdesc="Sources for time zone and daylight saving time data"
 arch=('x86_64')
@@ -13,9 +13,9 @@ options=('!emptydirs')
 source=(
   "https://www.iana.org/time-zones/repository/releases/tzcode${_tzcode}.tar.gz"{,.asc}
   "https://www.iana.org/time-zones/repository/releases/tzdata${_tzdata}.tar.gz"{,.asc})
-sha256sums=('bab20d943e59a3218435f48d868a4e552f18d6d7f3dd128660c5660c80b8a05f'
+sha256sums=('3e7ce1f3620cc0481907c7e074d69910793285bffe0ca331ef1a6d1ae3ea90cc'
   'SKIP'
-  'f590eaf04a395245426c2be4fae71c143aea5cebc11088b7a0a5704461df397d'
+  '6974f4e348bf2323274b56dff9e7500247e3159eaa4b485dfa0cd66e75c14bfe'
   'SKIP')
 validpgpkeys=('7E3792A9D8ACF7D633BC1588ED97E90E62AA7E34') # Paul Eggert <eggert@cs.ucla.edu>
 
