@@ -26,7 +26,8 @@ def main():
         stream = urllib.request.urlopen(fetch_url)
 
         root = xml.fromstring(stream.read())
-        git_url = root.find('remote').get('fetch')
+        #git_url = root.find('remote').get('fetch')
+        git_url = 'https://github.com/GPUOpen-Drivers'
 
         for repository in root.iter('project'):
             name = repository.get('name')
