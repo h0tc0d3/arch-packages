@@ -1,6 +1,6 @@
 pkgname=ffmpeg+clang
-pkgver=5.0.1
-pkgrel=5
+pkgver=5.1
+pkgrel=1
 epoch=2
 pkgdesc='Complete solution to record, convert and stream audio and video'
 arch=(x86_64)
@@ -90,15 +90,13 @@ provides=(
   libswscale.so
 )
 conflicts=('ffmpeg')
-_commit=240d82f26eef10461c8b78b09a0db76c464deea8
+_commit=6ee1996721710a6b15d5664446964d7b835ff3a6
 source=(
   "git+https://git.ffmpeg.org/ffmpeg.git#commit=${_commit}"
-  ffmpeg-vmaf2.x.patch
   add-av_stream_get_first_dts-for-chromium.patch
 )
 sha256sums=('SKIP'
-  '42bd572442a4eba4e9559953c72f9e980b78286ab288ac01e659be39d8bc7298'
-  '91973c465f01446a999f278f0c2a3763304994dba1ac35de0e4c72f12f39409e')
+  '57e26caced5a1382cb639235f9555fc50e45e7bf8333f7c9ae3d49b3241d3f77')
 
 _llvm=0
 
@@ -113,8 +111,7 @@ prepare() {
     exit 1
   )
 
-  git cherry-pick -n 988f2e9eb063db7c1a678729f58aab6eba59a55b                # fix nvenc on older gpus
-  patch -Np1 -i "${srcdir:?}/ffmpeg-vmaf2.x.patch"                           # vmaf 2.x support
+  git cherry-pick -n e0723b7e4e22492275d476fcd30d759e1198bc5b                # remove default IPFS gateway
   patch -Np1 -i "${srcdir:?}/add-av_stream_get_first_dts-for-chromium.patch" # https://crbug.com/1251779
 
 }

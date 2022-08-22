@@ -2,10 +2,10 @@
 # NOTE: libtool requires rebuilt with each new gcc version
 
 pkgname=(gcc gcc-libs gcc-fortran gcc-objc gcc-ada gcc-go lib32-gcc-libs libgccjit)
-pkgver=12.1.1
+pkgver=12.2.1
 _majorver=${pkgver%%.*}
 _islver=0.24
-pkgrel=3
+pkgrel=1
 pkgdesc='The GNU Compiler Collection'
 arch=(x86_64)
 license=(GPL LGPL FDL custom)
@@ -17,7 +17,7 @@ if [[ -z ${CHOST} ]]; then
   CHOST=x86_64-pc-linux-gnu
 fi
 _libdir="usr/lib/gcc/${CHOST:?}/${pkgver%%+*}"
-_commit=5f583aa1c56af983ca8f2b8bc57122c4be5a6e55
+_commit=55b6abd9f27c67754e1ff2549e7ea6d471493082
 source=(
   "git://gcc.gnu.org/git/gcc.git#commit=${_commit}"
   "https://libisl.sourceforge.io/isl-${_islver}.tar.xz"

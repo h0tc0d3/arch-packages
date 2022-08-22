@@ -1,22 +1,23 @@
 pkgname=libxslt+clang
-pkgver=1.1.35
+pkgver=1.1.36
 pkgrel=1
 pkgdesc="XML stylesheet transformation library"
 url="https://gitlab.gnome.org/GNOME/libxslt/-/wikis/home"
 arch=(x86_64)
-license=(custom)
+license=(custom:MIT)
+depends=(libgcrypt libxml2 xz)
 provides=(lib{,e}xslt.so 'libxslt' "libxslt=${pkgver}")
 conflicts=('libxslt')
 makedepends=(git python)
 checkdepends=(docbook-xml)
 optdepends=('python: Python bindings')
-_commit=50af4e65da712ceb59f98a7feeeab2ddc3324ab9 # tags/v1.1.35^0
+_commit=bcd17763a9f371ec5c9bdce0ffa2f2eb3ef74c43 # tags/v1.1.36^0
 source=(
   "git+https://gitlab.gnome.org/GNOME/libxslt.git#commit=${_commit}"
   0001-Make-generate-id-deterministic.patch
 )
 sha256sums=('SKIP'
-            '0b1dc7ac703e347eace1b92f7ef48735a8b6013b8e5b9620a9ca882d8bf46a74')
+  'e83c20f9a4f0c95716410c127ad10d6cde814c25d183de0d319f5dda529b7a6e')
 
 _llvm=0
 
@@ -91,6 +92,6 @@ package() {
   )
 
   make DESTDIR="${pkgdir:?}" install
-  install -Dm644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/LICENSE"
+  install -Dm644 Copyright "${pkgdir:?}/usr/share/licenses/${pkgname}/LICENSE"
 
 }
