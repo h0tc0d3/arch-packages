@@ -1,5 +1,5 @@
 pkgname=dolphin+clang
-pkgver=22.04.3
+pkgver=22.08.0
 pkgrel=1
 pkgdesc='KDE File Manager'
 arch=(x86_64)
@@ -16,7 +16,7 @@ source=(
   "https://download.kde.org/stable/release-service/${pkgver}/src/dolphin-${pkgver}.tar.xz"{,.sig}
 )
 
-sha256sums=('8e573e1df98b5b8f134374da641c1f289a00d1b6aabf65ecf3b2a6a854b22a1e'
+sha256sums=('03458f878b70d82f0a55396bb0bfe7409be867e77d31fb42b310888bd1f16682'
   'SKIP')
 
 validpgpkeys=(
