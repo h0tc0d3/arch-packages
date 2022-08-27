@@ -1,5 +1,5 @@
 pkgname=ndctl+clang
-pkgver=73
+pkgver=74
 pkgrel=1
 pkgdesc='Utility library for managing the libnvdimm (non-volatile memory device) sub-system in the Linux kernel'
 arch=('x86_64')
@@ -10,7 +10,7 @@ conflicts=(ndctl)
 depends=('iniparser' 'json-c' 'keyutils' 'kmod' 'systemd-libs' 'util-linux-libs')
 makedepends=('meson' 'asciidoctor' 'bash-completion' 'systemd' 'xmlto')
 source=("https://github.com/pmem/ndctl/archive/v${pkgver}/ndctl-${pkgver}.tar.gz")
-sha256sums=('97f85b897378d293da75f91c2f238c0a45e1626dc2c2367e7a8d78378ee0f73b')
+sha256sums=('b3be5ab6103fc4f462ac53ed607e3e91f90e0c9eee56ba757280fcad648cbd92')
 
 _extra_lto_flag=""
 
