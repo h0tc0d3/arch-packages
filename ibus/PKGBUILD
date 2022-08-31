@@ -1,7 +1,7 @@
 pkgbase=ibus+clang
 pkgname=(ibus+clang libibus+clang)
-pkgver=1.5.26
-pkgrel=2
+pkgver=1.5.27
+pkgrel=1
 pkgdesc="Next Generation Input Bus for Linux"
 arch=('x86_64')
 url="https://github.com/ibus/ibus/wiki"
@@ -9,11 +9,10 @@ license=('LGPL')
 depends=('dconf' 'gtk3' 'hicolor-icon-theme' 'libnotify' 'python-dbus' 'python-gobject'
   'iso-codes' 'librsvg')
 makedepends=('gobject-introspection' 'vala' 'intltool' 'gnome-common' 'gtk-doc' 'gtk4' 'gtk2'
-  'qt5-base' 'unicode-cldr' 'unicode-character-database' 'unicode-emoji' 'git')
+  'qt5-base' 'unicode-cldr' 'unicode-character-database' 'unicode-emoji')
 options=('!emptydirs')
-_commit=6a70ab0338206bd1c7d01a4e1874ea0ee5b3a9d3 # tags/1.5.26^0
-source=("git+https://github.com/ibus/ibus#commit=${_commit}")
-sha512sums=('SKIP')
+source=("https://github.com/ibus/ibus/releases/download/${pkgver}/ibus-${pkgver}.tar.gz")
+sha256sums=('6efbda5adb96f607cf7108d1e270962c0729a59c9ea6d58eea2dde0e3cbb97df')
 
 _llvm=0
 
@@ -23,21 +22,19 @@ prepare() {
     _llvm=1
   fi
 
-  cd "${srcdir:?}/ibus" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir}/ibus directory! Prepare Failed! \E[0m"
+  cd "${srcdir:?}/ibus-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir}/ibus-${pkgver} directory! Prepare Failed! \E[0m"
     exit 1
   )
 
-  # https://github.com/ibus/ibus/issues/2387
-  git cherry-pick -n 17648f0522910480b6c5dd4f5356ca1f6c160bf5
-
   NOCONFIGURE=1 ./autogen.sh
+
 }
 
 build() {
 
-  cd "${srcdir:?}/ibus" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir}/ibus directory! Build Failed! \E[0m"
+  cd "${srcdir:?}/ibus-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir}/ibus-${pkgver} directory! Build Failed! \E[0m"
     exit 1
   )
 
@@ -65,10 +62,10 @@ package_ibus+clang() {
   provides=('ibus' "ibus=${pkgver}")
   conflicts=('ibus')
 
-  make -C "ibus" DESTDIR="${pkgdir:?}" install
-  make -C "ibus/src" DESTDIR="${pkgdir:?}" uninstall
-  make -C "ibus/bindings" DESTDIR="${pkgdir:?}" uninstall
-  make -C "ibus" DESTDIR="${pkgdir:?}" uninstall-pkgconfigDATA
+  make -C "ibus-${pkgver}" DESTDIR="${pkgdir:?}" install
+  make -C "ibus-${pkgver}/src" DESTDIR="${pkgdir:?}" uninstall
+  make -C "ibus-${pkgver}/bindings" DESTDIR="${pkgdir:?}" uninstall
+  make -C "ibus-${pkgver}" DESTDIR="${pkgdir:?}" uninstall-pkgconfigDATA
 
 }
 
@@ -79,8 +76,8 @@ package_libibus+clang() {
   provides=('libibus-1.0.so' 'libibus' "libibus=${pkgver}")
   conflicts=('libibus')
 
-  make -C "ibus/src" DESTDIR="${pkgdir:?}" install
-  make -C "ibus/bindings" DESTDIR="${pkgdir:?}" install
-  make -C "ibus" DESTDIR="${pkgdir:?}" install-pkgconfigDATA
+  make -C "ibus-${pkgver}/src" DESTDIR="${pkgdir:?}" install
+  make -C "ibus-${pkgver}/bindings" DESTDIR="${pkgdir:?}" install
+  make -C "ibus-${pkgver}" DESTDIR="${pkgdir:?}" install-pkgconfigDATA
 
 }

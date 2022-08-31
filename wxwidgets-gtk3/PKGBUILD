@@ -1,7 +1,7 @@
 pkgbase=wxwidgets+clang
 pkgname=(wxwidgets-gtk3+clang wxwidgets-qt5+clang wxwidgets-common+clang)
 pkgver=3.2.0
-pkgrel=4
+pkgrel=5
 arch=(x86_64)
 url='https://wxwidgets.org'
 license=(custom:wxWindows)
@@ -14,13 +14,27 @@ source=(
 sha256sums=('356e9b55f1ae3d58ae1fed61478e9b754d46b820913e3bfbc971c50377c1903a'
   'cb4a7ca0d40b090d5d40d77790828a26766c6b496b3a5f5351fa30b3a6b42bd9')
 
+_llvm=0
+
 prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
 
   patch -d "wxWidgets-${pkgver}" -p1 -i "${srcdir:?}/destdir.patch" # Honor DESTDIR
 
 }
 
 build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
 
   cmake -B build-gtk3 -S wxWidgets-${pkgver} \
     -DCMAKE_INSTALL_PREFIX=/usr \
@@ -34,7 +48,9 @@ build() {
     -DwxUSE_LIBTIFF=sys \
     -DwxUSE_LIBLZMA=sys \
     -DwxUSE_LIBMSPACK=ON \
-    -DwxUSE_PRIVATE_FONTS=ON
+    -DwxUSE_PRIVATE_FONTS=ON \
+    -DwxUSE_GTKPRINT=ON \
+    -DCMAKE_CXX_FLAGS="${CXXFLAGS} -I/usr/include/gtk-3.0/unix-print/"
 
   cmake --build build-gtk3
 

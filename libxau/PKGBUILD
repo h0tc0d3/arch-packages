@@ -1,6 +1,6 @@
 pkgname=libxau+clang
-pkgver=1.0.9
-pkgrel=4
+pkgver=1.0.10
+pkgrel=1
 pkgdesc="X11 authorisation library"
 arch=('x86_64')
 url="https://xorg.freedesktop.org/"
@@ -9,9 +9,9 @@ makedepends=('xorgproto')
 license=('custom')
 provides=("libxau" "libxau=${pkgver}")
 conflicts=("libxau")
-source=("https://xorg.freedesktop.org/releases/individual/lib/libXau-${pkgver}.tar.bz2"{,.sig})
+source=("https://xorg.freedesktop.org/releases/individual/lib/libXau-${pkgver}.tar.xz"{,.sig})
 validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E') # "Alan Coopersmith <alan.coopersmith@oracle.com>"
-sha256sums=('ccf8cbf0dbf676faa2ea0a6d64bcc3b6746064722b606c8c52917ed00dcb73ec'
+sha256sums=('8be6f292334d2f87e5b919c001e149a9fdc27005d6b3e053862ac6ebbf1a0c0a'
   'SKIP')
 
 _llvm=0

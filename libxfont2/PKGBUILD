@@ -1,5 +1,5 @@
 pkgname=libxfont2+clang
-pkgver=2.0.5
+pkgver=2.0.6
 pkgrel=1
 pkgdesc="X11 font rasterisation library"
 arch=(x86_64)
@@ -8,14 +8,14 @@ license=('custom')
 provides=("libxfont2" "libxfont2=${pkgver}")
 conflicts=("libxfont2")
 depends=('freetype2' 'libfontenc')
-makedepends=('xorg-util-macros' 'xtrans' 'xorgproto' 'git')
-_gittag='libXfont2-2.0.5'
-source=("libxfont::git+https://gitlab.freedesktop.org/xorg/lib/libxfont.git#tag=${_gittag}")
-sha512sums=('SKIP')
+makedepends=('xorg-util-macros' 'xtrans' 'xorgproto')
+source=("https://xorg.freedesktop.org/archive/individual/lib/libXfont2-${pkgver}.tar.xz"{,.sig})
+sha256sums=('74ca20017eb0fb3f56d8d5e60685f560fc85e5ff3d84c61c4cb891e40c27aef4'
+  'SKIP')
 validpgpkeys=(
-  'C383B778255613DFDB409D91DB221A6900000011' # Keith Packard <keithp@keithp.com>
-  '995ED5C8A6138EB0961F18474C09DD83CAAA50B2' # "Adam Jackson <ajax@nwnk.net>"
-  'C41C985FDCF1E5364576638B687393EE37D128F8' # "Matthieu Herrb <matthieu.herrb@laas.fr>"
+  #'C383B778255613DFDB409D91DB221A6900000011' # Keith Packard <keithp@keithp.com>
+  #'995ED5C8A6138EB0961F18474C09DD83CAAA50B2' # "Adam Jackson <ajax@nwnk.net>"
+  #'C41C985FDCF1E5364576638B687393EE37D128F8' # "Matthieu Herrb <matthieu.herrb@laas.fr>"
   '4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E' # "Alan Coopersmith <alan.coopersmith@oracle.com>"
 )
 
@@ -27,21 +27,12 @@ prepare() {
     _llvm=1
   fi
 
-  cd "${srcdir:?}/libxfont" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir}/libxfont directory! Build Failed! \E[0m"
-    exit 1
-  )
-
-  git cherry-pick -n ce7a3265019e4d66198c1581d9e8c859c34e8ef1
-
-  NOCONFIGURE=1 ./autogen.sh
-
 }
 
 build() {
 
-  cd "${srcdir:?}/libxfont" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir}/libxfont directory! Build Failed! \E[0m"
+  cd "${srcdir:?}/libXfont2-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir}/libXfont2-${pkgver} directory! Build Failed! \E[0m"
     exit 1
   )
 
@@ -53,7 +44,9 @@ build() {
 
   fi
 
-  ./configure --prefix=/usr --sysconfdir=/etc \
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
     --enable-bzip2 \
     --enable-truetype \
     --enable-freetype
@@ -64,8 +57,8 @@ build() {
 
 package() {
 
-  cd "${srcdir:?}/libxfont" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir}/libxfont directory! Package Failed! \E[0m"
+  cd "${srcdir:?}/libXfont2-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to libXfont2-${pkgver} directory! Package Failed! \E[0m"
     exit 1
   )
 

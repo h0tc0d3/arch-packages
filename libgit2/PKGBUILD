@@ -1,5 +1,5 @@
 pkgname=libgit2+clang
-pkgver=1.4.4
+pkgver=1.5.0
 pkgrel=1
 epoch=1
 pkgdesc="A linkable library for Git"
@@ -12,11 +12,11 @@ provides=(libgit2 "libgit2=${pkgver}" libgit2.so)
 conflicts=(libgit2)
 source=(
   "libgit2-${pkgver}.tar.gz::https://github.com/libgit2/libgit2/archive/v${pkgver}.tar.gz"
-  libgit2-1.2.0-remove_http-parse_incompatible_tests.patch
+  libgit2-1.5.0-remove_http-parse_incompatible_tests.patch
 )
 
-sha256sums=('e9923e9916a32f54c661d55d79c28fa304cb23617639e68bff9f94d3e18f2d4b'
-  'e95000dd7e2a3c56015114d0b67cf1a6d2ff382d2e2a2567dbb4731300a1deb1')
+sha256sums=('8de872a0f201b33d9522b817c92e14edb4efad18dae95cf156cf240b2efff93e'
+  '8e232d3ac6ba756d6055aaccca9d5704417fe77f53ad91898ffbe1b1439523aa')
 
 _llvm=0
 
@@ -27,7 +27,7 @@ prepare() {
   fi
   # remove tests that are only compatible with the (modified) vendored version
   # of http-parser, but not with upstream http-parser
-  patch -d libgit2-${pkgver} -Np1 -i "${srcdir:?}/libgit2-1.2.0-remove_http-parse_incompatible_tests.patch"
+  patch -d libgit2-${pkgver} -Np1 -i "${srcdir:?}/libgit2-1.5.0-remove_http-parse_incompatible_tests.patch"
 
 }
 
@@ -49,19 +49,20 @@ build() {
     -DTHREADSAFE=ON \
     -Wno-dev
 
-  make VERBOSE=1 -C build
+  cmake --build build
 
 }
 
 check() {
 
-  make VERBOSE=1 test -C build
+  # NOTE: disable tests requiring the internet and relying on non-existent resources
+  ctest --test-dir build --output-on-failure -E "invasive|online"
 
 }
 
 package() {
 
-  make VERBOSE=1 DESTDIR="${pkgdir:?}" install -C build
+  DESTDIR="${pkgdir:?}" cmake --install build
   install -vDm 644 libgit2-${pkgver}/{AUTHORS,README.md} -t "${pkgdir:?}/usr/share/doc/libgit2"
 
 }

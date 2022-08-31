@@ -1,5 +1,5 @@
 pkgname=inetutils+clang
-pkgver=2.2
+pkgver=2.3
 pkgrel=1
 pkgdesc="A collection of common network programs"
 arch=('x86_64')
@@ -19,7 +19,7 @@ source=("https://ftp.gnu.org/gnu/inetutils/inetutils-${pkgver}.tar.xz"{,.sig}
   'ftpd.service' 'rlogin.pam' 'rlogin@.service' 'rlogin.socket' 'rlogin.xinetd'
   'rsh.pam' 'rsh@.service' 'rsh.socket' 'rsh.xinetd' 'talk.service' 'talk.socket'
   'talk.xinetd' 'telnet@.service' 'telnet.socket' 'telnet.xinetd')
-sha256sums=('d547f69172df73afef691a0f7886280fd781acea28def4ff4b4b212086a89d80'
+sha256sums=('0b01bb08e29623c4e3b940f233c961451d9af8c5066301add76a52a95d51772c'
   'SKIP'
   'f1b9b4e57f484070366444a649f1be151d01d5bc965b9b192c242e4b7cc4beeb'
   '428367b148033c7fa865e92bdd73b06cb58e6909488649adebf8d2253a022f1f'
@@ -39,8 +39,9 @@ sha256sums=('d547f69172df73afef691a0f7886280fd781acea28def4ff4b4b212086a89d80'
 
 # GNU Keyring: https://ftp.gnu.org/gnu/gnu-keyring.gpg
 validpgpkeys=(
-  '4FBD67621082C4C502448E3B180551BAD95A3C35' # Alfred M. Szmidt <ams@gnu.org>
-  '9AA9BDB11BB1B99A21285A330664A76954265E8C' # Simon Josefsson <simon@josefsson.org>
+  #'4FBD67621082C4C502448E3B180551BAD95A3C35' # Alfred M. Szmidt <ams@gnu.org>
+  #'9AA9BDB11BB1B99A21285A330664A76954265E8C' # Simon Josefsson <simon@josefsson.org>
+  'B1D2BD1375BECB784CF4F8C4D73CF638C53C06BE' # Simon Josefsson <simon@josefsson.org>
 )
 
 _llvm=0

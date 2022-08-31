@@ -1,6 +1,6 @@
 pkgname=openmpi+clang
 pkgver=4.1.4
-pkgrel=1
+pkgrel=2
 pkgdesc='High performance message passing library (MPI)'
 url='https://www.open-mpi.org'
 arch=('x86_64')
