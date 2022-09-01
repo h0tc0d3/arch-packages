@@ -1,15 +1,14 @@
-pkgname=libxml2+clang
-pkgver=2.9.14
-pkgrel=1
-pkgdesc='XML parsing library, version 2'
-url='http://www.xmlsoft.org/'
+pkgbase=libxml2+clang
+pkgname=(libxml2+clang libxml2-docs+clang)
+pkgver=2.10.2
+pkgrel=2
+pkgdesc="XML C parser and toolkit"
+url="https://gitlab.gnome.org/GNOME/libxml2/-/wikis/home"
 arch=(x86_64)
-license=(MIT)
-provides=("libxml2" "libxml2=${pkgver}" libxml2.so)
-conflicts=("libxml2")
+license=(custom:MIT)
 depends=(zlib readline ncurses xz icu)
 makedepends=(python git)
-_commit=7846b0a677f8d3ce72486125fa281e92ac9970e8 # tags/v2.9.14^0
+_commit=21b24b51608d471bb9f7c4225e23d0db2acecc52 # tags/v2.10.2^0
 
 source=(
   "libxml2::git+https://gitlab.gnome.org/GNOME/libxml2.git#commit=${_commit}"
@@ -20,8 +19,8 @@ source=(
 
 sha256sums=('SKIP'
   '9b61db9f5dbffa545f4b8d78422167083a8568c59bd1129f94138f936cf6fc1f'
-  'd331748e504e69603dac9c57f7b110a98a4bd4cb87e63d0c1bbcd71ec3635383'
-  '163655aba312c237a234a82d64b71a65bd9d1d901e176d443e3e3ac64f3b1b32')
+  '3d07a50fc0963bda05fc5269dedc51f108260699e25e455bb31f6d80c2a9cada'
+  '3908e7a53b20109bdfde143238f36e22a154dbb7d363b634e54c0a18328f4656')
 
 _llvm=0
 
@@ -32,7 +31,7 @@ pkgver() {
     exit 1
   )
 
-  git describe --tags | sed 's/-rc/rc/;s/^v//;s/\([^-]*-g\)/r\1/;s/-/./g'
+  git describe --tags | sed 's/-rc/rc/;s/^v//;s/[^-]*-g/r&/;s/-/+/g'
 
 }
 
@@ -49,15 +48,13 @@ prepare() {
     _llvm=1
   fi
 
-  mkdir build
-
-  # Use xmlconf from conformance test suite
-  ln -s xmlconf build/xmlconf
-
   cd "${srcdir:?}/libxml2" || (
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxml2 directory! Prepare Failed! \E[0m"
     exit 1
   )
+
+  # Use xmlconf from conformance test suite
+  ln -s ../xmlconf
 
   _patch libxml2-2.9.8-python3-unicode-errors.patch
   _patch libxml2-disable-fuzz-tests.patch
@@ -68,8 +65,8 @@ prepare() {
 
 build() (
 
-  cd "${srcdir:?}/build" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/build directory! Build Failed! \E[0m"
+  cd "${srcdir:?}/libxml2" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxml2 directory! Build Failed! \E[0m"
     exit 1
   )
 
@@ -81,32 +78,46 @@ build() (
 
   fi
 
-  ../libxml2/configure \
+  ./configure \
     --prefix=/usr \
+    --sysconfdir=/etc \
+    --localstatedir=/var \
     --with-threads \
     --with-history \
     --with-python="/usr/bin/python" \
-    --with-icu
+    --with-icu \
+    --disable-static
 
   make
-
-  find doc -type f -exec chmod 0644 {} +
 
 )
 
 check() {
 
-  make -C build check
+  make check -C libxml2
 
 }
 
-package() {
+package_libxml2+clang() {
 
-  make -C build DESTDIR="${pkgdir:?}" install
-  make -C build/python DESTDIR="${pkgdir:?}" install
-  install -Dm 644 build/COPYING -t "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  optdepends=('python: Python bindings')
+  provides=("libxml2" "libxml2=${pkgver}" libxml2.so)
+  conflicts=("libxml2")
 
-  python -m compileall -d /usr/lib "${pkgdir:?}/usr/lib"
-  python -O -m compileall -d /usr/lib "${pkgdir:?}/usr/lib"
+  make DESTDIR="${pkgdir:?}" install -C libxml2
+
+  mkdir -p doc/usr/share
+  mv "${pkgdir:?}/usr/share/"{doc,gtk-doc} -t doc/usr/share
+
+  install -Dm644 libxml2/Copyright -t "${pkgdir:?}/usr/share/licenses/libxml2"
+
+}
+
+package_libxml2-docs+clang() {
+
+  pkgdesc+=" (documentation)"
+  depends=()
+
+  mv doc/* "${pkgdir:?}"
 
 }

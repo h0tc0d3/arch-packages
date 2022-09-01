@@ -1,23 +1,21 @@
-pkgname=libxslt+clang
-pkgver=1.1.36
-pkgrel=1
+pkgbase=libxslt+clang
+pkgname=(libxslt+clang libxslt-docs+clang)
+pkgver=1.1.37
+pkgrel=2
 pkgdesc="XML stylesheet transformation library"
 url="https://gitlab.gnome.org/GNOME/libxslt/-/wikis/home"
 arch=(x86_64)
 license=(custom:MIT)
 depends=(libgcrypt libxml2 xz)
-provides=(lib{,e}xslt.so 'libxslt' "libxslt=${pkgver}")
-conflicts=('libxslt')
 makedepends=(git python)
 checkdepends=(docbook-xml)
-optdepends=('python: Python bindings')
-_commit=bcd17763a9f371ec5c9bdce0ffa2f2eb3ef74c43 # tags/v1.1.36^0
+_commit=5eca7fb65b7337409a02f9f94fde608edf7d1b0a # tags/v1.1.37^0
 source=(
   "git+https://gitlab.gnome.org/GNOME/libxslt.git#commit=${_commit}"
   0001-Make-generate-id-deterministic.patch
 )
 sha256sums=('SKIP'
-  'e83c20f9a4f0c95716410c127ad10d6cde814c25d183de0d319f5dda529b7a6e')
+  '605e0a0b2ca385a90226bc5b141d3f6bfeade13e43ab39f8dea863505d7cbf18')
 
 _llvm=0
 
@@ -46,7 +44,7 @@ pkgver() {
     exit 1
   )
 
-  git describe --tags | sed 's/^v//;s/[^-]*-g/r&/;s/-/+/g'
+  git describe --tags | sed 's/-rc/rc/;s/^v//;s/[^-]*-g/r&/;s/-/+/g'
 
 }
 
@@ -67,6 +65,9 @@ build() {
 
   ./configure \
     --prefix=/usr \
+    --sysconfdir=/etc \
+    --localstatedir=/var \
+    --with-python=/usr/bin/python \
     --disable-static
 
   make
@@ -75,23 +76,30 @@ build() {
 
 check() {
 
-  cd "${srcdir:?}/libxslt" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxslt directory! Check Failed! \E[0m"
-    exit 1
-  )
-
-  make check
+  make check -C libxslt
 
 }
 
-package() {
+package_libxslt+clang() {
 
-  cd "${srcdir:?}/libxslt" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxslt directory! Package Failed! \E[0m"
-    exit 1
-  )
+  optdepends=('python: Python bindings')
+  provides=(lib{,e}xslt.so 'libxslt' "libxslt=${pkgver}")
+  conflicts=('libxslt')
 
-  make DESTDIR="${pkgdir:?}" install
-  install -Dm644 Copyright "${pkgdir:?}/usr/share/licenses/${pkgname}/LICENSE"
+  make DESTDIR="${pkgdir:?}" install -C libxslt
+
+  mkdir -p doc/usr/share
+  mv "${pkgdir:?}/usr/share/"{doc,gtk-doc} -t doc/usr/share
+
+  install -Dm644 libxslt/Copyright "${pkgdir:?}/usr/share/licenses/libxsl"
+
+}
+
+package_libxslt-docs+clang() {
+
+  pkgdesc+=" (documentation)"
+  depends=()
+
+  mv doc/* "${pkgdir:?}"
 
 }
