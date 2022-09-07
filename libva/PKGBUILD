@@ -1,6 +1,6 @@
 pkgname=libva+clang
 pkgver=2.15.0
-pkgrel=2
+pkgrel=6
 pkgdesc='Video Acceleration (VA) API for Linux'
 arch=(x86_64)
 url=https://01.org/linuxmedia/vaapi
@@ -11,8 +11,8 @@ depends=(libdrm libgl libx11 libxext libxfixes wayland)
 makedepends=(git libglvnd mesa meson)
 optdepends=(
   'intel-media-driver: backend for Intel GPUs (>= Broadwell)'
-  'libva-vdpau-driver: backend for Nvidia and AMD GPUs'
   'libva-intel-driver: backend for Intel GPUs (<= Haswell)'
+  'libva-mesa-driver: backend for AMD and Nvidia GPUs'
 )
 backup=(etc/libva.conf)
 _commit=b095d10bf355110352e75c22e581018a7ea7de5a
@@ -26,6 +26,13 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _extra_lto_flag='-D b_lto_mode=thin'
   fi
+
+  cd "${srcdir:?}/libva" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libva directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  git cherry-pick -n c49f7ea61116b030c9df251f111fffbc3235d224 # https://bugs.archlinux.org/task/75312
 
 }
 

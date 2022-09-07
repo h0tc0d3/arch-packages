@@ -1,15 +1,15 @@
 pkgname=python-systemd+clang
-pkgver=234
-pkgrel=11
+pkgver=235
+pkgrel=1
 pkgdesc="Python bindings for systemd"
 arch=(x86_64)
 url="https://github.com/systemd/python-systemd"
 license=(LGPL)
 provides=(python-systemd "python-systemd=${pkgver}")
-conflicts=(python-systemd)
-depends=(python libsystemd systemd)
+depends=(python systemd)
+makedepends=(python-setuptools git)
 makedepends=(git)
-_commit=308ae4440c1f6ea1aff9be4cb683c52bd3a1c13a # tags/v234^0
+_commit=dc1dae2eaa00e2369c366f80f9bcd3f729b7abca # tags/v235^0
 source=("python-systemd::git+https://github.com/systemd/python-systemd#commit=${_commit}")
 sha256sums=('SKIP')
 
@@ -25,9 +25,6 @@ prepare() {
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/python-systemd directory! Prepare Failed! \E[0m"
     exit 1
   )
-
-  # reader: make PY_SSIZE_T_CLEAN
-  git format-patch -1 --stdout c71bbac357f0 | patch -Np1
 
 }
 

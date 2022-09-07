@@ -1,6 +1,6 @@
 pkgname=ffmpeg+clang
 pkgver=5.1.1
-pkgrel=1
+pkgrel=3
 epoch=2
 pkgdesc='Complete solution to record, convert and stream audio and video'
 arch=(x86_64)
@@ -20,9 +20,11 @@ depends=(
   libass.so
   libavc1394
   libbluray.so
+  libbs2b.so
   libdav1d.so
   libdrm
   libfreetype.so
+  libgl
   libiec61883
   libmfx
   libmodplug
@@ -41,6 +43,7 @@ depends=(
   libvorbisenc.so
   libvorbis.so
   libvpx.so
+  libvulkan.so
   libwebp
   libx11
   libx264.so
@@ -51,6 +54,7 @@ depends=(
   libxv
   libxvidcore.so
   libzimg.so
+  ocl-icd
   opencore-amr
   openjpeg2
   opus
@@ -70,7 +74,10 @@ makedepends=(
   ffnvcodec-headers
   git
   ladspa
+  mesa
   nasm
+  opencl-headers
+  vulkan-headers
 )
 optdepends=(
   'avisynthplus: AviSynthPlus support'
@@ -90,7 +97,7 @@ provides=(
   libswscale.so
 )
 conflicts=('ffmpeg')
-_commit=1bad30dbe34f2d100b43e8f773d3fe0b5eb23523
+_commit=fcbd9ec24895b53bfa6a206aed29b5b04b68c41b
 source=(
   "git+https://git.ffmpeg.org/ffmpeg.git#commit=${_commit}"
   add-av_stream_get_first_dts-for-chromium.patch
@@ -111,7 +118,6 @@ prepare() {
     exit 1
   )
 
-  git cherry-pick -n 412922cc6fa790897ef6bb2be5d6f9a5f030754d                # remove default IPFS gateway
   patch -Np1 -i "${srcdir:?}/add-av_stream_get_first_dts-for-chromium.patch" # https://crbug.com/1251779
 
 }
@@ -149,6 +155,7 @@ build() {
       --enable-libaom \
       --enable-libass \
       --enable-libbluray \
+      --enable-libbs2b \
       --enable-libdav1d \
       --enable-libdrm \
       --enable-libfreetype \
@@ -186,8 +193,11 @@ build() {
       --enable-libzimg \
       --enable-nvdec \
       --enable-nvenc \
+      --enable-opencl \
+      --enable-opengl \
       --enable-shared \
-      --enable-version3
+      --enable-version3 \
+      --enable-vulkan
 
   else
 
@@ -208,6 +218,7 @@ build() {
       --enable-libaom \
       --enable-libass \
       --enable-libbluray \
+      --enable-libbs2b \
       --enable-libdav1d \
       --enable-libdrm \
       --enable-libfreetype \
@@ -245,8 +256,11 @@ build() {
       --enable-libzimg \
       --enable-nvdec \
       --enable-nvenc \
+      --enable-opencl \
+      --enable-opengl \
       --enable-shared \
-      --enable-version3
+      --enable-version3 \
+      --enable-vulkan
 
   fi
 

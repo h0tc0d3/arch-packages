@@ -1,15 +1,18 @@
 pkgname=pcre+clang
 pkgver=8.45
-pkgrel=1
+pkgrel=2
 pkgdesc='A library that implements Perl 5-style regular expressions'
 arch=('x86_64')
 url='https://www.pcre.org/'
 license=('BSD')
-provides=(pcre "pcre=${pkgver}")
+options=(staticlibs)
+provides=(pcre "pcre=${pkgver}" libpcreposix.so libpcrecpp.so libpcre32.so libpcre16.so libpcre.so)
 conflicts=(pcre)
 depends=('gcc-libs' 'readline' 'zlib' 'bzip2' 'bash')
-validpgpkeys=('45F68D54BBE23FB3039B46E59766E084FB0F43D8') # Philip Hazel
-source=("https://ftp.exim.org/pub/pcre/pcre-${pkgver}.tar.bz2"{,.sig})
+validpgpkeys=(
+  '45F68D54BBE23FB3039B46E59766E084FB0F43D8' # Philip Hazel
+)
+source=("https://sourceforge.net/projects/pcre/files/pcre/${pkgver}/pcre-${pkgver}.tar.bz2"{,.sig})
 sha256sums=('4dae6fdcd2bb0bb6c37b5f97c33c2be954da743985369cddac3546e3218bffb8'
   'SKIP')
 
@@ -50,7 +53,7 @@ build() {
     LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
   fi
-  
+
   ./configure \
     --prefix=/usr \
     --enable-unicode-properties \
