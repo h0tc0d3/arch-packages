@@ -1,5 +1,5 @@
 pkgname=qt6-shadertools+clang
-_qtver=6.3.1
+_qtver=6.3.2
 pkgver=${_qtver/-/}
 pkgrel=1
 arch=(x86_64)
@@ -12,7 +12,7 @@ depends=(qt6-base)
 makedepends=(cmake)
 groups=(qt6)
 source=("https://ftp.fau.de/qtproject/archive/qt/${pkgver%.*}/${_qtver}/submodules/qtshadertools-everywhere-src-${_qtver}.tar.xz")
-sha256sums=('59b77176961528cc7b0c9325134655e273aa87b4cb386c0f4683d8f2852e435a')
+sha256sums=('f6be2766f528f26cfec7ac655e1b6dba3aab29a6ba656f2fea949140e6cdb3ae')
 
 _llvm=0
 

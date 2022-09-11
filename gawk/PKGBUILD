@@ -1,6 +1,6 @@
 pkgname=gawk+clang
-pkgver=5.1.1
-pkgrel=1
+pkgver=5.2.0
+pkgrel=3
 pkgdesc="GNU version of awk"
 arch=('x86_64')
 url="https://www.gnu.org/software/gawk/"
@@ -9,10 +9,14 @@ groups=('base-devel')
 depends=('sh' 'glibc' 'mpfr')
 provides=('awk' 'gawk' "gawk=${pkgver}")
 conflicts=('gawk')
-source=("https://ftp.gnu.org/pub/gnu/gawk/gawk-${pkgver}.tar.gz"{,.sig})
+source=(
+  "https://ftp.gnu.org/pub/gnu/gawk/gawk-${pkgver}.tar.gz"{,.sig}
+  0001-Add-missing-UPREF.patch
+)
 validpgpkeys=('D1967C63788713177D861ED7DF597815937EC0D2') # Arnold Robbins
-sha256sums=('6168d8d1dc8f74bd17d9dc22fa9634c49070f232343b744901da15fb4f06bffd'
-  'SKIP')
+sha256sums=('ef5af4449cb0269faf3af24bf4c02273d455f0741bf3c50f86ddc09332d6cf56'
+  'SKIP'
+  'd39fa487f89c743ba55ed0b5eeb9fe33db4bd7010bf5f61f8aa1a9541a18775e')
 
 _llvm=0
 
@@ -21,6 +25,9 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=1
   fi
+
+  # https://bugs.gentoo.org/868567
+  patch -d "gawk-${pkgver}" -Np1 -i "${srcdir:?}/0001-Add-missing-UPREF.patch"
 
 }
 

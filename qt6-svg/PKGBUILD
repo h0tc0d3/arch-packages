@@ -1,5 +1,5 @@
 pkgname=qt6-svg+clang
-_qtver=6.3.1
+_qtver=6.3.2
 pkgver=${_qtver/-/}
 pkgrel=1
 arch=(x86_64)
@@ -12,7 +12,7 @@ depends=(qt6-base)
 makedepends=(cmake)
 groups=(qt6)
 source=("https://ftp.fau.de/qtproject/archive/qt/${pkgver%.*}/${_qtver}/submodules/qtsvg-everywhere-src-${_qtver}.tar.xz")
-sha256sums=('7b19f418e6f7b8e23344082dd04440aacf5da23c5a73980ba22ae4eba4f87df7')
+sha256sums=('4c1542a0528e4052e3cef1e44245056cd4c2e1ff46f13b551807cc3487702392')
 
 _llvm=0
 

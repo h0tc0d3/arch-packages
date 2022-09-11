@@ -1,5 +1,5 @@
 pkgname=qt6-5compat+clang
-_qtver=6.3.1
+_qtver=6.3.2
 pkgver=${_qtver/-/}
 pkgrel=1
 arch=(x86_64)
@@ -13,7 +13,7 @@ makedepends=(cmake qt6-declarative)
 optdepends=('qt6-declarative: for QtGraphicalEffects')
 groups=(qt6)
 source=("https://ftp.fau.de/qtproject/archive/qt/${pkgver%.*}/${_qtver}/submodules/qt5compat-everywhere-src-${_qtver}.tar.xz")
-sha256sums=('a43ec62bd778eaecf88ad7847118d1c2a471b0fcb820f93beb311d7ab9566cfd')
+sha256sums=('91a3ac0f3f87e4103afa5834ccbecff9374daf716fab362d0c5e2d6ab98560cc')
 
 _llvm=0
 

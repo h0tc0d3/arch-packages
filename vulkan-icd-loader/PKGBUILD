@@ -1,5 +1,5 @@
 pkgname=vulkan-icd-loader+clang
-pkgver=1.3.221
+pkgver=1.3.227
 pkgrel=1
 arch=(x86_64)
 pkgdesc="Vulkan Installable Client Driver (ICD) Loader"
@@ -11,50 +11,50 @@ makedepends=('cmake' 'python-lxml' 'libx11' 'libxrandr' 'wayland' 'vulkan-header
 depends=(glibc)
 optdepends=('vulkan-driver: packaged vulkan driver') # vulkan-driver: vulkan-intel/vulkan-radeon/nvidia-utils/....
 source=("vulkan-icd-loader-${pkgver}.tar.gz::https://github.com/KhronosGroup/Vulkan-Loader/archive/v${pkgver}.tar.gz")
-sha256sums=('ba7042b2b14a11646ba8bd33c041ccb4f1abe5bdfa2758e301a76bf6d31d2748')
+sha256sums=('840e8ca943f418d92d39886bab55c6b1f997eec98e8f447d012ff9782d8ee43e')
 
 _llvm=0
 
 prepare() {
 
-	if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
-		_llvm=1
-	fi
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
 
 }
 
 build() {
 
-	if [[ ${_llvm} -eq 1 ]]; then
+  if [[ ${_llvm} -eq 1 ]]; then
 
-		CFLAGS="${CFLAGS} -flto=thin"
-		CXXFLAGS="${CXXFLAGS} -flto=thin"
-		LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
 
-	fi
+  fi
 
-	cmake -B build -S Vulkan-Loader-${pkgver} \
-		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DVULKAN_HEADERS_INSTALL_DIR=/usr \
-		-DCMAKE_INSTALL_LIBDIR=lib \
-		-DCMAKE_INSTALL_SYSCONFDIR=/etc \
-		-DCMAKE_INSTALL_DATADIR=/share \
-		-DCMAKE_SKIP_RPATH=True \
-		-DBUILD_TESTS=Off \
-		-DBUILD_WSI_XCB_SUPPORT=On \
-		-DBUILD_WSI_XLIB_SUPPORT=On \
-		-DBUILD_WSI_WAYLAND_SUPPORT=On \
-		-DCMAKE_BUILD_TYPE=Release
+  cmake -B build -S Vulkan-Loader-${pkgver} \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DVULKAN_HEADERS_INSTALL_DIR=/usr \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DCMAKE_INSTALL_SYSCONFDIR=/etc \
+    -DCMAKE_INSTALL_DATADIR=/share \
+    -DCMAKE_SKIP_RPATH=True \
+    -DBUILD_TESTS=Off \
+    -DBUILD_WSI_XCB_SUPPORT=On \
+    -DBUILD_WSI_XLIB_SUPPORT=On \
+    -DBUILD_WSI_WAYLAND_SUPPORT=On \
+    -DCMAKE_BUILD_TYPE=Release
 
-	cmake --build build
+  cmake --build build
 
 }
 
 package() {
 
-	DESTDIR="${pkgdir:?}" cmake --install build
+  DESTDIR="${pkgdir:?}" cmake --install build
 
-	install -dm755 "${pkgdir:?}/usr/share/licenses/${pkgname}"
-	install -m644 "Vulkan-Loader-${pkgver}/LICENSE.txt" "${pkgdir:?}/usr/share/licenses/${pkgname}/"
+  install -dm755 "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -m644 "Vulkan-Loader-${pkgver}/LICENSE.txt" "${pkgdir:?}/usr/share/licenses/${pkgname}/"
 
 }

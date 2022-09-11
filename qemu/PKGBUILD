@@ -20,8 +20,8 @@ pkgname=(
   qemu-virtiofsd+clang
   qemu-{base,desktop,emulators-full,full}+clang
 )
-pkgver=7.0.0
-pkgrel=12
+pkgver=7.1.0
+pkgrel=4
 pkgdesc="A generic and open source machine emulator and virtualizer"
 arch=(x86_64)
 url="https://www.qemu.org/"
@@ -33,7 +33,6 @@ license=(GPL2 LGPL2.1)
 # TODO: package /usr/share/qemu/{efi,pxe}-* for qemu (ipxe)
 # TODO: package /usr/share/qemu/slof.bin for qemu-system-ppc (slof)
 # TODO: package /usr/share/qemu/sgabios.bin for qemu-system-x86 (sgabios)
-# TODO: package static libs of glib2 and pcre for qemu-user-static
 makedepends=(
   alsa-lib
   brltty
@@ -99,9 +98,6 @@ source=(
   qemu-sysusers.conf
   65-kvm.rules
   99-qemu-guest-agent.rules
-  qemu-7.0.0-virtio-scsi_fix_ctrl_and_event_handler_functions_in_dataplane_mode.patch::https://github.com/qemu/qemu/commit/2f743ef6366c2df4ef51ef3ae318138cdc0125ab.patch
-  qemu-7.0.0-virtio-scsi_dont_waste_cpu_polling_the_eventvirtqueue.patch::https://github.com/qemu/qemu/commit/38738f7dbbda90fbc161757b7f4be35b52205552.patch
-  qemu-7.0.0-glibc-2.36.patch
 )
 
 backup=(
@@ -109,16 +105,13 @@ backup=(
   etc/sasl2/qemu.conf
 )
 
-sha256sums=('f6b375c7951f728402798b0baabb2d86478ca53d44cedbefabbe1c46bf46f839'
-  'SKIP'
-  '13deacdf79d5afb01c48984cc3cd5291341ca5b28d43298e804dc511ce581895'
-  '50aa2cd12098f9683409d33fe13c52c548af40a72155d84c9fb9ada6949b194c'
-  '36fdb765d3ef4391ac69eecab80fbd760569ed6fdb25543f003cd6b378d796e6'
-  'a66f0e791b16b03b91049aac61a25950d93e962e1b2ba64a38c6ad7f609b532c'
-  'f2e13f81e52d62154ac9b285d762ecd243a0538c191b549ec2a88b988c83aa36'
-  '41712844bfed7c414bad95959a25a4cbf9d80a9cc65de4c2882d3f9194f05ea8'
-  'b83a17d5b5d36426d5cc77f35629b0f44c0be1c8443f1c21433994b6a445d95a'
-  '1eee1b5d839fdfc5cd5a18f0c769b01228c14781de1368670e2c589cd6903a6e')
+sha256sums=('a0634e536bded57cf38ec8a751adb124b89c776fe0846f21ab6c6728f1cbbbe6'
+            'SKIP'
+            '13deacdf79d5afb01c48984cc3cd5291341ca5b28d43298e804dc511ce581895'
+            '50aa2cd12098f9683409d33fe13c52c548af40a72155d84c9fb9ada6949b194c'
+            '36fdb765d3ef4391ac69eecab80fbd760569ed6fdb25543f003cd6b378d796e6'
+            'a66f0e791b16b03b91049aac61a25950d93e962e1b2ba64a38c6ad7f609b532c'
+            'f2e13f81e52d62154ac9b285d762ecd243a0538c191b549ec2a88b988c83aa36')
 
 validpgpkeys=('CEACC9E15534EBABB82D3FA03353C9CEF108B584') # Michael Roth <flukshun@gmail.com>
 
@@ -250,14 +243,6 @@ prepare() {
   # create build dir
   mkdir -vp build
   mkdir -vp build-static
-
-  patch -Np1 -d "qemu-${pkgver}" \
-    -i "${srcdir:?}/qemu-7.0.0-virtio-scsi_fix_ctrl_and_event_handler_functions_in_dataplane_mode.patch"
-  patch -Np1 -d "qemu-${pkgver}" \
-    -i "${srcdir:?}/qemu-7.0.0-virtio-scsi_dont_waste_cpu_polling_the_eventvirtqueue.patch"
-
-  patch -Np1 -d "qemu-${pkgver}" \
-    -i "${srcdir:?}/qemu-7.0.0-glibc-2.36.patch"
 
 }
 

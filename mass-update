@@ -21,9 +21,14 @@ update_version() {
         PACKAGES+=("${package}")
     done < <(grep -lR "pkgver=${old_version}" "${SOURCE_DIR}/"*/PKGBUILD | sort)
 
+    while IFS=$'\n' read -r package; do
+        PACKAGES+=("${package}")
+    done < <(grep -lR "_qtver=${old_version}" "${SOURCE_DIR}/"*/PKGBUILD | sort)
+
     for package in "${PACKAGES[@]}"; do
 
         sed -i "s#pkgver=${old_version}#pkgver=${new_version}#" "${package:?}"
+        sed -i "s#_qtver=${old_version}#_qtver=${new_version}#" "${package:?}"
 
         base_path="${package%/*}"
 
