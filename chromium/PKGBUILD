@@ -1,8 +1,8 @@
 pkgname=chromium+clang
-pkgver=104.0.5112.101
-pkgrel=1
+pkgver=105.0.5195.125
+pkgrel=2
 _launcher_ver=8
-_gcc_patchset=2
+_gcc_patchset=1
 _git=0
 pkgdesc="A web browser built for speed, simplicity, and security"
 arch=('x86_64')
@@ -33,17 +33,17 @@ source=(
   chromium-gcc11.patch
   chromium-InkDropHost-crash.patch
   roll-src-third_party-ffmpeg.patch
-  remove-no-opaque-pointers-flag.patch
-  x11-ozone-fix-X11-screensaver-suspension.patch
-  chromium-tflite-system-zlib.patch
+  fix-TFLite-build-on-linux-with-system-zlib.patch
+  angle-wayland-include-protocol.patch
+  fix-debug-crash-and-log-spam-with-GTK3-Wayland.patch
 )
 if [[ ${_git} -eq 1 ]]; then
   source[0]=fetch-chromium-release
   makedepends+=('python-httplib2' 'python-pyparsing' 'python-six')
 fi
-sha256sums=('60f015e1559de4044cdfa3bdc1f8fde535927c8ab15b0959ccc9b6feec832f5b'
+sha256sums=('201b5c44668a415e3e05c0a806ab43a0904024340531332fc3ce39eb0cf10a66'
   '213e50f48b67feb4441078d50b0fd431df34323be15be97c55302d3fdac4483a'
-  'ce702099849465927cf47f7bc3a4a27045d0e35e16b17481ebf35e14506bafa7'
+  'f0c437c02cab7a6efc958f82fbb4ea35d5440f73d65731bad7c0dcaecb932121'
   '70a2805a63df15817a3435e983c0350c5d04ff62deffd8214cbb040b904f54a5'
   '15c93da644dbc533a6b74bd7f86a07dc59023c7b369298acd649715b9a9209a5'
   'c162eafc1f128e616281e719d860ec8726eec89660f449ed0e9af7dfe07c8cc9'
@@ -52,18 +52,23 @@ sha256sums=('60f015e1559de4044cdfa3bdc1f8fde535927c8ab15b0959ccc9b6feec832f5b'
   '5690089b8bd6946dfa975b8022531213b882b3396a3c968eeef9836b131725b7'
   '04bba6fb19ea5a4ab3949b65f06c88728a00ab296f42022ece62ca2fa25ec2e7'
   '30df59a9e2d95dcb720357ec4a83d9be51e59cc5551365da4c0073e68ccdec44'
-  'ab46b2c26a4dfe86486fd7e31bfc7211c515994a61a8c0cbd742f9c9e3c91873'
-  '9956a843bc8a765c130080616ccd3ebc46ea95c3a2324c4b403bc293a8705eb2'
-  '588c166bf748793758a7df438cfa665b32e09ca8fbd6380be28bc5984a33523c')
+  '5db1fae8a452774b5b177e493a2d1a435b980137b16ed74616d1fb86fe342ec7'
+  'b907f118b051233f811d9131eb108bd39f5ac9312e0b2847bcb4866312505313'
+  'a9a30d16ad6b0689c2c4a85a3c508f49254fc8e69e791a45302673812461eb58')
 # Possible replacements are listed in build/linux/unbundle/replace_gn_files.py
 # Keys are the names in the above script; values are the dependencies in Arch
 declare -gA _system_libs=(
+  [brotli]=brotli
+  [dav1d]=dav1d
   [ffmpeg]=ffmpeg
   [flac]=flac
   [fontconfig]=fontconfig
   [freetype]=freetype2
   ['harfbuzz-ng']=harfbuzz
   [icu]=icu
+  [jsoncpp]=jsoncpp
+  [libaom]=aom
+  [libavif]=libavif
   [libdrm]=libdrm
   [libjpeg]=libjpeg
   [libpng]=libpng
@@ -74,6 +79,7 @@ declare -gA _system_libs=(
   [opus]=opus
   [re2]=re2
   [snappy]=snappy
+  [woff2]=woff2
   [zlib]=minizip
 )
 
@@ -136,21 +142,22 @@ prepare() {
   # Do not mangle zlib
   _patch chromium-no-zlib-mangle.patch
 
-  # https://chromium-review.googlesource.com/c/chromium/src/+/2862724
-  _patch patches/chromium-103-VirtualCursor-std-layout.patch
-
   # Upstream fixes
   _patch chromium-EnumTable-crash.patch
   _patch chromium-gcc11.patch
   _patch chromium-InkDropHost-crash.patch
   _rpatch roll-src-third_party-ffmpeg.patch
-  _patch remove-no-opaque-pointers-flag.patch
+  _patch fix-TFLite-build-on-linux-with-system-zlib.patch
 
-  # Fix build with unbundled zlip (patch from Gentoo)
-  _patch chromium-tflite-system-zlib.patch
+  # https://crbug.com/angleproject/7582
+  _patch angle-wayland-include-protocol.patch
+  _patch fix-debug-crash-and-log-spam-with-GTK3-Wayland.patch
 
-  # Upstream fixes
-  _patch x11-ozone-fix-X11-screensaver-suspension.patch
+  # Fixes for building with libstdc++ instead of libc++
+  _patch patches/chromium-103-VirtualCursor-std-layout.patch
+  _patch patches/chromium-105-Bitmap-include.patch
+  _patch patches/chromium-105-browser_finder-include.patch
+  _patch patches/chromium-105-AdjustMaskLayerGeometry-ceilf.patch
 
   # Link to system tools required by the build
   mkdir -p third_party/node/linux/node-linux-x64/bin

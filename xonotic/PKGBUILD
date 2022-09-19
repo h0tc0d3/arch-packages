@@ -1,6 +1,6 @@
 pkgname=xonotic+clang
 pkgver=0.8.5
-pkgrel=2
+pkgrel=3
 pkgdesc="A free, fast-paced crossplatform first-person shooter"
 arch=('x86_64')
 url="https://xonotic.org"
@@ -15,8 +15,8 @@ source=("https://dl.xonotic.org/xonotic-${pkgver}-source.zip"
   "xonotic-glx.desktop"
   "xonotic-sdl.desktop")
 sha256sums=('a1a81ba55ab151bf09758e7f59614b2e5150e84224753e77950bcd07a282ea5d'
-  '724aa8e6180caec981edcd595efda9f91bc3d6753d40d5c28f3d68a589b2af43'
-  '8114f5f2981c75d119230a5404d423b313caf2c6696056e3ed8ebba9f43c924b')
+  '6f5ce4fcb9c2904af64d8a9608acc99ed42f62576c659c21ae0313cbf971e968'
+  '13cebb542cba063f08218fb3c01ffc222a5559f5439a89ff363c22eb7b48a0b2')
 
 _llvm=0
 

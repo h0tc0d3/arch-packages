@@ -21,7 +21,7 @@ pkgname=(
   qemu-{base,desktop,emulators-full,full}+clang
 )
 pkgver=7.1.0
-pkgrel=4
+pkgrel=5
 pkgdesc="A generic and open source machine emulator and virtualizer"
 arch=(x86_64)
 url="https://www.qemu.org/"
@@ -38,7 +38,6 @@ makedepends=(
   brltty
   bzip2
   cairo
-  ceph
   curl
   dtc
   fuse3
@@ -874,6 +873,7 @@ package_qemu-system-ppc+clang() {
   depends=("${_qemu_system_deps[@]}" systemd-libs libudev.so)
   provides=(qemu-system-ppc)
   conflicts=(qemu-system-ppc)
+  options=(!strip)
 
   mv -v "${pkgname:?}/"* "${pkgdir:?}"
 

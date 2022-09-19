@@ -1,5 +1,5 @@
 pkgname=amdvlk+clang
-pkgver=2022.Q3.3
+pkgver=2022.Q3.4
 pkgrel=1
 pkgdesc="AMD's standalone Vulkan driver"
 arch=(x86_64)
@@ -7,17 +7,16 @@ url="https://github.com/GPUOpen-Drivers"
 license=('MIT')
 provides=('vulkan-driver' 'amdvlk' "amdvlk=${pkgver}")
 conflicts=('amdvlk')
-makedepends=('python' 'wayland' 'libxrandr' 'xorg-server-devel'
-  'cmake' 'git' 'clang' 'lld' 'glslang' 'spirv-tools'
-  'spirv-headers')
+makedepends=('perl-xml-xpath' 'python' 'wayland' 'libxrandr' 'xorg-server-devel' 'directx-shader-compiler' 'glslang'
+  'cmake' 'ninja' 'git')
 # Please use a script generate-source.py for reduce git requests
 source=(
-  "amdvlk/xgl::git+https://github.com/GPUOpen-Drivers/xgl#commit=43fc25d001917232d01995bb99f1a29be905545f"
-  "amdvlk/pal::git+https://github.com/GPUOpen-Drivers/pal#commit=f80b95b308a42eb8f54d22b14961f3ea53674584"
-  "amdvlk/llpc::git+https://github.com/GPUOpen-Drivers/llpc#commit=716cd8e5d6934bde88c086645551a2d064289894"
-  "amdvlk/spvgen::git+https://github.com/GPUOpen-Drivers/spvgen#commit=3b61d0ce836d3832e19931be198f6f619206de4c"
-  "amdvlk/AMDVLK::git+https://github.com/GPUOpen-Drivers/AMDVLK#commit=refs/tags/v-2022.Q3.3"
-  "amdvlk/llvm-project::git+https://github.com/GPUOpen-Drivers/llvm-project#commit=dc78f4c4b2455e6a29a2e19d80034654fb0d455d"
+  "amdvlk/xgl::git+https://github.com/GPUOpen-Drivers/xgl#commit=6a26878147ab246a8885ab5b4b8897626870c1cd"
+  "amdvlk/pal::git+https://github.com/GPUOpen-Drivers/pal#commit=9078fd5c95e2afd5331b414c07464efd37e4e0fb"
+  "amdvlk/llpc::git+https://github.com/GPUOpen-Drivers/llpc#commit=58214602f9bc8583795d60c21bf2f122df02d6b5"
+  "amdvlk/gpurt::git+https://github.com/GPUOpen-Drivers/gpurt#commit=c1df7354336aba18d54c0e32a95b58eac0d44c07"
+  "amdvlk/AMDVLK::git+https://github.com/GPUOpen-Drivers/AMDVLK#commit=refs/tags/v-2022.Q3.4"
+  "amdvlk/llvm-project::git+https://github.com/GPUOpen-Drivers/llvm-project#commit=f5023e507645c8178128891b96bf463f9a1a81a0"
   "amdvlk/MetroHash::git+https://github.com/GPUOpen-Drivers/MetroHash#commit=18893fb28601bb9af1154cd1a671a121fff6d8d3"
   "amdvlk/CWPack::git+https://github.com/GPUOpen-Drivers/CWPack#commit=4f8cf0584442a91d829d269158567d7ed926f026"
 )
@@ -35,8 +34,6 @@ build() {
   CFLAGS="${CFLAGS} -flto=thin"
   CXXFLAGS="${CXXFLAGS} -flto=thin"
   LDFLAGS="${LDFLAGS} -fuse-ld=lld"
-
-  sed -i "/<unistd.h>/I a #include <time.h>\n" pal/src/util/lnx/lnxUuid.cpp
 
   cmake -S xgl -B build \
     -DLLVM_USE_LINKER=lld \

@@ -1,0 +1,57 @@
+pkgname=dbus-broker+clang
+pkgver=32
+pkgrel=1
+pkgdesc="Linux D-Bus Message Broker"
+url="https://github.com/bus1/dbus-broker/wiki"
+arch=(x86_64)
+license=(Apache)
+provides=('dbus-broker' "dbus-broker=${pkgver}")
+conflicts=('dbus-broker')
+depends=(systemd-libs expat audit libselinux)
+makedepends=(meson systemd python-docutils)
+source=("https://github.com/bus1/dbus-broker/releases/download/v${pkgver}/dbus-broker-${pkgver}.tar.xz")
+sha256sums=('bea7f653e7251063c5f427e9e3f93562d38a0d8667ae6d49fb56f113605985de')
+
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+}
+
+build() {
+
+  meson setup dbus-broker-${pkgver} build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true \
+    -D audit=true \
+    -D docs=true \
+    -D selinux=true \
+    -D system-console-users=gdm,sddm,lightdm,lxdm
+
+  meson compile -C build
+
+}
+
+check() {
+
+  meson test -C build --print-errorlogs
+
+}
+
+package() {
+
+  meson install -C build --destdir "${pkgdir:?}"
+
+}

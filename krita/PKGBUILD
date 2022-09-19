@@ -1,5 +1,5 @@
 pkgname=krita+clang
-pkgver=5.1.0
+pkgver=5.1.1
 pkgrel=1
 pkgdesc='Edit and paint images'
 arch=(x86_64)
@@ -18,7 +18,7 @@ optdepends=(
   'libmypaint: support for MyPaint brushes'
 )
 
-_commit=a38a8411bf202d846e6adba4832f304db049103c
+_commit=05d6ae2aac46cf59a62a0886cddccd05db979875
 source=(
   "krita::git+https://invent.kde.org/graphics/krita.git#commit=${_commit}"
 )
