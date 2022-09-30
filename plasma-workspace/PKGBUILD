@@ -1,7 +1,7 @@
 pkgbase=plasma-workspace+clang
 pkgname=(plasma-workspace+clang plasma-wayland-session+clang)
 pkgver=5.25.5
-pkgrel=3
+pkgrel=4
 pkgdesc='KDE Plasma Workspace'
 arch=(x86_64)
 url='https://kde.org/plasma-desktop/'

@@ -1,6 +1,6 @@
 pkgname=ffmpeg+clang
-pkgver=5.1.1
-pkgrel=3
+pkgver=5.1.2
+pkgrel=1
 epoch=2
 pkgdesc='Complete solution to record, convert and stream audio and video'
 arch=(x86_64)
@@ -97,7 +97,7 @@ provides=(
   libswscale.so
 )
 conflicts=('ffmpeg')
-_commit=fcbd9ec24895b53bfa6a206aed29b5b04b68c41b
+_commit=05d6157aab34bc49f23284645a8f34ece870f44d
 source=(
   "git+https://git.ffmpeg.org/ffmpeg.git#commit=${_commit}"
   add-av_stream_get_first_dts-for-chromium.patch

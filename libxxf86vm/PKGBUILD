@@ -1,16 +1,16 @@
 pkgname=libxxf86vm+clang
-pkgver=1.1.4
-pkgrel=5
+pkgver=1.1.5
+pkgrel=1
 pkgdesc="X11 XFree86 video mode extension library"
 arch=('x86_64')
 license=('custom')
-url="https://xorg.freedesktop.org/"
+url=""
 provides=(libxxf86vm "libxxf86vm=${pkgver}")
 conflicts=(libxxf86vm)
 depends=('libxext')
 makedepends=('xorg-util-macros' 'xorgproto')
-source=("${url}/releases/individual/lib/libXxf86vm-${pkgver}.tar.bz2"{,.sig})
-sha512sums=('c5f92d86e143db02ebb36bcd25618acaa2cb2831f5a23800a06dd431cd73b6702d95de8fe7407ce626336bf614c288d5256f4d87ea7781fad2ab6c517cbf09e0'
+source=("https://xorg.freedesktop.org/releases/individual/lib/libXxf86vm-${pkgver}.tar.xz"{,.sig})
+sha256sums=('247fef48b3e0e7e67129e41f1e789e8d006ba47dba1c0cdce684b9b703f888e7'
   'SKIP')
 validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E') # Alan Coopersmith <alan.coopersmith@oracle.com>
 

@@ -1,5 +1,5 @@
 pkgname=telegram-desktop+clang
-pkgver=4.1.1
+pkgver=4.2.0
 pkgrel=1
 pkgdesc='Official Telegram Desktop client'
 arch=('x86_64')
@@ -19,7 +19,7 @@ optdepends=(
 source=(
   "https://github.com/telegramdesktop/tdesktop/releases/download/v${pkgver}/tdesktop-${pkgver}-full.tar.gz"
 )
-sha256sums=('5574cb8ebfa4983157d347883e7ef3bd85a8d71f972b8458d41fab0d7f733f56')
+sha256sums=('d3c78c6daa5b4e336d55dd1dd2dc0003e34dad501e6d212719b51ea8cad71dde')
 
 _llvm=0
 

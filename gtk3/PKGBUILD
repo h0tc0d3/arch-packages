@@ -1,6 +1,6 @@
 pkgbase=gtk3+clang
 pkgname=(gtk3+clang gtk3-docs+clang gtk3-demos+clang)
-pkgver=3.24.34
+pkgver=3.24.34+r156+g812b3930d0
 pkgrel=1
 epoch=1
 pkgdesc="GObject-based multi-platform GUI toolkit"
@@ -8,13 +8,13 @@ arch=(x86_64)
 url="https://www.gtk.org/"
 depends=(atk cairo libxcursor libxinerama libxrandr libxi libepoxy gdk-pixbuf2
   dconf libxcomposite libxdamage pango shared-mime-info at-spi2-atk
-  wayland libxkbcommon adwaita-icon-theme json-glib librsvg
-  desktop-file-utils mesa cantarell-fonts libcolord rest libcups
-  fribidi iso-codes libcloudproviders tracker3 gtk-update-icon-cache)
+  wayland libxkbcommon adwaita-icon-theme librsvg desktop-file-utils
+  mesa cantarell-fonts libcolord libcups fribidi iso-codes
+  libcloudproviders tracker3 gtk-update-icon-cache)
 makedepends=(gobject-introspection gtk-doc git glib2-docs sassc meson
   wayland-protocols)
 license=(LGPL)
-_commit=4e3a3f05533789e1a68c70c185e1755d386d6c47 # tags/3.24.34^0
+_commit=812b3930d0bb11d67d4a2c159d037c8c0d440c50 # gtk-3-24
 source=("git+https://gitlab.gnome.org/GNOME/gtk.git#commit=${_commit}"
   gtk-query-immodules-3.0.hook)
 sha256sums=('SKIP'
@@ -43,6 +43,10 @@ prepare() {
     echo -e "\E[1;31mCan't cd to ${srcdir:?}/gtk directory! Prepare Failed! \E[0m"
     exit 1
   )
+
+  # https://bugs.archlinux.org/task/76018
+  # https://gitlab.gnome.org/GNOME/gtk/-/merge_requests/4381#note_1465559
+  git revert -n da4066774b926880631af099469d308714b5606c
 
 }
 

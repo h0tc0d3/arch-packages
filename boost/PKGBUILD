@@ -1,7 +1,7 @@
 pkgbase=boost+clang
 pkgname=('boost+clang' 'boost-libs+clang')
 pkgver=1.80.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Free peer-reviewed portable C++ source libraries"
 arch=('x86_64')
 url="https://www.boost.org/"
@@ -102,6 +102,11 @@ package_boost+clang() {
   cp -a fakeinstall/lib/cmake "${pkgdir:?}/usr/lib/"
   cp -a fakeinstall/{bin,include,share} "${pkgdir:?}/usr/"
 
+  # https://github.com/boostorg/python/issues/203#issuecomment-391477685
+  for _lib in python numpy; do
+    ln -srL "${pkgdir:?}/usr/lib/libboost_${_lib}3"{10,}.so
+  done
+
   install -Dm644 -t "${pkgdir:?}/usr/share/licenses/boost" "${_srcname}/LICENSE_1_0.txt"
 
 }
@@ -140,11 +145,6 @@ package_boost-libs+clang() {
 
   cp fakeinstall/lib/boost-python3.10/mpi.so \
     "${pkgdir:?}"/usr/lib/python3.10/site-packages/boost/mpi.so
-
-  # https://github.com/boostorg/python/issues/203#issuecomment-391477685
-  for _lib in python numpy; do
-    ln -srL "${pkgdir:?}/usr/lib/libboost_${_lib}3"{10,}.so
-  done
 
   install -Dm644 -t "${pkgdir:?}/usr/share/licenses/boost-libs" "${_srcname}/LICENSE_1_0.txt"
 

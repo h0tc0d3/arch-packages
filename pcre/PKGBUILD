@@ -1,12 +1,11 @@
 pkgname=pcre+clang
 pkgver=8.45
-pkgrel=2
+pkgrel=3
 pkgdesc='A library that implements Perl 5-style regular expressions'
 arch=('x86_64')
 url='https://www.pcre.org/'
 license=('BSD')
-options=(staticlibs)
-provides=(pcre "pcre=${pkgver}" libpcreposix.so libpcrecpp.so libpcre32.so libpcre16.so libpcre.so)
+provides=(pcre "pcre=${pkgver}" libpcre{,16,32,posix,cpp}.so)
 conflicts=(pcre)
 depends=('gcc-libs' 'readline' 'zlib' 'bzip2' 'bash')
 validpgpkeys=(
@@ -23,19 +22,6 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=1
   fi
-
-  cd "${srcdir:?}/pcre-${pkgver}" || (
-    echo -e "\E[1;31mCan't cd to ${srcdir:?}/pcre-${pkgver} directory! Prepare Failed! \E[0m"
-    exit 1
-  )
-
-  for src in "${source[@]}"; do
-    src="${src%%::*}"
-    src="${src##*/}"
-    [[ ${src} = *.patch ]] || continue
-    msg2 "Applying patch ${src}..."
-    patch -Np1 -i "${srcdir:?}/${src}"
-  done
 
 }
 
