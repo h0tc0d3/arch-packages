@@ -1,6 +1,6 @@
 pkgname=krita+clang
 pkgver=5.1.1
-pkgrel=1
+pkgrel=2
 pkgdesc='Edit and paint images'
 arch=(x86_64)
 url='https://krita.org'
@@ -16,14 +16,17 @@ optdepends=(
   'python-pyqt5: for the Python plugins' 'libheif: HEIF filter'
   'kseexpr: SeExpr generator layer' 'kimageformats: PSD support'
   'libmypaint: support for MyPaint brushes'
+  'libjxl: JPEG-XL filter'
 )
 
 _commit=05d6ae2aac46cf59a62a0886cddccd05db979875
 source=(
   "krita::git+https://invent.kde.org/graphics/krita.git#commit=${_commit}"
+  krita-xsimd-9.patch
 )
 
-sha256sums=('SKIP')
+sha256sums=('SKIP'
+  '84767e7da9ad861b5a95550f3cd06f45768f8f39eb4a9ce8cdb674163e763234')
 validpgpkeys=(
   '05D00A8B73A686789E0A156858B9596C722EA3BD' # Boudewijn Rempt <foundation@krita.org>
   'E9FB29E74ADEACC5E3035B8AB69EB4CF7468332F' # Dmitry Kazakov (main key) <dimula73@gmail.com>
@@ -49,6 +52,7 @@ prepare() {
     exit 1
   )
 
+  _patch krita-xsimd-9.patch # Support xsimd 9
   # Remove git hash from version string
   sed -i -e '/get_git_head_hash(GIT_SHA1)/,+12 d' CMakeLists.txt
 

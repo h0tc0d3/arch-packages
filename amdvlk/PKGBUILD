@@ -1,5 +1,5 @@
 pkgname=amdvlk+clang
-pkgver=2022.Q3.4
+pkgver=2022.Q3.5
 pkgrel=1
 pkgdesc="AMD's standalone Vulkan driver"
 arch=(x86_64)
@@ -11,17 +11,15 @@ makedepends=('perl-xml-xpath' 'python' 'wayland' 'libxrandr' 'xorg-server-devel'
   'cmake' 'ninja' 'git')
 # Please use a script generate-source.py for reduce git requests
 source=(
-  "amdvlk/xgl::git+https://github.com/GPUOpen-Drivers/xgl#commit=6a26878147ab246a8885ab5b4b8897626870c1cd"
-  "amdvlk/pal::git+https://github.com/GPUOpen-Drivers/pal#commit=9078fd5c95e2afd5331b414c07464efd37e4e0fb"
-  "amdvlk/llpc::git+https://github.com/GPUOpen-Drivers/llpc#commit=58214602f9bc8583795d60c21bf2f122df02d6b5"
-  "amdvlk/gpurt::git+https://github.com/GPUOpen-Drivers/gpurt#commit=c1df7354336aba18d54c0e32a95b58eac0d44c07"
-  "amdvlk/AMDVLK::git+https://github.com/GPUOpen-Drivers/AMDVLK#commit=refs/tags/v-2022.Q3.4"
-  "amdvlk/llvm-project::git+https://github.com/GPUOpen-Drivers/llvm-project#commit=f5023e507645c8178128891b96bf463f9a1a81a0"
+  "amdvlk/xgl::git+https://github.com/GPUOpen-Drivers/xgl#commit=4118707939c2f4783d28ce2a383184a3794ca477"
+  "amdvlk/pal::git+https://github.com/GPUOpen-Drivers/pal#commit=ae55b19b7553bf204b4945de9c11c5b05bc0e167"
+  "amdvlk/llpc::git+https://github.com/GPUOpen-Drivers/llpc#commit=7857f2e209fc65374f2891be52e3a4a22fbae483"
+  "amdvlk/gpurt::git+https://github.com/GPUOpen-Drivers/gpurt#commit=b89f22aadd0a335be632055434a7f8ba152fcb37"
+  "amdvlk/llvm-project::git+https://github.com/GPUOpen-Drivers/llvm-project#commit=5c82ef808fd269c95f5bd166d1846149e3afadc2"
   "amdvlk/MetroHash::git+https://github.com/GPUOpen-Drivers/MetroHash#commit=18893fb28601bb9af1154cd1a671a121fff6d8d3"
   "amdvlk/CWPack::git+https://github.com/GPUOpen-Drivers/CWPack#commit=4f8cf0584442a91d829d269158567d7ed926f026"
 )
 sha256sums=('SKIP'
-  'SKIP'
   'SKIP'
   'SKIP'
   'SKIP'
@@ -54,7 +52,7 @@ package() {
   install -Dm644 build/icd/amdvlk64.so "${pkgdir:?}/usr/lib/"
   install -Dm644 build/icd/amd_icd64.json "${pkgdir:?}/usr/share/vulkan/icd.d/"
   install -Dm644 build/icd/amd_icd64.json "${pkgdir:?}/usr/share/vulkan/implicit_layer.d/"
-  install -Dm644 AMDVLK/LICENSE.txt "${pkgdir:?}/usr/share/licenses/amdvlk"
+  install -Dm644 xgl/LICENSE.txt "${pkgdir:?}/usr/share/licenses/amdvlk"
 
   sed -i "s#/lib64#/lib#g" "${pkgdir:?}/usr/share/vulkan/icd.d/amd_icd64.json"
   sed -i "s#/lib64#/lib#g" "${pkgdir:?}/usr/share/vulkan/implicit_layer.d/amd_icd64.json"

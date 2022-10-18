@@ -1,7 +1,7 @@
 pkgbase=systemd+clang
 pkgname=('systemd+clang' 'systemd-libs+clang' 'systemd-resolvconf+clang' 'systemd-sysvcompat+clang')
-_tag='46cf27a20eb6fb676ac987533415d499b77dd0af' # git rev-parse v${_tag_name}
-_tag_name=251.4
+_tag='9442acae93a851fd666ffa4eaaf82acabee292b5' # git rev-parse v${_tag_name}
+_tag_name=251.6
 pkgver="${_tag_name/-/}"
 pkgrel=1
 arch=('x86_64')
@@ -60,7 +60,10 @@ sha256sums=('SKIP'
   'f6364443609b1d5a07f385e7228ace0eae5040ae3bbd4e00ed5033ef1b19e4b9'
   '1090b7b1edba2042298b609a77bbe122982ca936208408fb79d77b33a2f3c27a')
 
-_backports=()
+_backports=(
+  # meson: Fix build with --optimization=plain
+  '7aa4762ce274a1c9a59902b972fa4fdee1b22715'
+)
 
 _reverts=()
 

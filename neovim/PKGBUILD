@@ -1,5 +1,5 @@
 pkgname=neovim+clang
-pkgver=0.7.2
+pkgver=0.8.0
 pkgrel=3
 pkgdesc='Fork of Vim aiming to improve user experience, plugins, and GUIs'
 arch=('x86_64')
@@ -16,10 +16,8 @@ optdepends=('python-neovim: for Python 3 plugin support (see :help python)'
   'wl-clipboard: for clipboard support on wayland (see :help clipboard)')
 source=(
   "https://github.com/neovim/neovim/archive/v${pkgver}/neovim-${pkgver}.tar.gz"
-  fix-build.patch
 )
-sha256sums=('ccab8ca02a0c292de9ea14b39f84f90b635a69282de38a6b4ccc8565bc65d096'
-  'bceb977645b38d4cf0c6c3fcb87ebaaf12b81553da5981e472d80fd3f1c8b8a0')
+sha256sums=('505e3dfb71e2f73495c737c034a416911c260c0ba9fd2092c6be296655be4d18')
 
 _llvm=0
 
@@ -28,8 +26,6 @@ prepare() {
   if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
     _llvm=1
   fi
-
-  patch -Np1 -d "neovim-${pkgver}" -i "${srcdir:?}/fix-build.patch"
 
 }
 

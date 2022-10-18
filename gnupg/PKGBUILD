@@ -1,5 +1,5 @@
 pkgname=gnupg+clang
-pkgver=2.3.7
+pkgver=2.3.8
 pkgrel=1
 pkgdesc='Complete and free implementation of the OpenPGP standard'
 url='https://www.gnupg.org/'
@@ -26,7 +26,7 @@ source=(
   "https://gnupg.org/ftp/gcrypt/gnupg/gnupg-${pkgver}.tar.bz2"{,.sig}
   remove-beta-warning.patch
 )
-sha256sums=('ee163a5fb9ec99ffc1b18e65faef8d086800c5713d15a672ab57d3799da83669'
+sha256sums=('540b7a40e57da261fb10ef521a282e0021532a80fd023e75fb71757e8a4969ed'
   'SKIP'
   '0016111253122514e59570c0a1fa05513fd7510298f6b5952a2009d26e6cd16c')
 

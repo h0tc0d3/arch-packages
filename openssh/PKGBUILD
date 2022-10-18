@@ -1,5 +1,5 @@
 pkgname=openssh+clang
-pkgver=9.0p1
+pkgver=9.1p1
 pkgrel=1
 pkgdesc='Premier connectivity tool for remote login with the SSH protocol'
 url='https://www.openssh.com/portable.html'
@@ -23,7 +23,7 @@ source=(
   'sshd.conf'
   'sshd.pam'
 )
-sha256sums=('03974302161e9ecce32153cfa10012f1e65c8f3750f573a73ab1befd5972a28a'
+sha256sums=('19f85009c7e3e23787f0236fbb1578392ab4d4bf9f8ec5fe6bc1cd7e8bfdd288'
   'SKIP'
   '4031577db6416fcbaacf8a26a024ecd3939e5c10fe6a86ee3f0eea5093d533b7'
   'e40f8b7c8e5e2ecf3084b3511a6c36d5b5c9f9e61f2bb13e3726c71dc7d4fbc7'

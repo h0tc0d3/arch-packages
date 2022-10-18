@@ -1,5 +1,5 @@
 pkgname=python-scipy+clang
-pkgver=1.9.1
+pkgver=1.9.2
 pkgrel=1
 pkgdesc='Open-source software for mathematics, science, and engineering'
 arch=(x86_64)
@@ -11,8 +11,8 @@ conflicts=(python-scipy)
 makedepends=(gcc-fortran python-setuptools cython python-pythran pybind11)
 checkdepends=(python-pytest)
 optdepends=('python-pillow: for image saving module')
-source=(https://pypi.python.org/packages/source/s/scipy/scipy-${pkgver}.tar.gz)
-sha256sums=('26d28c468900e6d5fdb37d2812ab46db0ccd22c63baa095057871faa3a498bc9')
+source=("https://pypi.python.org/packages/source/s/scipy/scipy-${pkgver}.tar.gz")
+sha256sums=('99e7720caefb8bca6ebf05c7d96078ed202881f61e0c68bd9e0f3e8097d6f794')
 
 _lld=0
 

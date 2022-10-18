@@ -1,6 +1,6 @@
 pkgname=xcb-util-cursor+clang
-pkgver=0.1.3
-pkgrel=4
+pkgver=0.1.4
+pkgrel=1
 pkgdesc='XCB cursor library'
 arch=('x86_64')
 url='https://cgit.freedesktop.org/xcb/util-cursor'
@@ -9,10 +9,12 @@ provides=("xcb-util-cursor" "xcb-util-cursor=${pkgver}")
 conflicts=("xcb-util-cursor")
 depends=('libxcb' 'xcb-util-renderutil' 'xcb-util-image')
 makedepends=('xorgproto')
-#makedepends=('doxygen' 'xorg-util-macros' 'graphviz') # no docs yet to build
-source=("https://xcb.freedesktop.org/dist/xcb-util-cursor-${pkgver}.tar.bz2")
-sha1sums=('26562eb6d4151307f7b6a53453d360ecfc0563ac')
-
+source=("https://xcb.freedesktop.org/dist/xcb-util-cursor-${pkgver}.tar.xz"{,.sig})
+sha256sums=('28dcfe90bcab7b3561abe0dd58eb6832aa9cc77cfe42fcdfa4ebe20d605231fb'
+  'SKIP')
+validpgpkeys=(
+  '4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E' # Alan Coopersmith <alan.coopersmith@oracle.com>
+)
 _llvm=0
 
 prepare() {

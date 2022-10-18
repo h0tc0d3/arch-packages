@@ -1,5 +1,5 @@
 pkgname=qt6-base
-_qtver=6.3.2
+_qtver=6.4.0
 pkgver=${_qtver/-/}
 pkgrel=1
 arch=(x86_64)
@@ -32,7 +32,7 @@ source=(
   qtbase-gcc11.patch
   qtbase-libglvnd.patch
 )
-sha256sums=('7929ba4df870b6b30870bc0aed2525cfc606ed7091107b23cf7ed7e434caa9a6'
+sha256sums=('cb6475a0bd8567c49f7ffbb072a05516ee6671171bed55db75b22b94ead9b37d'
   '5411edbe215c24b30448fac69bd0ba7c882f545e8cf05027b2b6e2227abc5e78'
   '4b93f6a79039e676a56f9d6990a324a64a36f143916065973ded89adc621e094'
   'ad4dc439bc23826b7f165b1e897d8544adff593254cb03061be397358a7163b0'
@@ -108,7 +108,7 @@ package() {
 
   DESTDIR="${pkgdir:?}" cmake --install build
 
-  install -Dm644 "qtbase-everywhere-src-${_qtver}/LICENSE"* -t "${pkgdir:?}/usr/share/licenses/qt6-base"
+  install -Dm644 "qtbase-everywhere-src-${_qtver}/LICENSES/"* -t "${pkgdir:?}/usr/share/licenses/qt6-base"
 
   # Install symlinks for user-facing tools
   install -d "${pkgdir:?}/usr/bin"

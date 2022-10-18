@@ -1,6 +1,6 @@
 pkgname=freeglut+clang
-pkgver=3.2.2
-pkgrel=2
+pkgver=3.4.0
+pkgrel=1
 pkgdesc="Provides functionality for small OpenGL programs"
 url="http://freeglut.sourceforge.net/"
 arch=(x86_64)
@@ -11,7 +11,7 @@ replaces=(glut)
 provides=(glut freeglut "freeglut=${pkgver}")
 conflicts=(glut freeglut)
 source=("https://downloads.sourceforge.net/freeglut/freeglut-${pkgver}.tar.gz")
-sha256sums=('c5944a082df0bba96b5756dddb1f75d0cd72ce27b5395c6c1dde85c2ff297a50')
+sha256sums=('3c0bcb915d9b180a97edaebd011b7a1de54583a838644dcd42bb0ea0c6f3eaec')
 
 _llvm=0
 

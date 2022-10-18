@@ -1,5 +1,5 @@
 pkgname=libbpf+clang
-pkgver=0.8.1
+pkgver=1.0.1
 pkgrel=1
 pkgdesc='Library for loading eBPF programs and reading and manipulating eBPF objects from user-space'
 url='https://github.com/libbpf/libbpf'
@@ -10,7 +10,7 @@ makedepends=('rsync')
 provides=('libbpf.so' libbpf "libbpf=${pkgver}")
 conflicts=(libbpf)
 source=("https://github.com/libbpf/libbpf/archive/v${pkgver}/libbpf-${pkgver}.tar.gz")
-sha256sums=('7bda8187efc619d1eb20a1ba5ab949dd68d40dd44945310c91ac0f915fa4a42b')
+sha256sums=('3d6afde67682c909e341bf194678a8969f17628705af25f900d5f68bd299cb03')
 
 _llvm=0
 

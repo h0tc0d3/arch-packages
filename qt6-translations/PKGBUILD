@@ -1,5 +1,5 @@
 pkgname=qt6-translations+clang
-_qtver=6.3.2
+_qtver=6.4.0
 pkgver=${_qtver/-/}
 pkgrel=1
 arch=(any)
@@ -11,7 +11,7 @@ conflicts=("qt6-translations")
 makedepends=(cmake ninja qt6-tools)
 groups=(qt6)
 source=("https://ftp.fau.de/qtproject/archive/qt/${pkgver%.*}/${_qtver}/submodules/qttranslations-everywhere-src-${_qtver}.tar.xz")
-sha256sums=('ef76cc957b762fb7761c96651ba07f87e4515f8262dc977962c53cd259b2c6c0')
+sha256sums=('7ab93a930b693eeb53ab97b038b4e6e057d06374e6f49a3814d99145a276925f')
 
 _llvm=0
 

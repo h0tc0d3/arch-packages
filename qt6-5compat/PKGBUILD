@@ -1,7 +1,7 @@
 pkgname=qt6-5compat+clang
-_qtver=6.3.2
+_qtver=6.4.0
 pkgver=${_qtver/-/}
-pkgrel=1
+pkgrel=2
 arch=(x86_64)
 url='https://www.qt.io'
 license=(GPL3 LGPL3 FDL custom)
@@ -10,10 +10,10 @@ provides=("qt6-5compat" "qt6-5compat=${pkgver}")
 conflicts=("qt6-5compat")
 depends=(qt6-base)
 makedepends=(cmake qt6-declarative)
-optdepends=('qt6-declarative: for QtGraphicalEffects')
+optdepends=('qt6-declarative: for QtGraphicalEffects' 'qt6-shadertools: for QtGraphicalEffects')
 groups=(qt6)
 source=("https://ftp.fau.de/qtproject/archive/qt/${pkgver%.*}/${_qtver}/submodules/qt5compat-everywhere-src-${_qtver}.tar.xz")
-sha256sums=('91a3ac0f3f87e4103afa5834ccbecff9374daf716fab362d0c5e2d6ab98560cc')
+sha256sums=('73475d0837f78246d509199f211a35c71fc36cccf64b3de258ebc6387194a4c0')
 
 _llvm=0
 

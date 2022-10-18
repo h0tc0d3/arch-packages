@@ -1,6 +1,6 @@
 pkgname=libxmu+clang
-pkgver=1.1.3
-pkgrel=3
+pkgver=1.1.4
+pkgrel=1
 pkgdesc="X11 miscellaneous micro-utility library"
 arch=('x86_64')
 url="https://xorg.freedesktop.org/"
@@ -9,9 +9,12 @@ conflicts=(libxmu)
 depends=('libxext' 'libxt')
 makedepends=('xorg-util-macros')
 license=('custom')
-source=("${url}/releases/individual/lib/libXmu-${pkgver}.tar.bz2")
-sha512sums=('8c6cc65b22aa031ad870dd92736681a068a0878a425a53dbed909943da1136c4a24034d467cfd3785c3a8d78f66850b69f1ebe1eb24aaf9bc176b1d171a5c762')
-
+source=("${url}/releases/individual/lib/libXmu-${pkgver}.tar.xz"{,.sig})
+sha256sums=('210de3ab9c3e9382572c25d17c2518a854ce6e2c62c5f8315deac7579e758244'
+  'SKIP')
+validpgpkeys=(
+  '4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E' # Alan Coopersmith <alan.coopersmith@oracle.com>
+)
 _llvm=0
 
 prepare() {

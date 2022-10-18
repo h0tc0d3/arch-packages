@@ -1,6 +1,6 @@
 pkgname=libgpg-error+clang
-pkgver=1.45
-pkgrel=2
+pkgver=1.46
+pkgrel=1
 pkgdesc="Support library for libgcrypt"
 arch=(x86_64)
 url="https://www.gnupg.org"
@@ -9,7 +9,7 @@ provides=('libgpg-error' "libgpg-error=${pkgver}")
 conflicts=('libgpg-error')
 depends=('glibc' 'sh')
 source=("https://www.gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-${pkgver}.tar.bz2"{,.sig})
-sha256sums=('570f8ee4fb4bff7b7495cff920c275002aea2147e9a1d220c068213267f80a26'
+sha256sums=('b7e11a64246bbe5ef37748de43b245abd72cfcd53c9ae5e7fc5ca59f1c81268d'
   'SKIP')
 validpgpkeys=(
   '6DAA6E64A76D2840571B4902528897B826403ADA' # "Werner Koch (dist signing 2020)"

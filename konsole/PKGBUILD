@@ -1,5 +1,5 @@
 pkgname=konsole+clang
-pkgver=22.08.1
+pkgver=22.08.2
 pkgrel=1
 arch=(x86_64)
 url='https://apps.kde.org/konsole/'
@@ -14,7 +14,7 @@ optdepends=('keditbookmarks: to manage bookmarks')
 source=(
   "https://download.kde.org/stable/release-service/${pkgver}/src/konsole-${pkgver}.tar.xz"{,.sig}
 )
-sha256sums=('f124954979cdc58b44b70a3500eaecef83421a652cae73f8bef961184fdc2101'
+sha256sums=('9e3574e23232a6aa38441d043ba3c624f0b4d275111a0c6eb1b7840caabde96c'
   'SKIP')
 
 validpgpkeys=(
