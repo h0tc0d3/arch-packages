@@ -7,7 +7,8 @@ url='https://www.qt.io'
 license=(GPL3 LGPL3 FDL custom)
 pkgdesc='Classes for QML and JavaScript languages'
 depends=(qt6-base)
-makedepends=(cmake python at-spi2-core qt6-shadertools)
+makedepends=(cmake python at-spi2-core qt6-shadertools qt6-languageserver)
+optdepends=('qt6-languageserver: for qmlls')
 conflicts=(qt6-quickcontrols2 qt6-declarative)
 provides=(qt6-quickcontrols2 "qt6-declarative" "qt6-declarative=${pkgver}")
 replaces=(qt6-quickcontrols2)

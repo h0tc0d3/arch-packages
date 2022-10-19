@@ -1,5 +1,5 @@
 pkgname=kitty+clang
-pkgver=0.26.3
+pkgver=0.26.4
 pkgrel=1
 pkgdesc="A modern, hackable, featureful, OpenGL-based terminal emulator"
 arch=('x86_64')
@@ -16,7 +16,7 @@ optdepends=(
   'libcanberra: playing "bell" sound on terminal bell'
 )
 source=("https://github.com/kovidgoyal/kitty/releases/download/v${pkgver}/kitty-${pkgver}.tar.xz"{,.sig})
-sha256sums=('e86f06da696fce7d6e5822bd82198abdd5d94dbebd5eaacbd3a7b4f6001342f9'
+sha256sums=('c09591ac7c908e6a0549f75cc061c6318f46261f9f5d3f3775120063c3a43bb7'
   'SKIP')
 validpgpkeys=('3CE1780F78DD88DF45194FD706BC317B515ACE7C') # Kovid Goyal
 

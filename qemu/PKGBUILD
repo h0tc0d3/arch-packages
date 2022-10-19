@@ -21,7 +21,7 @@ pkgname=(
   qemu-{base,desktop,emulators-full,full}+clang
 )
 pkgver=7.1.0
-pkgrel=5
+pkgrel=9
 pkgdesc="A generic and open source machine emulator and virtualizer"
 arch=(x86_64)
 url="https://www.qemu.org/"
@@ -97,6 +97,7 @@ source=(
   qemu-sysusers.conf
   65-kvm.rules
   99-qemu-guest-agent.rules
+  qemu-io_uring.patch::https://patchwork.kernel.org/project/qemu-devel/patch/20220924144815.5591-1-faithilikerun@gmail.com/raw/
 )
 
 backup=(
@@ -105,12 +106,13 @@ backup=(
 )
 
 sha256sums=('a0634e536bded57cf38ec8a751adb124b89c776fe0846f21ab6c6728f1cbbbe6'
-            'SKIP'
-            '13deacdf79d5afb01c48984cc3cd5291341ca5b28d43298e804dc511ce581895'
-            '50aa2cd12098f9683409d33fe13c52c548af40a72155d84c9fb9ada6949b194c'
-            '36fdb765d3ef4391ac69eecab80fbd760569ed6fdb25543f003cd6b378d796e6'
-            'a66f0e791b16b03b91049aac61a25950d93e962e1b2ba64a38c6ad7f609b532c'
-            'f2e13f81e52d62154ac9b285d762ecd243a0538c191b549ec2a88b988c83aa36')
+  'SKIP'
+  '13deacdf79d5afb01c48984cc3cd5291341ca5b28d43298e804dc511ce581895'
+  '50aa2cd12098f9683409d33fe13c52c548af40a72155d84c9fb9ada6949b194c'
+  '36fdb765d3ef4391ac69eecab80fbd760569ed6fdb25543f003cd6b378d796e6'
+  'a66f0e791b16b03b91049aac61a25950d93e962e1b2ba64a38c6ad7f609b532c'
+  'f2e13f81e52d62154ac9b285d762ecd243a0538c191b549ec2a88b988c83aa36'
+  '29cf7cabcc9aa7cca57a2a9312f1ef142c45e45cdebec60d401145a4d6b0549a')
 
 validpgpkeys=('CEACC9E15534EBABB82D3FA03353C9CEF108B584') # Michael Roth <flukshun@gmail.com>
 
@@ -235,6 +237,9 @@ prepare() {
   sed -n '1,23p' "qemu-${pkgver}/tcg/tcg-internal.h" >tcg.LICENSE.MIT
   sed -n '1,23p' "qemu-${pkgver}/tcg/arm/tcg-target.c.inc" >tcg-arm.LICENSE.MIT
   sed -n '1,23p' "qemu-${pkgver}/tcg/tci/tcg-target.h" >tci.LICENSE.MIT
+
+  # fix issues with io_uring: https://gitlab.com/qemu-project/qemu/-/issues/1193
+  patch -Np1 -d "qemu-${pkgver}" -i "${srcdir:?}/qemu-io_uring.patch"
 
   # install qemu-pr-helper.socket to sockets.target
   sed -e 's/multi-user.target/sockets.target/g' -i "qemu-${pkgver}/contrib/systemd/qemu-pr-helper.socket"

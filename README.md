@@ -1,12 +1,21 @@
 # Arch Linux performance important packages
 
-We open official packages repository: **[Arch Linux Club](https://www.archlinux.club/)**
+**The binary package repository has been closed due to lack of time to maintain it.**
+
+**In the future, there will only be an update of this git repository.**
+
+You can return the original packages by running the command:
+
+```bash
+yes | sudo pacman -S zlib llvm llvm-libs lld clang compiler-rt libclc $(pacman -Qqs "\+clang" | sed -e 's/\+clang//' | sed -v 'zlib-ng')
+```
 
 All packages optimized for build with LLVM and Clang.
 
 ## SELinux
 
 For SELinux install packages:
+
 ```bash
 pacman -Syu \
     psmisc+clang findutils+clang iproute2+clang libsepol+clang libselinux+clang \
