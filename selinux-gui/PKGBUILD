@@ -1,0 +1,46 @@
+pkgname=selinux-gui+clang
+pkgver=3.3
+pkgrel=1
+pkgdesc="SELinux GUI tools"
+groups=('selinux')
+arch=('x86_64')
+url='https://github.com/SELinuxProject/selinux/wiki'
+license=('GPL2')
+conflicts=('policycoreutils<2.7' "selinux-gui")
+provides=("selinux-gui=${pkgver}")
+depends=('python-gobject' 'hicolor-icon-theme' 'selinux-python' 'gtk3')
+source=("https://github.com/SELinuxProject/selinux/releases/download/${pkgver}/selinux-gui-${pkgver}.tar.gz")
+sha256sums=('262f1767436af731ab10675105ad9e86909e670e1f8d201e369de61799bbff81')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  make -C "selinux-gui-${pkgver}"
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "selinux-gui-${pkgver}"
+
+  # Compile Python files into bytecode
+  python -m compileall "${pkgdir:?}/usr/share/system-config-selinux"
+
+}

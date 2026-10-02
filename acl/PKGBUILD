@@ -1,0 +1,58 @@
+pkgname=acl+clang
+pkgver=2.3.1
+pkgrel=2
+pkgdesc='Access control list utilities, libraries and headers'
+arch=('x86_64')
+url='https://savannah.nongnu.org/projects/acl'
+license=('LGPL')
+depends=('attr' 'libattr.so')
+replaces=('xfsacl')
+provides=('xfsacl' 'libacl.so' 'acl' "acl=${pkgver}")
+conflicts=('xfsacl' 'acl')
+options=('debug')
+validpgpkeys=('600CD204FBCEA418BD2CA74F154343260542DF34' # Brandon Philips <brandon@ifup.co>
+  'B902B5271325F892AC251AD441633B9FE837F581'             # Frysinger <vapier@gentoo.org>
+  '259B3792B3D6D319212CC4DCD5BF9FEB0313653A')            # Andreas Gruenbacher <andreas.gruenbacher@gmail.com>
+source=("https://download.savannah.gnu.org/releases/acl/acl-${pkgver}.tar.gz"{,.sig})
+sha256sums=('760c61c68901b37fdd5eefeeaf4c0c7a26bdfdd8ac747a1edff1ce0e243c11af'
+  'SKIP')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cd "${srcdir:?}/acl-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/acl-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./configure \
+    --libdir=/usr/lib \
+    --libexecdir=/usr/lib \
+    --prefix=/usr
+
+  make
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "acl-${pkgver}"
+
+}

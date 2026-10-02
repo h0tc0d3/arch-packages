@@ -1,0 +1,157 @@
+diff --git a/acinclude.m4 b/acinclude.m4
+index 29c758931482..cb70a3a4e0c5 100644
+--- a/acinclude.m4
++++ b/acinclude.m4
+@@ -811,7 +811,7 @@ dnl the "undefined reference" error disappear.
+ if test "$enable_float128" != no; then
+    AC_MSG_CHECKING(if _Float128 with hex constants is supported)
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[]], [[
+-volatile _Float128 x = 0x1.fp+16383f128;
++volatile __float128 x = 0x1.fp+16383f128;
+ return x == 0;
+ ]])],
+       [AC_MSG_RESULT(yes)
+@@ -820,15 +820,13 @@ return x == 0;
+        AC_MSG_CHECKING(if __float128 can be used as a fallback)
+ dnl Use the q suffix in this case.
+        AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+-#define _Float128 __float128
+ ]], [[
+-volatile _Float128 x = 0x1.fp+16383q;
++volatile __float128 x = 0x1.fp+16383q;
+ return x == 0;
+ ]])],
+           [AC_MSG_RESULT(yes)
+            AC_DEFINE([MPFR_WANT_FLOAT128],2,
+-                     [Build float128 functions with float128 fallback])
+-           AC_DEFINE([_Float128],[__float128],[__float128 fallback])],
++                     [Build float128 functions with float128 fallback])],
+           [AC_MSG_RESULT(no)
+            if test "$enable_float128" = yes; then
+               AC_MSG_ERROR(
+diff --git a/src/get_float128.c b/src/get_float128.c
+index a10eb3a0494d..b750eed04918 100644
+--- a/src/get_float128.c
++++ b/src/get_float128.c
+@@ -26,16 +26,16 @@ https://www.gnu.org/licenses/ or write to the Free Software Foundation, Inc.,
+ #ifdef MPFR_WANT_FLOAT128
+ 
+ /* generic code */
+-_Float128
++__float128
+ mpfr_get_float128 (mpfr_srcptr x, mpfr_rnd_t rnd_mode)
+ {
+ 
+   if (MPFR_UNLIKELY (MPFR_IS_SINGULAR (x)))
+-    return (_Float128) mpfr_get_d (x, rnd_mode);
++    return (__float128) mpfr_get_d (x, rnd_mode);
+   else /* now x is a normal non-zero number */
+     {
+-      _Float128 r; /* result */
+-      _Float128 m;
++      __float128 r; /* result */
++      __float128 m;
+       mpfr_exp_t e;  /* exponent of x (before rounding) */
+       mpfr_exp_t sh; /* exponent shift, so that x/2^sh is in the double range */
+       const int emin = -16381;
+@@ -83,7 +83,7 @@ mpfr_get_float128 (mpfr_srcptr x, mpfr_rnd_t rnd_mode)
+                  always work if GMP_NUMB_BITS > IEEE_FLOAT128_MANT_DIG.
+                  MPFR_LIMB_HIGHBIT has the advantage to fit on 1 bit. */
+               r += yp[i];
+-              r *= 1 / (2 * (_Float128) MPFR_LIMB_HIGHBIT);
++              r *= 1 / (2 * (__float128) MPFR_LIMB_HIGHBIT);
+             }
+ 
+           mpfr_clear (y);
+diff --git a/src/mpfr.h b/src/mpfr.h
+index c33e73ddecef..e7a9f1bdb7a9 100644
+--- a/src/mpfr.h
++++ b/src/mpfr.h
+@@ -476,8 +476,8 @@ __MPFR_DECLSPEC int mpfr_set_decimal128 (mpfr_ptr, _Decimal128, mpfr_rnd_t);
+ #endif
+ __MPFR_DECLSPEC int mpfr_set_ld (mpfr_ptr, long double, mpfr_rnd_t);
+ #ifdef MPFR_WANT_FLOAT128
+-__MPFR_DECLSPEC int mpfr_set_float128 (mpfr_ptr, _Float128, mpfr_rnd_t);
+-__MPFR_DECLSPEC _Float128 mpfr_get_float128 (mpfr_srcptr, mpfr_rnd_t);
++__MPFR_DECLSPEC int mpfr_set_float128 (mpfr_ptr, __float128, mpfr_rnd_t);
++__MPFR_DECLSPEC __float128 mpfr_get_float128 (mpfr_srcptr, mpfr_rnd_t);
+ #endif
+ __MPFR_DECLSPEC int mpfr_set_z (mpfr_ptr, mpz_srcptr, mpfr_rnd_t);
+ __MPFR_DECLSPEC int mpfr_set_z_2exp (mpfr_ptr, mpz_srcptr, mpfr_exp_t,
+diff --git a/src/set_float128.c b/src/set_float128.c
+index 92fc134c6010..3b306426baf3 100644
+--- a/src/set_float128.c
++++ b/src/set_float128.c
+@@ -37,12 +37,12 @@ https://www.gnu.org/licenses/ or write to the Free Software Foundation, Inc.,
+ #endif
+ 
+ int
+-mpfr_set_float128 (mpfr_ptr r, _Float128 d, mpfr_rnd_t rnd_mode)
++mpfr_set_float128 (mpfr_ptr r, __float128 d, mpfr_rnd_t rnd_mode)
+ {
+   mpfr_t t;
+   mp_limb_t *tp;
+   int inexact, shift_exp, neg, e, i;
+-  _Float128 p[14], q[14];
++  __float128 p[14], q[14];
+   MPFR_SAVE_EXPO_DECL (expo);
+ 
+   /* Check for NaN */
+@@ -66,7 +66,7 @@ mpfr_set_float128 (mpfr_ptr r, _Float128 d, mpfr_rnd_t rnd_mode)
+       return 0;
+     }
+   /* Check for ZERO */
+-  else if (MPFR_UNLIKELY (d == (_Float128) 0.0))
++  else if (MPFR_UNLIKELY (d == (__float128) 0.0))
+     return mpfr_set_d (r, (double) d, rnd_mode);
+ 
+   shift_exp = 0; /* invariant: remainder to deal with is d*2^shift_exp */
+@@ -129,7 +129,7 @@ mpfr_set_float128 (mpfr_ptr r, _Float128 d, mpfr_rnd_t rnd_mode)
+ 
+   for (i = MPFR_LAST_LIMB (t); i >= 0; i--)
+     {
+-      d *= 2 * (_Float128) MPFR_LIMB_HIGHBIT;
++      d *= 2 * (__float128) MPFR_LIMB_HIGHBIT;
+       tp[i] = (mp_limb_t) d;
+       d -= tp[i];
+     }
+diff --git a/tests/tset_float128.c b/tests/tset_float128.c
+index 2262ab01bf05..c77f8c680b6d 100644
+--- a/tests/tset_float128.c
++++ b/tests/tset_float128.c
+@@ -33,7 +33,7 @@ https://www.gnu.org/licenses/ or write to the Free Software Foundation, Inc.,
+ static void
+ check_special (void)
+ {
+-  _Float128 f;
++  __float128 f;
+   mpfr_t x;
+ 
+   mpfr_init2 (x, 113);
+@@ -144,7 +144,7 @@ static void
+ check_large (void)
+ {
+   mpfr_exp_t emin, emax;
+-  _Float128 f, e;
++  __float128 f, e;
+   int i;
+   mpfr_t x, y;
+   int r;
+@@ -159,7 +159,7 @@ check_large (void)
+   /* check with the largest float128 number 2^16384*(1-2^(-113)) */
+   for (f = 1.0, i = 0; i < 113; i++)
+     f = f + f;
+-  f = f - (_Float128) 1.0;
++  f = f - (__float128) 1.0;
+   mpfr_set_ui (y, 1, MPFR_RNDN);
+   mpfr_mul_2ui (y, y, 113, MPFR_RNDN);
+   mpfr_sub_ui (y, y, 1, MPFR_RNDN);
+@@ -240,7 +240,7 @@ check_small (void)
+ {
+   int t[5] = { 1, 2, 17, 111, 112 };
+   mpfr_exp_t emin;
+-  _Float128 e, f;
++  __float128 e, f;
+   int i, j, neg, inex, r;
+   mpfr_t w, x, y, z;
+ 

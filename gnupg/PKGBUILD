@@ -1,0 +1,111 @@
+pkgname=gnupg+clang
+pkgver=2.3.8
+pkgrel=1
+pkgdesc='Complete and free implementation of the OpenPGP standard'
+url='https://www.gnupg.org/'
+license=('GPL')
+arch=('x86_64')
+provides=('gnupg' "gnupg=${pkgver}")
+conflicts=('gnupg')
+checkdepends=('openssh')
+makedepends=('libldap' 'libusb-compat' 'pcsclite')
+depends=('npth' 'libgpg-error' 'libgcrypt' 'libksba' 'libassuan' 'pinentry'
+  'bzip2' 'libbz2.so' 'readline' 'libreadline.so' 'gnutls' 'sqlite'
+  'zlib' 'glibc')
+optdepends=('libldap: gpg2keys_ldap'
+  'libusb-compat: scdaemon'
+  'pcsclite: scdaemon')
+validpgpkeys=(
+  'D8692123C4065DEA5E0F3AB5249B39D24F25E3B6' # Werner Koch (dist sig)
+  '5B80C5754298F0CB55D8ED6ABCEF7E294B092E28' # Andre Heinecke (Release Signing Key)
+  '6DAA6E64A76D2840571B4902528897B826403ADA' # Werner Koch (dist signing 2020)
+  'AC8E115BF73E2D8D47FA9908E98E9B2D19C6C8BD' # Niibe Yutaka (GnuPG Release Key)
+  '02F38DFF731FF97CB039A1DA549E695E905BA208' # GnuPG.com (Release Signing Key 2021)
+)
+source=(
+  "https://gnupg.org/ftp/gcrypt/gnupg/gnupg-${pkgver}.tar.bz2"{,.sig}
+  remove-beta-warning.patch
+)
+sha256sums=('540b7a40e57da261fb10ef521a282e0021532a80fd023e75fb71757e8a4969ed'
+  'SKIP'
+  '0016111253122514e59570c0a1fa05513fd7510298f6b5952a2009d26e6cd16c')
+
+install=gnupg.install
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=0
+  fi
+
+  cd "${srcdir:?}/gnupg-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gnupg-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # Remove warning after autogen.sh:
+  # gpg: NOTE: THIS IS A DEVELOPMENT VERSION!
+  # gpg: It is only intended for test purposes and should NOT be
+  # gpg: used in a production environment or with production keys!
+  patch -Np1 -i "${srcdir:?}/remove-beta-warning.patch"
+
+  # improve reproducibility
+  rm doc/gnupg.info*
+
+  ./autogen.sh
+
+}
+
+build() {
+
+  cd "${srcdir:?}/gnupg-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gnupg-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --sbindir=/usr/bin \
+    --libexecdir=/usr/lib/gnupg \
+    --enable-maintainer-mode
+
+  make
+
+}
+
+check() {
+
+  cd "${srcdir:?}/gnupg-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gnupg-${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make check
+
+}
+
+package() {
+
+  cd "${srcdir:?}/gnupg-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gnupg-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  ln -s gpg "${pkgdir:?}/usr/bin/gpg2"
+  ln -s gpgv "${pkgdir:?}/usr/bin/gpgv2"
+
+  install -Dm 644 "doc/examples/systemd-user/"*.* -t "${pkgdir}/usr/lib/systemd/user"
+
+}

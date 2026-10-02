@@ -1,0 +1,103 @@
+pkgname=nasm+clang
+pkgver=2.15.05
+pkgrel=1
+pkgdesc='80x86 assembler designed for portability and modularity'
+url='https://www.nasm.us'
+arch=('x86_64')
+license=('BSD')
+provides=('nasm')
+conflicts=('nasm')
+depends=('glibc')
+makedepends=('git' 'perl-font-ttf' 'perl-sort-versions' 'fontconfig' 'adobe-source-sans-pro-fonts'
+  'ttf-liberation' 'ghostscript' 'xmlto' 'asciidoc')
+_commit=3f9fc2a3a7134936cbbae5780beb4319694f702a
+source=(
+  "git+https://github.com/netwide-assembler/nasm.git#commit=${_commit:?}"
+  fix-optional-comma-separator-in-strcat.patch
+  fix-VPEXPANDB-and-VPEXPANDW-encoding.patch
+  remove-duplicate-idefine-yes.patch
+  fix-bitwise-instead-of-logical-warning.patch
+  correct-stat-parameter-names.patch
+  preproc-do-not-unmacro-if-macro-cannot-be-found.patch
+  fix-unused-but-set-variable.patch
+  remove-operator-with-side-effect.patch
+  fix-broken-RDF2-output.patch
+)
+sha256sums=('SKIP'
+  '63799d43645363f33ad8232db028120824f4438b974c1b98b79edcf345b47a5c'
+  '9ede541d15b99b679b0f2681bef2ee4450cf4dee0a7e96e2c691d1461288022c'
+  '5e2b46852ff65036d17da8cd5411fcee77d0f4031174edea886ba2d5bf611d6f'
+  '61b71f8c27477b9acb4ac5fe6b05e8e1040a731152861c46362dec4fa9884562'
+  'cd1973031d8d088e712862e154c4e2f377a0e84f4f6d50c9e35afb3af2aa4208'
+  'ba60b85782a26d85c112f85d6d1e5fd5eeda734b7923ef9642a9850309b181ef'
+  '8509cf3fdfbe4b58c17777dc4475c5887734cab129cdae42e85436220112146e'
+  'd2a3e3cbf624329ec8b800ff5d880141f142fa527c6929e9712dc716712de2ef'
+  'd9384c381f966de1ab8124872682fa63e4293f650441b1f68fcfde65f8f1a5c4')
+
+_llvm=0
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/nasm" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/nasm directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  _patch fix-optional-comma-separator-in-strcat.patch
+  _patch fix-VPEXPANDB-and-VPEXPANDW-encoding.patch
+  _patch remove-duplicate-idefine-yes.patch
+  _patch fix-bitwise-instead-of-logical-warning.patch
+  _patch correct-stat-parameter-names.patch
+  _patch preproc-do-not-unmacro-if-macro-cannot-be-found.patch
+  _patch fix-unused-but-set-variable.patch
+  _patch remove-operator-with-side-effect.patch
+  _patch fix-broken-RDF2-output.patch
+
+  ./autogen.sh
+
+}
+
+build() {
+
+  cd "${srcdir:?}/nasm" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/nasm directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr
+
+  make everything
+
+}
+
+package() {
+
+  cd "${srcdir:?}/nasm" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/nasm directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install_everything
+  install -Dm 644 LICENSE -t "${pkgdir:?}/usr/share/licenses/nasm"
+
+}

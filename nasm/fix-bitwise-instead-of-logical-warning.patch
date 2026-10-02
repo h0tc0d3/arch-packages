@@ -1,0 +1,30 @@
+From 853b6b23e04dc339e6b6bd4f3ffe588869d885dd Mon Sep 17 00:00:00 2001
+From: Nico Weber <thakis@chromium.org>
+Date: Tue, 12 Oct 2021 11:00:31 -0400
+Subject: [PATCH] Fix Wbitwise-instead-of-logical warning
+
+`a || b` only evaluates b if a is false. `a | b` always evaluates
+both a and b. If a and b are of type bool, || is usually what you
+want, so clang now warns on `|` where both arguments are of type bool.
+
+This warning fires once in nasm. It looks like `|` is an (inconsequential)
+typo of `||`, so use that instead.
+
+No intended behavior change.
+---
+ asm/preproc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/asm/preproc.c b/asm/preproc.c
+index cb1669da..cbfda0ee 100644
+--- a/asm/preproc.c
++++ b/asm/preproc.c
+@@ -2693,7 +2693,7 @@ static enum cond_state if_condition(Token * tline, enum preproc_token ct)
+         t = tline = expand_smacro(tline);
+ 
+         while (tok_white(t) ||
+-               (needtype == TOKEN_NUM && (tok_is(t, '-') | tok_is(t, '+'))))
++               (needtype == TOKEN_NUM && (tok_is(t, '-') || tok_is(t, '+'))))
+             t = t->next;
+ 
+         j = tok_is(t, needtype);

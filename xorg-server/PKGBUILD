@@ -1,0 +1,252 @@
+pkgbase=xorg-server+clang
+pkgname=(
+  'xorg-server+clang'
+  'xorg-server-xephyr+clang'
+  'xorg-server-xvfb+clang'
+  'xorg-server-xnest+clang'
+  'xorg-server-common+clang'
+  'xorg-server-devel+clang'
+)
+pkgver=21.1.4
+pkgrel=1
+arch=('x86_64')
+license=('custom')
+groups=('xorg')
+url="https://xorg.freedesktop.org"
+makedepends=('xorgproto' 'pixman' 'libx11' 'mesa' 'mesa-libgl' 'xtrans'
+  'libxkbfile' 'libxfont2' 'libpciaccess' 'libxv'
+  'libxmu' 'libxrender' 'libxi' 'libxaw' 'libxtst' 'libxres'
+  'xorg-xkbcomp' 'xorg-util-macros' 'xorg-font-util' 'libepoxy'
+  'xcb-util' 'xcb-util-image' 'xcb-util-renderutil' 'xcb-util-wm' 'xcb-util-keysyms'
+  'libxshmfence' 'libunwind' 'systemd' 'meson' 'git'
+  'wayland' 'wayland-protocols' 'egl-wayland' 'libxcvt+clang'
+)
+source=(
+  "https://xorg.freedesktop.org/releases/individual/xserver/xorg-server-${pkgver}.tar.xz"{,.sig}
+  xvfb-run # with updates from FC master
+  xvfb-run.1
+  xorg-use-intel-only-on-pre-gen4.diff
+  xorg-xfree86-use-modesetting-driver-by-default-on-GeForce.patch
+  xorg-xephyr_Dont_check_for_SeatId_anymore.patch
+)
+
+validpgpkeys=(
+  '7B27A3F1A6E18CD9588B4AE8310180050905E40C'
+  'C383B778255613DFDB409D91DB221A6900000011'
+  'DD38563A8A8224537D1F90E45B8A2D50A0ECD0D3'
+  '3BB639E56F861FA2E86505690FDD682D974CA72A'
+  'FD0004A26EADFE43A4C3F249C6F7AE200374452D'
+)
+
+sha256sums=('5cc4be8ee47edb58d4a90e603a59d56b40291ad38371b0bd2471fc3cbee1c587'
+  'SKIP'
+  'a0a68505e3eb3ba6581388ae41b9dfd5208ec9b8983e78714778c20b71bc0ece'
+  '2460adccd3362fefd4cdc5f1c70f332d7b578091fb9167bf88b5f91265bbd776'
+  'f8703466041a04428e68a77e1c07579679b07d15f8ec28934f1a65548007a756'
+  '91b067753e823d6e3462d35be127f66e94e71a490c666e1aae41fe4e5b1ea47c'
+  '057004ab36d4733e6c275f76bbc3851f6cdb9063305a3ae874f2fd83f14a6dc0')
+
+_extra_lto_flag=""
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+  cd "${srcdir:?}/xorg-server-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to {srcdir:?}/xorg-server-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # From Debian use intel ddx driver only for gen4 and older chipsets
+  _patch xorg-use-intel-only-on-pre-gen4.diff
+
+  # Default to xf86-video-modesetting on GeForce 8 and newer
+  _patch xorg-xfree86-use-modesetting-driver-by-default-on-GeForce.patch
+
+  # FS#73274
+  _patch xorg-xephyr_Dont_check_for_SeatId_anymore.patch
+
+}
+
+build() {
+
+  # Since pacman 5.0.2-2, hardened flags are now enabled in makepkg.conf
+  # With them, module fail to load with undefined symbol.
+  # See https://bugs.archlinux.org/task/55102/ https://bugs.archlinux.org/task/54845
+  #CFLAGS=${CFLAGS/-fno-plt/}
+  #CXXFLAGS=${CXXFLAGS/-fno-plt/}
+  #LDFLAGS=${LDFLAGS/,-z,now/}
+
+  #CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
+
+  meson setup xorg-server-${pkgver} build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true \
+    -D ipv6=true \
+    -D xvfb=true \
+    -D xnest=true \
+    -D xcsecurity=true \
+    -D xorg=true \
+    -D xephyr=true \
+    -D glamor=true \
+    -D udev=true \
+    -D systemd_logind=true \
+    -D suid_wrapper=true \
+    -D docs=false \
+    -D xkb_dir=/usr/share/X11/xkb \
+    -D xkb_output_dir=/var/lib/xkb
+
+  # Print config
+  meson configure build
+  ninja -C build
+
+  # fake installation to be seperated into packages
+  DESTDIR="${srcdir:?}/fakeinstall" ninja -C build install
+
+}
+
+_install() {
+  local src f dir
+  for src; do
+    f="${src#fakeinstall/}"
+    dir="${pkgdir:?}/${f%/*}"
+    install -m755 -d "${dir}"
+    # use copy so a new file is created and fakeroot can track properties such as setuid
+    cp -av "${src}" "${dir}/"
+    rm -rf "${src}"
+  done
+}
+
+package_xorg-server-common+clang() {
+
+  pkgdesc="Xorg server common files"
+  depends=(xkeyboard-config xorg-xkbcomp xorg-setxkbmap)
+  provides=('xorg-server-common' "xorg-server-common=${pkgver}")
+  conflicts=('xorg-server-common')
+
+  _install fakeinstall/usr/lib/xorg/protocol.txt
+  _install fakeinstall/usr/share/man/man1/Xserver.1
+
+  install -m644 -Dt "${pkgdir}/var/lib/xkb/" "xorg-server-${pkgver}/xkb/README.compiled"
+  # license
+  install -m644 -Dt "${pkgdir}/usr/share/licenses/${pkgname:?}" "xorg-server-${pkgver}/COPYING"
+
+}
+
+package_xorg-server+clang() {
+
+  pkgdesc="Xorg X server"
+  depends=('libxcvt+clang' libepoxy libxfont2 pixman xorg-server-common+clang libunwind
+    dbus libgl xf86-input-libinput nettle
+    libpciaccess libdrm libxshmfence
+  ) # FS#52949
+  # see xorg-server-*/hw/xfree86/common/xf86Module.h for ABI versions - we provide major numbers that drivers can depend on
+  # and /usr/lib/pkgconfig/xorg-server.pc in xorg-server-devel pkg
+  provides=('xorg-server' "xorg-server=${pkgver}" 'X-ABI-VIDEODRV_VERSION=25.2' 'X-ABI-XINPUT_VERSION=24.4' 'X-ABI-EXTENSION_VERSION=10.0' 'x-server')
+  conflicts=('xorg-server' 'nvidia-utils<=331.20' 'glamor-egl' 'xf86-video-modesetting')
+  replaces=('xorg-server' 'glamor-egl' 'xf86-video-modesetting')
+
+  _install fakeinstall/usr/bin/{X,Xorg,gtf}
+  _install fakeinstall/usr/lib/Xorg{,.wrap}
+  _install fakeinstall/usr/lib/xorg/modules/*
+  _install fakeinstall/usr/share/X11/xorg.conf.d/10-quirks.conf
+  _install fakeinstall/usr/share/man/man1/{Xorg,Xorg.wrap,gtf}.1
+  _install fakeinstall/usr/share/man/man4/{exa,fbdevhw,modesetting,inputtestdrv}.4
+  _install fakeinstall/usr/share/man/man5/{Xwrapper.config,xorg.conf,xorg.conf.d}.5
+
+  # distro specific files must be installed in /usr/share/X11/xorg.conf.d
+  install -m755 -d "${pkgdir}/etc/X11/xorg.conf.d"
+
+  # license
+  install -m644 -Dt "${pkgdir}/usr/share/licenses/${pkgname:?}" "xorg-server-${pkgver}/COPYING"
+
+}
+
+package_xorg-server-xephyr+clang() {
+
+  pkgdesc="A nested X server that runs as an X application"
+  depends=(libxfont2 libgl libepoxy libunwind systemd-libs libxv pixman xorg-server-common+clang
+    xcb-util-image xcb-util-renderutil xcb-util-wm xcb-util-keysyms
+    nettle libtirpc)
+  provides=('xorg-server-xephyr' "xorg-server-xephyr=${pkgver}")
+  conflicts=('xorg-server-xephyr')
+
+  _install fakeinstall/usr/bin/Xephyr
+  _install fakeinstall/usr/share/man/man1/Xephyr.1
+
+  # license
+  install -m644 -Dt "${pkgdir}/usr/share/licenses/${pkgname:?}" "xorg-server-${pkgver}/COPYING"
+
+}
+
+package_xorg-server-xvfb+clang() {
+
+  pkgdesc="Virtual framebuffer X server"
+  depends=(libxfont2 libunwind pixman xorg-server-common+clang xorg-xauth
+    libgl nettle libtirpc systemd-libs)
+  provides=('xorg-server-xvfb' "xorg-server-xvfb=${pkgver}")
+  conflicts=('xorg-server-xvfb')
+
+  _install fakeinstall/usr/bin/Xvfb
+  _install fakeinstall/usr/share/man/man1/Xvfb.1
+
+  install -m755 "${srcdir}/xvfb-run" "${pkgdir}/usr/bin/"
+  install -m644 "${srcdir}/xvfb-run.1" "${pkgdir}/usr/share/man/man1/" # outda
+
+  # license
+  install -m644 -Dt "${pkgdir}/usr/share/licenses/${pkgname:?}" "xorg-server-${pkgver}/COPYING"
+
+}
+
+package_xorg-server-xnest+clang() {
+
+  pkgdesc="A nested X server that runs as an X application"
+  depends=(libxfont2 libxext pixman xorg-server-common+clang nettle libtirpc systemd-libs)
+  provides=('xorg-server-xnest' "xorg-server-xnest=${pkgver}")
+  conflicts=('xorg-server-xnest')
+
+  _install fakeinstall/usr/bin/Xnest
+  _install fakeinstall/usr/share/man/man1/Xnest.1
+
+  # license
+  install -m644 -Dt "${pkgdir}/usr/share/licenses/${pkgname:?}" "xorg-server-${pkgver}/COPYING"
+
+}
+
+package_xorg-server-devel+clang() {
+
+  pkgdesc="Development files for the X.Org X server"
+  depends=('xorgproto' 'mesa' 'libpciaccess'
+    # not technically required but almost every Xorg pkg needs it to build
+    'xorg-util-macros')
+  provides=('xorg-server-devel')
+  conflicts=('xorg-server-devel')
+
+  _install fakeinstall/usr/include/xorg/*
+  _install fakeinstall/usr/lib/pkgconfig/xorg-server.pc
+  _install fakeinstall/usr/share/aclocal/xorg-server.m4
+
+  # license
+  install -m644 -Dt "${pkgdir}/usr/share/licenses/${pkgname:?}" "xorg-server-${pkgver}/COPYING"
+
+  # make sure there are no files left to install
+  find fakeinstall -depth -print0 | xargs -0 rmdir
+
+}

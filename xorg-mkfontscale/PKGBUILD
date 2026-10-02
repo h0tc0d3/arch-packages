@@ -1,0 +1,70 @@
+pkgname=xorg-mkfontscale+clang
+pkgver=1.2.2
+pkgrel=1
+pkgdesc="Create an index of scalable font files for X"
+arch=(x86_64)
+url="https://xorg.freedesktop.org/"
+license=('custom')
+install=xorg-mkfontscale.install
+depends=('freetype2' 'libfontenc')
+makedepends=('xorg-util-macros' 'xorgproto')
+groups=('xorg-apps' 'xorg')
+provides=('xorg-mkfontscale' "xorg-mkfontscale=${pkgver}" 'xorg-mkfontdir')
+conflicts=('xorg-mkfontscale' 'xorg-mkfontdir')
+replaces=('xorg-mkfontdir')
+source=("https://xorg.freedesktop.org/archive/individual/app/mkfontscale-${pkgver}.tar.xz"{,.sig}
+  xorg-mkfontscale.hook
+  xorg-mkfontscale.script)
+sha256sums=('8ae3fb5b1fe7436e1f565060acaa3e2918fe745b0e4979b5593968914fe2d5c4'
+  'SKIP'
+  'bce03fee6597504bae05a9812bbd105c0bb7e99f90a115a1ff03aa2dc86ee1d1'
+  '274310baa52dc4d4627b10ee6aff1460ce83d8e4929000278dc7d7cd4242eb94')
+validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E') # Alan Coopersmith <alan.coopersmith@oracle.com>
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/mkfontscale-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/mkfontscale-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/mkfontscale-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/mkfontscale-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  install -m755 -d "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -m644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/"
+
+  install -Dm644 ../xorg-mkfontscale.hook "${pkgdir:?}/usr/share/libalpm/hooks/xorg-mkfontscale.hook"
+  install -D ../xorg-mkfontscale.script "${pkgdir:?}/usr/share/libalpm/scripts/xorg-mkfontscale"
+
+}

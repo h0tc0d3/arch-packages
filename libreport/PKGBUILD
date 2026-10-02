@@ -1,0 +1,58 @@
+pkgname=libreport+clang
+pkgver=2.17.0
+pkgrel=1
+pkgdesc='Generic library for reporting various problems'
+arch=('x86_64')
+depends=('python' 'satyr' 'augeas' 'libnewt' 'libffi' 'gtk3' 'glib2' 'libxmlrpc' 'json-c' 'nss')
+makedepends=('intltool' 'asciidoc' 'xmlto')
+conflicts=("libreport")
+provides=("libreport=${pkgver}")
+url='https://github.com/abrt/libreport'
+license=('GPL')
+source=("libreport-${pkgver}.tar.gz::https://github.com/abrt/libreport/archive/${pkgver}.tar.gz")
+sha256sums=('42ace533a21fc6ae15e5d4127cbe535a6061b8ae4c23e29e8c7fa5e574f849cf')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/libreport-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libreport-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  ./autogen.sh
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cd "${srcdir:?}/libreport-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libreport-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "libreport-${pkgver}"
+
+}

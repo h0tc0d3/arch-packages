@@ -1,0 +1,73 @@
+pkgname=rz-cutter+clang
+pkgver=2.1.0
+pkgrel=2
+pkgdesc='Qt and C++ GUI for rizin reverse engineering framework'
+url='https://github.com/rizinorg/cutter'
+arch=('x86_64')
+license=('GPL3')
+provides=(rz-cutter "rz-cutter=${pkgver}")
+conflicts=(rz-cutter)
+depends=('rizin' 'capstone' 'qt5-base' 'qt5-svg' 'qt5-webengine' 'icu' 'python'
+  'pyside2' 'python-shiboken2' 'graphviz' 'syntax-highlighting')
+makedepends=('git' 'cmake' 'ninja' 'shiboken2' 'qt5-tools')
+optdepends=('rz-ghidra: ghidra decompiler plugin')
+_commit=7eb4311c2be2c0e5e6bcd098abf06beda2e96519
+source=(
+  "git+https://github.com/rizinorg/cutter#commit=${_commit}"
+  "git+https://github.com/rizinorg/cutter-translations"
+)
+
+sha256sums=('SKIP' 'SKIP')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/cutter" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/cutter directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  git config 'submodule.src/translations.url' "${srcdir:?}/cutter-translations"
+  git submodule update --init src/translations
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -B build -S cutter \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCUTTER_ENABLE_PYTHON=ON \
+    -DCUTTER_ENABLE_PYTHON_BINDINGS=ON \
+    -DCUTTER_USE_BUNDLED_RIZIN=OFF \
+    -DCUTTER_USE_ADDITIONAL_RIZIN_PATHS=OFF \
+    -DCUTTER_ENABLE_CRASH_REPORTS=OFF \
+    -DCUTTER_ENABLE_GRAPHVIZ=ON \
+    -Wno-dev \
+    -G Ninja
+
+  ninja -C build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" ninja -C build install
+  install -d "${pkgdir:?}/usr/share/doc/rz-cutter"
+
+  cp -a cutter/docs/* "${pkgdir:?}/usr/share/doc/rz-cutter"
+
+}

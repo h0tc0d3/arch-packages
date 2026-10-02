@@ -1,0 +1,60 @@
+pkgname=xorg-setxkbmap+clang
+pkgver=1.3.3
+pkgrel=1
+pkgdesc='Set the keyboard using the X Keyboard Extension'
+url='https://xorg.freedesktop.org/'
+license=('custom')
+provides=('xorg-setxkbmap' "xorg-setxkbmap=${pkgver}")
+conflicts=('xorg-setxkbmap')
+arch=('x86_64')
+depends=('libxkbfile')
+makedepends=('xorg-util-macros')
+source=("https://xorg.freedesktop.org/releases/individual/app/setxkbmap-${pkgver}.tar.xz"{,.sig})
+sha256sums=('b560c678da6930a0da267304fa3a41cc5df39a96a5e23d06f14984c87b6f587b'
+  'SKIP')
+validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E') # Alan Coopersmith <alan.coopersmith@oracle.com>
+groups=('xorg-apps' 'xorg')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/setxkbmap-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/setxkbmap-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/setxkbmap-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/setxkbmap-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  install -Dm644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/COPYING"
+
+}

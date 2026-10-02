@@ -1,0 +1,55 @@
+pkgname=dolphin-plugins+clang
+pkgver=22.08.2
+pkgrel=1
+pkgdesc='Extra Dolphin plugins'
+arch=(x86_64)
+url='https://apps.kde.org/dolphin_plugins/'
+license=(LGPL)
+provides=('dolphin-plugins' "dolphin-plugins=${pkgver}")
+conflicts=('dolphin-plugins')
+depends=(dolphin)
+makedepends=(extra-cmake-modules ktexteditor)
+optdepends=('ktexteditor: Mercurial plugin')
+groups=(kde-applications kdesdk)
+source=("https://download.kde.org/stable/release-service/${pkgver}/src/dolphin-plugins-${pkgver}.tar.xz"{,.sig})
+sha256sums=('036f2acd9240342dbcea73c3cac7a01977e74626490303fa8bddaacd34213925'
+  'SKIP')
+validpgpkeys=(
+  CA262C6C83DE4D2FB28A332A3A6A4DB839EAA6D7 # Albert Astals Cid <aacid@kde.org>
+  F23275E4BF10AFC1DF6914A6DBD2CE893E2D1C87 # Christoph Feck <cfeck@kde.org>
+  D81C0CB38EB725EF6691C385BB463350D6EF31EF # Heiko Becker <heiko.becker@kde.org>
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -B build -S dolphin-plugins-${pkgver} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_TESTING=OFF
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+}

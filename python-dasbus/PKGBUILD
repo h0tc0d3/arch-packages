@@ -1,0 +1,47 @@
+pkgname=python-dasbus+clang
+pkgver=1.6
+pkgrel=1
+pkgdesc='DBus library in Python 3'
+arch=('any')
+url="https://github.com/rhinstaller/dasbus"
+license=('LGPL')
+provides=("python-dasbus=${pkgver}")
+conflicts=(python-dasbus)
+depends=('python' 'python-gobject' 'dbus')
+makedepends=('python-setuptools')
+checkdepends=('python-pytest')
+source=("dasbus-${pkgver}.tar.gz::${url}/archive/v${pkgver}.tar.gz")
+sha256sums=('710617b229a9017b2d38b310b76fbac1a29976089cb8bfe4c01547dddb35d59e')
+
+build() {
+
+  cd "${srcdir:?}/dasbus-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/dasbus-${pkgver} build directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  python setup.py build
+
+}
+
+check() {
+
+  cd "${srcdir:?}/dasbus-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/dasbus-${pkgver} build directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  pytest
+
+}
+
+package() {
+
+  cd "${srcdir:?}/dasbus-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/dasbus-${pkgver} build directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  python setup.py install --root="${pkgdir:?}" --optimize=1 --skip-build
+
+}

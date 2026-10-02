@@ -1,0 +1,68 @@
+pkgname=libinput+clang
+pkgver=1.21.0
+pkgrel=1
+pkgdesc="Input device management and event handling library"
+url="https://www.freedesktop.org/wiki/Software/libinput/"
+arch=(x86_64)
+license=(custom:X11)
+provides=('libinput' "libinput=${pkgver}")
+conflicts=('libinput')
+depends=('mtdev' 'systemd' 'libevdev' 'libwacom')
+# upstream doesn't recommend building docs
+makedepends=('gtk4' 'meson' 'wayland-protocols' 'check') # 'doxygen' 'graphviz' 'python-sphinx' 'python-recommonmark'
+optdepends=(
+  'gtk4: libinput debug-gui'
+  'python-pyudev: libinput measure'
+  'python-libevdev: libinput measure'
+)
+source=(
+  #"https://freedesktop.org/software/libinput/libinput-${pkgver}.tar.xz"{,.sig}
+  "https://gitlab.freedesktop.org/libinput/libinput/-/archive/${pkgver}/libinput-${pkgver}.tar.bz2"
+)
+sha256sums=('3173d83e0f5a686606d2780129c802b865b6a0750c86db88d56097afc016a2dd')
+validpgpkeys=('3C2C43D9447D5938EF4551EBE23B7E70B467F0BF') # Peter Hutterer (Who-T) <office@who-t.net>
+
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+}
+
+build() {
+
+  meson setup libinput-${pkgver} build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true \
+    -D udev-dir=/usr/lib/udev \
+    -D documentation=false
+
+  meson compile -C build
+
+}
+
+check() {
+
+  meson test -C build --print-errorlogs
+
+}
+
+package() {
+
+  meson install -C build --destdir "${pkgdir:?}"
+
+  install -Dvm644 libinput-${pkgver}/COPYING \
+    "${pkgdir:?}/usr/share/licenses/${pkgname}/LICENSE"
+
+}

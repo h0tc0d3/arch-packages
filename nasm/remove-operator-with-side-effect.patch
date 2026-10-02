@@ -1,0 +1,28 @@
+From e6b5f9ffb0ea559aacb438e9e41b1541a7889854 Mon Sep 17 00:00:00 2001
+From: Anatolii Charikov <pepsh6881@gmail.com>
+Date: Mon, 24 Jan 2022 23:26:14 +0200
+Subject: [PATCH] Remove the operator with side effect (decrement) from a part
+ of while loop expression. Reasoning: you do not need to think about
+ differences between "pre-" and "post-" decrement forms while code reading.
+
+Signed-off-by: Anatolii Charikov
+---
+ asm/assemble.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/asm/assemble.c b/asm/assemble.c
+index cd3f4693..63a56c75 100644
+--- a/asm/assemble.c
++++ b/asm/assemble.c
+@@ -643,8 +643,10 @@ static void out_eops(struct out_data *data, const extop *e)
+             break;
+ 
+         case EOT_EXTOP:
+-            while (dup--)
++            while (dup) {
+                 out_eops(data, e->val.subexpr);
++								dup--;
++						}
+             break;
+ 
+         case EOT_DB_NUMBER:

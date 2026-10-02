@@ -1,0 +1,78 @@
+pkgname=libxcb+clang
+pkgver=1.15
+pkgrel=1
+pkgdesc="X11 client-side library"
+arch=('x86_64')
+url="https://xcb.freedesktop.org/"
+provides=("libxcb" "libxcb=${pkgver}")
+conflicts=("libxcb")
+depends=('xcb-proto' 'libxdmcp' 'libxau' 'libselinux')
+makedepends=('libxslt' 'python' 'xorg-util-macros' 'xorgproto')
+license=('custom')
+source=("https://xorg.freedesktop.org/archive/individual/lib/libxcb-${pkgver}.tar.xz")
+sha256sums=('cc38744f817cf6814c847e2df37fcb8997357d72fa4bcbc228ae0fe47219a059')
+validpgpkeys=(
+  'A66D805F7C9329B4C5D82767CCC4F07FAC641EFF' # "Daniel Stone <daniels@collabora.com>"
+  '3BB639E56F861FA2E86505690FDD682D974CA72A' # "Matt Turner <mattst88@gmail.com>"
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libxcb-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxcb-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure --prefix=/usr \
+    --enable-xkb \
+    --enable-xinput \
+    --enable-selinux \
+    --disable-xprint \
+    --disable-silent-rules \
+    --disable-static
+
+  make
+
+}
+
+check() {
+
+  cd "${srcdir:?}/libxcb-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxcb-${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make -k check
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libxcb-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxcb-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  install -m755 -d "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -m644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}"
+
+}

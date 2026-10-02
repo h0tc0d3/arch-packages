@@ -1,0 +1,52 @@
+pkgname=gnu-efi+clang
+pkgver=3.0.15
+pkgrel=1
+pkgdesc="Develop EFI applications using the GNU toolchain and the EFI development environment"
+arch=(x86_64)
+url="https://sourceforge.net/projects/gnu-efi/"
+license=(BSD)
+conflicts=(gnu-efi-libs gnu-efi)
+provides=(gnu-efi-libs gnu-efi "gnu-efi=${pkgver}")
+replaces=(gnu-efi-libs)
+source=("https://download.sourceforge.net/gnu-efi/gnu-efi-${pkgver}.tar.bz2")
+options=(!strip)
+sha256sums=('931a257b9c5c1ba65ff519f18373c438a26825f2db7866b163e96d1b168f20ea')
+
+prepare() {
+
+  # -Werror, not even once
+  sed -e 's/-Werror//g' -i "gnu-efi-${pkgver}/Make.defaults"
+
+}
+
+build() {
+
+  # NOTE: apply only minimal CFLAGS, as gnu-efi does not provide userspace
+  # libs, but may be used in unitialized machine state and should therefore not
+  # be architecture optmized
+
+  CFLAGS="-O2"
+
+  make -C "gnu-efi-${pkgver}"
+  make -C "gnu-efi-${pkgver}/lib"
+  make -C "gnu-efi-${pkgver}/gnuefi"
+  make -C "gnu-efi-${pkgver}/inc"
+
+  # unset LDFLAGS for custom linker used in apps, as we have patched our
+  # LDFLAGS in manually in prepare()
+
+  LDFLAGS=""
+
+  make -C "gnu-efi-${pkgver}/apps"
+
+}
+
+package() {
+
+  make INSTALLROOT="${pkgdir:?}" PREFIX=/usr install -C "gnu-efi-${pkgver}"
+
+  install -vDm 644 "gnu-efi-${pkgver}/apps/"*.efi -t "${pkgdir:?}/usr/share/gnu-efi/apps/${CARCH:?}/"
+  install -vDm 644 "gnu-efi-${pkgver}/README.efilib" -t "${pkgdir:?}/usr/share/licenses/gnu-efi/"
+  install -vDm 644 "gnu-efi-${pkgver}/"{ChangeLog,README.{gnuefi,git,elilo}} -t "${pkgdir:?}/usr/share/doc/gnu-efi/"
+
+}

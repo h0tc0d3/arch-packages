@@ -1,0 +1,68 @@
+pkgname=kitty+clang
+pkgver=0.26.4
+pkgrel=1
+pkgdesc="A modern, hackable, featureful, OpenGL-based terminal emulator"
+arch=('x86_64')
+url="https://github.com/kovidgoyal/kitty"
+license=('GPL3')
+provides=(kitty "kitty=${pkgver}")
+conflicts=(kitty kitty-shell-integration kitty-terminfo)
+depends=('python3' 'freetype2' 'fontconfig' 'wayland' 'libx11' 'libxkbcommon-x11' 'libxi'
+  'hicolor-icon-theme' 'libgl' 'dbus' 'lcms2' 'librsync')
+makedepends=('libxinerama' 'libxcursor' 'libxrandr' 'wayland-protocols')
+optdepends=(
+  'python-pygments: syntax highlighting in kitty +kitten diff'
+  'imagemagick: viewing images with icat'
+  'libcanberra: playing "bell" sound on terminal bell'
+)
+source=("https://github.com/kovidgoyal/kitty/releases/download/v${pkgver}/kitty-${pkgver}.tar.xz"{,.sig})
+sha256sums=('c09591ac7c908e6a0549f75cc061c6318f46261f9f5d3f3775120063c3a43bb7'
+  'SKIP')
+validpgpkeys=('3CE1780F78DD88DF45194FD706BC317B515ACE7C') # Kovid Goyal
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/kitty-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/kitty-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  python setup.py linux-package --update-check-interval=0
+
+}
+
+package() {
+
+  cd "${srcdir:?}/kitty-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/kitty-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  cp -r linux-package "${pkgdir:?}/usr"
+
+  # completions
+  python __main__.py + complete setup bash | install -Dm644 /dev/stdin "${pkgdir:?}/usr/share/bash-completion/completions/kitty"
+  python __main__.py + complete setup fish | install -Dm644 /dev/stdin "${pkgdir:?}/usr/share/fish/vendor_completions.d/kitty.fish"
+  python __main__.py + complete setup zsh | install -Dm644 /dev/stdin "${pkgdir:?}/usr/share/zsh/site-functions/_kitty"
+
+  install -Dm644 "${pkgdir:?}/usr/share/icons/hicolor/256x256/apps/kitty.png" "${pkgdir:?}/usr/share/pixmaps/kitty.png"
+
+}

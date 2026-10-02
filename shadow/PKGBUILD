@@ -1,0 +1,219 @@
+pkgname=shadow+clang
+pkgver=4.11.1
+pkgrel=1
+pkgdesc="Password and account management tool suite with support for shadow files and PAM"
+arch=('x86_64')
+url='https://github.com/shadow-maint/shadow'
+license=('BSD')
+provides=('shadow' "shadow=${pkgver}")
+conflicts=('shadow')
+# libcap-ng needed by install scriptlet for 'filecap'
+depends=('pam' 'acl' 'libacl.so' 'audit' 'libaudit.so' 'libcap-ng' 'libcap-ng.so'
+  'libxcrypt' 'libcrypt.so' 'libselinux' 'libsemanage>=3.2')
+backup=(etc/login.defs
+  etc/pam.d/{chage,passwd,shadow,useradd,usermod,userdel}
+  etc/pam.d/{chpasswd,newusers,groupadd,groupdel,groupmod}
+  etc/pam.d/{chgpasswd,groupmems}
+  etc/default/useradd)
+options=('!emptydirs')
+validpgpkeys=('66D0387DB85D320F8408166DB175CFA98F192AF2') # Serge Hallyn
+source=("https://github.com/shadow-maint/shadow/releases/download/v${pkgver}/shadow-${pkgver}.tar.xz"{,.asc}
+  LICENSE
+  chgpasswd
+  chpasswd
+  defaults.pam
+  login.defs
+  newusers
+  passwd
+  shadow.{timer,service}
+  useradd.defaults
+  shadow-4.8-goodname.patch
+  shadow-4.9-default-range.patch
+  shadow-4.9-manfix.patch
+  shadow-4.2.1-date-parsing.patch
+  shadow-4.6-move-home.patch
+  shadow-4.11.1-audit-update.patch
+  shadow-4.5-usermod-unlock.patch
+  shadow-4.8-selinux-perms.patch
+  shadow-4.11.1-null-tm.patch
+  shadow-4.8-long-entry.patch
+  shadow-4.6-sysugid-min-limit.patch
+  shadow-4.8-ignore-login-prompt.patch
+  shadow-4.9-nss-get-shadow-logfd-with-log-get-logfd.patch
+)
+install=shadow.install
+sha256sums=('41f093ce58b2ae5f389a1c5553e0c18bc73e6fe27f66273891991198a7707c95'
+  'SKIP'
+  'b085972a9378ecbe6cafee1a2e9baba1082531c77376c0aa14ad6e5c7392814c'
+  'a955ecbd82a801102fad756bb98dca778c1eba14a3367c601d6237b75642c36b'
+  '7409cd2ab04592859d95986467123e356ada4e11413b314ad84e32dc24ca8c92'
+  'fc6807842f92e9d3f792d6b64a0d5aad87995a279153ab228b1b2a64d9f32f20'
+  '63bb1d7a51a1ddbac7809ce3c6f07b995b4751dbb3d31e216cf91bed9a2aef53'
+  '7409cd2ab04592859d95986467123e356ada4e11413b314ad84e32dc24ca8c92'
+  '75428a0f016cccbd9091c012b4d6b778d6ef8d97b607849b5ba1aca0314ed75b'
+  '736eb7b16fc2fff9c902d4823641114338f290a6825e66831f41c5474e994207'
+  'c596409a82ad0db6e1761d98aca50cf7aba49e0f8662edcd62d52b4d77b7b74e'
+  '369381de0e6b0eb7b3c22971f0e35d970361e738eefd52af4f53a26c6a09807d'
+  '10b7062ac4555b073c200e5c211c4d65b7fecb08b5f4576030042df79ea05951'
+  '599550e4a62ad01ad0fc0bdd805c8a94f785d648229a7257c4556ebaf23dc977'
+  '799f154416993eaeb0b6135ef68281b0239cf9d1f99c400f3d5bda61f14de1d4'
+  '4f2c6dc74f53ab4a847f6a74b8ef4b76d2d80ece3d6fcbbd88239e1755e073d5'
+  'fcd108fe2c2fab8aa34c09888aa739117a3a4f173505cf9d4207f26f5869a344'
+  'd8cc273eb33d9f372f9f8e8d3c365cf3073636cd9e6a48b4c832f238184c117c'
+  'bb7f0e58848cce06300fdc4597f04cdf91bf425cfbba9ffd635dfcb4bfeb6b41'
+  '909105f93d43a173a41c351b5dce763154639d5c19ddfaca7e8b33aa4dd6f90b'
+  '39a248712fa0c8fe41a3c29ed122ec040f1d99d8ad3b529d1fd87baaa7e6b027'
+  '3547bfd6706c0718f37ad3629ef3517fa4fe37324528bbfbbdfa3149e7cddfb0'
+  '1e159b6dac955c170d3a7054cb6a39bb2e02b40b91420f2baa1d7808a8c43dff'
+  'cef17c27e28c96fd30dadeb1f01096e9585d1ef58036d5d72f7086e9dcf67cdb'
+  'e1aa464f2061dd2e024997eb6b38b3cc5f9066bbb094f4ecdc5259477f3505ea')
+
+_llvm=0
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/shadow-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/shadow-${pkgver} build directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # Be more lenient with acceptable user/group names - non upstreamable
+  _patch shadow-4.8-goodname.patch
+  # SElinux related - upstreamability unknown
+  _patch shadow-4.9-default-range.patch
+  # Misc manual page changes - non-upstreamable
+  _patch shadow-4.9-manfix.patch
+  # Date parsing improvement - could be upstreamed
+  _patch shadow-4.2.1-date-parsing.patch
+  # Additional error message - could be upstreamed
+  _patch shadow-4.6-move-home.patch
+  # Audit message changes - upstreamability unknown
+  _patch shadow-4.11.1-audit-update.patch
+  # Changes related to password unlocking - could be upstreamed
+  _patch shadow-4.5-usermod-unlock.patch
+  # Additional SElinux related changes - upstreamability unknown
+  _patch shadow-4.8-selinux-perms.patch
+  # Handle NULL return from *time funcs - upstreamable
+  _patch shadow-4.11.1-null-tm.patch
+  # Handle /etc/passwd corruption - could be upstreamed
+  _patch shadow-4.8-long-entry.patch
+  # Limit uid/gid allocation to non-zero - could be upstreamed
+  _patch shadow-4.6-sysugid-min-limit.patch
+  # Ignore LOGIN_PLAIN_PROMPT in login.defs - upstreamability unknown
+  _patch shadow-4.8-ignore-login-prompt.patch
+  # https://github.com/shadow-maint/shadow/commit/e101219ad71de11da3fdd1b3ec2620fd1a97b92c
+  _patch shadow-4.9-nss-get-shadow-logfd-with-log-get-logfd.patch
+
+}
+
+build() {
+
+  cd "${srcdir:?}/shadow-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/shadow-${pkgver} build directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --bindir=/usr/bin \
+    --sbindir=/usr/bin \
+    --libdir=/usr/lib \
+    --mandir=/usr/share/man \
+    --sysconfdir=/etc \
+    --disable-account-tools-setuid \
+    --with-libpam \
+    --with-group-name-max-length=32 \
+    --with-audit \
+    --with-selinux \
+    --without-su
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/shadow-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/shadow-${pkgver} build directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  make DESTDIR="${pkgdir:?}" -C man install
+
+  # license
+  install -Dm644 "${srcdir:?}/LICENSE" "${pkgdir:?}/usr/share/licenses/shadow/LICENSE"
+
+  # useradd defaults
+  install -Dm600 "${srcdir:?}/useradd.defaults" "${pkgdir:?}/etc/default/useradd"
+
+  # systemd units
+  install -D -m644 "${srcdir:?}/shadow.timer" "${pkgdir:?}/usr/lib/systemd/system/shadow.timer"
+  install -D -m644 "${srcdir:?}/shadow.service" "${pkgdir:?}/usr/lib/systemd/system/shadow.service"
+  install -d -m755 "${pkgdir:?}/usr/lib/systemd/system/timers.target.wants"
+  ln -s ../shadow.timer "${pkgdir:?}/usr/lib/systemd/system/timers.target.wants/shadow.timer"
+
+  # login.defs
+  install -Dm644 "${srcdir:?}/login.defs" "${pkgdir:?}/etc/login.defs"
+
+  # PAM config - custom
+  rm "${pkgdir:?}/etc/pam.d/"*
+  install -t "${pkgdir:?}/etc/pam.d" -m644 "${srcdir:?}/"{passwd,chgpasswd,chpasswd,newusers}
+
+  # PAM config - from tarball
+  install -Dm644 etc/pam.d/groupmems "${pkgdir:?}/etc/pam.d/groupmems"
+
+  # we use the 'useradd' PAM file for other similar utilities
+  for file in chage groupadd groupdel groupmod shadow \
+    useradd usermod userdel; do
+    install -Dm644 "${srcdir:?}/defaults.pam" "${pkgdir:?}/etc/pam.d/${file:?}"
+  done
+
+  # Remove evil/broken tools
+  rm "${pkgdir:?}/usr/sbin/logoutd"
+
+  # Remove utilities provided by util-linux
+  rm \
+    "${pkgdir:?}/usr/bin/"{login,chsh,chfn,sg,nologin} \
+    "${pkgdir:?}/usr/sbin/"{vipw,vigr}
+
+  # but we keep newgrp, as sg is really an alias to it
+  mv "${pkgdir:?}/usr/bin/"{newgrp,sg}
+
+  # ...and their many man pages
+  find "${pkgdir:?}/usr/share/man" \
+    '(' -name 'chsh.1' -o \
+    -name 'chfn.1' -o \
+    -name 'su.1' -o \
+    -name 'logoutd.8' -o \
+    -name 'login.1' -o \
+    -name 'nologin.8' -o \
+    -name 'vipw.8' -o \
+    -name 'vigr.8' -o \
+    -name 'newgrp.1' ')' \
+    -delete
+
+  # move everything else to /usr/bin, because this isn't handled by ./configure
+  mv "${pkgdir:?}/usr/sbin/"* "${pkgdir:?}/usr/bin"
+  rmdir "${pkgdir:?}/usr/sbin"
+
+}

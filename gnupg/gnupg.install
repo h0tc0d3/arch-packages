@@ -1,0 +1,29 @@
+post_install() {
+
+  # See FS#42798 and FS#47371
+  dirmngr </dev/null &>/dev/null
+
+  _units=(dirmngr.socket gpg-agent.socket gpg-agent-{browser,extra,ssh}.socket)
+  _dir=/etc/systemd/user/sockets.target.wants
+
+  # Let systemd supervise daemons by default
+  mkdir -p "${_dir}"
+
+  for _u in "${_units[@]}"; do
+    ln -sf "/usr/lib/systemd/user/${_u}" "${_dir}/${_u}"
+  done
+
+}
+
+pre_remove() {
+
+  _units=(dirmngr.socket gpg-agent.socket gpg-agent-{browser,extra,ssh}.socket)
+  _dir=/etc/systemd/user/sockets.target.wants
+
+  for _u in "${_units[@]}"; do
+    rm -f "${_dir}/${_u}"
+  done
+
+  rmdir -p --ignore-fail-on-non-empty "${_dir}"
+
+}

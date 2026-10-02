@@ -1,0 +1,63 @@
+pkgname=libxkbfile+clang
+pkgver=1.1.1
+pkgrel=1
+pkgdesc="X11 keyboard file manipulation library"
+arch=('x86_64')
+license=('custom')
+url="https://xorg.freedesktop.org/"
+provides=(libxkbfile "libxkbfile=${pkgver}")
+conflicts=(libxkbfile)
+depends=('libx11')
+makedepends=('xorg-util-macros')
+source=("${url}/releases/individual/lib/libxkbfile-${pkgver}.tar.xz"{,.sig})
+sha512sums=('2902d21860e27a27159123a19f7d4e0cf9cf8933685f1d2477e69ec647f0f8629b58bbfc391ed45e8b51a10033f18a9d0f16f7f519da9923cd7ed3bd497cf1a2'
+  'SKIP')
+validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E') #Alan Coopersmith <alan.coopersmith@oracle.com>
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libxkbfile-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxkbfile-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --disable-static
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libxkbfile-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxkbfile-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -m755 -d "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -m644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/"
+
+}

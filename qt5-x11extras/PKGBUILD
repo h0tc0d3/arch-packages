@@ -1,0 +1,78 @@
+pkgname=qt5-x11extras+clang
+pkgver=5.15.6+kde+r0
+pkgrel=1
+arch=('x86_64')
+url='https://www.qt.io'
+provides=("qt5-x11extras" "qt5-x11extras=${pkgver}")
+conflicts=("qt5-x11extras")
+license=('GPL3' 'LGPL3' 'FDL' 'custom')
+pkgdesc='Provides platform-specific APIs for X11'
+depends=('qt5-base')
+makedepends=('git')
+groups=('qt' 'qt5')
+_commit=982f20eb585d77e5b5c721e05a466d7161f7f2d1
+source=("git+https://invent.kde.org/qt/qt/qtx11extras#commit=${_commit}")
+sha256sums=('SKIP')
+
+_llvm=0
+
+pkgver() {
+
+  cd "${srcdir:?}/qtx11extras" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/qtx11extras directory! PkgVer Failed! \E[0m"
+    exit 1
+  )
+
+  echo "5.15.6+kde+r$(git rev-list --count v5.15.6-lts-lgpl..${_commit})"
+
+}
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  if [[ ! -d build ]]; then
+    mkdir -p build
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/build" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/build directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  qmake ../qtx11extras
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/build" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/build directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make INSTALL_ROOT="${pkgdir:?}" install
+
+  # Drop QMAKE_PRL_BUILD_DIR because reference the build dir
+  find "${pkgdir:?}/usr/lib" -type f -name '*.prl' \
+    -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \;
+
+  install -d "${pkgdir:?}"/usr/share/licenses
+  ln -s /usr/share/licenses/qt5-base "${pkgdir:?}/usr/share/licenses/${pkgname}"
+
+}

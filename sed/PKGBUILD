@@ -1,0 +1,74 @@
+pkgname=sed+clang
+pkgver=4.8
+pkgrel=1
+pkgdesc='GNU stream editor'
+arch=('x86_64')
+url='https://www.gnu.org/software/sed/'
+license=('GPL3')
+provides=(sed "sed=${pkgver}")
+conflicts=(sed)
+groups=('base-devel')
+depends=('glibc' 'acl' 'attr' 'libselinux')
+makedepends=('gettext')
+source=("https://ftp.gnu.org/pub/gnu/sed/sed-${pkgver}.tar.xz"{,.sig})
+validpgpkeys=('155D3FC500C834486D1EEA677FD9FCCB000BEEEE') #Jim Meyering <jim@meyering.net>
+sha256sums=('f79b0cfea71b37a8eeec8490db6c5f7ae7719c35587f21edb0617f370eeff633'
+  'SKIP')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/sed-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/sed-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  for src in "${source[@]}"; do
+    src="${src%%::*}"
+    src="${src##*/}"
+    [[ ${src} = *.patch ]] || continue
+    msg2 "Applying patch ${src}..."
+    patch -Np1 -i "${srcdir:?}/${src}"
+  done
+
+}
+
+build() {
+
+  cd "${srcdir:?}/sed-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/sed-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --with-selinux
+
+  make
+
+}
+
+check() {
+
+  make check -C "sed-${pkgver}"
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "sed-${pkgver}"
+
+}

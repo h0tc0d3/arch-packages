@@ -1,0 +1,242 @@
+From 83aa0120487e8bc3f231e72c460add783f71f17c Mon Sep 17 00:00:00 2001
+From: Andres Freund <andres@anarazel.de>
+Date: Sun, 31 Jul 2022 18:38:30 -0700
+Subject: tools perf: Fix compilation error with new binutils
+
+binutils changed the signature of init_disassemble_info(), which now causes
+compilation failures for tools/perf/util/annotate.c, e.g. on debian
+unstable.
+
+Relevant binutils commit:
+
+  https://sourceware.org/git/?p=binutils-gdb.git;a=commit;h=60a3da00bd5407f07
+
+Wire up the feature test and switch to init_disassemble_info_compat(),
+which were introduced in prior commits, fixing the compilation failure.
+
+I verified that perf can still disassemble bpf programs by using bpftrace
+under load, recording a perf trace, and then annotating the bpf "function"
+with and without the changes. With old binutils there's no change in output
+before/after this patch. When comparing the output from old binutils (2.35)
+to new bintuils with the patch (upstream snapshot) there are a few output
+differences, but they are unrelated to this patch. An example hunk is:
+
+       1.15 :   55:mov    %rbp,%rdx
+       0.00 :   58:add    $0xfffffffffffffff8,%rdx
+       0.00 :   5c:xor    %ecx,%ecx
+  -    1.03 :   5e:callq  0xffffffffe12aca3c
+  +    1.03 :   5e:call   0xffffffffe12aca3c
+       0.00 :   63:xor    %eax,%eax
+  -    2.18 :   65:leaveq
+  -    2.82 :   66:retq
+  +    2.18 :   65:leave
+  +    2.82 :   66:ret
+
+diff --git a/tools/include/tools/dis-asm-compat.h b/tools/include/tools/dis-asm-compat.h
+new file mode 100644
+index 000000000000..70f331e23ed3
+--- /dev/null
++++ b/tools/include/tools/dis-asm-compat.h
+@@ -0,0 +1,44 @@
++/* SPDX-License-Identifier: GPL-2.0-only OR BSD-2-Clause */
++#ifndef _TOOLS_DIS_ASM_COMPAT_H
++#define _TOOLS_DIS_ASM_COMPAT_H
++
++#include <stdio.h>
++#include <dis-asm.h>
++
++
++/*
++ * Trivial fprintf wrapper to be used as the fprintf_styled_func argument to
++ * init_disassemble_info_compat() when normal fprintf suffices.
++ */
++static inline int fprintf_styled(void *out,
++				 enum disassembler_style style,
++				 const char *fmt, ...)
++{
++	va_list args;
++	int r;
++
++	(void)style;
++
++	va_start(args, fmt);
++	r = vfprintf(out, fmt, args);
++	va_end(args);
++
++	return r;
++}
++
++/*
++ * Wrapper for init_disassemble_info() that hides version
++ * differences. Depending on binutils version and architecture either
++ * fprintf_func or fprintf_styled_func will be called.
++ */
++static inline void init_disassemble_info_compat(struct disassemble_info *info,
++						void *stream,
++						fprintf_ftype unstyled_func,
++						fprintf_styled_ftype styled_func)
++{
++	init_disassemble_info(info, stream,
++			      unstyled_func,
++			      styled_func);
++}
++
++#endif /* _TOOLS_DIS_ASM_COMPAT_H */
+-- 
+2.37.0.3.g30cc8d0f14
+
+binutils changed the signature of init_disassemble_info(), which now causes
+compilation failures for tools/{perf,bpf} on e.g. debian unstable. Relevant
+binutils commit:
+https://sourceware.org/git/?p=binutils-gdb.git;a=commit;h=60a3da00bd5407f07
+
+Use the previously introduced compat header to fix the build failures.
+
+I verified that:
+- perf can still disassemble bpf programs
+- bpftool can still disassemble bpf programs, both plain in json
+- bpf_jit_disasm still works - it does. Although it turns out that
+  independent of these changes bpf_jit_enable = 2 currently is broken, see
+  https://lore.kernel.org/20220703030210.pmjft7qc2eajzi6c@alap3.anarazel.de
+
+Cc: Quentin Monnet <quentin@isovalent.com>
+Cc: Alexei Starovoitov <ast@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Jiri Olsa <jolsa@kernel.org>
+Cc: Daniel Borkmann <daniel@iogearbox.net>
+Link: http://lore.kernel.org/lkml/20220622181918.ykrs5rsnmx3og4sv@alap3.anarazel.de
+Signed-off-by: Andres Freund <andres@anarazel.de>
+---
+ tools/bpf/bpf_jit_disasm.c     |  5 ++++-
+ tools/bpf/bpftool/jit_disasm.c | 40 +++++++++++++++++++++++++++-------
+ tools/perf/util/annotate.c     |  7 +++---
+ 3 files changed, 40 insertions(+), 12 deletions(-)
+
+diff --git a/tools/bpf/bpf_jit_disasm.c b/tools/bpf/bpf_jit_disasm.c
+index c8ae95804728..a90a5d110f92 100644
+--- a/tools/bpf/bpf_jit_disasm.c
++++ b/tools/bpf/bpf_jit_disasm.c
+@@ -28,6 +28,7 @@
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <limits.h>
++#include <tools/dis-asm-compat.h>
+ 
+ #define CMD_ACTION_SIZE_BUFFER		10
+ #define CMD_ACTION_READ_ALL		3
+@@ -64,7 +65,9 @@ static void get_asm_insns(uint8_t *image, size_t len, int opcodes)
+ 	assert(bfdf);
+ 	assert(bfd_check_format(bfdf, bfd_object));
+ 
+-	init_disassemble_info(&info, stdout, (fprintf_ftype) fprintf);
++	init_disassemble_info_compat(&info, stdout,
++				     (fprintf_ftype) fprintf,
++				     fprintf_styled);
+ 	info.arch = bfd_get_arch(bfdf);
+ 	info.mach = bfd_get_mach(bfdf);
+ 	info.buffer = image;
+diff --git a/tools/bpf/bpftool/jit_disasm.c b/tools/bpf/bpftool/jit_disasm.c
+index 24734f2249d6..f0d5c5f0eb60 100644
+--- a/tools/bpf/bpftool/jit_disasm.c
++++ b/tools/bpf/bpftool/jit_disasm.c
+@@ -24,6 +24,7 @@
+ #include <sys/stat.h>
+ #include <limits.h>
+ #include <bpf/libbpf.h>
++#include <tools/dis-asm-compat.h>
+ 
+ #include "json_writer.h"
+ #include "main.h"
+@@ -39,15 +40,12 @@ static void get_exec_path(char *tpath, size_t size)
+ }
+ 
+ static int oper_count;
+-static int fprintf_json(void *out, const char *fmt, ...)
++static int printf_json(void *out, const char *fmt, va_list ap)
+ {
+-	va_list ap;
+ 	char *s;
+ 	int err;
+ 
+-	va_start(ap, fmt);
+ 	err = vasprintf(&s, fmt, ap);
+-	va_end(ap);
+ 	if (err < 0)
+ 		return -1;
+ 
+@@ -73,6 +71,30 @@ static int fprintf_json(void *out, const char *fmt, ...)
+ 	return 0;
+ }
+ 
++static int fprintf_json(void *out, const char *fmt, ...)
++{
++	va_list ap;
++	int r;
++
++	va_start(ap, fmt);
++	r = printf_json(out, fmt, ap);
++	va_end(ap);
++
++	return r;
++}
++
++static int fprintf_json_styled(void *out, enum disassembler_style style, const char *fmt, ...)
++{
++	va_list ap;
++	int r;
++
++	va_start(ap, fmt);
++	r = printf_json(out, fmt, ap);
++	va_end(ap);
++
++	return r;
++}
++
+ void disasm_print_insn(unsigned char *image, ssize_t len, int opcodes,
+ 		       const char *arch, const char *disassembler_options,
+ 		       const struct btf *btf,
+@@ -99,11 +121,13 @@ void disasm_print_insn(unsigned char *image, ssize_t len, int opcodes,
+ 	assert(bfd_check_format(bfdf, bfd_object));
+ 
+ 	if (json_output)
+-		init_disassemble_info(&info, stdout,
+-				      (fprintf_ftype) fprintf_json);
++		init_disassemble_info_compat(&info, stdout,
++					     (fprintf_ftype) fprintf_json,
++					     fprintf_json_styled);
+ 	else
+-		init_disassemble_info(&info, stdout,
+-				      (fprintf_ftype) fprintf);
++		init_disassemble_info_compat(&info, stdout,
++					     (fprintf_ftype) fprintf,
++					     fprintf_styled);
+ 
+ 	/* Update architecture info for offload. */
+ 	if (arch) {
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 82cc396ef516..daea1867381d 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -41,6 +41,7 @@
+ #include <linux/string.h>
+ #include <subcmd/parse-options.h>
+ #include <subcmd/run-command.h>
++#include <tools/dis-asm-compat.h>
+ 
+ /* FIXME: For the HE_COLORSET */
+ #include "ui/browser.h"
+@@ -1762,9 +1763,9 @@ static int symbol__disassemble_bpf(struct symbol *sym,
+ 		ret = errno;
+ 		goto out;
+ 	}
+-	init_disassemble_info(&info, s,
+-			      (fprintf_ftype) fprintf);
+-
++	init_disassemble_info_compat(&info, s,
++				     (fprintf_ftype) fprintf,
++				     fprintf_styled);
+ 	info.arch = bfd_get_arch(bfdf);
+ 	info.mach = bfd_get_mach(bfdf);
+ 
+-- 
+2.35.1.677.gabf474a5dd

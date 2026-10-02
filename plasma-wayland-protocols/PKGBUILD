@@ -1,0 +1,55 @@
+pkgname=plasma-wayland-protocols+clang
+pkgver=1.9.0
+pkgrel=1
+pkgdesc="Plasma Specific Protocols for Wayland"
+arch=(any)
+url="https://kde.org/plasma-desktop"
+license=(LGPL)
+provides=('plasma-wayland-protocols' "plasma-wayland-protocols=${pkgver}")
+conflicts=('plasma-wayland-protocols')
+makedepends=(qt5-base extra-cmake-modules)
+
+source=(
+  "https://download.kde.org/stable/plasma-wayland-protocols/plasma-wayland-protocols-${pkgver}.tar.xz"{,.sig}
+)
+
+sha256sums=('a4275b9a854716fa5ed9c2ba2d697df2b0749fc45a28ad965e68d0aa36c5d4c8'
+  'SKIP')
+
+validpgpkeys=(
+  CA1B4E348D22755A67EF4E1A6A4F2C4CDC8BC77F # Aleix Pol Gonzalez <aleixpol@kde.org>
+  EC5516B514543DA145169FD12276F09AF4A790F4 # Vlad Zahorodnii <vlad.zahorodnii@kde.org>
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -B build -S plasma-wayland-protocols-${pkgver} \
+    -DCMAKE_BUILD_TYPE=Release
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+}

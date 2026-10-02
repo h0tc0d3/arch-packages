@@ -1,0 +1,52 @@
+pkgname=duktape+clang
+pkgver=2.7.0
+pkgrel=4
+pkgdesc='Embeddable Javascript engine'
+url='https://duktape.org/'
+arch=(x86_64)
+license=(MIT)
+depends=(glibc)
+provides=(libduktape{,d}.so duktape "duktape=${pkgver}")
+conflicts=(duktape)
+source=("https://duktape.org/duktape-${pkgver}.tar.xz")
+sha256sums=('90f8d2fa8b5567c6899830ddef2c03f3c27960b11aca222fa17aa7ac613c2890')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  sed '/$(CC)/ s/-Os//' -i "duktape-${pkgver}/Makefile.sharedlibrary"
+
+  # force linking against libm
+  sed 's@\($(DUKTAPE_SRCDIR)/duktape.c\)@\1 -lm@' -i "duktape-${pkgver}/Makefile.sharedlibrary"
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  CFLAGS="${CFLAGS} -DDUK_USE_FASTINT"
+
+  make -C "duktape-${pkgver}" -f Makefile.sharedlibrary INSTALL_PREFIX=/usr
+
+}
+
+package() {
+
+  make -C "duktape-${pkgver}" -f Makefile.sharedlibrary INSTALL_PREFIX=/usr \
+    DESTDIR="${pkgdir:?}" install
+
+  install -Dt "${pkgdir:?}/usr/share/licenses/duktape" -m644 "duktape-${pkgver}/LICENSE.txt"
+
+}

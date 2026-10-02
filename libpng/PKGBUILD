@@ -1,0 +1,89 @@
+pkgname=libpng+clang
+pkgver=1.6.38
+pkgrel=1
+pkgdesc="A collection of routines used to create PNG format graphics files"
+arch=('x86_64')
+url="http://www.libpng.org/pub/png/libpng.html"
+license=('custom')
+depends=('zlib' 'sh')
+provides=('libpng' "libpng=${pkgver}")
+conflicts=('libpng')
+validpgpkeys=('8048643BA2C840F4F92A195FF54984BFA16C640F') # Glenn Randers-Pehrson (mozilla) <glennrp@gmail.com>
+
+source=(
+  "https://downloads.sourceforge.net/sourceforge/libpng/libpng-${pkgver}.tar.xz"
+  pngusr.dfa
+)
+sha256sums=('b3683e8b8111ebf6f1ac004ebb6b0c975cd310ec469d98364388e9cedbfa68be'
+  '2acab13a1c1334a9c620896778fe3d7a1793b8878954ec373417771daca8f087')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/libpng-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libpng-${pkgver} build directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  autoreconf -vif
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libpng-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libpng-${pkgver} build directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --disable-static
+
+  make DFA_XTRA="${srcdir:?}/pngusr.dfa"
+
+}
+
+check() {
+
+  cd "${srcdir:?}/libpng-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libpng-${pkgver} build directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make check
+}
+
+package() {
+
+  cd "${srcdir:?}/libpng-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libpng-${pkgver} build directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -D -m0644 LICENSE "${pkgdir:?}/usr/share/licenses/$pkgname/LICENSE"
+
+  cd contrib/pngminus || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libpng-${pkgver}/contrib/pngminus directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make PNGLIB_SHARED="-L${pkgdir:?}/usr/lib -lpng" CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}" png2pnm pnm2png
+  install -m0755 png2pnm pnm2png "${pkgdir:?}/usr/bin/"
+
+}

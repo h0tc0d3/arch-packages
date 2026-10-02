@@ -1,0 +1,76 @@
+pkgname=libsemanage+clang
+pkgver=3.3
+pkgrel=2
+pkgdesc="SELinux binary policy manipulation library"
+arch=('x86_64')
+url='https://github.com/SELinuxProject/selinux'
+license=('LGPL2.1')
+groups=('selinux')
+makedepends=('flex' 'pkgconf' 'python' 'ruby' 'swig')
+depends=('libselinux>=3.3' 'audit')
+optdepends=(
+  'python: python bindings'
+  'ruby: ruby bindings'
+)
+options=(emptydirs) # For /var/lib/selinux
+install=libsemanage.install
+conflicts=("selinux-usr-libselinux" "libsemanage")
+provides=("libsemanage" "libsemanage=${pkgver}")
+source=(
+  "https://github.com/SELinuxProject/selinux/releases/download/${pkgver}/libsemanage-${pkgver}.tar.gz"
+  semanage.conf
+)
+sha256sums=('84d0ec5afa34bbbb471f602d8c1bf317d12443d07852a34b60741d428d597ce8'
+  '5b0e6929428e095b561701ccdfa9c8b0c3d70dad3fc46e667eb46a85b246a4a0')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libsemanage-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libsemanage-${pkgver} build directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  make swigify
+  make all
+  make PYTHON=/usr/bin/python pywrap
+  make RUBY=/usr/bin/ruby rubywrap
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libsemanage-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libsemanage-${pkgver} build directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" SBINDIR=/usr/bin SHLIBDIR=/usr/lib install
+  make DESTDIR="${pkgdir:?}" PYTHON=/usr/bin/python SBINDIR=/usr/bin SHLIBDIR=/usr/lib install-pywrap
+  make DESTDIR="${pkgdir:?}" RUBY=/usr/bin/ruby SBINDIR=/usr/bin SHLIBDIR=/usr/lib install-rubywrap
+
+  /usr/bin/python -m compileall "${pkgdir:?}/$(/usr/bin/python3 -c 'from distutils.sysconfig import *; print(get_python_lib(plat_specific=1))')"
+
+  install -D -m0644 "${srcdir:?}/semanage.conf" "${pkgdir:?}/etc/selinux/semanage.conf"
+
+  # Create /var/lib/selinux for the policy store
+  mkdir -p "${pkgdir:?}/var/lib/selinux"
+
+}

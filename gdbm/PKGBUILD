@@ -1,0 +1,69 @@
+pkgname=gdbm+clang
+pkgver=1.23
+pkgrel=1
+pkgdesc="GNU database library"
+arch=(x86_64)
+url="https://www.gnu.org/software/gdbm/gdbm.html"
+license=(GPL3)
+depends=(glibc sh)
+depends=(readline libreadline.so)
+provides=(libgdbm_compat.so libgdbm.so gdbm "gdbm=${pkgver}")
+conflicts=(gdbm)
+source=("https://ftp.gnu.org/gnu/gdbm/gdbm-${pkgver}.tar.gz"{,.sig})
+sha256sums=('74b1081d21fff13ae4bd7c16e5d6e504a4c26f7cde1dca0d963a484174bbcacd'
+  'SKIP')
+validpgpkeys=('325F650C4C2B6AD58807327A3602B07F55D0C732') # Sergey Poznyakoff <gray@gnu.org>
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/gdbm-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gdbm-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  autoreconf -fiv
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cd "${srcdir:?}/gdbm-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gdbm-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./configure \
+    --prefix=/usr \
+    --enable-libgdbm-compat
+
+  make
+
+}
+
+check() {
+
+  make check -C "gdbm-${pkgver}"
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "gdbm-${pkgver}"
+  install -vDm 644 "gdbm-${pkgver}/"{NOTE-WARNING,AUTHORS,NEWS,README,ChangeLog} \
+    -t "${pkgdir:?}/usr/share/doc/gdbm"
+
+}

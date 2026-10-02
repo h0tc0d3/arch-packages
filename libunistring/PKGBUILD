@@ -1,0 +1,69 @@
+pkgname=libunistring+clang
+pkgver=1.0
+pkgrel=1
+pkgdesc='Library for manipulating Unicode strings and C strings'
+url='https://www.gnu.org/software/libunistring/'
+arch=(x86_64)
+license=(GPL)
+depends=(glibc)
+provides=('libunistring' "libunistring=${pkgver}" 'libunistring.so')
+conflicts=('libunistring')
+source=("https://ftp.gnu.org/gnu/libunistring/libunistring-${pkgver}.tar.xz"{,.sig})
+sha256sums=('5bab55b49f75d77ed26b257997e919b693f29fd4a1bc22e0e6e024c246c72741'
+  'SKIP')
+validpgpkeys=(
+  '462225C3B46F34879FC8496CD605848ED7E69871' # Daiki Ueno <ueno@unixuser.org>
+  '9001B85AF9E1B83DF1BDA942F5BE8B267C6A406D' # Bruno Haible (Open Source Development) <bruno@clisp.org>
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/libunistring-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libunistring-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # https://git.savannah.gnu.org/cgit/gnulib.git/commit/?id=cca32830b5
+  sed -i '/pragma weak pthread_create/d' tests/glthread/thread.h
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libunistring-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libunistring-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+check() {
+
+  make -C "libunistring-${pkgver}" check
+
+}
+
+package() {
+
+  make -C "libunistring-${pkgver}" DESTDIR="${pkgdir:?}" install
+
+}

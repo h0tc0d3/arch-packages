@@ -1,0 +1,66 @@
+pkgname=autoconf+clang
+pkgver=2.71
+pkgrel=1
+pkgdesc="A GNU tool for automatically configuring source code"
+arch=('any')
+license=('GPL2' 'GPL3' 'custom')
+url="https://www.gnu.org/software/autoconf"
+groups=('base-devel')
+depends=('awk' 'm4' 'diffutils' 'perl' 'sh')
+provides=(autoconf "autoconf=${pkgver}")
+conflicts=(autoconf)
+checkdepends=('gcc-fortran')
+source=("https://ftp.gnu.org/pub/gnu/autoconf/autoconf-${pkgver}.tar.xz"{,.sig})
+sha256sums=('f14c83cfebcc9427f2c3cea7258bd90df972d92eb26752da4ddad81c87a0faa4'
+  'SKIP')
+validpgpkeys=('82F854F3CE73174B8B63174091FCC32B6769AA64') # Zack Weinberg
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cd "${srcdir:?}/autoconf-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/autoconf-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+check() {
+
+  make check -C "autoconf-${pkgver}"
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "autoconf-${pkgver}"
+
+  # license exception
+  install -Dm644 "autoconf-${pkgver}/COPYING.EXCEPTION" "${pkgdir:?}/usr/share/licenses/autoconf/COPYING.EXCEPTION"
+
+  # remove unwanted file
+  rm -f "${pkgdir:?}/usr/share/info/standards.info"
+
+}

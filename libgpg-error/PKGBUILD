@@ -1,0 +1,68 @@
+pkgname=libgpg-error+clang
+pkgver=1.46
+pkgrel=1
+pkgdesc="Support library for libgcrypt"
+arch=(x86_64)
+url="https://www.gnupg.org"
+license=('LGPL')
+provides=('libgpg-error' "libgpg-error=${pkgver}")
+conflicts=('libgpg-error')
+depends=('glibc' 'sh')
+source=("https://www.gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-${pkgver}.tar.bz2"{,.sig})
+sha256sums=('b7e11a64246bbe5ef37748de43b245abd72cfcd53c9ae5e7fc5ca59f1c81268d'
+  'SKIP')
+validpgpkeys=(
+  '6DAA6E64A76D2840571B4902528897B826403ADA' # "Werner Koch (dist signing 2020)"
+  'AC8E115BF73E2D8D47FA9908E98E9B2D19C6C8BD' # NIIBE Yutaka (GnuPG Release Key) <gniibe@fsij.org>
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/libgpg-error-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libgpg-error-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  autoreconf -fiv
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libgpg-error-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libgpg-error-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    #CFLAGS="${CFLAGS} -flto=thin"
+    #CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+check() {
+
+  make check -C "libgpg-error-${pkgver}"
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "libgpg-error-${pkgver}"
+
+}

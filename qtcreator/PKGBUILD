@@ -1,0 +1,107 @@
+pkgbase=qtcreator+clang
+pkgname=(qtcreator+clang qtcreator-devel+clang)
+pkgver=8.0.1
+_clangver=14.0.6
+pkgrel=3
+pkgdesc='Lightweight, cross-platform integrated development environment'
+arch=(x86_64)
+url='https://www.qt.io'
+license=(GPL3)
+depends=(qt6-tools qt6-svg qt6-quick3d qt6-webengine qt6-serialport qt6-shadertools qt6-5compat
+  "clang=${_clangver}" clazy yaml-cpp) # syntax-highlighting
+makedepends=(cmake llvm python)
+options=(docs)
+source=(
+  "https://ftp.fau.de/qtproject/official_releases/qtcreator/${pkgver%.*}/${pkgver}/qt-creator-opensource-src-${pkgver}.tar.xz"
+  qtcreator-languageclient1.patch::https://code.qt.io/cgit/qt-creator/qt-creator.git/patch/?id=dc2cd9db
+  qtcreator-languageclient2.patch::https://code.qt.io/cgit/qt-creator/qt-creator.git/patch/?id=bd00cc8b
+  qtcreator-languageclient3.patch::https://code.qt.io/cgit/qt-creator/qt-creator.git/patch/?id=8276bd26
+  qtcreator-deviceshell-use-after-free.patch::https://code.qt.io/cgit/qt-creator/qt-creator.git/patch/?id=1404c36e
+)
+sha256sums=('e2ce200a79c74dcd6367dcbb83c839c1c20b2cc077d6a658639eacde8a4ab865'
+  'f6b1a43f2a4bfb3fadd4a2fe0080dcee3242a905b1f97aeda85a361a04f20d76'
+  '1861f416f2accb75f3f8074f7caa83da2aa6183af99eb9c3d8e35183db0a5e8c'
+  '08ddbe2b5fae2f8900e44c7af10397277e05c65859595d5d98256f83555e7d09'
+  'c50cc37835fad9b7b9a205cfaa333c9b8479b264e63076f968711985dd9ca1f2')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  patch -d "qt-creator-opensource-src-${pkgver}" -p1 -i "${srcdir:?}/qtcreator-languageclient1.patch"
+  patch -d "qt-creator-opensource-src-${pkgver}" -p1 -i "${srcdir:?}/qtcreator-languageclient2.patch"
+  patch -d "qt-creator-opensource-src-${pkgver}" -p1 -i "${srcdir:?}/qtcreator-languageclient3.patch"
+  # Fix crash in DeviceShell
+  patch -d "qt-creator-opensource-src-${pkgver}" -p1 -i "${srcdir:?}/qtcreator-deviceshell-use-after-free.patch"
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -fPIC -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -fPIC -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -B build -S "qt-creator-opensource-src-${pkgver}" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBEXECDIR=lib \
+    -DWITH_DOCS=ON \
+    -DBUILD_DEVELOPER_DOCS=ON \
+    -DBUILD_QBS=OFF \
+    -DQTC_CLANG_BUILDMODE_MATCH=ON \
+    -DCLANGTOOLING_LINK_CLANG_DYLIB=ON
+
+  cmake --build build
+
+  cmake --build build --target docs
+
+}
+
+package_qtcreator+clang() {
+
+  provides=("qtcreator" "qtcreator=${pkgver}")
+  conflicts=("qtcreator")
+
+  optdepends=(
+    'qt6-doc: integrated Qt documentation'
+    'qt6-examples: welcome page examples'
+    'qt6-translations: for other languages'
+    'gdb: debugger'
+    'cmake: cmake project support'
+    'x11-ssh-askpass: ssh support'
+    'git: git support'
+    'mercurial: mercurial support'
+    'bzr: bazaar support'
+    'valgrind: analyze support'
+    'perf: performer analyzer'
+    'mlocate: locator filter'
+  )
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+  # Install docs
+  cp -r build/share/doc "${pkgdir:?}/usr/share"
+
+  install -Dm644 "qt-creator-opensource-src-${pkgver}/LICENSE.GPL3-EXCEPT" "${pkgdir:?}/usr/share/licenses/qtcreator/LICENSE.GPL3-EXCEPT"
+
+}
+
+package_qtcreator-devel+clang() {
+
+  provides=("qtcreator-devel" "qtcreator-devel=${pkgver}")
+  conflicts=("qtcreator-devel")
+  pkgdesc+=' (development files)'
+  depends=("qtcreator+clang")
+
+  DESTDIR="${pkgdir:?}" cmake --install build --component Devel
+
+}

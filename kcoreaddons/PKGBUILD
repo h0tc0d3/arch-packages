@@ -1,0 +1,53 @@
+pkgname=kcoreaddons+clang
+pkgver=5.99.0
+pkgrel=1
+pkgdesc='Addons to QtCore'
+arch=(x86_64)
+url='https://community.kde.org/Frameworks'
+license=(LGPL)
+provides=('kcoreaddons' "kcoreaddons=${pkgver}")
+conflicts=('kcoreaddons')
+depends=(qt5-base)
+makedepends=(extra-cmake-modules qt5-tools qt5-doc clang doxygen)
+groups=(kf5)
+source=("https://download.kde.org/stable/frameworks/${pkgver%.*}/kcoreaddons-${pkgver}.tar.xz"{,.sig})
+sha256sums=('5a76a33d3971b1d748db13faf76ab7a863310dccb374ebff69f24ef9c7f4131b'
+  'SKIP')
+validpgpkeys=(
+  '53E6B47B45CEA3E0D5B7457758D0EE648A48B3BB' # David Faure <faure@kde.org>
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -B build -S kcoreaddons-${pkgver} \
+    -D_KDE4_DEFAULT_HOME_POSTFIX=4 \
+    -DBUILD_TESTING=OFF \
+    -DBUILD_QCH=ON
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+}

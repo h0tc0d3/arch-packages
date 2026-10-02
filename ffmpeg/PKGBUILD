@@ -1,0 +1,278 @@
+pkgname=ffmpeg+clang
+pkgver=5.1.2
+pkgrel=1
+epoch=2
+pkgdesc='Complete solution to record, convert and stream audio and video'
+arch=(x86_64)
+url=https://ffmpeg.org/
+license=(GPL3)
+depends=(
+  alsa-lib
+  aom
+  bzip2
+  fontconfig
+  fribidi
+  gmp
+  gnutls
+  gsm
+  jack
+  lame
+  libass.so
+  libavc1394
+  libbluray.so
+  libbs2b.so
+  libdav1d.so
+  libdrm
+  libfreetype.so
+  libgl
+  libiec61883
+  libmfx
+  libmodplug
+  libpulse
+  librav1e.so
+  libraw1394
+  librsvg-2.so
+  libsoxr
+  libssh
+  libtheora
+  libva.so
+  libva-drm.so
+  libva-x11.so
+  libvdpau
+  libvidstab.so
+  libvorbisenc.so
+  libvorbis.so
+  libvpx.so
+  libvulkan.so
+  libwebp
+  libx11
+  libx264.so
+  libx265.so
+  libxcb
+  libxext
+  libxml2
+  libxv
+  libxvidcore.so
+  libzimg.so
+  ocl-icd
+  opencore-amr
+  openjpeg2
+  opus
+  sdl2
+  speex
+  srt
+  svt-av1
+  v4l-utils
+  vmaf
+  xz
+  zlib
+)
+makedepends=(
+  amf-headers
+  avisynthplus
+  clang
+  ffnvcodec-headers
+  git
+  ladspa
+  mesa
+  nasm
+  opencl-headers
+  vulkan-headers
+)
+optdepends=(
+  'avisynthplus: AviSynthPlus support'
+  'intel-media-sdk: Intel QuickSync support'
+  'ladspa: LADSPA filters'
+  'nvidia-utils: Nvidia NVDEC/NVENC support'
+)
+provides=(
+  'ffmpeg' "ffmpeg=${epoch}:${pkgver}"
+  libavcodec.so
+  libavdevice.so
+  libavfilter.so
+  libavformat.so
+  libavutil.so
+  libpostproc.so
+  libswresample.so
+  libswscale.so
+)
+conflicts=('ffmpeg')
+_commit=05d6157aab34bc49f23284645a8f34ece870f44d
+source=(
+  "git+https://git.ffmpeg.org/ffmpeg.git#commit=${_commit}"
+  add-av_stream_get_first_dts-for-chromium.patch
+)
+sha256sums=('SKIP'
+  '57e26caced5a1382cb639235f9555fc50e45e7bf8333f7c9ae3d49b3241d3f77')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/ffmpeg" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/ffmpeg directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  patch -Np1 -i "${srcdir:?}/add-av_stream_get_first_dts-for-chromium.patch" # https://crbug.com/1251779
+
+}
+
+build() {
+
+  cd "${srcdir:?}/ffmpeg" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/ffmpeg directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+    ./configure \
+      --prefix=/usr \
+      --cc=/usr/bin/clang \
+      --cxx=/usr/bin/clang++ \
+      --host-cc=/usr/bin/clang \
+      --disable-debug \
+      --disable-static \
+      --disable-stripping \
+      --enable-amf \
+      --enable-avisynth \
+      --enable-cuda-llvm \
+      --enable-lto \
+      --enable-fontconfig \
+      --enable-gmp \
+      --enable-gnutls \
+      --enable-gpl \
+      --enable-ladspa \
+      --enable-libaom \
+      --enable-libass \
+      --enable-libbluray \
+      --enable-libbs2b \
+      --enable-libdav1d \
+      --enable-libdrm \
+      --enable-libfreetype \
+      --enable-libfribidi \
+      --enable-libgsm \
+      --enable-libiec61883 \
+      --enable-libjack \
+      --enable-libmfx \
+      --enable-libmodplug \
+      --enable-libmp3lame \
+      --enable-libopencore_amrnb \
+      --enable-libopencore_amrwb \
+      --enable-libopenjpeg \
+      --enable-libopus \
+      --enable-libpulse \
+      --enable-librav1e \
+      --enable-librsvg \
+      --enable-libsoxr \
+      --enable-libspeex \
+      --enable-libsrt \
+      --enable-libssh \
+      --enable-libsvtav1 \
+      --enable-libtheora \
+      --enable-libv4l2 \
+      --enable-libvidstab \
+      --enable-libvmaf \
+      --enable-libvorbis \
+      --enable-libvpx \
+      --enable-libwebp \
+      --enable-libx264 \
+      --enable-libx265 \
+      --enable-libxcb \
+      --enable-libxml2 \
+      --enable-libxvid \
+      --enable-libzimg \
+      --enable-nvdec \
+      --enable-nvenc \
+      --enable-opencl \
+      --enable-opengl \
+      --enable-shared \
+      --enable-version3 \
+      --enable-vulkan
+
+  else
+
+    ./configure \
+      --prefix=/usr \
+      --disable-debug \
+      --disable-static \
+      --disable-stripping \
+      --enable-amf \
+      --enable-avisynth \
+      --enable-cuda-llvm \
+      --enable-lto \
+      --enable-fontconfig \
+      --enable-gmp \
+      --enable-gnutls \
+      --enable-gpl \
+      --enable-ladspa \
+      --enable-libaom \
+      --enable-libass \
+      --enable-libbluray \
+      --enable-libbs2b \
+      --enable-libdav1d \
+      --enable-libdrm \
+      --enable-libfreetype \
+      --enable-libfribidi \
+      --enable-libgsm \
+      --enable-libiec61883 \
+      --enable-libjack \
+      --enable-libmfx \
+      --enable-libmodplug \
+      --enable-libmp3lame \
+      --enable-libopencore_amrnb \
+      --enable-libopencore_amrwb \
+      --enable-libopenjpeg \
+      --enable-libopus \
+      --enable-libpulse \
+      --enable-librav1e \
+      --enable-librsvg \
+      --enable-libsoxr \
+      --enable-libspeex \
+      --enable-libsrt \
+      --enable-libssh \
+      --enable-libsvtav1 \
+      --enable-libtheora \
+      --enable-libv4l2 \
+      --enable-libvidstab \
+      --enable-libvmaf \
+      --enable-libvorbis \
+      --enable-libvpx \
+      --enable-libwebp \
+      --enable-libx264 \
+      --enable-libx265 \
+      --enable-libxcb \
+      --enable-libxml2 \
+      --enable-libxvid \
+      --enable-libzimg \
+      --enable-nvdec \
+      --enable-nvenc \
+      --enable-opencl \
+      --enable-opengl \
+      --enable-shared \
+      --enable-version3 \
+      --enable-vulkan
+
+  fi
+
+  make
+  make tools/qt-faststart
+  make doc/ff{mpeg,play}.1
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" -C ffmpeg install install-man
+  install -Dm 755 ffmpeg/tools/qt-faststart "${pkgdir:?}/usr/bin/"
+
+}

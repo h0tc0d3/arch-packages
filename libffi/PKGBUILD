@@ -1,0 +1,75 @@
+pkgname=libffi+clang
+pkgver=3.4.3
+pkgrel=1
+pkgdesc='Portable foreign function interface library'
+arch=('x86_64')
+url='https://sourceware.org/libffi/'
+license=('MIT')
+depends=('glibc')
+checkdepends=('dejagnu')
+provides=(libffi "libffi=${pkgver}" 'libffi.so')
+conflicts=(libffi)
+source=("https://github.com/libffi/libffi/releases/download/v${pkgver}/libffi-${pkgver}.tar.gz")
+sha256sums=('4416dd92b6ae8fcb5b10421e711c4d3cb31203d77521a77d85d0102311e6c3b8')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/libffi-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libffi-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  autoreconf -fiv
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libffi-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libffi-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --disable-static \
+    --disable-multi-os-directory \
+    --disable-exec-static-tramp \
+    --enable-pax_emutramp
+
+  make
+
+}
+
+check() {
+
+  make -C "libffi-${pkgver}" check
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libffi-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libffi-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  install -Dm 644 LICENSE -t "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -Dm 644 README.md -t "${pkgdir:?}/usr/share/doc/${pkgname}"
+
+}

@@ -1,0 +1,81 @@
+pkgname=alsa-lib+clang
+pkgver=1.2.7.2
+pkgrel=1
+pkgdesc="An alternative implementation of Linux sound support"
+arch=('x86_64')
+url="https://www.alsa-project.org"
+license=('LGPL2.1')
+depends=('glibc' 'alsa-topology-conf' 'alsa-ucm-conf')
+provides=('alsa-lib' "alsa-lib=${pkgver}" 'libasound.so' 'libatopology.so')
+conflicts=('alsa-lib')
+install="alsa-lib.install"
+source=(
+  "https://www.alsa-project.org/files/pub/lib/alsa-lib-${pkgver}.tar.bz2"{,.sig}
+)
+sha256sums=('8a35b7218e50f2a2c79342d0de98ded81439ce19e12809385ec9be9596de7c2f'
+  'SKIP')
+validpgpkeys=('F04DF50737AC1A884C4B3D718380596DA6E59C91') # ALSA Release Team (Package Signing Key v1) <release@alsa-project.org>
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/alsa-lib-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/alsa-lib-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  autoreconf -vfi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/alsa-lib-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/alsa-lib-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --without-debug
+
+  make
+
+}
+
+check() {
+
+  cd "${srcdir:?}/alsa-lib-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/alsa-lib-${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  export LD_LIBRARY_PATH="${PWD}/src/.libs/:${LD_LIBRARY_PATH}"
+  make -k check
+
+}
+
+package() {
+
+  cd "${srcdir:?}/alsa-lib-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/alsa-lib-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  make DESTDIR="${pkgdir:?}" install -C doc
+  install -vDm 644 {MEMORY-LEAK,TODO,NOTES,ChangeLog,doc/asoundrc.txt} \
+    -t "${pkgdir:?}/usr/share/doc/${pkgname}"
+
+}

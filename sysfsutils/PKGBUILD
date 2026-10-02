@@ -1,0 +1,66 @@
+pkgname=sysfsutils+clang
+pkgver=2.1.1
+pkgrel=1
+pkgdesc="System Utilities Based on Sysfs"
+arch=(x86_64)
+license=('GPL' 'LGPL')
+provides=(sysfsutils "sysfsutils=${pkgver}")
+conflicts=(sysfsutils)
+url="http://linux-diag.sourceforge.net/Sysfsutils.html"
+depends=('glibc')
+makedepends=('git')
+source=("git+https://github.com/linux-ras/sysfsutils.git#tag=v${pkgver}")
+sha256sums=('SKIP')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/sysfsutils" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/sysfsutils directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  ./autogen
+
+}
+
+build() {
+
+  cd "${srcdir:?}/sysfsutils" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/sysfsutils directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --disable-static \
+    --mandir=/usr/share/man
+
+  make
+
+}
+
+check() {
+
+  make check -C "sysfsutils"
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "sysfsutils"
+
+}

@@ -1,0 +1,55 @@
+pkgname=zita-alsa-pcmi+clang
+pkgver=0.5.1
+pkgrel=1
+pkgdesc="The successor of clalsadrv, provides easy access to ALSA PCM devices."
+arch=('x86_64')
+url="https://kokkinizita.linuxaudio.org/linuxaudio/"
+license=('GPL3')
+depends=('gcc-libs' 'glibc' 'libasound.so')
+makedepends=('alsa-lib')
+provides=('zita-alsa-pcmi' "zita-alsa-pcmi=${pkgver}" 'libzita-alsa-pcmi.so')
+conflicts=('zita-alsa-pcmi')
+source=(
+  "https://kokkinizita.linuxaudio.org/linuxaudio/downloads/zita-alsa-pcmi-${pkgver}.tar.bz2"
+  zita-alsa-pcmi-0.5.1-apps_makefile.patch
+  zita-alsa-pcmi-0.5.1-source_makefile.patch
+)
+sha256sums=('cf200a68edb64a17b57bffb33e38b048778272d18b5589d3d2f5a01ce0f34b07'
+  '0e104b408a2d00d76c0a05a80a05985dd8e95739ea12d4e639ff324832a3e129'
+  '3bc945afb24c9ad8050e1d17c48886204df9f469785717c8c9902c9662ee7e02')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  patch -Np1 -d "zita-alsa-pcmi-${pkgver}" -i "${srcdir:?}/zita-alsa-pcmi-0.5.1-apps_makefile.patch"
+  patch -Np1 -d "zita-alsa-pcmi-${pkgver}" -i "${srcdir:?}/zita-alsa-pcmi-0.5.1-source_makefile.patch"
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  make -C "zita-alsa-pcmi-${pkgver}/source"
+  make -C "zita-alsa-pcmi-${pkgver}/apps"
+
+}
+
+package() {
+
+  make -C "zita-alsa-pcmi-${pkgver}/source" DESTDIR="${pkgdir:?}/" PREFIX=/usr SUFFIX="" install
+  make -C "zita-alsa-pcmi-${pkgver}/apps" DESTDIR="${pkgdir:?}/" PREFIX=/usr install
+  install -vDm 644 "zita-alsa-pcmi-${pkgver}/"{AUTHORS,README} -t "${pkgdir:?}/usr/share/doc/${pkgname}/"
+
+}

@@ -1,0 +1,19 @@
+_fix_permissions() {
+
+  chmod 0600 /var/lib/setroubleshoot/email_alert_recipients
+  chmod 0600 /var/lib/setroubleshoot/setroubleshoot_database.xml
+  chown -R setroubleshoot:setroubleshoot /var/lib/setroubleshoot
+
+}
+
+post_install() {
+
+  _fix_permissions
+
+}
+
+post_upgrade() {
+
+  _fix_permissions
+
+}

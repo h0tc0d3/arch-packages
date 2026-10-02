@@ -1,0 +1,53 @@
+pkgname=kdegraphics-thumbnailers+clang
+pkgver=22.08.2
+pkgrel=1
+pkgdesc='Thumbnailers for various graphics file formats'
+url='https://apps.kde.org/kdegraphics_thumbnailers/'
+arch=(x86_64)
+license=(GPL LGPL FDL)
+provides=("kdegraphics-thumbnailers" "kdegraphics-thumbnailers=${pkgver}")
+conflicts=("kdegraphics-thumbnailers")
+depends=(libkexiv2 libkdcraw kio ghostscript kdegraphics-mobipocket)
+makedepends=(extra-cmake-modules)
+groups=(kde-applications kde-graphics)
+source=("https://download.kde.org/stable/release-service/${pkgver}/src/kdegraphics-thumbnailers-${pkgver}.tar.xz"{,.sig})
+sha256sums=('c097184c5df3d4c711574fc6e12eed43f8c3cb9e3947f9f974cf0d017d61efde'
+  'SKIP')
+validpgpkeys=(
+  CA262C6C83DE4D2FB28A332A3A6A4DB839EAA6D7 # Albert Astals Cid <aacid@kde.org>
+  F23275E4BF10AFC1DF6914A6DBD2CE893E2D1C87 # Christoph Feck <cfeck@kde.org>
+  D81C0CB38EB725EF6691C385BB463350D6EF31EF # Heiko Becker <heiko.becker@kde.org>
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -B build -S kdegraphics-thumbnailers-${pkgver} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_TESTING=OFF
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+}

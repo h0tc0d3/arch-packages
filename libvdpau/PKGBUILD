@@ -1,0 +1,68 @@
+pkgname=libvdpau+clang
+pkgver=1.5
+pkgrel=1
+pkgdesc="Nvidia VDPAU library"
+arch=(x86_64)
+url='https://www.freedesktop.org/wiki/Software/VDPAU/'
+provides=(libvdpau "libvdpau=${pkgver}")
+conflicts=(libvdpau)
+depends=('libxext')
+license=('custom')
+_commit=79f1506a3307d3275b0fdfb2e110c173f68e6f78 # 1.5
+source=("git+https://gitlab.freedesktop.org/vdpau/libvdpau.git#tag=${_commit}")
+makedepends=('xorgproto' 'git' 'meson')
+sha256sums=('SKIP')
+
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+}
+
+pkgver() {
+
+  cd "${srcdir:?}/libvdpau" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libvdpau directory! PkgVer Failed! \E[0m"
+    exit 1
+  )
+
+  git describe --tags | sed 's/-/+/g'
+}
+
+build() {
+
+  CFLAGS=${CFLAGS/-fstack-protector-strong/}
+  CXXFLAGS=${CXXFLAGS/-fstack-protector-strong/}
+  LDFLAGS=${LDFLAGS/,-z,now/}
+  meson setup libvdpau build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true
+
+  ninja -C build
+
+}
+
+check() {
+
+  ninja -C build test || true
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" ninja -C build install
+  install -Dm 644 libvdpau/COPYING -t "${pkgdir:?}/usr/share/licenses/${pkgname}/"
+
+}

@@ -1,0 +1,69 @@
+pkgname=xorg-fonts-encodings+clang
+pkgver=1.0.6
+pkgrel=1
+pkgdesc="X.org font encoding files"
+arch=(any)
+url="https://xorg.freedesktop.org/"
+license=('custom')
+provides=('xorg-fonts-encodings' "xorg-fonts-encodings=${pkgver}")
+conflicts=('xorg-fonts-encodings')
+makedepends=('xorg-mkfontscale' 'xorg-util-macros' 'xorg-font-util')
+groups=('xorg-fonts' 'xorg')
+options=(!makeflags)
+source=("${url}/releases/individual/font/encodings-${pkgver}.tar.xz")
+sha256sums=('77e301de661f35a622b18f60b555a7e7d8c4d5f43ed41410e830d5ac9084fc26')
+validpgpkeys=('3BB639E56F861FA2E86505690FDD682D974CA72A') # "Matt Turner <mattst88@gmail.com>"
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/encodings-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/encodings-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "encodings-${pkgver}"
+  install -Dm644 "encodings-${pkgver}/COPYING" "${pkgdir:?}/usr/share/licenses/${pkgname}/COPYING"
+
+  # regenerate encodngs file not to include non-compressed versions
+  cd "${pkgdir:?}/usr/share/fonts/encodings/large" || (
+    echo -e "\E[1;31mCan't cd to ${pkgdir:?}/usr/share/fonts/encodings/large directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  mkfontscale -b -s -l -n -r -p /usr/share/fonts/encodings/large -e . .
+
+  cd "${pkgdir:?}/usr/share/fonts/encodings/" || (
+    echo -e "\E[1;31mCan't cd to ${pkgdir:?}/usr/share/fonts/encodings/ directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  mkfontscale -b -s -l -n -r -p /usr/share/fonts/encodings -e . -e large .
+
+}

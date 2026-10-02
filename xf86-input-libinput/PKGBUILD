@@ -1,0 +1,66 @@
+pkgname=xf86-input-libinput+clang
+pkgver=1.2.1
+pkgrel=1
+pkgdesc="Generic input driver for the X.Org server based on libinput"
+arch=('x86_64')
+license=('custom:MIT')
+url="http://xorg.freedesktop.org/"
+depends=('libinput')
+provides=('xf86-input-libinput' "xf86-input-libinput=${pkgver}")
+makedepends=('xorg-server-devel' 'X-ABI-XINPUT_VERSION=24.4' 'libxi' 'libx11' 'xorgproto')
+conflicts=('xf86-input-libinput' 'xorg-server<21.1.1' 'X-ABI-XINPUT_VERSION<24' 'X-ABI-XINPUT_VERSION>=25')
+groups=('xorg-drivers')
+source=("https://xorg.freedesktop.org/releases/individual/driver/xf86-input-libinput-${pkgver}.tar.xz"{,.sig})
+sha256sums=('8151db5b9ddb317c0ce92dcb62da9a8db5079e5b8a95b60abc854da21e7e971b'
+  'SKIP')
+validpgpkeys=(
+  '3C2C43D9447D5938EF4551EBE23B7E70B467F0BF' # Peter Hutterer (Who-T) <office@who-t.net>
+  'FD0004A26EADFE43A4C3F249C6F7AE200374452D' # "Povilas Kanapickas <povilas@radix.lt>"
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/xf86-input-libinput-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xf86-input-libinput-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --disable-static
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/xf86-input-libinput-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xf86-input-libinput-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -m755 -d "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -m644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/"
+
+}

@@ -1,0 +1,64 @@
+pkgname=telegram-desktop+clang
+pkgver=4.2.4
+pkgrel=1
+pkgdesc='Official Telegram Desktop client'
+arch=('x86_64')
+url="https://desktop.telegram.org/"
+license=('GPL3')
+provides=('telegram-desktop' "telegram-desktop=${pkgver}")
+conflicts=('telegram-desktop')
+depends=('hunspell' 'ffmpeg' 'hicolor-icon-theme' 'lz4' 'minizip' 'openal' 'ttf-opensans'
+  'qt6-imageformats' 'qt6-svg' 'qt6-wayland' 'qt6-5compat' 'xxhash' 'glibmm'
+  'rnnoise' 'pipewire' 'libxtst' 'libxrandr' 'jemalloc' 'abseil-cpp' 'libdispatch')
+makedepends=('cmake' 'git' 'ninja' 'python' 'range-v3' 'tl-expected' 'microsoft-gsl' 'meson'
+  'extra-cmake-modules' 'wayland-protocols' 'plasma-wayland-protocols' 'libtg_owt')
+optdepends=(
+  'webkit2gtk: embedded browser features'
+  'xdg-desktop-portal: desktop integration'
+)
+source=(
+  "https://github.com/telegramdesktop/tdesktop/releases/download/v${pkgver}/tdesktop-${pkgver}-full.tar.gz"
+)
+sha256sums=('a8109fce9d55553efcbc7c3d9349869e1e267113f5badaf48cf4e0c25cd559d1')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  rm -rf "${srcdir:?}/tdesktop-${pkgver}-full/Telegram/ThirdParty/libtgvoip/webrtc_dsp/absl"
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    #CFLAGS="${CFLAGS} -flto=thin"
+    #CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  CXX=g++ cmake -B build -S tdesktop-${pkgver}-full \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DTDESKTOP_API_ID=611335 \
+    -DTDESKTOP_API_HASH=d524b414d21f4d37f08684c1df41ac9c
+
+  sed -i 's#/ffmpeg4\.4##Ig' build/Telegram/cmake_install.cmake
+  sed -i 's#/ffmpeg4\.4##Ig' build/Telegram/CMakeFiles/Telegram.dir/build.make
+  sed -i 's#/ffmpeg4\.4##Ig' build/Telegram/CMakeFiles/Telegram.dir/link.txt
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+}

@@ -1,0 +1,181 @@
+pkgname=js78+clang
+pkgver=78.15.0
+pkgrel=4
+pkgdesc="JavaScript interpreter and libraries - Version 78"
+arch=(x86_64)
+url="https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey"
+license=(MPL)
+provides=('js78' "js78=${pkgver}")
+conflicts=('js78')
+depends=(gcc-libs readline zlib sh)
+makedepends=(zip autoconf2.13 python-setuptools python-psutil rust llvm clang lld)
+checkdepends=(mercurial git)
+_relver=${pkgver}esr
+source=(
+  "https://archive.mozilla.org/pub/firefox/releases/${_relver}/source/firefox-${_relver}.source.tar.xz"{,.asc}
+  0001-Fixes-for-LTO-PGO-support.patch
+  0002-Fixes-for-Python-3.10.patch
+  0003-Fixes-for-Rust-1.56.patch
+)
+sha256sums=('a4438d84d95171a6d4fea9c9f02c2edbf0475a9c614d968ebe2eedc25a672151'
+  'SKIP'
+  '606ef0a2faeffd52cd3d4564146a95eef2b0e58e610d3af8d203753ed27e5a00'
+  'b723277864c8afad1db007963f8e1090b352ced7bb312b2e7e2f11f448e8432d'
+  'cb5f1a0551f55c12562c1f384e9d0a011dd13993039e65aa69b5345a5951af9f')
+validpgpkeys=('14F26682D0916CDD81E37B6D61B7B526D98F0353') # Mozilla Software Releases <release@mozilla.com>
+
+# Make sure the duplication between bin and lib is found
+COMPRESSZST+=(--long)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  mkdir build
+
+  cd "${srcdir:?}/firefox-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/firefox-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # Post-78 fixes to fix LTO with LLVM 11
+  patch -Np1 -i ../0001-Fixes-for-LTO-PGO-support.patch
+
+  # Fix build with Python 3.10
+  patch -Np1 -i ../0002-Fixes-for-Python-3.10.patch
+
+  # Fix build with Rust 1.56
+  patch -Np1 -i ../0003-Fixes-for-Rust-1.56.patch
+
+  cat >../mozconfig <<EOF
+ac_add_options --enable-application=js
+mk_add_options MOZ_OBJDIR=${PWD@Q}/obj
+ac_add_options --prefix=/usr
+ac_add_options --enable-release
+ac_add_options --enable-hardening
+ac_add_options --enable-optimize
+ac_add_options --enable-rust-simd
+ac_add_options --enable-linker=lld
+ac_add_options --disable-debug
+ac_add_options --disable-debug-symbols
+ac_add_options --disable-jemalloc
+ac_add_options --disable-strip
+# System libraries
+ac_add_options --with-system-zlib
+ac_add_options --without-system-icu
+# Features
+ac_add_options --enable-readline
+ac_add_options --enable-shared-js
+ac_add_options --enable-tests
+ac_add_options --with-intl-api
+EOF
+
+}
+
+build() {
+
+  cd "${srcdir:?}/firefox-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/firefox-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  CFLAGS="${CFLAGS} -fno-semantic-interposition"
+  CXXFLAGS="${CXXFLAGS} -fno-semantic-interposition"
+  LDFLAGS="${LDFLAGS} -Wl,-Bsymbolic-functions"
+
+  export MOZ_NOSPAM=1
+  export MOZBUILD_STATE_PATH="${srcdir:?}/build"
+
+  # Do 3-tier PGO
+  echo "Building instrumented JS..."
+  cat >.mozconfig ../mozconfig - <<EOF
+ac_add_options --enable-profile-generate=cross
+EOF
+  ./mach build
+
+  echo "Profiling instrumented JS..."
+  (
+    local js="${PWD}/obj/dist/bin/js"
+    export LLVM_PROFILE_FILE="${PWD}/js-%p-%m.profraw"
+
+    cd js/src/octane
+    "${js}" run.js
+
+    cd ../../../third_party/webkit/PerformanceTests/ARES-6
+    "${js}" cli.js
+
+    cd ../SunSpider/sunspider-0.9.1
+    "${js}" sunspider-standalone-driver.js
+  )
+
+  llvm-profdata merge -o merged.profdata *.profraw
+
+  stat -c "Profile data found (%s bytes)" merged.profdata
+  test -s merged.profdata
+
+  echo "Removing instrumented JS..."
+  ./mach clobber
+
+  echo "Building optimized JS..."
+  cat >.mozconfig ../mozconfig - <<EOF
+ac_add_options --enable-lto=cross
+ac_add_options --enable-profile-use=cross
+ac_add_options --with-pgo-profile-path=${PWD@Q}/merged.profdata
+EOF
+  ./mach build
+
+}
+
+check() {
+
+  jstests_extra_args=(
+    --format=none
+    --exclude-random
+    --wpt=disabled
+  )
+
+  jittest_extra_args=(
+    --format=none
+    --timeout 300
+  )
+
+  jittest_test_args=(
+    basic
+  )
+
+  cd "${srcdir:?}/firefox-${pkgver}/obj" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/firefox-${pkgver}/obj directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make -C js/src check-jstests check-jit-test \
+    JSTESTS_EXTRA_ARGS="${jstests_extra_args[*]}" \
+    JITTEST_EXTRA_ARGS="${jittest_extra_args[*]}" \
+    JITTEST_TEST_ARGS="${jittest_test_args[*]}"
+
+}
+
+package() {
+
+  cd "${srcdir:?}/firefox-${pkgver}/obj" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/firefox-${pkgver}/obj directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  rm "${pkgdir:?}"/usr/lib/*.ajs
+  find "${pkgdir:?}"/usr/{lib/pkgconfig,include} -type f -exec chmod -c a-x {} +
+
+}

@@ -1,0 +1,90 @@
+pkgname=xf86-video-amdgpu+clang
+pkgver=22.0.0
+pkgrel=1
+pkgdesc="X.org amdgpu video driver"
+arch=('x86_64')
+url="https://xorg.freedesktop.org/"
+license=('custom')
+provides=('xf86-video-amdgpu' "xf86-video-amdgpu=${pkgver}")
+depends=('systemd-libs' 'mesa')
+makedepends=('xorg-server-devel' 'systemd' 'X-ABI-VIDEODRV_VERSION=25.2')
+conflicts=('xf86-video-amdgpu' 'xorg-server<21.1.0' 'X-ABI-VIDEODRV_VERSION<25' 'X-ABI-VIDEODRV_VERSION>=26')
+groups=('xorg-drivers')
+source=(
+  "https://xorg.freedesktop.org/releases/individual/driver/xf86-video-amdgpu-${pkgver}.tar.xz"{,.sig}
+)
+sha256sums=('9d23fb602915dc3ccde92aa4d1e9485e7e54eaae2f41f485e55eb20761778266'
+  'SKIP')
+validpgpkeys=(
+  'B09FAF35BE914521980951145A81AF8E6ADBB200' # Michel Daenzer <michel@daenzer.net>
+  '017E91A875CBA321258380F19B4EE4F98474DE40' # "Alex Deucher <alexdeucher@gmail.com>"
+  'F1111E4AAF984C9763795FFE4B25B5180522B8D9' # Shashank Sharma <contactshashanksharma@gmail.com>
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/xf86-video-amdgpu-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xf86-video-amdgpu-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  # Since pacman 5.0.2-2, hardened flags are now enabled in makepkg.conf
+  # With them, module fail to load with undefined symbol.
+  # See https://bugs.archlinux.org/task/55102 / https://bugs.archlinux.org/task/54845
+  CFLAGS=${CFLAGS/-fno-plt/}
+  CXXFLAGS=${CXXFLAGS/-fno-plt/}
+  LDFLAGS=${LDFLAGS/,-z,now/}
+
+  CFLAGS+=' -fcommon' # https://wiki.gentoo.org/wiki/Gcc_10_porting_notes/fno_common
+
+  ./configure \
+    --prefix=/usr \
+    --enable-glamor
+
+  make
+
+}
+
+check() {
+
+  cd "${srcdir:?}/xf86-video-amdgpu-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xf86-video-amdgpu-${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make check
+
+}
+
+package() {
+
+  cd "${srcdir:?}/xf86-video-amdgpu-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xf86-video-amdgpu-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make "DESTDIR=${pkgdir:?}" install
+
+  install -m755 -d "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -m644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/"
+
+}

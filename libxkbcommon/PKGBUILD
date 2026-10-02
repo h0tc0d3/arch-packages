@@ -1,0 +1,151 @@
+pkgbase=libxkbcommon+clang
+pkgname=(
+  libxkbcommon+clang
+  libxkbcommon-x11+clang
+  libxkbcommon-doc+clang
+)
+pkgver=1.4.1
+pkgrel=1
+pkgdesc='Keymap handling library for toolkits and window systems'
+url='https://xkbcommon.org/'
+arch=(x86_64)
+license=(custom)
+makedepends=(
+  doxygen
+  git
+  libxcb
+  libxml2
+  meson
+  wayland
+  wayland-protocols
+  xkeyboard-config
+  xorgproto
+)
+checkdepends=(
+  libgl
+  xorg-server-xvfb
+)
+_commit=57af9cb71f19f37394399b549f7cb7b0d9fe3988 # tags/xkbcommon-1.4.1^0
+source=("git+https://github.com/xkbcommon/libxkbcommon#commit=${_commit:?}")
+sha256sums=('SKIP')
+
+_extra_lto_flag=""
+
+pkgver() {
+
+  cd "${srcdir:?}/libxkbcommon" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxkbcommon directory! PkgVer Failed! \E[0m"
+    exit 1
+  )
+
+  git describe --tags | sed 's/^xkbcommon-//;s/[^-]*-g/r&/;s/-/+/g'
+
+}
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+}
+
+build() {
+
+  meson setup libxkbcommon build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true
+
+  meson compile -C build
+
+}
+
+check() {
+
+  xvfb-run -s '-nolisten local' meson test -C build --print-errorlogs
+
+}
+
+_pick() {
+
+  local p="${1}" f d
+  shift
+  for f; do
+    d="${srcdir:?}/${p}/${f#"${pkgdir:?}"/}"
+    mkdir -p "$(dirname "${d}")"
+    mv "${f}" "${d}"
+    rmdir -p --ignore-fail-on-non-empty "$(dirname "${f}")"
+  done
+
+}
+
+package_libxkbcommon+clang() {
+
+  depends=(
+    libxml2
+    xkeyboard-config
+  )
+  optdepends=(
+    'libxkbcommon-x11: xkbcli interactive-x11'
+    'wayland: xkbcli interactive-wayland'
+  )
+  provides=(
+    libxkbcommon.so
+    libxkbregistry.so
+    "libxkbcommon" "libxkbcommon=${pkgver}"
+  )
+  conflicts=("libxkbcommon")
+
+  meson install -C build --destdir "${pkgdir:?}"
+
+  _pick x11 "${pkgdir:?}/usr/lib/"*x11*
+  _pick x11 "${pkgdir:?}/usr/lib/pkgconfig/"*x11*
+  _pick x11 "${pkgdir:?}/usr/lib/xkbcommon/"*x11*
+  _pick x11 "${pkgdir:?}/usr/include/xkbcommon/"*x11*
+  _pick x11 "${pkgdir:?}/usr/share/man/man1/"*x11*
+
+  _pick doc "${pkgdir:?}/usr/share/doc"
+
+  install -Dt "${pkgdir:?}/usr/share/licenses/libxkbcommon" -m644 libxkbcommon/LICENSE
+
+}
+
+package_libxkbcommon-x11+clang() {
+
+  pkgdesc='Keyboard handling library using XKB data for X11 XCB clients'
+  depends=(
+    libxcb
+    libxkbcommon
+    libxkbcommon.so
+  )
+  provides=(
+    libxkbcommon-x11.so
+    "libxkbcommon-x11" "libxkbcommon-x11=${pkgver}"
+  )
+  conflicts=("libxkbcommon-x11")
+
+  mv x11/* "${pkgdir:?}/"
+
+  install -Dt "${pkgdir:?}/usr/share/licenses/libxkbcommon-x11" -m644 libxkbcommon/LICENSE
+
+}
+
+package_libxkbcommon-doc+clang() {
+
+  pkgdesc='API documentation for libxkbcommon'
+  provides=("libxkbcommon-doc" "libxkbcommon-doc=${pkgver}")
+  conflicts=("libxkbcommon-doc")
+
+  mv doc/* "${pkgdir:?}/"
+
+  install -Dt "${pkgdir:?}/usr/share/licenses/libxkbcommon-doc" -m644 libxkbcommon/LICENSE
+
+}

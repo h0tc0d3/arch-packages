@@ -1,0 +1,122 @@
+pkgname=python-matplotlib+clang
+pkgver=3.5.2
+pkgrel=1
+pkgdesc="A python plotting library, making publication quality plots"
+arch=(x86_64)
+url="https://matplotlib.org"
+license=(custom)
+provides=(python-matplotlib "python-matplotlib=${pkgver}")
+conflicts=(python-matplotlib)
+depends=(freetype2 python-cycler python-dateutil python-fonttools
+  python-kiwisolver python-numpy python-packaging
+  python-pillow python-pyparsing qhull)
+optdepends=('tk: Tk{Agg,Cairo} backends'
+  'pyside2: alternative for Qt5{Agg,Cairo} backends'
+  'pyside6: alternative for Qt6{Agg,Cairo} backends'
+  'python-pyqt5: Qt5{Agg,Cairo} backends'
+  'python-pyqt6: Qt6{Agg,Cairo} backends'
+  'python-gobject: for GTK{3,4}{Agg,Cairo} backend'
+  'python-wxpython: WX{Agg,Cairo} backend'
+  'python-cairo: {GTK{3,4},Qt{5,6},Tk,WX}Cairo backends'
+  'python-cairocffi: alternative for Cairo backends'
+  'python-tornado: WebAgg backend'
+  'ffmpeg: for saving movies'
+  'imagemagick: for saving animated gifs'
+  'ghostscript: usetex dependencies'
+  'texlive-bin: usetex dependencies'
+  'texlive-latexextra: usetex usage with pdflatex'
+  'python-certifi: https support')
+makedepends=(git python-setuptools-scm-git-archive python-certifi)
+checkdepends=(python-pytest python-pytest-xdist python-pytest-runner
+  python-pytest-rerunfailures texlive-bin texlive-core texlive-latexextra
+  texlive-pictures ghostscript inkscape ffmpeg imagemagick gtk4 python-cairo
+  python-cairocffi python-gobject python-pyqt5 pyside2 python-pyqt6 pyside6
+  python-tornado python-wxpython tk jupyter-nbconvert jupyter-nbformat
+  python-ipykernel python-pandas python-pikepdf python-pytz)
+
+_commit=af8c92817e9c1b5cb51bd060ceb99ed956e714c1 # git rev-parse v${pkgver}
+_ftver=2.12.0
+source=(
+  "git+https://github.com/matplotlib/matplotlib.git#commit=${_commit}"
+  "https://github.com/QuLogic/mpl-images/archive/v${pkgver}-with-freetype-${_ftver}/mpl-images-${pkgver}-ft${_ftver}.tar.gz"
+  freetype.patch
+)
+sha256sums=('SKIP'
+  '67f7637991c97c0409c3dafbd3489aba34032cecf3e171f4a6e29e4e7d84c7fe'
+  'ce68001b2c8814212b3f6cf28e80aedf7ee1b832398948d8bfec64a6db043a6a')
+validpgpkeys=(23CAB59E3332F94D26BEF0378D86E7FAE5EB0C10) # Elliott Sales de Andrade <quantum.analyst@gmail.com>
+
+_lld=0
+
+prepare() {
+
+  if ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _lld=1
+  fi
+
+  cd "${srcdir:?}/matplotlib" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/matplotlib directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # Fix SCM detected version
+  rm -r .git
+  echo "Version: ${pkgver}" >PKG-INFO
+  # Use system freetype and qhull
+  sed -e 's|#system_freetype = False|system_freetype = True|' -e 's|#system_qhull = False|system_qhull = True|' mplsetup.cfg.template >mplsetup.cfg
+  patch -p1 <../freetype.patch # From Fedora/upstream
+  # Install tests for check()
+  sed -i 's|#tests = False|tests = True|' mplsetup.cfg
+  # Use appropriate baseline images for tests
+  for _module in matplotlib mpl_toolkits; do
+    cp -r "../mpl-images-${pkgver}-with-freetype-${_ftver}/${_module}/"* "lib/${_module}/tests/baseline_images/"
+  done
+
+}
+
+build() {
+
+  cd "${srcdir:?}/matplotlib" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/matplotlib directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_lld} -eq 1 ]]; then
+
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  python setup.py build
+
+}
+
+check() {
+
+  cd "${srcdir:?}/matplotlib" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/matplotlib directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  python -m venv --system-site-packages test-env
+  test-env/bin/python setup.py install --skip-build
+  # test_ipynb: https://github.com/matplotlib/matplotlib/issues/21654 fixed but `ModuleNotFoundError: No module named 'matplotlib'`
+  # test_cross_Qt_imports https://github.com/matplotlib/matplotlib/issues/23004
+  test-env/bin/python -m pytest -ra -n auto -v --color=yes --pyargs matplotlib mpl_toolkits.tests -k 'not test_ipynb and not test_cross_Qt_imports'
+
+}
+
+package() {
+
+  cd "${srcdir:?}/matplotlib" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/matplotlib directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  python setup.py install --root "${pkgdir:?}" --prefix=/usr --optimize=1 --skip-build
+  install -Dm644 doc/users/project/license.rst -t "${pkgdir:?}/usr/share/licenses/python-matplotlib/"
+
+  # Remove tests
+  rm -r "${pkgdir:?}$(python -c "import site; print(site.getsitepackages()[0])")/"{matplotlib,mpl_toolkits}/tests/
+
+}

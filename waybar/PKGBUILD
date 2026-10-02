@@ -1,0 +1,87 @@
+pkgname=waybar+clang
+pkgver=0.9.13
+pkgrel=2
+pkgdesc='Highly customizable Wayland bar for Sway and Wlroots based compositors'
+arch=('x86_64')
+url="https://github.com/Alexays/Waybar/"
+license=('MIT')
+provides=('waybar' "waybar=${pkgver}")
+conflicts=('waybar')
+depends=(
+  'gtkmm3'
+  'libjsoncpp.so'
+  'libsigc++'
+  'fmt'
+  'wayland'
+  'libdate-tz.so'
+  'libspdlog.so'
+  'gtk-layer-shell'
+  'libupower-glib.so'
+  'upower'
+  'libevdev'
+  'libpulse'
+  'libnl'
+  'libappindicator-gtk3'
+  'libdbusmenu-gtk3'
+  'libmpdclient'
+  'libsndio.so'
+  'libxkbcommon'
+)
+
+makedepends=(
+  'cmake'
+  'catch2'
+  'meson'
+  'scdoc' # For generating manpages
+  'wayland-protocols'
+)
+
+optdepends=(
+  'otf-font-awesome: Icons in the default configuration'
+)
+
+source=(
+  "waybar-${pkgver}.tar.gz::https://github.com/Alexays/Waybar/archive/${pkgver}.tar.gz"
+  "https://patch-diff.githubusercontent.com/raw/Alexays/Waybar/pull/1617.patch"
+)
+
+sha256sums=('9e6553274ce3013d2be9912f975287efe4dfd38de4e335db43a73aff2a3b0a34'
+  'bedf05c1aeecd9fad517bc91583d3054de97b07e92c63e75220b16f728f10112')
+
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+  patch -d "Waybar-${pkgver}" -p1 -i "${srcdir:?}/1617.patch"
+
+}
+
+build() {
+
+  CXXFLAGS="${CXXFLAGS} -Wno-inconsistent-missing-override"
+  meson setup "Waybar-${pkgver}" build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true
+
+  meson compile -C build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" meson install -C build
+  install -Dm644 "Waybar-${pkgver}/LICENSE" -t "${pkgdir:?}/usr/share/licenses/waybar/"
+
+}

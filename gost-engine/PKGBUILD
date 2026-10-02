@@ -1,0 +1,80 @@
+# Maintainer: Grigory Vasilyev <echo "h0tc0d3(-*A*-)g-m*a-i-l(-d#t-)c#m" | sed -e 's/-//ig;s/*//ig;s/(A)/@/i;s/#/o/ig;s/(dot)/./i'>
+pkgname=gost-engine
+pkgver=1.1.1.r507.aba6613
+pkgrel=1
+pkgdesc='Russian GOST R 34.10 and GOST R 34.11-2012 Crypto Algorithms for OpenSSL'
+arch=('x86_64')
+license=('Apache 2.0')
+url='https://github.com/gost-engine/engine'
+depends=('openssl')
+makedepends=('cmake' 'git')
+conflicts=('openssl-gost')
+provides=('openssl-gost')
+_commit=aba6613c5cbd06ebee723dd64aae8f9c23328dce
+source=(
+  "gost-engine::git+https://github.com/gost-engine/engine.git#commit=${_commit}"
+  'gost.cnf'
+  "gost-engine.install"
+)
+sha256sums=('SKIP'
+  '04c3483d758e393d9831d2be4cee1eafd806eea15055438be7c7b4caeeccbfe6'
+  '92a02f99c0e969e90f95bf43530359380134fcee54ccc52bf1f4c5607e4175a6')
+
+install=gost-engine.install
+
+_llvm=0
+
+pkgver() {
+
+  cd "${srcdir:?}/gost-engine" || (
+    echo -e "\E[1m\E[31mCan't cd to ${srcdir}/gost-engine build directory! PkgVer Failed! \E[0m"
+    exit 1
+  )
+
+  echo "1.1.1.r$(git rev-list --count HEAD).$(git rev-parse --short HEAD)"
+
+}
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  openssl_version=$(openssl version | grep -ho "1\.[0-9]\.\w*")
+  if ! echo "${openssl_version}" | grep -iq "1.1.1"; then
+    echo -e "\E[1m\E[31mOpenSSL version ${openssl_version} is not compatible! \E[0m"
+    exit 1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -B build -S gost-engine \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DOPENSSL_ROOT_DIR=/usr \
+    -DOPENSSL_INCLUDE_DIR=/usr/include \
+    -DOPENSSL_LIBRARIES=/usr/lib \
+    -DOPENSSL_ENGINES_DIR=/usr/lib/engines-1.1
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+  install -Dm644 "${srcdir:?}/gost.cnf" "${pkgdir:?}/etc/ssl/gost.cnf"
+  install -Dm644 "${srcdir:?}/gost-engine/LICENSE" "${pkgdir:?}/usr/share/licenses/gost-engine"
+
+}

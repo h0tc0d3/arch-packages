@@ -1,0 +1,58 @@
+pkgname=m4+clang
+pkgver=1.4.19
+pkgrel=1
+pkgdesc="The GNU macro processor"
+arch=('x86_64')
+url="https://www.gnu.org/software/m4"
+license=('GPL3')
+provides=(m4 "m4=${pkgver}")
+conflicts=(m4)
+groups=('base-devel')
+depends=('glibc' 'bash')
+source=("https://ftp.gnu.org/gnu/m4/m4-${pkgver}.tar.xz"{,.sig})
+sha256sums=('63aede5c6d33b6d9b13511cd0be2cac046f2e70fd0a07aa9573a04a82783af96'
+  'SKIP')
+validpgpkeys=('71C2CC22B1C4602927D2F3AAA7A16B4A2527436A') # Eric Blake
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cd "${srcdir:?}/m4-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/m4-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+check() {
+
+  make check -C "m4-${pkgver}"
+}
+
+package() {
+
+  make prefix="${pkgdir:?}/usr" install -C "m4-${pkgver}"
+
+}

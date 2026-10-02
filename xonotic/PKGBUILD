@@ -1,0 +1,81 @@
+pkgname=xonotic+clang
+pkgver=0.8.5
+pkgrel=3
+pkgdesc="A free, fast-paced crossplatform first-person shooter"
+arch=('x86_64')
+url="https://xonotic.org"
+license=('GPL')
+depends=('alsa-lib' 'curl' 'libjpeg-turbo' 'libmodplug' 'libvorbis' 'libxpm'
+  'libxxf86vm' 'sdl2' 'libpng>=1.4.0' 'xonotic-data' 'hicolor-icon-theme'
+  'gtk-update-icon-cache' 'desktop-file-utils')
+makedepends=('unzip' 'mesa' 'xorgproto')
+provides=("xonotic")
+conflicts=("xonotic")
+source=("https://dl.xonotic.org/xonotic-${pkgver}-source.zip"
+  "xonotic-glx.desktop"
+  "xonotic-sdl.desktop")
+sha256sums=('a1a81ba55ab151bf09758e7f59614b2e5150e84224753e77950bcd07a282ea5d'
+  '6f5ce4fcb9c2904af64d8a9608acc99ed42f62576c659c21ae0313cbf971e968'
+  '13cebb542cba063f08218fb3c01ffc222a5559f5439a89ff363c22eb7b48a0b2')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  sed -i 's#-O3 -fno-strict-aliasing#-O2 -fno-strict-aliasing#' Xonotic/source/darkplaces/makefile.inc
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  # compile engine
+  make -C Xonotic/source/darkplaces CPUOPTIMIZATIONS="${CFLAGS}" DP_FS_BASEDIR=/usr/share/xonotic/ DP_LINK_TO_LIBJPEG=1 cl-release
+  make -C Xonotic/source/darkplaces CPUOPTIMIZATIONS="${CFLAGS}" DP_FS_BASEDIR=/usr/share/xonotic/ DP_LINK_TO_LIBJPEG=1 sdl-release
+  make -C Xonotic/source/darkplaces CPUOPTIMIZATIONS="${CFLAGS}" DP_FS_BASEDIR=/usr/share/xonotic/ DP_LINK_TO_LIBJPEG=1 sv-release
+
+  cd "${srcdir:?}/Xonotic/source/d0_blind_id" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/Xonotic/source/d0_blind_id directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  ./autogen.sh
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+package() {
+
+  # binaries
+  install -Dm755 "Xonotic/source/darkplaces/darkplaces-dedicated" "${pkgdir:?}/usr/bin/xonotic-dedicated"
+  install -Dm755 "Xonotic/source/darkplaces/darkplaces-glx" "${pkgdir:?}/usr/bin/xonotic-glx"
+  install -Dm755 "Xonotic/source/darkplaces/darkplaces-sdl" "${pkgdir:?}/usr/bin/xonotic-sdl"
+
+  # convenience files
+  mkdir -p "${pkgdir:?}/usr/share/applications"
+  install -Dm644 "${srcdir:?}/"*.desktop -t "${pkgdir:?}/usr/share/applications"
+
+  for size in 16 22 24 32 48 64 128 256 512; do
+    install -Dm644 "${srcdir:?}/Xonotic/misc/logos/icons_png/xonotic_${size}.png" \
+      "${pkgdir:?}/usr/share/icons/hicolor/${size}x${size}/apps/xonotic.png"
+  done
+
+  # crypto stuff
+  make DESTDIR="${pkgdir:?}" install -C "Xonotic/source/d0_blind_id"
+
+}

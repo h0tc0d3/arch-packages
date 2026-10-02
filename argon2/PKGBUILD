@@ -1,0 +1,63 @@
+pkgname=argon2+clang
+pkgver=20190702
+pkgrel=4
+pkgdesc='A password-hashing function (reference C implementation)'
+arch=('x86_64')
+url='https://github.com/P-H-C/phc-winner-argon2'
+license=('Apache' 'custom:CC0')
+depends=('glibc')
+provides=('libargon2.so' argon2 "argon2=${pkgver}")
+conflicts=(argon2)
+source=("https://github.com/P-H-C/phc-winner-argon2/archive/${pkgver}/argon2-${pkgver}.tar.gz")
+sha256sums=('daf972a89577f8772602bf2eb38b6a3dd3d922bf5724d45e7f9589b5e830442c')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  make \
+    ARGON2_VERSION="${pkgver}" \
+    OPTTARGET='none' \
+    LIBRARY_REL='lib' \
+    -C "phc-winner-argon2-${pkgver}"
+
+}
+
+check() {
+
+  make \
+    ARGON2_VERSION="${pkgver}" \
+    OPTTARGET='none' \
+    LIBRARY_REL='lib' test \
+    -C "phc-winner-argon2-${pkgver}"
+
+}
+
+package() {
+
+  make \
+    ARGON2_VERSION="${pkgver}" \
+    OPTTARGET='none' \
+    LIBRARY_REL='lib' \
+    DESTDIR="${pkgdir:?}" install \
+    -C "phc-winner-argon2-${pkgver}"
+
+  install -D -m0644 "phc-winner-argon2-${pkgver}/LICENSE" "${pkgdir:?}/usr/share/licenses/argon2/LICENSE"
+
+}

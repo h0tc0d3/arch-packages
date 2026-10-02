@@ -1,0 +1,75 @@
+pkgname=pipewire-media-session+clang
+pkgver=0.4.1
+pkgrel=2
+epoch=1
+pkgdesc="Low-latency audio/video router and processor - Session manager"
+url="https://pipewire.org"
+license=(MIT)
+arch=(x86_64)
+makedepends=(git meson doxygen graphviz 'pipewire>=0.3.39' systemd dbus
+  alsa-lib)
+depends=('pipewire>=0.3.39' libpipewire-0.3.so libsystemd.so libdbus-1.so
+  libasound.so)
+optdepends=('pipewire-media-session-docs: Documentation')
+provides=(pipewire-session-manager pipewire-media-session "pipewire-media-session=${epoch}:${pkgver}")
+conflicts=(pipewire-media-session)
+_commit=e5d5cf2404786af8bcc40bdb8a2962bef4ec18b6 # tags/0.4.1
+source=("pipewire-media-session::git+https://gitlab.freedesktop.org/pipewire/media-session.git#commit=${_commit}")
+sha256sums=('SKIP')
+
+install=pipewire-media-session.install
+
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+}
+
+pkgver() {
+
+  cd "${srcdir:?}/pipewire-media-session" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/pipewire-media-session directory! PkgVer Failed! \E[0m"
+    exit 1
+  )
+
+  git describe --tags | sed 's/[^-]*-g/r&/;s/-/+/g'
+
+}
+
+build() {
+
+  meson setup pipewire-media-session build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true \
+    -D docs=enabled \
+    -D with-module-sets=[]
+
+  meson compile -C build
+
+}
+
+check() {
+
+  meson test -C build --print-errorlogs
+
+}
+
+package() {
+
+  meson install -C build --destdir "${pkgdir:?}"
+
+  install -Dt "${pkgdir:?}/usr/share/licenses/pipewire-media-session" -m644 pipewire-media-session/COPYING
+
+}

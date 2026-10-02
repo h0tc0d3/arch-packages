@@ -1,0 +1,59 @@
+pkgname=wayland-protocols+clang
+pkgver=1.27
+pkgrel=1
+pkgdesc='Specifications of extended Wayland protocols'
+arch=('any')
+url='https://wayland.freedesktop.org/'
+license=('MIT')
+provides=('wayland-protocols' "wayland-protocols=${pkgver}")
+conflicts=('wayland-protocols')
+makedepends=('wayland' 'meson')
+validpgpkeys=(
+  '8307C0A224BABDA1BABD0EB9A6EEEC9E0136164A' # Jonas Ådahl
+  'A66D805F7C9329B4C5D82767CCC4F07FAC641EFF' # Daniel Stone
+)
+source=("https://gitlab.freedesktop.org/wayland/wayland-protocols/-/releases/${pkgver}/downloads/wayland-protocols-${pkgver}.tar.xz"{,.sig})
+sha256sums=('9046f10a425d4e2a00965a03acfb6b3fb575a56503ac72c2b86821c69653375c'
+  'SKIP')
+
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+}
+
+build() {
+
+  meson setup wayland-protocols-${pkgver} build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true
+
+  meson compile -C build
+
+}
+
+check() {
+
+  meson test -C build --print-errorlogs
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" meson install -C build
+  set -x
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname}" -m 644 "wayland-protocols-${pkgver}/COPYING"
+
+}

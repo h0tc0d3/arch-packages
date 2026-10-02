@@ -1,0 +1,102 @@
+pkgname=mpv+clang
+epoch=1
+pkgver=0.34.1
+pkgrel=6
+pkgdesc='a free, open source, and cross-platform media player'
+arch=('x86_64')
+license=('GPL3')
+url='https://mpv.io/'
+depends=('alsa-lib' 'libasound.so' 'desktop-file-utils' 'ffmpeg' 'libavcodec.so' 'libavdevice.so'
+  'libavfilter.so' 'libavformat.so' 'libavutil.so' 'libswresample.so' 'libswscale.so'
+  'glibc' 'hicolor-icon-theme' 'jack' 'libjack.so' 'lcms2' 'liblcms2.so' 'libarchive'
+  'libarchive.so' 'libass' 'libass.so' 'libbluray' 'libbluray.so' 'libcdio'
+  'libcdio-paranoia' 'libdrm' 'libdvdnav' 'libdvdread' 'libegl' 'libgl' 'libglvnd'
+  'libjpeg' 'libjpeg.so' 'libplacebo' 'libplacebo.so' 'libpulse' 'libpulse.so'
+  'libva' 'libva.so' 'libva-drm.so' 'libva-wayland.so' 'libva-x11.so' 'libvdpau' 'libx11'
+  'libxext' 'libxinerama' 'libxkbcommon' 'libxkbcommon.so' 'libxrandr' 'libxss'
+  'libxv' 'luajit' 'mesa' 'mujs' 'rubberband' 'librubberband.so' 'shaderc'
+  'libshaderc_shared.so' 'uchardet' 'vulkan-icd-loader' 'wayland' 'xdg-utils'
+  'zlib')
+makedepends=('git' 'python-docutils' 'ladspa' 'wayland-protocols'
+  'ffnvcodec-headers' 'vulkan-headers' 'waf' 'pipewire')
+optdepends=(
+  'yt-dlp: for video-sharing websites playback'
+  'youtube-dl: for video-sharing websites playback'
+  'pipewire: Pipewire audio backend'
+)
+provides=('mpv' "mpv=${pkgver}" 'libmpv.so')
+conflicts=('mpv')
+options=('!emptydirs')
+_commit=df6d84c1cf4bbc2b998f4d320542c78df674512d # git rev-parse v${pkgver}
+source=(
+  "git+https://github.com/mpv-player/mpv.git#commit=${_commit}"
+)
+sha256sums=('SKIP')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/mpv" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/mpv directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  git cherry-pick -n 79bfcc672343ddbc348e040ad899d61a0bafc050
+  git cherry-pick -n fc94c8c365ebeb038af6052bf4ea0506c1220559
+  # Native support for the Pipewire audio backend
+  git cherry-pick -n ff322864f2878a35b277111e509da03fe6f888bd
+  git cherry-pick -n 87aba146eddd2bc3fe8819180e2814e7947ff1f2
+
+}
+
+build() {
+
+  cd "${srcdir:?}/mpv" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/mpv directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  waf configure \
+    --prefix=/usr \
+    --confdir=/etc/mpv \
+    --enable-cdda \
+    --enable-dvb \
+    --enable-dvdnav \
+    --enable-libarchive \
+    --enable-libmpv-shared \
+    --disable-build-date \
+    --disable-caca
+
+  waf build
+
+}
+
+package() {
+
+  cd "${srcdir:?}/mpv" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/mpv directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  waf install --destdir="${pkgdir:?}"
+
+  install -m0644 "DOCS/"{encoding.rst,tech-overview.txt} \
+    "${pkgdir:?}/usr/share/doc/mpv"
+
+  install -m0644 "TOOLS/lua/"* \
+    -D -t "${pkgdir:?}/usr/share/mpv/scripts"
+
+}

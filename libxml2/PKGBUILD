@@ -1,0 +1,123 @@
+pkgbase=libxml2+clang
+pkgname=(libxml2+clang libxml2-docs+clang)
+pkgver=2.10.2
+pkgrel=2
+pkgdesc="XML C parser and toolkit"
+url="https://gitlab.gnome.org/GNOME/libxml2/-/wikis/home"
+arch=(x86_64)
+license=(custom:MIT)
+depends=(zlib readline ncurses xz icu)
+makedepends=(python git)
+_commit=21b24b51608d471bb9f7c4225e23d0db2acecc52 # tags/v2.10.2^0
+
+source=(
+  "libxml2::git+https://gitlab.gnome.org/GNOME/libxml2.git#commit=${_commit}"
+  "https://www.w3.org/XML/Test/xmlts20130923.tar.gz"
+  libxml2-2.9.8-python3-unicode-errors.patch
+  libxml2-disable-fuzz-tests.patch
+)
+
+sha256sums=('SKIP'
+  '9b61db9f5dbffa545f4b8d78422167083a8568c59bd1129f94138f936cf6fc1f'
+  '3d07a50fc0963bda05fc5269dedc51f108260699e25e455bb31f6d80c2a9cada'
+  '3908e7a53b20109bdfde143238f36e22a154dbb7d363b634e54c0a18328f4656')
+
+_llvm=0
+
+pkgver() {
+
+  cd "${srcdir:?}/libxml2" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxml2 directory! PkgVer Failed! \E[0m"
+    exit 1
+  )
+
+  git describe --tags | sed 's/-rc/rc/;s/^v//;s/[^-]*-g/r&/;s/-/+/g'
+
+}
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/libxml2" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxml2 directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # Use xmlconf from conformance test suite
+  ln -s ../xmlconf
+
+  _patch libxml2-2.9.8-python3-unicode-errors.patch
+  _patch libxml2-disable-fuzz-tests.patch
+
+  NOCONFIGURE=1 ./autogen.sh
+
+}
+
+build() (
+
+  cd "${srcdir:?}/libxml2" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libxml2 directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --localstatedir=/var \
+    --with-threads \
+    --with-history \
+    --with-python="/usr/bin/python" \
+    --with-icu \
+    --disable-static
+
+  make
+
+)
+
+check() {
+
+  make check -C libxml2
+
+}
+
+package_libxml2+clang() {
+
+  optdepends=('python: Python bindings')
+  provides=("libxml2" "libxml2=${pkgver}" libxml2.so)
+  conflicts=("libxml2")
+
+  make DESTDIR="${pkgdir:?}" install -C libxml2
+
+  mkdir -p doc/usr/share
+  mv "${pkgdir:?}/usr/share/"{doc,gtk-doc} -t doc/usr/share
+
+  install -Dm644 libxml2/Copyright -t "${pkgdir:?}/usr/share/licenses/libxml2"
+
+}
+
+package_libxml2-docs+clang() {
+
+  pkgdesc+=" (documentation)"
+  depends=()
+
+  mv doc/* "${pkgdir:?}"
+
+}

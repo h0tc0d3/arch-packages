@@ -1,0 +1,147 @@
+pkgbase=gtk3+clang
+pkgname=(gtk3+clang gtk3-docs+clang gtk3-demos+clang)
+pkgver=3.24.34+r156+g812b3930d0
+pkgrel=1
+epoch=1
+pkgdesc="GObject-based multi-platform GUI toolkit"
+arch=(x86_64)
+url="https://www.gtk.org/"
+depends=(atk cairo libxcursor libxinerama libxrandr libxi libepoxy gdk-pixbuf2
+  dconf libxcomposite libxdamage pango shared-mime-info at-spi2-atk
+  wayland libxkbcommon adwaita-icon-theme librsvg desktop-file-utils
+  mesa cantarell-fonts libcolord libcups fribidi iso-codes
+  libcloudproviders tracker3 gtk-update-icon-cache)
+makedepends=(gobject-introspection gtk-doc git glib2-docs sassc meson
+  wayland-protocols)
+license=(LGPL)
+_commit=812b3930d0bb11d67d4a2c159d037c8c0d440c50 # gtk-3-24
+source=("git+https://gitlab.gnome.org/GNOME/gtk.git#commit=${_commit}"
+  gtk-query-immodules-3.0.hook)
+sha256sums=('SKIP'
+  'a0319b6795410f06d38de1e8695a9bf9636ff2169f40701671580e60a108e229')
+
+_extra_lto_flag=""
+
+pkgver() {
+
+  cd "${srcdir:?}/gtk" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gtk directory! PkgVer Failed! \E[0m"
+    exit 1
+  )
+
+  git describe --tags | sed 's/[^-]*-g/r&/;s/-/+/g'
+
+}
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+  cd "${srcdir:?}/gtk" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/gtk directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # https://bugs.archlinux.org/task/76018
+  # https://gitlab.gnome.org/GNOME/gtk/-/merge_requests/4381#note_1465559
+  git revert -n da4066774b926880631af099469d308714b5606c
+
+}
+
+build() {
+
+  CFLAGS+=" -DG_DISABLE_CAST_CHECKS"
+  meson setup gtk build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true \
+    -D broadway_backend=true \
+    -D cloudproviders=true \
+    -D tracker3=true \
+    -D colord=yes \
+    -D gtk_doc=true \
+    -D man=true
+
+  meson compile -C build
+
+}
+
+_pick() {
+
+  local p="$1" f d
+  shift
+  for f; do
+    d="${srcdir:?}/$p/${f#${pkgdir:?}/}"
+    mkdir -p "$(dirname "$d")"
+    mv "$f" "$d"
+    rmdir -p --ignore-fail-on-non-empty "$(dirname "$f")"
+  done
+
+}
+
+package_gtk3+clang() {
+
+  provides=(gtk3 "gtk3=${pkgver}" gtk3-print-backends libgtk-3.so libgdk-3.so libgailutil-3.so)
+  conflicts=(gtk3 gtk3-print-backends)
+  replaces=("gtk3-print-backends<=3.22.26-1")
+  install=gtk3.install
+
+  DESTDIR="${pkgdir:?}" meson install -C build
+
+  install -Dm644 /dev/stdin "${pkgdir:?}/usr/share/gtk-3.0/settings.ini" <<END
+[Settings]
+gtk-icon-theme-name = Adwaita
+gtk-theme-name = Adwaita
+gtk-font-name = Cantarell 11
+END
+
+  install -Dt "${pkgdir:?}/usr/share/libalpm/hooks" -m644 gtk-query-immodules-3.0.hook
+
+  cd "${pkgdir:?}" || (
+    echo -e "\E[1;31mCan't cd to ${pkgdir} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  rm usr/bin/gtk-update-icon-cache
+  rm usr/share/man/man1/gtk-update-icon-cache.1
+
+  _pick docs usr/share/gtk-doc
+
+  _pick demo usr/bin/gtk3-{demo,demo-application,icon-browser,widget-factory}
+  _pick demo usr/share/applications/gtk3-{demo,icon-browser,widget-factory}.desktop
+  _pick demo usr/share/glib-2.0/schemas/org.gtk.{Demo,exampleapp}.gschema.xml
+  _pick demo usr/share/icons/hicolor/*/apps/gtk3-{demo,widget-factory}[-.]*
+  _pick demo usr/share/man/man1/gtk3-{demo,demo-application,icon-browser,widget-factory}.1
+
+}
+
+package_gtk3-docs+clang() {
+
+  pkgdesc+=" (documentation)"
+  depends=('gtk3+clang')
+  provides=('gtk3-docs' "gtk3-docs=${pkgver}")
+  conflicts=('gtk3-docs')
+
+  mv docs/* "${pkgdir:?}"
+
+}
+
+package_gtk3-demos+clang() {
+
+  pkgdesc+=" (demo applications)"
+  depends=('gtk3+clang')
+  provides=('gtk3-demos' "gtk3-demos=${pkgver}")
+  conflicts=('gtk3-demos')
+
+  mv demo/* "${pkgdir:?}"
+
+}

@@ -1,0 +1,79 @@
+pkgname=libcap+clang
+pkgver=2.66
+pkgrel=1
+pkgdesc='POSIX 1003.1e capabilities'
+arch=('x86_64')
+url="https://sites.google.com/site/fullycapable/"
+license=('GPL2')
+depends=('glibc' 'pam')
+makedepends=('linux-api-headers')
+provides=('libcap' "libcap=${pkgver}" 'libcap.so' 'libpsx.so')
+conflicts=('libcap')
+source=(
+  "https://kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-${pkgver}.tar."{xz,sign}
+)
+sha256sums=('15c40ededb3003d70a283fe587a36b7d19c8b3b554e33f86129c059a4bb466b2'
+  'SKIP')
+
+validpgpkeys=(38A644698C69787344E954CE29EE848AE2CCF3F4) # Andrew G. Morgan <morgan@kernel.org>
+
+_llvm=0
+
+prepare() {
+
+  cd "${srcdir:?}/libcap-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libcap-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+    sed -i -e 's/\$(CROSS_COMPILE)gcc/clang/;s/\$(CROSS_COMPILE)ar/llvm-ar/;s/\$(CROSS_COMPILE)ranlib/llvm-ranlib/' Make.Rules
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libcap-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libcap-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  make DYNAMIC=yes KERNEL_HEADERS='/usr/include' lib='lib' prefix='/usr' sbindir='bin'
+
+}
+
+check() {
+
+  cd "${srcdir:?}/libcap-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libcap-${pkgver} directory! Check Failed! \E[0m"
+    exit 1
+  )
+
+  make -k test
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libcap-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libcap-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" RAISE_SETFCAP='no' lib='lib' prefix='/usr' sbindir='bin' install
+  # docs
+  install -vDm 644 {CHANGELOG,README} -t "${pkgdir:?}/usr/share/doc/${pkgname}/"
+  install -vDm 644 pam_cap/capability.conf \
+    -t "${pkgdir:?}/usr/share/doc/${pkgname}/examples/"
+
+}

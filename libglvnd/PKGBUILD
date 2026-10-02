@@ -1,0 +1,53 @@
+pkgname=libglvnd+clang
+pkgver=1.5.0
+pkgrel=1
+pkgdesc="The GL Vendor-Neutral Dispatch library"
+arch=('x86_64')
+url="https://github.com/NVIDIA/libglvnd"
+license=('custom:BSD-like')
+depends=('libxext' 'mesa' 'opengl-driver')
+makedepends=('libxext' 'libx11' 'xorgproto' 'python' 'meson')
+provides=('libglvnd' "libglvnd=${pkgver}" 'libgl' 'libegl' 'libgles'
+  libEGL.so libGL.so libGLESv2.so libGLX.so libGLdispatch.so libOpenGL.so)
+conflicts=('libglvnd')
+source=("https://gitlab.freedesktop.org/glvnd/libglvnd/-/archive/v${pkgver}/libglvnd-v${pkgver}.tar.gz"
+  LICENSE)
+sha256sums=('8c246d573bdaabbab32874befa79c8b92b12c05d3eb4bbefbe62afa630842793'
+  '1a99f7487849c41fc3520e0af3dfcf28a0df05e78956d9ec58c2c52b1f20a77d')
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    sed -ie "s/'nm'/'llvm-nm'/" "libglvnd-v${pkgver}/meson.build"
+  fi
+
+}
+
+build() {
+
+  CFLAGS=${CFLAGS/-fstack-protector-strong/}
+  CXXFLAGS=${CXXFLAGS/-fstack-protector-strong/}
+  LDFLAGS=${LDFLAGS/,-z,now/}
+
+  meson setup "libglvnd-v${pkgver}" build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_pie=true \
+    -D gles1=false
+
+  ninja -C build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" ninja -C build install
+  install -Dm644 LICENSE "${pkgdir:?}/usr/share/licenses/${pkgname}/LICENSE"
+
+}

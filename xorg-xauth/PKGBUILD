@@ -1,0 +1,65 @@
+pkgname=xorg-xauth+clang
+pkgver=1.1.2
+pkgrel=1
+pkgdesc="X.Org authorization settings program"
+arch=(x86_64)
+license=('custom')
+provides=('xorg-xauth' "xorg-xauth=${pkgver}")
+conflicts=('xorg-xauth')
+url="https://xorg.freedesktop.org/"
+depends=('libxmu')
+makedepends=('xorg-util-macros')
+groups=('xorg-apps' 'xorg')
+source=("https://xorg.freedesktop.org/releases/individual/app/xauth-${pkgver}.tar.xz"{,.sig})
+sha256sums=('78ba6afd19536ced1dddb3276cba6e9555a211b468a06f95f6a97c62ff8ee200'
+  'SKIP')
+validpgpkeys=(
+  '3BB639E56F861FA2E86505690FDD682D974CA72A'
+  #'995ED5C8A6138EB0961F18474C09DD83CAAA50B2' # "Adam Jackson <ajax@nwnk.net>"
+  #'4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E' # "Alan Coopersmith <alan.coopersmith@oracle.com>"
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/xauth-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xauth-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/xauth-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/xauth-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  install -d -m755 "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -m644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/"
+
+}

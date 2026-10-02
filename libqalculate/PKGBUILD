@@ -1,0 +1,57 @@
+pkgname=libqalculate+clang
+pkgver=4.4.0
+pkgrel=1
+pkgdesc='Multi-purpose desktop calculator'
+arch=(x86_64)
+url='https://qalculate.github.io/'
+license=(GPL)
+provides=('libqalculate' "libqalculate=${pkgver}")
+conflicts=('libqalculate')
+depends=(libxml2 curl mpfr)
+makedepends=(intltool doxygen)
+optdepends=('gnuplot: for plotting support')
+source=("https://github.com/Qalculate/libqalculate/releases/download/v${pkgver}/libqalculate-${pkgver}.tar.gz")
+sha256sums=('79cfdc4d4af9dfcd6902c2ec680ed1f3d5845d07b5ee1c76255fdca731a8b758')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libqalculate-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libqalculate-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libqalculate-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libqalculate-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+}

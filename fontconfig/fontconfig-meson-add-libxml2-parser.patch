@@ -1,0 +1,87 @@
+From 1d373e5dffe6b14b6821903beaa04e5e2e5995e0 Mon Sep 17 00:00:00 2001
+From: Francesco Pretto <ceztko@gmail.com>
+Date: Fri, 29 Oct 2021 11:18:23 +0200
+Subject: [PATCH] Add support for libxml2 backend in meson build
+
+Currently the meson build, differently than the autotools
+one, doesn't support libxml2 as the xml parser backend.
+The commit adds it in form of a 'libxml2' boolean
+option that when enabled searches for libxml2 first.
+It is not a meson 'feature' because features can get
+enabled/disabled as a whole, and this does not fit
+well with an optional dependency.
+---
+ meson.build       | 29 +++++++++++++++++++++++++----
+ meson_options.txt |  2 ++
+ 2 files changed, 27 insertions(+), 4 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index 64cae44a..51cbaf5b 100644
+--- a/meson.build
++++ b/meson.build
+@@ -24,6 +24,7 @@ freetype_req_cmake = '>= 2.8.1'
+ 
+ cc = meson.get_compiler('c')
+ 
++conf = configuration_data()
+ 
+ freetype_dep = dependency('freetype2', method: 'pkg-config', version: freetype_req, required: false)
+ 
+@@ -33,8 +34,29 @@ if not freetype_dep.found()
+     fallback: ['freetype2', 'freetype_dep'])
+ endif
+ 
+-expat_dep = dependency('expat',
+-  fallback: ['expat', 'expat_dep'])
++xml_dep = dependency('', required: false)
++if get_option('libxml2')
++    # Try to find libxml2
++    xml_dep = dependency('libxml2', method: 'pkg-config', required: false)
++    if not xml_dep.found()
++        xml_dep = dependency('LibXml2', method: 'cmake', required: false)
++    endif
++    if xml_dep.found()
++        conf.set('ENABLE_LIBXML2', 1)
++    endif
++endif
++
++if not xml_dep.found()
++    # Try to find expat
++    xml_dep = dependency('expat', method: 'pkg-config', required: false)
++    if not xml_dep.found()
++        xml_dep = dependency('expat', method: 'cmake', required: false)
++    endif
++    if not xml_dep.found()
++        expat = subproject('expat')
++        xml_dep = expat.get_variable('expat_dep')
++    endif
++endif
+ 
+ i18n = import('i18n')
+ pkgmod = import('pkgconfig')
+@@ -109,8 +131,7 @@ add_project_arguments('-DHAVE_CONFIG_H', language: 'c')
+ 
+ c_args = []
+ 
+-conf = configuration_data()
+-deps = [freetype_dep, expat_dep]
++deps = [freetype_dep, xml_dep]
+ incbase = include_directories('.')
+ 
+ # We cannot try compiling against an internal dependency
+diff --git a/meson_options.txt b/meson_options.txt
+index b70edf16..b59980bd 100644
+--- a/meson_options.txt
++++ b/meson_options.txt
+@@ -5,6 +5,8 @@ option('doc-txt', type: 'feature', value: 'auto')
+ option('doc-man', type: 'feature', value: 'auto')
+ option('doc-pdf', type: 'feature', value: 'auto')
+ option('doc-html', type: 'feature', value: 'auto')
++option('libxml2', type: 'boolean', value: false,
++    description : 'Enable use of libxml2 backend instead of expat')
+ option('nls', type : 'feature', value : 'auto', yield: true,
+   description : 'Enable native language support (translations)')
+ option('tests', type : 'feature', value : 'auto', yield : true,
+-- 
+GitLab
+

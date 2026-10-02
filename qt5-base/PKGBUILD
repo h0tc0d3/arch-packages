@@ -1,0 +1,219 @@
+pkgbase=qt5-base+clang
+pkgname=(qt5-base+clang qt5-xcb-private-headers+clang)
+pkgver=5.15.6+kde+r180
+pkgrel=1
+arch=('x86_64')
+url='https://www.qt.io'
+license=('GPL3' 'LGPL3' 'FDL' 'custom')
+pkgdesc='A cross-platform application and UI framework'
+depends=('libjpeg-turbo' 'xcb-util-keysyms' 'xcb-util-renderutil' 'libgl' 'fontconfig' 'xdg-utils'
+  'shared-mime-info' 'xcb-util-wm' 'libxrender' 'libxi' 'sqlite' 'xcb-util-image' 'mesa'
+  'tslib' 'libinput' 'libxkbcommon-x11' 'libproxy' 'libcups' 'double-conversion' 'md4c' 'zstd' 'libglvnd')
+makedepends=('libfbclient' 'mariadb-libs' 'unixodbc' 'postgresql-libs' 'alsa-lib' 'gst-plugins-base-libs'
+  'gtk3' 'libpulse' 'cups' 'freetds' 'vulkan-headers' 'git')
+optdepends=('qt5-svg: to use SVG icon themes'
+  'qt5-wayland: to run Qt applications in a Wayland session'
+  'qt5-translations: for some native UI translations'
+  'postgresql-libs: PostgreSQL driver'
+  'mariadb-libs: MariaDB driver'
+  'unixodbc: ODBC driver'
+  'libfbclient: Firebird/iBase driver'
+  'freetds: MS SQL driver'
+  'gtk3: GTK platform plugin'
+  'perl: for fixqt4headers and syncqt')
+conflicts=('qtchooser')
+groups=('qt' 'qt5')
+_commit=23996edc504e9e5b5b0ec907380598bbe4bf591c
+source=(
+  "git+https://invent.kde.org/qt/qt/qtbase#commit=${_commit:?}"
+  qt5-base-cflags.patch
+  qt5-base-nostrip.patch
+  qt5-base-cxxflag.patch
+  qt5-base-gcc11.patch
+  qt5-base-everywhere-no_relocatable.patch
+  qt5-base-qmake_LFLAGS.patch
+  qt5-base-everywhere-src-5.15.2-libglvnd.patch
+  qt5-base-everywhere-src-5.12.1-qt5gui_cmake_isystem_includes.patch
+  qt5-base-use-wayland-on-gnome.patch
+)
+
+sha256sums=('SKIP'
+  '5411edbe215c24b30448fac69bd0ba7c882f545e8cf05027b2b6e2227abc5e78'
+  '4abc22150fa3e06b2fdcec32146abc9be4e316692aa4d5bd5aa53b4b726783fa'
+  'ad4dc439bc23826b7f165b1e897d8544adff593254cb03061be397358a7163b0'
+  '9378afd071ad5c0ec8f7aef48421e4b9fab02f24c856bee9c0951143941913c5'
+  '1fed8b9e4eb5749e70d85d7678f08a5abc881e2a2ecab85fb21f59cb124500e5'
+  '5063b93e72e6737bcec64ec05a2306286f936c8e43dea2ba7b3cf145ed09bd34'
+  '6dd54f841127f20c27300874833636105f15e7481f549c007504bb82cf26c177'
+  '093c44cc4da61a9a8310993edcfb950b4f873adf84b74caeaabfcff52b873ea0'
+  'd62367c679e655a472f2777b9a7a97e17bd1340c0f0b2d40d1621217743122b8')
+
+options=(!strip)
+
+_llvm=0
+
+pkgver() {
+
+  cd "${srcdir:?}/qtbase" || (
+    echo -e "\E[1;31mCan't cd to {srcdir:?}/qtbase directory! PkgVer Failed! \E[0m"
+    exit 1
+  )
+
+  echo "5.15.6+kde+r$(git rev-list --count v5.15.6-lts-lgpl..${_commit})"
+
+}
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/qtbase" || (
+    echo -e "\E[1;31mCan't cd to {srcdir:?}/qtbase directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  _patch qt5-base-cflags.patch # Use system CFLAGS in qmake
+  _patch qt5-base-cxxflag.patch
+  _patch qt5-base-gcc11.patch
+
+  _patch qt5-base-everywhere-no_relocatable.patch
+  _patch qt5-base-qmake_LFLAGS.patch
+  _patch qt5-base-everywhere-src-5.15.2-libglvnd.patch
+  _patch qt5-base-nostrip.patch # Don't strip binaries with qmake
+
+  # CMake generates wrong -isystem /usr/include compilations flags with Qt5::Gui
+  _patch qt5-base-everywhere-src-5.12.1-qt5gui_cmake_isystem_includes.patch
+  _patch qt5-base-use-wayland-on-gnome.patch
+
+}
+
+build() {
+
+  cd "${srcdir:?}/qtbase" || (
+    echo -e "\E[1;31mCan't cd to {srcdir:?}/qtbase directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CPPFLAGS=${CPPFLAGS/-D_FORTIFY_SOURCE=2/}
+    CFLAGS=${CFLAGS/-fstack-protector-strong --param ssp-buffer-size=4 -fstack-clash-protection/}
+    CXXFLAGS=${CXXFLAGS/-fstack-protector-strong --param ssp-buffer-size=4 -fstack-clash-protection/}
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+    ./configure -platform linux-clang \
+      -confirm-license \
+      -opensource -v \
+      -prefix /usr \
+      -docdir /usr/share/doc/qt \
+      -headerdir /usr/include/qt \
+      -archdatadir /usr/lib/qt \
+      -datadir /usr/share/qt \
+      -sysconfdir /etc/xdg \
+      -examplesdir /usr/share/doc/qt/examples \
+      -plugin-sql-{psql,mysql,sqlite,odbc,ibase} \
+      -no-reduce-relocations \
+      -no-feature-relocatable \
+      -ltcg \
+      -dbus-runtime \
+      -egl -eglfs \
+      -system-zlib \
+      -system-libjpeg \
+      -system-libpng \
+      -system-sqlite \
+      -system-harfbuzz \
+      -openssl-linked \
+      -optimized-qmake \
+      -no-rpath \
+      -no-mimetype-database \
+      -nomake examples \
+      -dbus-linked \
+      -journald
+
+  else
+
+    ./configure -confirm-license -opensource -v \
+      -prefix /usr \
+      -docdir /usr/share/doc/qt \
+      -headerdir /usr/include/qt \
+      -archdatadir /usr/lib/qt \
+      -datadir /usr/share/qt \
+      -sysconfdir /etc/xdg \
+      -examplesdir /usr/share/doc/qt/examples \
+      -plugin-sql-{psql,mysql,sqlite,odbc,ibase} \
+      -system-sqlite \
+      -openssl-linked \
+      -nomake examples \
+      -no-rpath \
+      -dbus-linked \
+      -system-harfbuzz \
+      -journald \
+      -no-mimetype-database \
+      -no-use-gold-linker \
+      -no-reduce-relocations \
+      -no-feature-relocatable \
+      -no-strip \
+      -ltcg
+
+  fi
+
+  bin/qmake -- -redo
+  make
+
+}
+
+package_qt5-base+clang() {
+
+  pkgdesc='A cross-platform application and UI framework'
+  conflicts=('qt5-base')
+  provides=('qt5-base' "qt5-base=${pkgver}")
+  depends+=(qt5-translations)
+
+  cd "${srcdir:?}/qtbase" || (
+    echo -e "\E[1;31mCan't cd to {srcdir:?}/qtbase directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make INSTALL_ROOT="${pkgdir:?}" install
+
+  install -Dm644 LICENSE* -t "${pkgdir:?}"/usr/share/licenses/$pkgbase
+
+  # Drop QMAKE_PRL_BUILD_DIR because reference the build dir
+  find "${pkgdir:?}/usr/lib" -type f -name '*.prl' \
+    -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \;
+
+  # Fix wrong qmake path in pri file
+  sed -i "s|${srcdir:?}/qtbase|/usr|" \
+    "${pkgdir:?}"/usr/lib/qt/mkspecs/modules/qt_lib_bootstrap_private.pri
+
+  # Symlinks for backwards compatibility
+  for b in "${pkgdir:?}"/usr/bin/*; do
+    ln -s "$(basename "${b}")" "${pkgdir:?}/usr/bin/$(basename "${b}")-qt5"
+  done
+}
+
+package_qt5-xcb-private-headers+clang() {
+
+  pkgdesc='Private headers for Qt5 Xcb'
+  depends=("qt5-base+clang=${pkgver}")
+
+  conflicts=('qt5-xcb-private-headers')
+  provides=('qt5-xcb-private-headers' "qt5-xcb-private-headers=${pkgver}")
+
+  cd "${srcdir:?}/qtbase" || (
+    echo -e "\E[1;31mCan't cd to {srcdir:?}/qtbase directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  install -d -m755 "${pkgdir:?}/usr/include/qtxcb-private"
+  cp -r src/plugins/platforms/xcb/*.h "${pkgdir:?}/usr/include/qtxcb-private/"
+
+}

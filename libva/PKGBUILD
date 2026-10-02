@@ -1,0 +1,73 @@
+pkgname=libva+clang
+pkgver=2.16.0
+pkgrel=1
+pkgdesc='Video Acceleration (VA) API for Linux'
+arch=(x86_64)
+url=https://01.org/linuxmedia/vaapi
+license=(MIT)
+provides=(libva "libva=${pkgver}" libva-drm.so libva-glx.so libva-wayland.so libva-x11.so libva.so)
+conflicts=(libva)
+depends=(libdrm libgl libx11 libxext libxfixes wayland)
+makedepends=(git libglvnd mesa meson)
+optdepends=(
+  'intel-media-driver: backend for Intel GPUs (>= Broadwell)'
+  'libva-intel-driver: backend for Intel GPUs (<= Haswell)'
+  'libva-mesa-driver: backend for AMD and Nvidia GPUs'
+)
+backup=(etc/libva.conf)
+_commit=1333034d7ec6e4f8bcb340d8f7b81b8d32835c49
+source=("git+https://github.com/intel/libva.git#commit=${_commit}")
+sha256sums=('SKIP')
+
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+}
+
+pkgver() {
+
+  cd "${srcdir:?}/libva" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libva directory! PkgVer Failed! \E[0m"
+    exit 1
+  )
+
+  git describe --tags
+
+}
+
+build() {
+
+  CFLAGS+=" -DENABLE_VA_MESSAGING" # Option missing
+
+  meson setup libva build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true
+
+  meson compile -C build
+
+}
+
+package() {
+
+  meson install -C build --destdir "${pkgdir:?}"
+
+  install -Dm 644 libva/COPYING -t "${pkgdir:?}/usr/share/licenses/libva"
+
+  install -Dm 644 /dev/stdin "${pkgdir:?}/etc/libva.conf" <<END
+LIBVA_MESSAGING_LEVEL=1
+END
+
+}

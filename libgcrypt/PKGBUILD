@@ -1,0 +1,96 @@
+pkgname=libgcrypt+clang
+pkgver=1.10.1
+pkgrel=1
+pkgdesc="General purpose cryptographic library based on the code from GnuPG"
+arch=(x86_64)
+url="https://www.gnupg.org"
+license=('LGPL')
+provides=('libgcrypt' "libgcrypt=${pkgver}")
+conflicts=('libgcrypt')
+depends=('libgpg-error')
+options=('!emptydirs')
+# https://www.gnupg.org/download/integrity_check.html
+source=(
+  "https://gnupg.org/ftp/gcrypt/libgcrypt/libgcrypt-${pkgver}.tar.bz2"
+  random.conf
+)
+sha256sums=('ef14ae546b0084cd84259f61a55e07a38c3b53afc0f546bffcef2f01baffe9de'
+  '639bd7d4df19f8e810433e7158f2e2c0b8d8034b9276562f255dd13b108403e5')
+validpgpkeys=('6DAA6E64A76D2840571B4902528897B826403ADA') # "Werner Koch (dist signing 2020)"
+
+_llvm=0
+
+# should be all algorithms except SM3 and SM4
+_DIGESTS='crc gostr3411-94 md4 md5 rmd160 sha1 sha256 sha512 sha3 tiger whirlpool stribog blake2'
+_CIPHERS='arcfour blowfish cast5 des aes twofish serpent rfc2268 seed camellia idea salsa20 gost28147 chacha20'
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/libgcrypt-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libgcrypt-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # tests fail due to systemd+libseccomp preventing memory syscalls when building in chroots
+  #  t-secmem: line 176: gcry_control (GCRYCTL_INIT_SECMEM, pool_size, 0) failed: General error
+  #  FAIL: t-secmem
+  #  t-sexp: line 1174: gcry_control (GCRYCTL_INIT_SECMEM, 16384, 0) failed: General error
+  #  FAIL: t-sexp
+  sed -i "s:t-secmem::" tests/Makefile.am
+  sed -i "s:t-sexp::" tests/Makefile.am
+  autoreconf -fiv
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libgcrypt-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libgcrypt-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    #CFLAGS="${CFLAGS} -flto=thin"
+    #CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --disable-static \
+    --enable-digests="${_DIGESTS:?}" \
+    --enable-ciphers="${_CIPHERS:?}"
+
+  make
+
+}
+
+check() {
+
+  make check -C "libgcrypt-${pkgver}"
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "libgcrypt-${pkgver}"
+
+  mkdir -p "${pkgdir:?}/etc/gcrypt"
+  chmod 755 "${pkgdir:?}/etc/gcrypt"
+
+  install -m644 "${srcdir:?}/random.conf" "${pkgdir:?}/etc/gcrypt/random.conf"
+
+}

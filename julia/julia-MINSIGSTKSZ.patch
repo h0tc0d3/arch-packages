@@ -1,0 +1,13 @@
+diff --git a/src/task.c b/src/task.c
+index d65e741..7434a60 100644
+--- a/src/task.c
++++ b/src/task.c
+@@ -75,7 +75,7 @@ static inline void tsan_switch_to_ctx(jl_ucontext_t *ctx) {}
+ 
+ // empirically, jl_finish_task needs about 64k stack space to infer/run
+ // and additionally, gc-stack reserves 64k for the guard pages
+-#if defined(MINSIGSTKSZ) && MINSIGSTKSZ > 131072
++#if defined(MINSIGSTKSZ)
+ #define MINSTKSZ MINSIGSTKSZ
+ #else
+ #define MINSTKSZ 131072

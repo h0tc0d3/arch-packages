@@ -1,0 +1,64 @@
+pkgname=xorg-util-macros+clang
+pkgver=1.19.3
+pkgrel=1
+pkgdesc="X.Org Autotools macros"
+arch=(any)
+license=('custom')
+provides=('xorg-util-macros' "xorg-util-macros=${pkgver}")
+conflicts=('xorg-util-macros')
+
+url="https://xorg.freedesktop.org/"
+source=("${url}/releases/individual/util/util-macros-${pkgver}.tar.bz2")
+sha512sums=('b9c7398a912c688a782eab5b1e0f6da2df11a430775c5c98fc3269f73a665de6eeb60d300a849e38d345714a6e51f74e9334cb6039767304cca4b93d823a53a2')
+validpgpkeys=(
+  '3BB639E56F861FA2E86505690FDD682D974CA72A'
+  '4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E' # "Alan Coopersmith <alan.coopersmith@oracle.com>"
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/util-macros-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/util-macros-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/util-macros-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/util-macros-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+
+  install -m755 -d "${pkgdir:?}/usr/lib"
+  mv "${pkgdir:?}/usr/share/pkgconfig" "${pkgdir:?}/usr/lib/"
+  install -m755 -d "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -m644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/"
+
+}

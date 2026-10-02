@@ -1,0 +1,240 @@
+diff -up shadow-4.8/src/chgpasswd.c.selinux-perms shadow-4.8/src/chgpasswd.c
+--- shadow-4.8/src/chgpasswd.c.selinux-perms	2019-12-01 18:02:43.000000000 +0100
++++ shadow-4.8/src/chgpasswd.c	2020-01-13 10:21:44.558107260 +0100
+@@ -39,6 +39,13 @@
+ #include <pwd.h>
+ #include <stdio.h>
+ #include <stdlib.h>
++#ifdef WITH_SELINUX
++#include <selinux/selinux.h>
++#include <selinux/avc.h>
++#endif
++#ifdef WITH_LIBAUDIT
++#include <libaudit.h>
++#endif
+ #ifdef ACCT_TOOLS_SETUID
+ #ifdef USE_PAM
+ #include "pam_defs.h"
+@@ -80,6 +87,9 @@ static bool sgr_locked = false;
+ #endif
+ static bool gr_locked = false;
+ 
++/* The name of the caller */
++static char *myname = NULL;
++
+ /* local function prototypes */
+ static void fail_exit (int code);
+ static /*@noreturn@*/void usage (int status);
+@@ -334,6 +344,63 @@ static void check_perms (void)
+ #endif				/* ACCT_TOOLS_SETUID */
+ }
+ 
++#ifdef WITH_SELINUX
++static int
++log_callback (int type, const char *fmt, ...)
++{
++    int audit_fd;
++    va_list ap;
++
++    va_start(ap, fmt);
++#ifdef WITH_AUDIT
++    audit_fd = audit_open();
++
++    if (audit_fd >= 0) {
++	char *buf;
++
++	if (vasprintf (&buf, fmt, ap) < 0)
++		goto ret;
++	audit_log_user_avc_message(audit_fd, AUDIT_USER_AVC, buf, NULL, NULL,
++				   NULL, 0);
++	audit_close(audit_fd);
++	free(buf);
++	goto ret;
++    }
++
++#endif
++    vsyslog (LOG_USER | LOG_INFO, fmt, ap);
++ret:
++    va_end(ap);
++    return 0;
++}
++
++static void
++selinux_check_root (void)
++{
++    int status = -1;
++    security_context_t user_context;
++    union selinux_callback old_callback;
++
++    if (is_selinux_enabled() < 1)
++	return;
++
++    old_callback = selinux_get_callback(SELINUX_CB_LOG);
++    /* setup callbacks */
++    selinux_set_callback(SELINUX_CB_LOG, (union selinux_callback) &log_callback);
++    if ((status = getprevcon(&user_context)) < 0) {
++	selinux_set_callback(SELINUX_CB_LOG, old_callback);
++	exit(1);
++    }
++
++    status = selinux_check_access(user_context, user_context, "passwd", "passwd", NULL);
++
++    selinux_set_callback(SELINUX_CB_LOG, old_callback);
++    freecon(user_context);
++    if (status != 0 && security_getenforce() != 0)
++	exit(1);
++}
++#endif
++
+ /*
+  * open_files - lock and open the group databases
+  */
+@@ -427,6 +494,7 @@ int main (int argc, char **argv)
+ 
+ 	const struct group *gr;
+ 	struct group newgr;
++	struct passwd *pw = NULL;
+ 	int errors = 0;
+ 	int line = 0;
+ 
+@@ -436,12 +504,37 @@ int main (int argc, char **argv)
+ 	(void) bindtextdomain (PACKAGE, LOCALEDIR);
+ 	(void) textdomain (PACKAGE);
+ 
++#ifdef WITH_SELINUX
++	selinux_check_root ();
++#endif
++
+ 	process_root_flag ("-R", argc, argv);
+ 
+ 	process_flags (argc, argv);
+ 
+ 	OPENLOG ("chgpasswd");
+ 
++#ifdef WITH_AUDIT
++	audit_help_open ();
++#endif
++
++	/*
++	 * Determine the name of the user that invoked this command. This
++	 * is really hit or miss because there are so many ways that command
++	 * can be executed and so many ways to trip up the routines that
++	 * report the user name.
++	 */
++	pw = get_my_pwent ();
++	if (NULL == pw) {
++		fprintf (stderr, _("%s: Cannot determine your user name.\n"),
++		         Prog);
++		SYSLOG ((LOG_WARN,
++		         "Cannot determine the user name of the caller (UID %lu)",
++		         (unsigned long) getuid ()));
++		exit (E_NOPERM);
++	}
++	myname = xstrdup (pw->pw_name);
++
+ 	check_perms ();
+ 
+ #ifdef SHADOWGRP
+diff -up shadow-4.8/src/chpasswd.c.selinux-perms shadow-4.8/src/chpasswd.c
+--- shadow-4.8/src/chpasswd.c.selinux-perms	2019-12-01 18:02:43.000000000 +0100
++++ shadow-4.8/src/chpasswd.c	2020-01-13 10:21:44.558107260 +0100
+@@ -39,6 +39,13 @@
+ #include <pwd.h>
+ #include <stdio.h>
+ #include <stdlib.h>
++#ifdef WITH_SELINUX
++#include <selinux/selinux.h>
++#include <selinux/avc.h>
++#endif
++#ifdef WITH_LIBAUDIT
++#include <libaudit.h>
++#endif
+ #ifdef USE_PAM
+ #include "pam_defs.h"
+ #endif				/* USE_PAM */
+@@ -332,6 +339,63 @@ static void check_perms (void)
+ #endif				/* USE_PAM */
+ }
+ 
++#ifdef WITH_SELINUX
++static int
++log_callback (int type, const char *fmt, ...)
++{
++    int audit_fd;
++    va_list ap;
++
++    va_start(ap, fmt);
++#ifdef WITH_AUDIT
++    audit_fd = audit_open();
++
++    if (audit_fd >= 0) {
++	char *buf;
++
++	if (vasprintf (&buf, fmt, ap) < 0)
++		goto ret;
++	audit_log_user_avc_message(audit_fd, AUDIT_USER_AVC, buf, NULL, NULL,
++				   NULL, 0);
++	audit_close(audit_fd);
++	free(buf);
++	goto ret;
++    }
++
++#endif
++    vsyslog (LOG_USER | LOG_INFO, fmt, ap);
++ret:
++    va_end(ap);
++    return 0;
++}
++
++static void
++selinux_check_root (void)
++{
++    int status = -1;
++    security_context_t user_context;
++    union selinux_callback old_callback;
++
++    if (is_selinux_enabled() < 1)
++	return;
++
++    old_callback = selinux_get_callback(SELINUX_CB_LOG);
++    /* setup callbacks */
++    selinux_set_callback(SELINUX_CB_LOG, (union selinux_callback) &log_callback);
++    if ((status = getprevcon(&user_context)) < 0) {
++	selinux_set_callback(SELINUX_CB_LOG, old_callback);
++	exit(1);
++    }
++
++    status = selinux_check_access(user_context, user_context, "passwd", "passwd", NULL);
++
++    selinux_set_callback(SELINUX_CB_LOG, old_callback);
++    freecon(user_context);
++    if (status != 0 && security_getenforce() != 0)
++	exit(1);
++}
++#endif
++
+ /*
+  * open_files - lock and open the password databases
+  */
+@@ -428,6 +492,10 @@ int main (int argc, char **argv)
+ 	(void) bindtextdomain (PACKAGE, LOCALEDIR);
+ 	(void) textdomain (PACKAGE);
+ 
++#ifdef WITH_SELINUX
++	selinux_check_root ();
++#endif
++
+ 	process_root_flag ("-R", argc, argv);
+ 
+ 	process_flags (argc, argv);
+@@ -440,6 +508,10 @@ int main (int argc, char **argv)
+ 
+ 	OPENLOG ("chpasswd");
+ 
++#ifdef WITH_AUDIT
++	audit_help_open ();
++#endif
++
+ 	check_perms ();
+ 
+ #ifdef USE_PAM

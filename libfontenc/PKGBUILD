@@ -1,0 +1,62 @@
+pkgname=libfontenc+clang
+pkgver=1.1.6
+pkgrel=1
+pkgdesc="X11 font encoding library"
+arch=('x86_64')
+url="https://xorg.freedesktop.org/"
+license=('custom')
+provides=('libfontenc' "libfontenc=${pkgver}")
+conflicts=('libfontenc')
+depends=('zlib' 'xorg-fonts-encodings')
+makedepends=('pkgconfig' 'xorgproto' 'xorg-util-macros')
+source=("${url}/releases/individual/lib/libfontenc-${pkgver}.tar.xz"{,.sig})
+sha512sums=('524247caf035e5d69280575c79ec5a3259c4cd0a4afa375b01985fedf800b42ecd75102e38f85cdce5591d020d361ffa9390adcb7906e939df289e5131088683'
+  'SKIP')
+validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E') #Alan Coopersmith <alan.coopersmith@oracle.com>
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/libfontenc-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libfontenc-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure --prefix=/usr \
+    --sysconfdir=/etc \
+    --localstatedir=/var \
+    --disable-static \
+    --with-encodingsdir=/usr/share/fonts/encodings
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/libfontenc-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/libfontenc-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  install -Dm644 COPYING "${pkgdir:?}/usr/share/licenses/${pkgname}/COPYING"
+
+}

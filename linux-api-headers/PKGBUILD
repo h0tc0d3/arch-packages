@@ -1,0 +1,35 @@
+pkgname=linux-api-headers
+pkgver=5.19.0
+pkgrel=1
+pkgdesc='Kernel headers sanitized for use in userspace'
+arch=(any)
+url='https://www.gnu.org/software/libc'
+license=(GPL2)
+makedepends=(rsync)
+if [[ "${pkgver}" == *".0" ]]; then
+  _pkgver=${pkgver%.0}
+else
+  _pkgver=${pkgver}
+fi
+source=("https://www.kernel.org/pub/linux/kernel/v${pkgver:0:1}.x/linux-${_pkgver}.tar."{xz,sign})
+sha256sums=('ff240c579b9ee1affc318917de07394fc1c3bb49dac25ec1287370c2e15005a8'
+  'SKIP')
+validpgpkeys=(
+  'ABAF11C65A2970B130ABE3C479BE3E4300411886' # Linus Torvalds
+  '647F28654894E3BD457199BE38DBBDC86092693E' # Greg Kroah-Hartman
+)
+
+build() {
+
+  make mrproper -C "linux-${_pkgver}" O="linux-${_pkgver}"
+
+}
+
+package() {
+
+  make INSTALL_HDR_PATH="${pkgdir:?}/usr" headers_install -C "linux-${_pkgver}"
+
+  # use headers from libdrm
+  rm -r "${pkgdir:?}/usr/include/drm"
+
+}

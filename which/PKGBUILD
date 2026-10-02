@@ -1,0 +1,51 @@
+pkgname=which+clang
+pkgver=2.21
+pkgrel=5
+pkgdesc='A utility to show the full path of commands'
+arch=('x86_64')
+url='https://savannah.gnu.org/projects/which/'
+license=('GPL3')
+provides=(which "which=${pkgver}")
+conflicts=(which)
+groups=('base-devel')
+depends=('glibc' 'bash')
+source=("https://ftp.gnu.org/gnu/which/which-${pkgver}.tar.gz")
+sha256sums=('f4a245b94124b377d8b49646bf421f9155d36aa7614b6ebf83705d3ffc76eaad')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  cd "${srcdir:?}/which-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/which-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr
+
+  make
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "which-${pkgver}"
+
+}

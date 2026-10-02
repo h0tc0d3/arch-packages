@@ -1,0 +1,109 @@
+pkgname=ncurses+clang
+pkgver=6.3
+pkgrel=3
+pkgdesc='System V Release 4.0 curses emulation library'
+arch=(x86_64)
+url='https://invisible-island.net/ncurses/ncurses.html'
+license=(MIT)
+provides=("ncurses=${pkgver}" libncurses++w.so libformw.so libmenuw.so libpanelw.so libncursesw.so)
+conflicts=('ncurses')
+replaces=('ncurses' 'alacritty-terminfo')
+depends=(glibc gcc-libs)
+optdepends=('bash: for ncursesw6-config')
+makedepends=(autoconf-archive)
+source=(
+  "https://invisible-mirror.net/archives/ncurses/ncurses-${pkgver}.tar.gz"{,.asc}
+  ncurses-6.3-libs.patch
+  ncurses-6.3-pkgconfig.patch
+)
+sha256sums=('97fc51ac2b085d4cde31ef4d2c3122c21abc217e9090a43a30fc5ec21684e059'
+  'SKIP'
+  'dc4261b6642058a9df1c0945e2409b24f84673ddc3a665d8a15ed3580e51ee25'
+  'b8544a607dfbeffaba2b087f03b57ed1fa81286afca25df65f61b04b5f3b3738')
+# NOTE: contacted upstream signing key holder about unsafe key (2021-05-02)
+validpgpkeys=('19882D92DDA4C400C22C0D56CC2AF4472167BE03') # Thomas Dickey <dickey@invisible-island.net>
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/ncurses-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/ncurses-${pkgver} directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # do not link against test libraries
+  patch -Np1 -i ../ncurses-6.3-libs.patch
+
+  # do not leak build-time LDFLAGS into the pkgconfig files:
+  # https://bugs.archlinux.org/task/68523
+  patch -Np1 -i ../ncurses-6.3-pkgconfig.patch
+
+}
+
+build() {
+
+  cd "${srcdir:?}/ncurses-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/ncurses-${pkgver} directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --enable-widec \
+    --enable-pc-files \
+    --mandir=/usr/share/man \
+    --with-cxx-binding \
+    --with-cxx-shared \
+    --with-manpage-format=normal \
+    --with-pkg-config-libdir=/usr/lib/pkgconfig \
+    --with-shared \
+    --with-versioned-syms \
+    --without-ada \
+    --with-xterm-kbs=del
+
+  make
+
+}
+
+package() {
+
+  cd "${srcdir:?}/ncurses-${pkgver}" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/ncurses-${pkgver} directory! Package Failed! \E[0m"
+    exit 1
+  )
+
+  make DESTDIR="${pkgdir:?}" install
+  install -vDm 644 COPYING -t "${pkgdir:?}/usr/share/licenses/${pkgname}/"
+
+  # fool packages looking to link to non-wide-character ncurses libraries
+  for lib in ncurses ncurses++ form panel menu; do
+    printf "INPUT(-l%sw)\n" "${lib}" >"${pkgdir:?}/usr/lib/lib${lib}.so"
+    ln -sv ${lib}w.pc "${pkgdir:?}/usr/lib/pkgconfig/${lib}.pc"
+  done
+
+  # some packages look for -lcurses during build
+  printf 'INPUT(-lncursesw)\n' >"${pkgdir:?}/usr/lib/libcursesw.so"
+  ln -sv libncurses.so "${pkgdir:?}/usr/lib/libcurses.so"
+
+  # tic and ticinfo functionality is built in by default
+  # make sure that anything linking against it links against libncursesw.so instead
+  for lib in tic tinfo; do
+    printf "INPUT(libncursesw.so.%s)\n" "${pkgver:0:1}" >"${pkgdir:?}/usr/lib/lib${lib}.so"
+    ln -sv libncursesw.so.${pkgver:0:1} "${pkgdir:?}/usr/lib/lib${lib}.so.${pkgver:0:1}"
+    ln -sv ncursesw.pc "${pkgdir:?}/usr/lib/pkgconfig/${lib}.pc"
+  done
+
+}

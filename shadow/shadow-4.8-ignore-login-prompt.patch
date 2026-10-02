@@ -1,0 +1,11 @@
+diff -up shadow-4.8/lib/getdef.c.login-prompt shadow-4.8/lib/getdef.c
+--- shadow-4.8/lib/getdef.c.login-prompt	2020-01-13 10:38:44.852796681 +0100
++++ shadow-4.8/lib/getdef.c	2020-01-13 10:39:54.472612511 +0100
+@@ -98,6 +98,7 @@ static struct itemdef def_table[] = {
+ 	{"LASTLOG_UID_MAX", NULL},
+ 	{"LOGIN_RETRIES", NULL},
+ 	{"LOGIN_TIMEOUT", NULL},
++	{"LOGIN_PLAIN_PROMPT", NULL},
+ 	{"LOG_OK_LOGINS", NULL},
+ 	{"LOG_UNKFAIL_ENAB", NULL},
+ 	{"MAIL_DIR", NULL},

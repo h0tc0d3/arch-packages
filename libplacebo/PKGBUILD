@@ -1,0 +1,63 @@
+pkgname=libplacebo+clang
+pkgver=4.208.0
+pkgrel=1
+pkgdesc='Reusable library for GPU-accelerated video/image rendering primitives'
+url='https://github.com/haasn/libplacebo'
+arch=('x86_64')
+license=('LGPL2.1')
+depends=('vulkan-icd-loader' 'libvulkan.so' 'glslang' 'lcms2' 'liblcms2.so' 'shaderc' 'libshaderc_shared.so'
+  'libepoxy' 'libglvnd' 'glibc' 'gcc-libs')
+makedepends=('meson' 'ninja' 'vulkan-headers' 'python' 'python-mako')
+provides=('libplacebo' "libplacebo=${pkgver}" 'libplacebo.so')
+conflicts=('libplacebo')
+source=("https://code.videolan.org/videolan/libplacebo/-/archive/v${pkgver}/libplacebo-v${pkgver}.tar.gz")
+sha256sums=('7b3c857934ee3d30f743e43d7f0606e10950806661ea0ea385f8a1f06cbab854')
+
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+}
+
+build() {
+
+  CXXFLAGS+=" -I/usr/include/glslang"
+  meson setup "libplacebo-v${pkgver}" build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true \
+    -D tests=true \
+    -D demos=false \
+    -D vulkan=enabled \
+    -D glslang=enabled \
+    -D shaderc=enabled \
+    -D lcms=enabled \
+    -D d3d11=disabled
+
+  ninja -C build
+
+}
+
+check() {
+
+  ninja -C build test
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" ninja -C build install
+  install -Dm 644 "libplacebo-v${pkgver}/README.md" -t "${pkgdir:?}/usr/share/doc/${pkgname}"
+
+}

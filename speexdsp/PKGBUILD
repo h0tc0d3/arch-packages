@@ -1,0 +1,70 @@
+pkgname=speexdsp+clang
+pkgver=1.2.1
+pkgrel=1
+pkgdesc="DSP library derived from Speex"
+arch=(x86_64)
+url="https://www.speex.org/"
+license=(BSD)
+provides=(libspeexdsp.so "speexdsp" "speexdsp=${pkgver}")
+conflicts=("speexdsp")
+depends=(glibc)
+makedepends=(git)
+_commit=1b28a0f61bc31162979e1f26f3981fc3637095c8 # tags/SpeexDSP-1.2.1^0
+source=("git+https://gitlab.xiph.org/xiph/speexdsp.git#commit=${_commit:?}")
+sha256sums=('SKIP')
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+  cd "${srcdir:?}/speexdsp" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/speexdsp directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  ./autogen.sh
+
+}
+
+build() {
+
+  cd "${srcdir:?}/speexdsp" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/speexdsp directory! Build Failed! \E[0m"
+    exit 1
+  )
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    CFLAGS="${CFLAGS} -flto=thin"
+    CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --localstatedir=/var \
+    --disable-static
+
+  make
+
+}
+
+check() {
+
+  make -k check -C "speexdsp"
+
+}
+
+package() {
+
+  make DESTDIR="${pkgdir:?}" install -C "speexdsp"
+
+  install -Dt "${pkgdir:?}/usr/share/licenses/speexdsp" -m644 "speexdsp/COPYING"
+
+}

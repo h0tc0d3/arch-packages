@@ -1,0 +1,77 @@
+pkgname=xorgproto+clang
+pkgver=2022.2
+pkgrel=1
+pkgdesc="combined X.Org X11 Protocol headers"
+arch=('any')
+url="https://xorg.freedesktop.org/"
+license=('custom')
+makedepends=('xorg-util-macros' 'meson')
+checkdepends=('python-libevdev')
+provides=('xorgproto' "xorgproto=${pkgver}")
+conflicts=('xorgproto')
+source=("https://xorg.freedesktop.org/archive/individual/proto/xorgproto-${pkgver}.tar.xz"{,.sig})
+sha256sums=('5d13dbf2be08f95323985de53352c4f352713860457b95ccaf894a647ac06b9e'
+  'SKIP')
+validpgpkeys=(
+  '3C2C43D9447D5938EF4551EBE23B7E70B467F0BF' # "Peter Hutterer (Who-T) <office@who-t.net>"
+  'FD0004A26EADFE43A4C3F249C6F7AE200374452D' # "Povilas Kanapickas <povilas@radix.lt>"
+)
+
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+  if [ -d build ]; then
+    rm -rf build
+  fi
+
+}
+
+build() {
+
+  meson setup "xorgproto-${pkgver}" build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true
+
+  ninja -C build
+
+}
+
+check() {
+
+  meson test -C build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" ninja -C build install
+
+  # missing docs
+  install -m755 -d "${pkgdir:?}/usr/share/doc/${pkgname}"
+  install -m644 "xorgproto-${pkgver}/PM_spec" "${pkgdir:?}/usr/share/doc/${pkgname}/"
+
+  # licenses
+  install -m755 -d "${pkgdir:?}/usr/share/licenses/${pkgname}"
+  install -m644 "xorgproto-${pkgver}/COPYING"* "${pkgdir:?}/usr/share/licenses/${pkgname}/"
+  # remove licences of legacy stuff we don't ship anymore
+  rm -f "${pkgdir:?}"/usr/share/licenses/${pkgname}/COPYING-{evieproto,fontcacheproto,lg3dproto,printproto,xcalibrateproto,xf86rushproto}
+
+  # cleanup
+  rm -f "${pkgdir:?}"/usr/include/X11/extensions/apple*
+  rm -f "${pkgdir:?}"/usr/share/licenses/${pkgname}/COPYING-{apple,windows}wmproto
+  rm -f "${pkgdir:?}"/usr/share/pkgconfig/applewmproto.pc
+
+}

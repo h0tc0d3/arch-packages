@@ -1,0 +1,35 @@
+pkgname=libclc+clang
+pkgver=14.0.6
+pkgrel=1
+pkgdesc="Library requirements of the OpenCL C programming language"
+arch=('any')
+provides=('libclc' "libclc=${pkgver}")
+conflicts=('libclc')
+url="https://libclc.llvm.org/"
+license=('MIT')
+makedepends=('clang' 'llvm' 'cmake' 'python' 'git' 'libedit' 'spirv-llvm-translator')
+
+_commit=f28c006a5895fc0e329fe15fead81e37457cb1d1
+source=(
+  "llvm-project::git+https://github.com/llvm/llvm-project.git#commit=${_commit}"
+)
+
+sha256sums=('SKIP')
+
+build() {
+
+  CFLAGS="${CFLAGS} -D__extern_always_inline=inline"
+  cmake -B build -S "${srcdir:?}/llvm-project/libclc" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr
+
+  cmake --build build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+  install -Dm644 "${srcdir:?}/llvm-project/libclc/LICENSE.TXT" "${pkgdir:?}/usr/share/licenses/${pkgname}/LICENSE"
+
+}

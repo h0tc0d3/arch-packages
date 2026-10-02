@@ -1,0 +1,56 @@
+pkgname=ndctl+clang
+pkgver=74
+pkgrel=1
+pkgdesc='Utility library for managing the libnvdimm (non-volatile memory device) sub-system in the Linux kernel'
+arch=('x86_64')
+url="https://github.com/pmem/ndctl"
+license=('LGPL')
+provides=("ndctl" "ndctl=${pkgver}")
+conflicts=(ndctl)
+depends=('iniparser' 'json-c' 'keyutils' 'kmod' 'systemd-libs' 'util-linux-libs')
+makedepends=('meson' 'asciidoctor' 'bash-completion' 'systemd' 'xmlto')
+source=("https://github.com/pmem/ndctl/archive/v${pkgver}/ndctl-${pkgver}.tar.gz")
+sha256sums=('b3be5ab6103fc4f462ac53ed607e3e91f90e0c9eee56ba757280fcad648cbd92')
+
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+  # fix location of modprobe.d conf
+  sed -i "s|^modprobedatadir =.*|modprobedatadir = '/usr/lib/modprobe.d/'|" "ndctl-${pkgver}/contrib/meson.build"
+
+}
+
+build() {
+
+  meson setup "ndctl-${pkgver}" build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true
+
+  meson compile -C build
+
+}
+
+check() {
+
+  meson test -C build --print-errorlogs
+
+}
+
+package() {
+
+  meson install -C build --destdir "${pkgdir:?}"
+
+}

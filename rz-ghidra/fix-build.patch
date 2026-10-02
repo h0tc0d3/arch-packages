@@ -1,0 +1,13 @@
+diff --git a/ghidra/CMakeLists.txt b/ghidra/CMakeLists.txt
+index a24cd57f4e90..10e99a3dde91 100644
+--- a/ghidra/CMakeLists.txt
++++ b/ghidra/CMakeLists.txt
+@@ -60,7 +60,6 @@ set(SOURCE_DECOMPILER_CXX
+ 	condexe.cc
+ 	override.cc
+ 	dynamic.cc
+-	crc32.cc
+ 	prettyprint.cc
+ 	printlanguage.cc
+ 	printc.cc
+

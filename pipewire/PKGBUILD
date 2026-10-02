@@ -1,0 +1,400 @@
+pkgbase=pipewire+clang
+pkgname=(
+  pipewire+clang
+  alsa-card-profiles+clang
+  pipewire-docs+clang
+  pipewire-audio+clang
+  pipewire-alsa+clang
+  pipewire-jack+clang
+  pipewire-pulse+clang
+  gst-plugin-pipewire+clang
+  pipewire-zeroconf+clang
+  pipewire-v4l2+clang
+  pipewire-x11-bell+clang
+)
+pkgver=0.3.59
+pkgrel=2
+epoch=1
+pkgdesc="Low-latency audio/video router and processor"
+url="https://pipewire.org"
+license=(MIT)
+arch=(x86_64)
+makedepends=(
+  alsa-lib
+  avahi
+  bluez-libs
+  dbus
+  doxygen
+  git
+  glib2
+  graphviz
+  gst-plugins-base
+  libcanberra
+  libfdk-aac
+  libfreeaptx
+  libldac
+  libpulse
+  libsndfile
+  libusb
+  libx11
+  libxfixes
+  lilv
+  meson
+  ncurses
+  opus
+  python-docutils
+  rtkit
+  sbc
+  sdl2
+  systemd
+  valgrind
+  webrtc-audio-processing
+)
+checkdepends=(desktop-file-utils)
+_commit=f54a72fd9a67eeb8d1502d6d75979dbddb00fdf2 # tags/0.3.59
+source=("git+https://gitlab.freedesktop.org/pipewire/pipewire.git#commit=${_commit:?}")
+sha256sums=('SKIP')
+
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+  cd "${srcdir:?}/pipewire" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/pipewire directory! Prepare Failed! \E[0m"
+    exit 1
+  )
+
+  # fix filter-chain crash
+  # https://gitlab.freedesktop.org/pipewire/pipewire/-/issues/2737
+  git cherry-pick -n 94a64268613adac8ef6f3e6c1f04468220540d00
+
+  # remove export of LD_LIBRARY_PATH for pw-jack as it would add /usr/lib
+  sed -i '/LD_LIBRARY_PATH/d' pipewire-jack/src/pw-jack.in
+
+}
+
+pkgver() {
+
+  cd "${srcdir:?}/pipewire" || (
+    echo -e "\E[1;31mCan't cd to ${srcdir:?}/pipewire directory! PkgVer Failed! \E[0m"
+    exit 1
+  )
+
+  git describe --tags | sed 's/\([^-]*-g\)/r\1/;s/-/./g'
+
+}
+
+build() {
+
+  meson setup pipewire build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true \
+    -D docs=enabled \
+    -D jack=disabled \
+    -D jack-devel=true \
+    -D libjack-path=/usr/lib \
+    -D libcamera=disabled \
+    -D udevrulesdir=/usr/lib/udev/rules.d \
+    -D roc=disabled \
+    -D bluez5-codec-lc3plus=disabled \
+    -D session-managers=[]
+
+  meson compile -C build
+
+}
+
+check() {
+
+  meson test -C build --print-errorlogs
+
+}
+
+_pick() {
+
+  local p="$1" f d
+  shift
+  for f; do
+    d="${srcdir:?}/$p/${f#${pkgdir:?}/}"
+    mkdir -p "$(dirname "$d")"
+    mv "$f" "$d"
+    rmdir -p --ignore-fail-on-non-empty "$(dirname "$f")"
+  done
+
+}
+
+_ver=${pkgver:0:3}
+
+package_pipewire+clang() {
+  license+=(LGPL) # libspa-alsa
+  depends=(
+    libdbus-1.so
+    libglib-2.0.so
+    libncursesw.so
+    libsystemd.so
+    libudev.so
+  )
+  optdepends=(
+    'gst-plugin-pipewire: GStreamer plugin'
+    'pipewire-alsa: ALSA configuration'
+    'pipewire-audio: Audio support'
+    'pipewire-docs: Documentation'
+    'pipewire-jack: JACK support'
+    'pipewire-pulse: PulseAudio replacement'
+    'pipewire-session-manager: Session manager'
+    'pipewire-v4l2: V4L2 interceptor'
+    'pipewire-x11-bell: X11 bell'
+    'pipewire-zeroconf: Zeroconf support'
+    'realtime-privileges: realtime privileges with rt module'
+    'rtkit: realtime privileges with rtkit module'
+  )
+  provides=("pipewire" "pipewire=${epoch}:${pkgver}" "libpipewire-${_ver}.so")
+  conflicts=("pipewire")
+  install=pipewire.install
+
+  meson install -C build --destdir "${pkgdir:?}"
+
+  # install directory for overrides
+  install -vdm 755 "${pkgdir:?}/etc/pipewire/"
+
+  (
+    cd "${pkgdir:?}"
+
+    # Replace copies with symlinks
+    cmp usr/bin/pipewire usr/bin/pipewire-avb
+    ln -sf pipewire usr/bin/pipewire-avb
+
+    cmp usr/bin/pipewire usr/bin/pipewire-pulse
+    ln -sf pipewire usr/bin/pipewire-pulse
+
+    _pick acp usr/lib/udev
+    _pick acp usr/share/alsa-card-profile
+
+    _pick docs usr/share/doc
+
+    _pick audio usr/bin/pw-{cat,play,record,midi{play,record},dsdplay}
+    _pick audio usr/bin/pw-{loopback,mididump}
+    _pick audio usr/bin/spa-{acp-tool,resample}
+    _pick audio usr/lib/alsa-lib
+    _pick audio usr/lib/pipewire-${_ver}/libpipewire-module-echo-cancel.so
+    _pick audio usr/lib/pipewire-${_ver}/libpipewire-module-fallback-sink.so
+    _pick audio usr/lib/pipewire-${_ver}/libpipewire-module-filter-chain.so
+    _pick audio usr/lib/pipewire-${_ver}/libpipewire-module-loopback.so
+    _pick audio usr/lib/pipewire-${_ver}/libpipewire-module-pipe-tunnel.so
+    _pick audio usr/lib/pipewire-${_ver}/libpipewire-module-protocol-simple.so
+    _pick audio usr/lib/spa-0.2/{aec,alsa,audio*,bluez5,volume}
+    _pick audio usr/lib/systemd/user/filter-chain.service
+    _pick audio usr/share/alsa
+    _pick audio usr/share/man/man1/pw-{cat,mididump}.1
+    _pick audio usr/share/pipewire/filter-chain*
+    _pick audio usr/share/spa-0.2/bluez5
+
+    _pick jack usr/bin/pw-jack
+    _pick jack usr/include/jack
+    _pick jack usr/lib/libjack*
+    _pick jack usr/lib/pkgconfig/jack.pc
+    _pick jack usr/share/man/man1/pw-jack.1
+    _pick jack usr/share/pipewire/jack.conf
+
+    _pick pulse usr/bin/pipewire-pulse
+    _pick pulse usr/lib/pipewire-${_ver}/libpipewire-module-protocol-pulse.so
+    _pick pulse usr/lib/pipewire-${_ver}/libpipewire-module-pulse-tunnel.so
+    _pick pulse usr/lib/systemd/user/pipewire-pulse.*
+    _pick pulse usr/share/man/man1/pipewire-pulse.1
+    _pick pulse usr/share/pipewire/pipewire-pulse.conf
+
+    _pick gst usr/lib/gstreamer-1.0
+
+    _pick zeroconf usr/lib/pipewire-${_ver}/libpipewire-module-{raop,zeroconf}-*.so
+
+    _pick v4l2 usr/bin/pw-v4l2 usr/lib/pipewire-${_ver}/v4l2
+
+    _pick x11-bell usr/lib/pipewire-${_ver}/libpipewire-module-x11-bell.so
+
+    # directories for overrides
+    mkdir -p etc/pipewire/{client-rt,client,minimal,pipewire}.conf.d
+
+  )
+
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 pipewire/COPYING
+
+}
+
+package_alsa-card-profiles+clang() {
+
+  pkgdesc+=" - ALSA card profiles"
+  license=(LGPL)
+  provides=("alsa-card-profiles" "alsa-card-profiles=${epoch}:${pkgver}")
+  conflicts=("alsa-card-profiles")
+  depends=("pipewire+clang=${epoch}:${pkgver}")
+
+  mv acp/* "${pkgdir:?}"
+
+}
+
+package_pipewire-docs+clang() {
+
+  pkgdesc+=" - documentation"
+  provides=("pipewire-docs" "pipewire-docs=${epoch}:${pkgver}")
+  conflicts=("pipewire-docs")
+  depends=("pipewire+clang=${epoch}:${pkgver}")
+
+  mv docs/* "${pkgdir:?}"
+
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 pipewire/COPYING
+
+}
+
+package_pipewire-audio+clang() {
+
+  pkgdesc+=" - Audio support"
+  provides=("pipewire-audio" "pipewire-audio=${epoch}:${pkgver}")
+  conflicts=("pipewire-audio")
+  depends=(
+    alsa-card-profiles
+    libasound.so
+    libbluetooth.so
+    libfdk-aac.so
+    libfreeaptx.so
+    libldacBT_enc.so
+    liblilv-0.so
+    libopus.so
+    libpipewire-${_ver}.so
+    libsbc.so
+    libsndfile.so
+    libwebrtc_audio_processing.so
+    pipewire+clang
+    libusb-1.0.so
+  )
+
+  mv audio/* "${pkgdir:?}"
+
+  mkdir -p "${pkgdir:?}/etc/alsa/conf.d"
+  ln -st "${pkgdir:?}/etc/alsa/conf.d" \
+    /usr/share/alsa/alsa.conf.d/50-pipewire.conf
+
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgdir:?}" -m644 pipewire/COPYING
+
+}
+
+package_pipewire-alsa+clang() {
+
+  pkgdesc+=" - ALSA configuration"
+  provides=("pipewire-alsa" "pipewire-alsa=${epoch}:${pkgver}" pulseaudio-alsa)
+  conflicts=("pipewire-alsa" "pulseaudio-alsa")
+  depends=("pipewire-session-manager" "pipewire+clang=${epoch}:${pkgver}" pipewire-audio+clang)
+
+  mkdir -p "${pkgdir:?}/etc/alsa/conf.d"
+  ln -st "${pkgdir:?}/etc/alsa/conf.d" \
+    /usr/share/alsa/alsa.conf.d/99-pipewire-default.conf
+
+  install -Dm644 /dev/null \
+    "${pkgdir:?}/usr/share/pipewire/media-session.d/with-alsa"
+
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 pipewire/COPYING
+
+}
+
+package_pipewire-jack+clang() {
+
+  pkgdesc+=" - JACK support"
+  license+=(GPL2) # libjackserver
+  provides=("pipewire-jack" "pipewire-jack=${epoch}:${pkgver}")
+  conflicts=("pipewire-jack")
+  depends=("pipewire-session-manager" "libpipewire-${_ver}.so" "pipewire+clang=${epoch}:${pkgver}" pipewire-audio+clang)
+  optdepends=('jack-example-tools: for official JACK example-clients and tools')
+  conflicts=(jack jack2)
+  provides=(jack libjack.so libjackserver.so libjacknet.so)
+
+  mv jack/* "${pkgdir:?}"
+
+  install -Dm644 /dev/null \
+    "${pkgdir:?}/usr/share/pipewire/media-session.d/with-jack"
+
+  mkdir -p "${pkgdir:?}/etc/pipewire/jack.conf.d"
+
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 pipewire/COPYING
+
+}
+
+package_pipewire-pulse+clang() {
+
+  pkgdesc+=" - PulseAudio replacement"
+  depends=("pipewire-session-manager" "libpipewire-${_ver}.so"
+    "pipewire+clang=${epoch}:${pkgver}" libpulse.so
+    libavahi-{client,common}.so pipewire-audio+clang)
+  provides=("pipewire-pulse" "pipewire-pulse=${epoch}:${pkgver}" pulseaudio pulseaudio-bluetooth)
+  conflicts=("pipewire-pulse" pulseaudio pulseaudio-bluetooth)
+  replaces=(pulseaudio pulseaudio-bluetooth)
+  install=pipewire-pulse.install
+
+  mv pulse/* "${pkgdir:?}"
+
+  # directory for overrides
+  mkdir -p "${pkgdir:?}/etc/pipewire/pipewire-pulse.conf.d"
+
+  install -Dm644 /dev/null \
+    "${pkgdir:?}/usr/share/pipewire/media-session.d/with-pulseaudio"
+
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 pipewire/COPYING
+
+}
+
+package_gst-plugin-pipewire+clang() {
+
+  pkgdesc="Multimedia graph framework - pipewire plugin"
+  provides=("gst-plugin-pipewire" "gst-plugin-pipewire=${epoch}:${pkgver}")
+  conflicts=("gst-plugin-pipewire")
+  depends=("pipewire-session-manager" "libpipewire-${_ver}.so"
+    "pipewire+clang=${epoch}:${pkgver}" gst-plugins-base-libs)
+
+  mv gst/* "${pkgdir:?}"
+
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 pipewire/COPYING
+
+}
+
+package_pipewire-zeroconf+clang() {
+
+  pkgdesc+=" - Zeroconf support"
+  provides=("pipewire-zeroconf" "pipewire-zeroconf=${epoch}:${pkgver}")
+  conflicts=("pipewire-zeroconf")
+  depends=("libpipewire-${_ver}.so" "pipewire+clang=${epoch}:${pkgver}" libavahi-{client,common}.so)
+
+  mv zeroconf/* "${pkgdir:?}"
+
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 pipewire/COPYING
+
+}
+
+package_pipewire-v4l2+clang() {
+
+  pkgdesc+=" - V4L2 interceptor"
+  depends=("pipewire-session-manager" "libpipewire-${_ver}.so")
+
+  mv v4l2/* "${pkgdir:?}"
+
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 pipewire/COPYING
+
+}
+
+package_pipewire-x11-bell+clang() {
+
+  pkgdesc+=" - X11 bell"
+  depends=(libcanberra.so "libpipewire-${_ver}.so" libx11 libxfixes)
+
+  mv x11-bell/* "${pkgdir:?}"
+
+  install -Dt "${pkgdir:?}/usr/share/licenses/${pkgname:?}" -m644 pipewire/COPYING
+
+}

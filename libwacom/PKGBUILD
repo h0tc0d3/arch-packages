@@ -1,0 +1,60 @@
+pkgname=libwacom+clang
+pkgver=2.5.0
+pkgrel=1
+pkgdesc="Library to identify Wacom tablets and their features"
+arch=('x86_64')
+url="https://github.com/linuxwacom/libwacom/wiki"
+license=('MIT')
+provides=('libwacom' "libwacom=${pkgver}")
+conflicts=('libwacom')
+depends=('glib2' 'systemd' 'libgudev')
+makedepends=('libxml2' 'meson')
+checkdepends=('python-pytest' 'python-libevdev' 'python-pyudev')
+optdepends=('python-libevdev: for libwacom-show-stylus')
+validpgpkeys=(
+  '594ABBA066118C7A02D10A80A8AF906D9307FBAD' # "Joshua Dickens <Joshua@Joshua-Dickens.com>"
+)
+source=("https://github.com/linuxwacom/libwacom/releases/download/libwacom-${pkgver}/libwacom-${pkgver}.tar.xz"{,.sig})
+sha256sums=('40b69a4c38bbcbc80b1231bc115551107ebbc0ba14d2ad1c3e54355dcd876816'
+  'SKIP')
+
+_extra_lto_flag=""
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+}
+
+build() {
+
+  meson setup libwacom-${pkgver} build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true
+
+  meson compile -C build
+
+}
+
+check() {
+
+  ninja test -C build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" ninja install -C build
+  install -D -m644 "libwacom-${pkgver}/COPYING" "${pkgdir:?}/usr/share/licenses/libwacom/LICENSE"
+
+}

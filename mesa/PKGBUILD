@@ -1,0 +1,105 @@
+pkgname=mesa+clang
+pkgdesc="Mesa open-source implementation of the OpenGL specification"
+pkgver=22.2.2
+_pkgver=${pkgver//_/-}
+pkgrel=1
+arch=('x86_64')
+makedepends=('python-mako' 'xorgproto'
+  'libxml2' 'libx11' 'libvdpau' 'libva' 'elfutils' 'libxrandr'
+  'wayland-protocols' 'meson' 'ninja' 'glslang' 'libclc')
+depends=('libdrm' 'libxxf86vm' 'libxdamage' 'libxshmfence' 'libelf' 'systemd' 'systemd-libs'
+  'libomxil-bellagio' 'libunwind' 'libglvnd' 'wayland' 'lm_sensors' 'libclc' 'vulkan-icd-loader' 'zstd' 'expat')
+optdepends=('opengl-man-pages: for the OpenGL API man pages')
+provides=('mesa' "mesa=${pkgver}" 'opencl-mesa' 'vulkan-intel' 'vulkan-radeon' 'vulkan-mesa-layer' 'libva-mesa-driver' 'mesa-vdpau' 'vulkan-swrast' 'vulkan-driver' 'opengl-driver' 'opencl-driver' 'mesa-libgl')
+conflicts=('mesa' 'opencl-mesa' 'vulkan-intel' 'vulkan-radeon' 'vulkan-mesa-layer' 'libva-mesa-driver' 'mesa-vdpau' 'vulkan-swrast')
+url="https://www.mesa3d.org"
+license=('custom')
+source=(
+  "https://archive.mesa3d.org/mesa-${_pkgver}.tar.xz"{,.sig}
+  'LICENSE'
+)
+
+sha256sums=('2de11fb74fc5cc671b818e49fe203cea0cd1d8b69756e97cdb06a2f4e78948f9'
+            'SKIP'
+            '7fdc119cf53c8ca65396ea73f6d10af641ba41ea1dd2bd44a824726e01c8b3f2')
+
+validpgpkeys=(
+  '57551DE15B968F6341C248F68D8E31AFC32428A6' # Keith Packard <keithp@keithp.com>
+  '71C4B75620BC75708B4BDB254C95FAAB3EB073EC' # Dylan Baker <dylan@pnwbakers.com>
+)
+
+GALLIUM_DRIVERS="r300,r600,radeonsi,nouveau,virgl,svga,swrast,iris,zink,crocus"
+VULKAN_DRIVERS="amd,intel,swrast"
+VULKAN_LAYERS="device-select,intel-nullhw,overlay"
+
+_extra_lto_flag=""
+
+_patch() {
+
+  echo -e "\E[1;33m Apply patch: ${1}\E[0m"
+  patch -p1 -i "${srcdir:?}/${1}"
+
+}
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _extra_lto_flag='-D b_lto_mode=thin'
+  fi
+
+}
+
+build() {
+
+  meson setup mesa-${_pkgver} build \
+    --prefix /usr \
+    --libexecdir lib \
+    --sbindir bin \
+    --auto-features enabled \
+    --wrap-mode nodownload \
+    -D debug=false \
+    -D optimization=2 \
+    -D b_ndebug=true \
+    -D b_lto=true ${_extra_lto_flag} \
+    -D b_pie=true \
+    -D sysconfdir=/etc \
+    -D platforms=x11,wayland \
+    -D gallium-drivers="${GALLIUM_DRIVERS}" \
+    -D vulkan-drivers="${VULKAN_DRIVERS}" \
+    -D vulkan-layers="${VULKAN_LAYERS}" \
+    -D dri3=enabled \
+    -D egl=enabled \
+    -D gallium-extra-hud=true \
+    -D gallium-nine=true \
+    -D gallium-omx=bellagio \
+    -D gallium-opencl=icd \
+    -D gallium-va=enabled \
+    -D gallium-vdpau=enabled \
+    -D gallium-xa=enabled \
+    -D gallium-xvmc=disabled \
+    -D gbm=enabled \
+    -D gles1=disabled \
+    -D gles2=enabled \
+    -D glvnd=true \
+    -D glx=dri \
+    -D libunwind=disabled \
+    -D llvm=enabled \
+    -D lmsensors=enabled \
+    -D osmesa=true \
+    -D shared-glapi=enabled \
+    -D microsoft-clc=disabled \
+    -D valgrind=disabled
+
+  meson compile -C build
+
+}
+
+package() {
+
+  DESTDIR="${pkgdir:?}" meson install -C build
+
+  ln -s /usr/lib/libGLX_mesa.so.0 "${pkgdir:?}/usr/lib/libGLX_indirect.so.0"
+
+  install -Dm644 "${srcdir:?}/LICENSE" "${pkgdir:?}/usr/share/licenses/${pkgbase:?}/LICENSE"
+
+}

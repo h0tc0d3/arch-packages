@@ -1,0 +1,87 @@
+pkgbase=plasma-workspace+clang
+pkgname=(plasma-workspace+clang plasma-wayland-session+clang)
+pkgver=5.26.1
+pkgrel=1
+pkgdesc='KDE Plasma Workspace'
+arch=(x86_64)
+url='https://kde.org/plasma-desktop/'
+license=(LGPL)
+depends=(knotifyconfig ksystemstats ktexteditor libqalculate kde-cli-tools appstream-qt
+  xorg-xrdb xorg-xsetroot kactivitymanagerd kholidays xorg-xmessage milou prison kwin
+  plasma-integration kpeople kactivities-stats libkscreen kquickcharts kpipewire
+  accountsservice kio-extras kio-fuse qt5-tools oxygen-sounds)
+makedepends=(extra-cmake-modules kdoctools gpsd baloo networkmanager-qt plasma-wayland-protocols kunitconversion)
+groups=(plasma)
+source=(
+  "https://download.kde.org/stable/plasma/${pkgver}/plasma-workspace-${pkgver}.tar.xz"{,.sig}
+  kde.pam
+)
+sha256sums=('dc0709d9e99784e46e921b2b5e213b919887512ac1d8e0be46f77f8ba00a8f66'
+  'SKIP'
+  '00090291204baabe9d6857d3b1419832376dd2e279087d718b64792691e86739')
+validpgpkeys=(
+  'E0A3EB202F8E57528E13E72FD7574483BB57B18D' # Jonathan Esk-Riddell <jr@jriddell.org>
+  '0AAC775BB6437A8D9AF7A3ACFE0784117FBCE11D' # Bhushan Shah <bshah@kde.org>
+  'D07BD8662C56CB291B316EB2F5675605C74E02CF' # David Edmundson <davidedmundson@kde.org>
+  '1FA881591C26B276D7A5518EEAAF29B42A678C20' # Marco Martin <notmart@gmail.com>
+)
+
+_llvm=0
+
+prepare() {
+
+  if clang --version 2>/dev/null | grep -iq "clang\s*version\s*[0-9]" && ld.lld --version 2>/dev/null | grep -iq "LLD\s*[0-9]"; then
+    _llvm=1
+  fi
+
+}
+
+build() {
+
+  if [[ ${_llvm} -eq 1 ]]; then
+
+    #CFLAGS="${CFLAGS} -flto=thin"
+    #CXXFLAGS="${CXXFLAGS} -flto=thin"
+    LDFLAGS="${LDFLAGS} -fuse-ld=lld"
+
+  fi
+
+  cmake -B build -S plasma-workspace-${pkgver} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_LIBEXECDIR=lib \
+    -DCMAKE_DISABLE_FIND_PACKAGE_LibKUserFeedback=ON \
+    -DBUILD_TESTING=OFF
+
+  cmake --build build
+
+}
+
+package_plasma-workspace+clang() {
+  optdepends=('plasma-workspace-wallpapers: additional wallpapers'
+    'gpsd: GPS based geolocation' 'networkmanager-qt: IP based geolocation'
+    'kdepim-addons: displaying PIM events in the calendar'
+    'appmenu-gtk-module: global menu support for GTK2 and some GTK3 applications'
+    'baloo: Baloo search runner' 'discover: manage applications installation from the launcher')
+  provides=(plasma-workspace "plasma-workspace=${pkgver}")
+  conflicts=(plasma-workspace)
+  backup=('etc/pam.d/kde')
+
+  DESTDIR="${pkgdir:?}" cmake --install build
+
+  install -Dm644 "${srcdir:?}/kde.pam" "${pkgdir:?}/etc/pam.d/kde"
+
+  # Split plasma-wayland scripts
+  rm -r "${pkgdir:?}/usr/share/wayland-sessions"
+
+}
+
+package_plasma-wayland-session+clang() {
+
+  pkgdesc='Plasma Wayland session'
+  depends=(plasma-workspace+clang qt5-wayland kwayland-integration xorg-xwayland)
+  provides=(plasma-wayland-session "plasma-wayland-session=${pkgver}")
+  conflicts=(plasma-wayland-session)
+
+  install -Dm644 build/login-sessions/plasmawayland.desktop "${pkgdir:?}/usr/share/wayland-sessions/plasmawayland.desktop"
+
+}
